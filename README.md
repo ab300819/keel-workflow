@@ -20,9 +20,10 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
 | [测试方案](#3-devdocs-test-plan-测试方案) | `/devdocs-test-plan` | 单元/E2E/手动测试用例 | `03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
-| [代码提交](#6-git-commit-代码提交) | `/git-commit` | Conventional Commits 规范提交 | - |
-| [UI 规范](#8-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
-| [工作报告](#7-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
+| [代码质量](#6-devdocs-code-quality-代码质量) | `/devdocs-code-quality` | MTE 原则、重构指导、Review 清单 | - |
+| [代码提交](#7-git-commit-代码提交) | `/git-commit` | Conventional Commits 规范提交 | - |
+| [UI 规范](#9-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
+| [工作报告](#8-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
 
 ## DevDocs 工作流
 
@@ -625,7 +626,69 @@ docs/devdocs/
 
 ---
 
-# 6. git-commit (代码提交)
+# 6. devdocs-code-quality (代码质量)
+
+编码和重构时的质量约束，确保代码可维护、可测试、适度扩展。
+
+## 元数据
+
+```yaml
+name: devdocs-code-quality
+description: Opinionated constraints for writing maintainable, testable code
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
+```
+
+## 触发条件
+
+- 用户正在编写新代码
+- 用户需要重构现有代码
+- 用户需要 Code Review 检查清单
+- 用户提到 MTE 原则、代码质量、避免过度设计
+
+## 核心原则：MTE
+
+| 原则 | 说明 | 检查点 |
+|------|------|--------|
+| **Maintainability** | 可维护性 | 职责单一、依赖清晰、易于理解 |
+| **Testability** | 可测试性 | 核心逻辑可单元测试、依赖可 Mock |
+| **Extensibility** | 可扩展性 | 预留合理扩展点、接口抽象 |
+
+## 应用场景
+
+### 编码约束
+
+- 函数不超过 50 行
+- 参数不超过 5 个
+- 嵌套不超过 3 层
+- 依赖通过注入
+- 核心逻辑可测试
+
+### 重构指导
+
+- 重构前必须有测试
+- 每步重构后运行测试
+- 不在重构中添加功能
+- 识别 Code Smells 并修复
+
+### Code Review 清单
+
+- MTE 原则检查
+- 代码规范检查
+- 错误处理检查
+- 安全检查
+
+## 约束
+
+- [ ] **函数不超过 50 行**
+- [ ] **参数不超过 5 个**
+- [ ] **嵌套不超过 3 层**
+- [ ] **每个模块职责单一**
+- [ ] **不为假设需求设计**
+- [ ] **重构前必须有测试**
+
+---
+
+# 7. git-commit (代码提交)
 
 使用 Conventional Commits 规范创建标准化的 git 提交。
 
@@ -788,7 +851,7 @@ perf(search): add index for frequently queried fields
 
 ---
 
-# 7. work-report (工作报告)
+# 8. work-report (工作报告)
 
 生成周报、月报、季度报和年终总结。
 
@@ -850,7 +913,7 @@ allowed-tools: Read, Bash, Write, Glob, Grep, AskUserQuestion
 
 ---
 
-# 8. ui-skills (UI 规范)
+# 9. ui-skills (UI 规范)
 
 构建更好界面的意见约束。
 
@@ -897,6 +960,8 @@ skills/
 │   └── SKILL.md
 ├── devdocs-retrofit/
 │   └── SKILL.md
+├── devdocs-code-quality/
+│   └── SKILL.md
 ├── git-commit/
 │   └── SKILL.md
 ├── ui-skills/
@@ -928,6 +993,7 @@ skills/
 /devdocs-test-plan
 /devdocs-dev-tasks
 /devdocs-retrofit
+/devdocs-code-quality
 /git-commit
 /ui-skills
 /work-report
@@ -941,6 +1007,8 @@ skills/
 写测试用例
 拆分开发任务
 把这个项目按 DevDocs 流程改造一下
+帮我重构这段代码
+Review 一下这个 PR
 提交代码
 帮我生成本周的周报
 ```
