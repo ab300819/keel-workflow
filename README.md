@@ -21,6 +21,7 @@ Claude Code Agent Skills 模板项目，包含 PRD 全流程和通用工具 skil
 | [开发任务](#4-prd-dev-tasks-开发任务) | `/prd-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-prd-retrofit-项目改造) | `/prd-retrofit` | 已有项目适配 PRD 流程 | `00-retrofit-report.md` |
 | [代码提交](#6-git-commit-代码提交) | `/git-commit` | Conventional Commits 规范提交 | - |
+| [工作报告](#7-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
 
 ## PRD 工作流
 
@@ -786,6 +787,68 @@ perf(search): add index for frequently queried fields
 
 ---
 
+# 7. work-report (工作报告)
+
+生成周报、月报、季度报和年终总结。
+
+## 元数据
+
+```yaml
+name: work-report
+description: 生成周报、月报、季度报和年终总结
+allowed-tools: Read, Bash, Write, Glob, Grep, AskUserQuestion
+```
+
+## 触发条件
+
+- 用户提到"周报"、"月报"、"季报"、"年终总结"
+- 用户需要生成工作报告
+
+## 报告类型
+
+| 类型 | 时间范围 | 输入来源 | 主要内容 |
+|------|---------|---------|---------|
+| 周报 | 本周 | 每日工作记录/口述 | 本周工作、下周计划 |
+| 月报 | 当月 | 周报汇总 | 主要工作、进度跟踪 |
+| 季报 | 当季 | 周报汇总 | 季度总结、阶段成果 |
+| 年终总结 | 全年 | 周报汇总 | 业绩达成、个人成长、成长计划 |
+
+## 工作流程
+
+```
+1. 确定报告类型和时间范围
+   │
+   ▼
+2. 收集必要信息（周报文件、规划文档等）
+   │
+   ▼
+3. 读取并解析文件
+   │
+   ▼
+4. 分析周报内容，提取关键工作
+   │
+   ▼
+5. 根据报告类型生成内容
+   │
+   ▼
+6. 输出 Markdown 文件
+```
+
+## 输出模板
+
+- **周报**：固定格式，包含本周重点工作和下周计划
+- **月报/季报**：灵活格式，突出重点工作和进度
+- **年终总结**：固定格式，包含业绩达成（1500-3000字）、个人成长（400-700字）、成长计划（400-700字）
+
+## 约束
+
+- [ ] 必须确认报告类型和时间范围
+- [ ] 必须向用户确认信息来源
+- [ ] 客观呈现，用事实和数据说话
+- [ ] 根据用户指引调整重点和弱化内容
+
+---
+
 # 项目结构
 
 ```
@@ -809,8 +872,13 @@ skills/
 │   └── SKILL.md
 ├── prd-retrofit/
 │   └── SKILL.md
-└── git-commit/
-    └── SKILL.md
+├── git-commit/
+│   └── SKILL.md
+└── work-report/
+    ├── SKILL.md
+    └── templates/
+        ├── weekly-report.md
+        └── year-end.md
 ```
 
 ---
@@ -834,6 +902,7 @@ skills/
 /prd-dev-tasks
 /prd-retrofit
 /git-commit
+/work-report
 ```
 
 或自然语言触发：
@@ -845,4 +914,5 @@ skills/
 拆分开发任务
 把这个项目按 PRD 流程改造一下
 提交代码
+帮我生成本周的周报
 ```
