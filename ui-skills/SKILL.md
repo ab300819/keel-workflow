@@ -1,11 +1,17 @@
 ---
 name: ui-skills
-description: Opinionated constraints for building better interfaces with agents.
+description: Opinionated constraints for building better interfaces with agents. Apply when writing UI code, implementing designs, or reviewing frontend components. Use within DevDocs workflow during development phase for UI-related tasks. Triggers on keywords like "UI", "界面", "前端", "组件", "animation", "动画", "layout", "布局".
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 
 # UI Skills
 
-Opinionated constraints for building better interfaces with agents.
+构建更好界面的意见约束。在 DevDocs 流程开发阶段实现 UI 相关任务时应用此 skill。
+
+## Language
+
+- Accept questions in both Chinese and English
+- Always respond in Chinese
 
 ## Stack
 

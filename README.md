@@ -34,6 +34,13 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
        │                        │                        │                    │
        ▼                        ▼                        ▼                    ▼
   需求文档                  系统设计                  测试方案              开发任务
+                                                                              │
+                                                                              ▼
+                                                                           开发实现
+                                                                    ┌────────┴────────┐
+                                                                    ▼                  ▼
+                                                              /code-quality      /ui-skills
+                                                              (代码质量约束)     (UI 设计约束)
 ```
 
 ### 已有项目改造
@@ -915,21 +922,29 @@ allowed-tools: Read, Bash, Write, Glob, Grep, AskUserQuestion
 
 # 9. ui-skills (UI 规范)
 
-构建更好界面的意见约束。
+构建更好界面的意见约束。在 DevDocs 流程开发阶段实现 UI 相关任务时应用此 skill。
 
 ## 元数据
 
 ```yaml
 name: ui-skills
 description: Opinionated constraints for building better interfaces with agents
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ```
 
 ## 触发条件
 
+- DevDocs 开发阶段涉及 UI 实现
 - 用户要求优化 UI/UX
 - 用户要求构建新界面
 - 涉及 CSS、布局、动画等前端开发任务
+
+## 在 DevDocs 流程中的位置
+
+```
+/devdocs-dev-tasks → 开发实现 → /ui-skills (UI 相关任务)
+                             → /code-quality (代码质量)
+```
 
 ## 核心规范
 
