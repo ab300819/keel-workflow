@@ -21,6 +21,7 @@ Claude Code Agent Skills 模板项目，包含 PRD 全流程和通用工具 skil
 | [开发任务](#4-prd-dev-tasks-开发任务) | `/prd-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-prd-retrofit-项目改造) | `/prd-retrofit` | 已有项目适配 PRD 流程 | `00-retrofit-report.md` |
 | [代码提交](#6-git-commit-代码提交) | `/git-commit` | Conventional Commits 规范提交 | - |
+| [UI 规范](#8-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
 | [工作报告](#7-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
 
 ## PRD 工作流
@@ -849,6 +850,30 @@ allowed-tools: Read, Bash, Write, Glob, Grep, AskUserQuestion
 
 ---
 
+# 8. ui-skills (UI 规范)
+
+构建更好界面的意见约束。
+
+## 元数据
+
+```yaml
+name: ui-skills
+description: Opinionated constraints for building better interfaces with agents
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
+```
+
+## 触发条件
+
+- 用户要求优化 UI/UX
+- 用户要求构建新界面
+- 涉及 CSS、布局、动画等前端开发任务
+
+## 核心规范
+
+详见 [ui-skills/SKILL.md](ui-skills/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -873,6 +898,8 @@ skills/
 ├── prd-retrofit/
 │   └── SKILL.md
 ├── git-commit/
+│   └── SKILL.md
+├── ui-skills/
 │   └── SKILL.md
 └── work-report/
     ├── SKILL.md
@@ -902,6 +929,7 @@ skills/
 /prd-dev-tasks
 /prd-retrofit
 /git-commit
+/ui-skills
 /work-report
 ```
 
