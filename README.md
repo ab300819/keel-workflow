@@ -20,7 +20,7 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
 | [测试方案](#3-devdocs-test-plan-测试方案) | `/devdocs-test-plan` | 单元/E2E/手动测试用例 | `03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
-| [代码质量](#6-devdocs-code-quality-代码质量) | `/devdocs-code-quality` | MTE 原则、重构指导、Review 清单 | - |
+| [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [代码提交](#7-git-commit-代码提交) | `/git-commit` | Conventional Commits 规范提交 | - |
 | [UI 规范](#9-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
 | [工作报告](#8-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
@@ -626,14 +626,14 @@ docs/devdocs/
 
 ---
 
-# 6. devdocs-code-quality (代码质量)
+# 6. code-quality (代码质量)
 
 编码和重构时的质量约束，确保代码可维护、可测试、适度扩展。
 
 ## 元数据
 
 ```yaml
-name: devdocs-code-quality
+name: code-quality
 description: Opinionated constraints for writing maintainable, testable code
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ```
@@ -960,7 +960,7 @@ skills/
 │   └── SKILL.md
 ├── devdocs-retrofit/
 │   └── SKILL.md
-├── devdocs-code-quality/
+├── code-quality/
 │   └── SKILL.md
 ├── git-commit/
 │   └── SKILL.md
@@ -993,7 +993,7 @@ skills/
 /devdocs-test-plan
 /devdocs-dev-tasks
 /devdocs-retrofit
-/devdocs-code-quality
+/code-quality
 /git-commit
 /ui-skills
 /work-report
