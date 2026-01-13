@@ -1,10 +1,10 @@
 ---
-name: prd-requirements
-description: Expand user requirements into detailed PRD documents. Use when users provide feature requirements, want to clarify requirements, or need to create product requirement documents. Triggers on keywords like "requirements", "PRD", "feature request", "user story".
+name: devdocs-requirements
+description: Expand user requirements into detailed DevDocs documents. Use when users provide feature requirements, want to clarify requirements, or need to create product requirement documents. Triggers on keywords like "requirements", "PRD", "feature request", "user story".
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ---
 
-# PRD Requirements Expansion
+# DevDocs Requirements Expansion
 
 Expand brief user requirements into comprehensive product requirement documents.
 
@@ -29,12 +29,12 @@ Expand brief user requirements into comprehensive product requirement documents.
 
 ## Output
 
-**File**: `docs/prd/01-requirements.md`
+**File**: `docs/devdocs/01-requirements.md`
 
 If the document exceeds 300 lines, split into:
-- `docs/prd/01-requirements.md` - Overview and core requirements
-- `docs/prd/01-requirements-stories.md` - Detailed user stories
-- `docs/prd/01-requirements-nfr.md` - Non-functional requirements
+- `docs/devdocs/01-requirements.md` - Overview and core requirements
+- `docs/devdocs/01-requirements-stories.md` - Detailed user stories
+- `docs/devdocs/01-requirements-nfr.md` - Non-functional requirements
 
 ## Document Template
 
@@ -96,4 +96,4 @@ If the document exceeds 300 lines, split into:
 
 ## Next Step
 
-After user confirms requirements, suggest running `/prd-system-design` for system design phase.
+After user confirms requirements, suggest running `/devdocs-system-design` for system design phase.

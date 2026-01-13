@@ -1,6 +1,6 @@
 # Skills 模板集合
 
-Claude Code Agent Skills 模板项目，包含 PRD 全流程和通用工具 skills。
+Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 skills。
 
 ## 语言规则
 
@@ -15,48 +15,48 @@ Claude Code Agent Skills 模板项目，包含 PRD 全流程和通用工具 skil
 
 | Skill | 命令 | 用途 | 输出文件 |
 |-------|------|------|----------|
-| [需求扩写](#1-prd-requirements-需求扩写) | `/prd-requirements` | 将需求扩展为详细 PRD | `01-requirements.md` |
-| [系统设计](#2-prd-system-design-系统设计) | `/prd-system-design` | 技术架构和 API 设计 | `02-system-design*.md` |
-| [测试方案](#3-prd-test-plan-测试方案) | `/prd-test-plan` | 单元/E2E/手动测试用例 | `03-test-*.md` |
-| [开发任务](#4-prd-dev-tasks-开发任务) | `/prd-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
-| [项目改造](#5-prd-retrofit-项目改造) | `/prd-retrofit` | 已有项目适配 PRD 流程 | `00-retrofit-report.md` |
+| [需求扩写](#1-devdocs-requirements-需求扩写) | `/devdocs-requirements` | 将需求扩展为详细文档 | `01-requirements.md` |
+| [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计 | `02-system-design*.md` |
+| [测试方案](#3-devdocs-test-plan-测试方案) | `/devdocs-test-plan` | 单元/E2E/手动测试用例 | `03-test-*.md` |
+| [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
+| [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
 | [代码提交](#6-git-commit-代码提交) | `/git-commit` | Conventional Commits 规范提交 | - |
 | [UI 规范](#8-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
 | [工作报告](#7-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
 
-## PRD 工作流
+## DevDocs 工作流
 
 ### 新项目
 
 ```
-/prd-requirements → /prd-system-design → /prd-test-plan → /prd-dev-tasks
-       │                   │                   │                 │
-       ▼                   ▼                   ▼                 ▼
-  需求文档             系统设计            测试方案          开发任务
+/devdocs-requirements → /devdocs-system-design → /devdocs-test-plan → /devdocs-dev-tasks
+       │                        │                        │                    │
+       ▼                        ▼                        ▼                    ▼
+  需求文档                  系统设计                  测试方案              开发任务
 ```
 
 ### 已有项目改造
 
 ```
-/prd-retrofit
+/devdocs-retrofit
        │
        ├── 自动识别已有文档
        ├── 用户确认/手动指定
        ├── 分析覆盖情况
-       └── 生成标准化 PRD 文档
+       └── 生成标准化 DevDocs 文档
 ```
 
 ---
 
-# 1. prd-requirements (需求扩写)
+# 1. devdocs-requirements (需求扩写)
 
 将用户简短需求扩展为详细的产品需求文档。
 
 ## 元数据
 
 ```yaml
-name: prd-requirements
-description: Expand user requirements into detailed PRD documents
+name: devdocs-requirements
+description: Expand user requirements into detailed DevDocs documents
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ```
 
@@ -76,7 +76,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ## 输出文件
 
 ```
-docs/prd/
+docs/devdocs/
 ├── 01-requirements.md           # 主文档
 ├── 01-requirements-stories.md   # 用户故事（如超长）
 └── 01-requirements-nfr.md       # 非功能性需求（如超长）
@@ -136,26 +136,26 @@ docs/prd/
 
 ## 下一步
 
-完成后建议运行 `/prd-system-design`
+完成后建议运行 `/devdocs-system-design`
 
 ---
 
-# 2. prd-system-design (系统设计)
+# 2. devdocs-system-design (系统设计)
 
 围绕需求设计详细技术方案，考虑可维护性、可测试性和适度扩展性。
 
 ## 元数据
 
 ```yaml
-name: prd-system-design
+name: devdocs-system-design
 description: Create system design documents based on requirements
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ```
 
 ## 前置条件
 
-- 需求文档：`docs/prd/01-requirements.md`
-- 如不存在，建议先运行 `/prd-requirements`
+- 需求文档：`docs/devdocs/01-requirements.md`
+- 如不存在，建议先运行 `/devdocs-requirements`
 
 ## 设计前必问
 
@@ -203,7 +203,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ## 输出文件
 
 ```
-docs/prd/
+docs/devdocs/
 ├── 02-system-design.md          # 架构、技术选型、模块、接口、模式
 ├── 02-system-design-api.md      # API 设计（如超长）
 └── 02-system-design-data.md     # 数据模型（如超长）
@@ -258,26 +258,26 @@ docs/prd/
 
 ## 下一步
 
-完成后建议运行 `/prd-test-plan`
+完成后建议运行 `/devdocs-test-plan`
 
 ---
 
-# 3. prd-test-plan (测试方案)
+# 3. devdocs-test-plan (测试方案)
 
 创建完整的测试方案，包含单元测试、UI 自动化、手动测试和上线回归。
 
 ## 元数据
 
 ```yaml
-name: prd-test-plan
+name: devdocs-test-plan
 description: Create comprehensive test plans including unit tests, UI automation, and manual test cases
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ```
 
 ## 前置条件
 
-- 需求文档：`docs/prd/01-requirements.md`
-- 系统设计：`docs/prd/02-system-design.md`
+- 需求文档：`docs/devdocs/01-requirements.md`
+- 系统设计：`docs/devdocs/02-system-design.md`
 
 ## 测试策略
 
@@ -290,7 +290,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ## 输出文件
 
 ```
-docs/prd/
+docs/devdocs/
 ├── 03-test-plan.md          # 测试策略概览和覆盖矩阵
 ├── 03-test-unit.md          # 单元测试用例和 Mock 策略
 ├── 03-test-e2e.md           # UI 自动化测试用例
@@ -382,27 +382,27 @@ docs/prd/
 
 ## 下一步
 
-完成后建议运行 `/prd-dev-tasks`
+完成后建议运行 `/devdocs-dev-tasks`
 
 ---
 
-# 4. prd-dev-tasks (开发任务)
+# 4. devdocs-dev-tasks (开发任务)
 
 将系统设计拆解为可执行的开发任务。
 
 ## 元数据
 
 ```yaml
-name: prd-dev-tasks
+name: devdocs-dev-tasks
 description: Break down system design into executable development tasks
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 ```
 
 ## 前置条件
 
-- 需求文档：`docs/prd/01-requirements.md`
-- 系统设计：`docs/prd/02-system-design.md`
-- 测试方案：`docs/prd/03-test-plan.md`
+- 需求文档：`docs/devdocs/01-requirements.md`
+- 系统设计：`docs/devdocs/02-system-design.md`
+- 测试方案：`docs/devdocs/03-test-plan.md`
 
 ## TAR 原则
 
@@ -417,7 +417,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 ## 输出文件
 
 ```
-docs/prd/
+docs/devdocs/
 ├── 04-dev-tasks.md              # 概览和依赖图
 ├── 04-dev-tasks-infra.md        # 基础设施任务（如超长）
 ├── 04-dev-tasks-core.md         # 核心逻辑任务（如超长）
@@ -544,21 +544,21 @@ feat(T-XX): <任务名称>
 
 ---
 
-# 5. prd-retrofit (项目改造)
+# 5. devdocs-retrofit (项目改造)
 
-将已有工程按 PRD 流程改造，自动识别或手动指定各阶段文档。
+将已有工程按 DevDocs 流程改造，自动识别或手动指定各阶段文档。
 
 ## 元数据
 
 ```yaml
-name: prd-retrofit
-description: Retrofit existing projects to PRD workflow
+name: devdocs-retrofit
+description: Retrofit existing projects to DevDocs workflow
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 ```
 
 ## 触发条件
 
-- 用户希望将现有项目适配 PRD 流程
+- 用户希望将现有项目适配 DevDocs 流程
 - 用户需要标准化项目文档
 - 用户要迁移或整理已有文档
 
@@ -588,7 +588,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 
 ## 文档识别规则
 
-| PRD 阶段 | 识别关键词 | 常见文件名 |
+| DevDocs 阶段 | 识别关键词 | 常见文件名 |
 |----------|------------|------------|
 | 需求文档 | requirement, PRD, 需求, spec | `*requirement*.md`, `*prd*.md` |
 | 系统设计 | design, architecture, 设计 | `*design*.md`, `*architecture*.md` |
@@ -599,14 +599,14 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 
 | 模式 | 说明 |
 |------|------|
-| **完整改造** | 按 PRD 模板重新生成所有文档 |
+| **完整改造** | 按 DevDocs 模板重新生成所有文档 |
 | **增量补充** | 保留原有内容，仅补充缺失部分 |
 | **仅标准化** | 保留内容，调整格式和结构 |
 
 ## 输出文件
 
 ```
-docs/prd/
+docs/devdocs/
 ├── 00-retrofit-report.md    # 改造报告
 ├── 01-requirements.md       # 需求文档（新建或补充）
 ├── 02-system-design.md      # 系统设计（新建或补充）
@@ -880,22 +880,22 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 skills/
 ├── README.md                           # 本文档
 ├── agent-skill.md                      # Skill 规范参考
-├── prd-requirements/
+├── devdocs-requirements/
 │   └── SKILL.md
-├── prd-system-design/
+├── devdocs-system-design/
 │   ├── SKILL.md
 │   └── templates/
 │       └── design-template.md
-├── prd-test-plan/
+├── devdocs-test-plan/
 │   ├── SKILL.md
 │   └── templates/
 │       ├── unit-test-template.md
 │       ├── e2e-test-template.md
 │       ├── manual-test-template.md
 │       └── regression-template.md
-├── prd-dev-tasks/
+├── devdocs-dev-tasks/
 │   └── SKILL.md
-├── prd-retrofit/
+├── devdocs-retrofit/
 │   └── SKILL.md
 ├── git-commit/
 │   └── SKILL.md
@@ -923,11 +923,11 @@ skills/
 直接输入命令或使用触发词：
 
 ```
-/prd-requirements 我需要一个用户登录功能
-/prd-system-design
-/prd-test-plan
-/prd-dev-tasks
-/prd-retrofit
+/devdocs-requirements 我需要一个用户登录功能
+/devdocs-system-design
+/devdocs-test-plan
+/devdocs-dev-tasks
+/devdocs-retrofit
 /git-commit
 /ui-skills
 /work-report
@@ -940,7 +940,7 @@ skills/
 设计一下系统架构
 写测试用例
 拆分开发任务
-把这个项目按 PRD 流程改造一下
+把这个项目按 DevDocs 流程改造一下
 提交代码
 帮我生成本周的周报
 ```

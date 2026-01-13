@@ -1,10 +1,10 @@
 ---
-name: prd-dev-tasks
+name: devdocs-dev-tasks
 description: Break down system design into executable development tasks. Use when users need task breakdown, sprint planning, or development task lists. Triggers on keywords like "dev tasks", "task breakdown", "sprint planning", "implementation tasks".
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 ---
 
-# PRD Development Tasks
+# DevDocs Development Tasks
 
 Break down system design into actionable, trackable development tasks.
 
@@ -22,9 +22,9 @@ Break down system design into actionable, trackable development tasks.
 
 ## Prerequisites
 
-- Requirements document: `docs/prd/01-requirements.md`
-- System design document: `docs/prd/02-system-design.md`
-- Test plan: `docs/prd/03-test-plan.md`
+- Requirements document: `docs/devdocs/01-requirements.md`
+- System design document: `docs/devdocs/02-system-design.md`
+- Test plan: `docs/devdocs/03-test-plan.md`
 - If not exists, suggest running previous phases first
 
 ## Workflow
@@ -39,14 +39,14 @@ Break down system design into actionable, trackable development tasks.
 
 ## Output
 
-**File**: `docs/prd/04-dev-tasks.md`
+**File**: `docs/devdocs/04-dev-tasks.md`
 
 If tasks exceed 20, split into:
-- `docs/prd/04-dev-tasks.md` - Overview and dependency graph
-- `docs/prd/04-dev-tasks-infra.md` - Infrastructure tasks
-- `docs/prd/04-dev-tasks-core.md` - Core logic tasks
-- `docs/prd/04-dev-tasks-api.md` - API layer tasks
-- `docs/prd/04-dev-tasks-test.md` - Test implementation tasks
+- `docs/devdocs/04-dev-tasks.md` - Overview and dependency graph
+- `docs/devdocs/04-dev-tasks-infra.md` - Infrastructure tasks
+- `docs/devdocs/04-dev-tasks-core.md` - Core logic tasks
+- `docs/devdocs/04-dev-tasks-api.md` - API layer tasks
+- `docs/devdocs/04-dev-tasks-test.md` - Test implementation tasks
 
 ## Task Design Principles
 

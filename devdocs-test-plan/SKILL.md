@@ -1,10 +1,10 @@
 ---
-name: prd-test-plan
+name: devdocs-test-plan
 description: Create comprehensive test plans including unit tests, UI automation, and manual test cases. Use when users need test strategy, test cases, or QA planning. Triggers on keywords like "test plan", "test cases", "QA", "testing strategy", "unit test", "e2e test".
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ---
 
-# PRD Test Plan
+# DevDocs Test Plan
 
 Create comprehensive test plans covering unit tests, UI automation, manual tests, and release regression.
 
@@ -22,8 +22,8 @@ Create comprehensive test plans covering unit tests, UI automation, manual tests
 
 ## Prerequisites
 
-- Requirements document: `docs/prd/01-requirements.md`
-- System design document: `docs/prd/02-system-design.md`
+- Requirements document: `docs/devdocs/01-requirements.md`
+- System design document: `docs/devdocs/02-system-design.md`
 - If not exists, suggest running previous phases first
 
 ## Test Strategy Overview
@@ -46,7 +46,7 @@ Create comprehensive test plans covering unit tests, UI automation, manual tests
 
 ## Output
 
-**Files** in `docs/prd/`:
+**Files** in `docs/devdocs/`:
 
 | File | Content |
 |------|---------|
@@ -78,4 +78,4 @@ For detailed templates, see:
 
 ## Next Step
 
-After user confirms test plan, suggest running `/prd-dev-tasks` for development task breakdown.
+After user confirms test plan, suggest running `/devdocs-dev-tasks` for development task breakdown.

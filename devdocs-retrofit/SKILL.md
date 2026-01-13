@@ -1,12 +1,12 @@
 ---
-name: prd-retrofit
-description: Retrofit existing projects to PRD workflow by identifying documents, specifying them manually, or reverse-engineering from code. Use when users want to adapt existing projects to PRD process, migrate legacy documentation, standardize project documents, or generate documentation from code for undocumented projects. Triggers on keywords like "retrofit", "改造", "适配", "迁移文档", "标准化", "逆向", "reverse", "从代码生成文档", "无文档".
+name: devdocs-retrofit
+description: Retrofit existing projects to DevDocs workflow by identifying documents, specifying them manually, or reverse-engineering from code. Use when users want to adapt existing projects to DevDocs process, migrate legacy documentation, standardize project documents, or generate documentation from code for undocumented projects. Triggers on keywords like "retrofit", "改造", "适配", "迁移文档", "标准化", "逆向", "reverse", "从代码生成文档", "无文档".
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 ---
 
-# PRD Retrofit
+# DevDocs Retrofit
 
-将已有工程按 PRD 流程改造，支持自动识别文档、手动指定文档、或从代码逆向推导生成文档。
+将已有工程按 DevDocs 流程改造，支持自动识别文档、手动指定文档、或从代码逆向推导生成文档。
 
 ## Language
 
@@ -16,7 +16,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 
 ## Trigger Conditions
 
-- 用户希望将现有项目适配 PRD 流程
+- 用户希望将现有项目适配 DevDocs 流程
 - 用户需要标准化项目文档
 - 用户要迁移或整理已有文档
 - 项目缺少文档，需要从代码逆向推导生成文档
@@ -74,7 +74,7 @@ tests/ test/ __tests__/ spec/
 
 ### 识别规则
 
-| PRD 阶段 | 识别关键词 | 常见文件名 |
+| DevDocs 阶段 | 识别关键词 | 常见文件名 |
 |----------|------------|------------|
 | 需求文档 | requirement, PRD, 需求, spec, feature | `*requirement*.md`, `*prd*.md`, `*spec*.md` |
 | 系统设计 | design, architecture, 设计, 架构, technical | `*design*.md`, `*architecture*.md`, `*tech*.md` |
@@ -522,7 +522,7 @@ src/
 
 ### 预计产出
 
-docs/prd/
+docs/devdocs/
 ├── 01-requirements.md      # 补充自 docs/requirements.md
 ├── 02-system-design.md     # 新建
 ├── 03-test-plan.md         # 补充自 tests/README.md
@@ -535,7 +535,7 @@ docs/prd/
 
 使用 AskUserQuestion 询问改造模式：
 
-1. **完整改造** - 按 PRD 模板重新生成所有文档
+1. **完整改造** - 按 DevDocs 模板重新生成所有文档
 2. **增量补充** - 保留原有内容，仅补充缺失部分
 3. **仅标准化** - 保留内容，调整格式和结构
 
@@ -544,7 +544,7 @@ docs/prd/
 - [ ] 保留原有文档的核心内容
 - [ ] 不删除用户已有的信息
 - [ ] 新增内容标注 `[待补充]` 提醒用户
-- [ ] 生成的文档放入 `docs/prd/` 目录
+- [ ] 生成的文档放入 `docs/devdocs/` 目录
 - [ ] 原文档保留备份（如需要）
 
 ### 各阶段改造
@@ -554,9 +554,9 @@ docs/prd/
 ```
 1. 读取原文档内容
 2. 提取已有信息（背景、功能等）
-3. 按 PRD 模板重组
+3. 按 DevDocs 模板重组
 4. 标注缺失部分为 [待补充]
-5. 写入 docs/prd/01-requirements.md
+5. 写入 docs/devdocs/01-requirements.md
 ```
 
 #### 系统设计改造
@@ -566,7 +566,7 @@ docs/prd/
 2. 扫描代码结构推断架构
 3. 提取已有设计信息
 4. 按模板生成，缺失部分标注
-5. 写入 docs/prd/02-system-design.md
+5. 写入 docs/devdocs/02-system-design.md
 ```
 
 #### 测试方案改造
@@ -576,7 +576,7 @@ docs/prd/
 2. 扫描测试代码目录
 3. 提取已有测试策略
 4. 按模板补充完善
-5. 写入 docs/prd/03-test-*.md
+5. 写入 docs/devdocs/03-test-*.md
 ```
 
 #### 开发任务改造
@@ -586,13 +586,13 @@ docs/prd/
 2. 提取任务列表
 3. 按 TAR 原则补充
 4. 建立依赖关系
-5. 写入 docs/prd/04-dev-tasks.md
+5. 写入 docs/devdocs/04-dev-tasks.md
 ```
 
 ## Step 7: 生成改造报告
 
 ```markdown
-# PRD 改造报告
+# DevDocs 改造报告
 
 ## 改造概览
 
@@ -604,10 +604,10 @@ docs/prd/
 
 | 阶段 | 原文档 | 新文档 | 改造类型 |
 |------|--------|--------|----------|
-| 需求 | `docs/req.md` | `docs/prd/01-requirements.md` | 补充 |
-| 设计 | - | `docs/prd/02-system-design.md` | 新建 |
-| 测试 | `tests/README.md` | `docs/prd/03-test-plan.md` | 补充 |
-| 任务 | `TODO.md` | `docs/prd/04-dev-tasks.md` | 标准化 |
+| 需求 | `docs/req.md` | `docs/devdocs/01-requirements.md` | 补充 |
+| 设计 | - | `docs/devdocs/02-system-design.md` | 新建 |
+| 测试 | `tests/README.md` | `docs/devdocs/03-test-plan.md` | 补充 |
+| 任务 | `TODO.md` | `docs/devdocs/04-dev-tasks.md` | 标准化 |
 
 ## 待完善项
 
@@ -628,15 +628,15 @@ docs/prd/
 ## 下一步建议
 
 1. 完善标记为 [待补充] 的内容
-2. 运行 `/prd-requirements` 审查需求文档
-3. 运行 `/prd-system-design` 审查系统设计
-4. 运行 `/prd-test-plan` 完善测试方案
+2. 运行 `/devdocs-requirements` 审查需求文档
+3. 运行 `/devdocs-system-design` 审查系统设计
+4. 运行 `/devdocs-test-plan` 完善测试方案
 ```
 
 ## Output
 
 ```
-docs/prd/
+docs/devdocs/
 ├── 01-requirements.md
 ├── 02-system-design.md
 ├── 02-system-design-api.md      # 如需要
@@ -663,8 +663,8 @@ docs/prd/
 - [ ] 改造前询问用户确认改造模式
 
 ### 输出约束
-- [ ] 输出目录统一为 `docs/prd/`
-- [ ] 文件命名遵循 PRD 规范
+- [ ] 输出目录统一为 `docs/devdocs/`
+- [ ] 文件命名遵循 DevDocs 规范
 - [ ] 每个阶段改造后询问用户确认
 
 ## Error Handling
@@ -695,7 +695,7 @@ docs/prd/
 
 可选方案：
 1. **代码逆向推导**（推荐）- 从代码分析自动生成文档
-2. 使用 /prd-requirements 从头创建需求文档
+2. 使用 /devdocs-requirements 从头创建需求文档
 3. 提供外部文档路径进行导入
 
 是否使用代码逆向推导功能？

@@ -1,10 +1,10 @@
 ---
-name: prd-system-design
+name: devdocs-system-design
 description: Create system design documents based on requirements. Use when users need technical architecture, API design, data models, or system design. Triggers on keywords like "system design", "architecture", "technical design", "API design".
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ---
 
-# PRD System Design
+# DevDocs System Design
 
 Create comprehensive system design documents based on product requirements.
 
@@ -22,12 +22,12 @@ Create comprehensive system design documents based on product requirements.
 
 ## Prerequisites
 
-- Requirements document exists at `docs/prd/01-requirements.md`
-- If not exists, suggest running `/prd-requirements` first
+- Requirements document exists at `docs/devdocs/01-requirements.md`
+- If not exists, suggest running `/devdocs-requirements` first
 
 ## Workflow
 
-1. **Read requirements**: Load `docs/prd/01-requirements.md`
+1. **Read requirements**: Load `docs/devdocs/01-requirements.md`
 2. **Ask user preferences**: Query tech stack and platform preferences
 3. **Explore codebase**: Understand existing architecture if applicable
 4. **Create design**: Generate system design document
@@ -53,12 +53,12 @@ If user has no preference, design the optimal solution based on requirements.
 
 ## Output
 
-**File**: `docs/prd/02-system-design.md`
+**File**: `docs/devdocs/02-system-design.md`
 
 If the document exceeds 300 lines, split into:
-- `docs/prd/02-system-design.md` - Architecture overview and tech stack
-- `docs/prd/02-system-design-api.md` - Detailed API design
-- `docs/prd/02-system-design-data.md` - Data models and database design
+- `docs/devdocs/02-system-design.md` - Architecture overview and tech stack
+- `docs/devdocs/02-system-design-api.md` - Detailed API design
+- `docs/devdocs/02-system-design-data.md` - Data models and database design
 
 For detailed template, see [templates/design-template.md](templates/design-template.md).
 
@@ -202,4 +202,4 @@ src/
 
 ## Next Step
 
-After user confirms system design, suggest running `/prd-test-plan` for test planning phase.
+After user confirms system design, suggest running `/devdocs-test-plan` for test planning phase.
