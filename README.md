@@ -21,6 +21,7 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
+| [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `05-refactor-*.md` |
 | [代码提交](#7-git-commit-代码提交) | `/git-commit` | Conventional Commits 规范提交 | - |
 | [UI 规范](#9-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
 | [工作报告](#8-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
@@ -52,6 +53,26 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
        ├── 用户确认/手动指定
        ├── 分析覆盖情况
        └── 生成标准化 DevDocs 文档
+```
+
+### 代码重构
+
+```
+/refactor
+       │
+       ├── 1. 确定范围（用户指定或系统审查）
+       │
+       ├── 2. 评估测试状态
+       │       ├── 覆盖率 ≥80% → 直接重构
+       │       ├── 覆盖率 <80% → 补充测试
+       │       └── 不可测试 → 重写流程
+       │
+       ├── 3. 执行重构
+       │       ├── 普通代码 → /code-quality
+       │       └── UI 代码 → /ui-skills
+       │
+       └── 4. 重写流程（如需要）
+               └── /devdocs-retrofit → 逆向分析 → 重新实现
 ```
 
 ---
@@ -952,6 +973,69 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ---
 
+# 10. refactor (重构)
+
+系统化重构 skill，确保重构过程安全、可追溯、符合质量标准。
+
+## 元数据
+
+```yaml
+name: refactor
+description: Systematic refactoring with test coverage requirements
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
+```
+
+## 触发条件
+
+- 用户需要重构现有代码
+- 用户要求优化代码质量
+- 用户提到技术债、代码改造
+
+## 核心流程
+
+```
+1. 确定范围 → 2. 评估测试 → 3. 补充测试 → 4. 执行重构 → 5. 验证报告
+                   │
+                   └── 不可测试 → /devdocs-retrofit → 重写
+```
+
+## 重构原则
+
+- **测试先行**：覆盖率 ≥80% 才能开始重构
+- **小步迭代**：每步重构后运行测试
+- **不加功能**：重构过程中不添加新功能
+- **可追溯**：生成重构报告
+
+## 与其他 Skills 协作
+
+| 场景 | 协作 Skill |
+|------|------------|
+| 代码不可测试 | `/devdocs-retrofit` |
+| UI 重构 | `/ui-skills` |
+| 代码质量检查 | `/code-quality` |
+
+## 输出文件
+
+```
+docs/devdocs/
+├── 05-refactor-audit.md     # 代码审查报告
+├── 05-refactor-plan.md      # 重构计划
+└── 05-refactor-report.md    # 重构报告
+```
+
+## 约束
+
+- [ ] **重构前测试覆盖率必须 ≥80%**
+- [ ] **每步重构后运行测试**
+- [ ] **重构后所有测试必须通过**
+- [ ] **不得在重构中添加新功能**
+- [ ] UI 重构必须应用 `/ui-skills`
+- [ ] 代码重构必须应用 `/code-quality`
+
+详见 [refactor/SKILL.md](refactor/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -976,6 +1060,8 @@ skills/
 ├── devdocs-retrofit/
 │   └── SKILL.md
 ├── code-quality/
+│   └── SKILL.md
+├── refactor/
 │   └── SKILL.md
 ├── git-commit/
 │   └── SKILL.md
@@ -1009,6 +1095,7 @@ skills/
 /devdocs-dev-tasks
 /devdocs-retrofit
 /code-quality
+/refactor
 /git-commit
 /ui-skills
 /work-report
@@ -1023,6 +1110,7 @@ skills/
 拆分开发任务
 把这个项目按 DevDocs 流程改造一下
 帮我重构这段代码
+重构 UserService
 Review 一下这个 PR
 提交代码
 帮我生成本周的周报
