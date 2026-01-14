@@ -22,7 +22,7 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `05-refactor-*.md` |
-| [代码提交](#7-git-commit-代码提交) | `/git-commit` | Conventional Commits 规范提交 | - |
+| [提交规范](#7-commit-convention-提交规范) | - | 提交信息格式化与历史风格同步 | - |
 | [UI 规范](#9-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
 | [工作报告](#8-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
 
@@ -716,166 +716,29 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ---
 
-# 7. git-commit (代码提交)
+# 7. commit-convention (提交规范)
 
-使用 Conventional Commits 规范创建标准化的 git 提交。
+提供提交信息的格式化标准。优先学习并沿用项目已有的提交历史风格，若无明显风格或为新项目，则遵循 Conventional Commits 规范。
 
 ## 元数据
 
 ```yaml
-name: git-commit
-description: Create git commits following Conventional Commits format
-allowed-tools: Bash, AskUserQuestion, Read, Glob, Grep
+name: commit-convention
+description: Git 提交信息规范。优先学习并沿用项目已有的提交历史风格。
+user-invocable: false
 ```
 
-## 触发条件
+## 核心策略
 
-- 用户要求提交代码
-- 用户说 "提交" 或 "commit"
-
-## Commit 格式
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-### Type（必填）
-
-| Type | 用途 | 示例 |
-|------|------|------|
-| `feat` | 新功能 | `feat(auth): add login API` |
-| `fix` | Bug 修复 | `fix(ui): resolve button alignment` |
-| `refactor` | 重构 | `refactor(utils): simplify date helper` |
-| `perf` | 性能优化 | `perf(query): optimize database query` |
-| `docs` | 文档 | `docs(readme): update installation guide` |
-| `test` | 测试 | `test(auth): add login unit tests` |
-| `ci` | CI/CD | `ci(github): add deploy workflow` |
-| `build` | 构建/依赖 | `build(deps): upgrade lodash to 4.17.21` |
-| `chore` | 其他杂项 | `chore: update .gitignore` |
-
-### Scope（可选）
-
-- 受影响的模块或组件名
-- 示例：`auth`, `ui`, `api`, `db`, `config`
-- 如变更是全局的则省略
-
-### Subject（必填）
-
-- 使用祈使句："add" 而非 "added" 或 "adds"
-- 结尾不加句号
-- 最多 50 字符
-- 首字母小写
-
-### Body（可选）
-
-- 解释 **做了什么** 和 **为什么**，而非怎么做
-- 每行不超过 72 字符
-- Subject 和 Body 之间空一行
-
-### Footer（可选）
-
-- 破坏性变更：`BREAKING CHANGE: <描述>`
-- Issue 引用：`Closes #123` 或 `Fixes #456`
-
-## 工作流程
-
-```
-1. 检查 git 状态
-   │
-   ▼
-2. 显示变更内容
-   │
-   ▼
-3. 询问用户确认提交范围
-   │
-   ▼
-4. 分析变更，推荐 type
-   │
-   ▼
-5. 生成 commit message
-   │
-   ▼
-6. 询问用户确认或修改
-   │
-   ▼
-7. 执行 git add & commit
-   │
-   ▼
-8. 询问是否 push
-```
-
-## 示例
-
-### Feature
-```
-feat(user): add profile avatar upload
-
-- Support image upload up to 5MB
-- Auto-resize to 200x200
-- Store in S3 bucket
-
-Closes #142
-```
-
-### Bug Fix
-```
-fix(cart): correct total price calculation
-
-Price was not including tax for international orders.
-Added tax calculation based on shipping country.
-
-Fixes #89
-```
-
-### Refactor
-```
-refactor(api): extract validation middleware
-
-Move validation logic from controllers to dedicated
-middleware for better reusability.
-```
-
-### 简单提交
-```
-docs(api): add authentication section to README
-test(utils): add edge case tests for date formatter
-chore: update .eslintrc rules
-ci(github): add Node 20 to test matrix
-build(deps): bump axios from 1.4.0 to 1.6.0
-perf(search): add index for frequently queried fields
-```
+1. **风格学习**：生成信息前先执行 `git log -n 5 --oneline` 观察习惯。
+2. **规范回退**：无规律时遵循 Conventional Commits (`type(scope): subject`)。
+3. **决策指导**：该 Skill 不执行 `git commit`，仅为 Agent 提供信息生成的建议。
 
 ## 约束
 
-- [ ] Type 必须是：`feat | fix | refactor | perf | docs | test | ci | build | chore`
-- [ ] Subject 不超过 50 字符
-- [ ] Subject 使用祈使句
-- [ ] Subject 结尾不加句号
-- [ ] Body 每行不超过 72 字符
-- [ ] 提交前必须显示 diff
-- [ ] 执行 commit 前必须用户确认
-- [ ] push 前必须询问用户
-
-## 错误处理
-
-### 无变更
-```
-当前没有可提交的变更。请先修改文件后再提交。
-```
-
-### 未解决冲突
-```
-检测到未解决的合并冲突，请先解决冲突后再提交。
-```
-
-### 非 Git 仓库
-```
-当前目录不是 Git 仓库。请先运行 git init 或切换到正确的目录。
-```
+- [ ] 必须先观察 `git log`
+- [ ] 优先匹配历史记录的语言和前缀风格
+- [ ] 仅提供建议，不直接执行提交命令
 
 ---
 
@@ -1063,7 +926,7 @@ skills/
 │   └── SKILL.md
 ├── refactor/
 │   └── SKILL.md
-├── git-commit/
+├── commit-convention/
 │   └── SKILL.md
 ├── ui-skills/
 │   └── SKILL.md
@@ -1096,7 +959,7 @@ skills/
 /devdocs-retrofit
 /code-quality
 /refactor
-/git-commit
+/commit-convention
 /ui-skills
 /work-report
 ```
