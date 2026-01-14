@@ -23,6 +23,7 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `05-refactor-*.md` |
 | [提交规范](#7-commit-convention-提交规范) | - | 提交信息格式化与历史风格同步 | - |
+| [Git 安全](#11-git-safety-git-安全) | - | 强制使用 git mv/rm 规范操作 | - |
 | [UI 规范](#9-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
 | [工作报告](#8-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
 
@@ -899,6 +900,25 @@ docs/devdocs/
 
 ---
 
+# 11. git-safety (Git 安全)
+
+强制要求在 Git 仓库中使用原生命令进行文件操作，确保历史完整性。
+
+## 元数据
+
+```yaml
+name: git-safety
+description: 强制使用 git mv/rm 规范操作。
+```
+
+## 核心准则
+
+1. **移动/重命名**：必须使用 `git mv`。
+2. **删除**：必须使用 `git rm`。
+3. **自检**：操作前通过 `git ls-files` 确认文件是否受控。
+
+---
+
 # 项目结构
 
 ```
@@ -925,6 +945,8 @@ skills/
 ├── code-quality/
 │   └── SKILL.md
 ├── refactor/
+│   └── SKILL.md
+├── git-safety/
 │   └── SKILL.md
 ├── commit-convention/
 │   └── SKILL.md
