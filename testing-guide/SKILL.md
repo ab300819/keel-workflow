@@ -753,14 +753,27 @@ jobs:
 
 ## 模板资源
 
+### 通用模板
+
 | 模板 | 说明 | 链接 |
 |------|------|------|
 | **变异测试配置** | 8种语言的变异测试工具配置 | [mutation-testing.md](templates/mutation-testing.md) |
 | **需求追溯矩阵** | 需求-测试追溯模板和自动化脚本 | [traceability-matrix.md](templates/traceability-matrix.md) |
-| **Jest/Vitest 最佳实践** | 配置、断言、Mock、异步测试 | [jest-vitest-best-practices.md](templates/jest-vitest-best-practices.md) |
-| **pytest 最佳实践** | Fixtures、参数化、异步测试 | [pytest-best-practices.md](templates/pytest-best-practices.md) |
 | **CI 集成配置** | GitHub Actions/GitLab CI 完整配置 | [ci-integration.md](templates/ci-integration.md) |
 | **测试代码示例** | 单元/集成/E2E 测试示例代码 | [test-examples.md](templates/test-examples.md) |
+
+### 语言/框架最佳实践
+
+| 语言 | 框架 | 链接 |
+|------|------|------|
+| **JavaScript/TypeScript** | Jest, Vitest | [jest-vitest-best-practices.md](templates/jest-vitest-best-practices.md) |
+| **Python** | pytest | [pytest-best-practices.md](templates/pytest-best-practices.md) |
+| **Java** | JUnit 5, AssertJ, Mockito | [junit5-best-practices.md](templates/junit5-best-practices.md) |
+| **C# / .NET** | xUnit, NUnit, FluentAssertions | [xunit-best-practices.md](templates/xunit-best-practices.md) |
+| **Go** | testing, testify | [go-testing-best-practices.md](templates/go-testing-best-practices.md) |
+| **Rust** | cargo test, mockall | [rust-testing-best-practices.md](templates/rust-testing-best-practices.md) |
+| **Swift** | XCTest | [xctest-best-practices.md](templates/xctest-best-practices.md) |
+| **C/C++** | Google Test, Catch2 | [googletest-best-practices.md](templates/googletest-best-practices.md) |
 
 ---
 
