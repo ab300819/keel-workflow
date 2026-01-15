@@ -34,6 +34,8 @@ Create comprehensive test plans covering unit tests, UI automation, manual tests
 | UI Automation | Core user scenarios | All P0 scenarios |
 | Manual Test | All scenarios | All acceptance criteria |
 
+> **编写测试时**：必须遵循 `/testing-guide` 的质量约束（断言质量、Mock 策略、变异测试）
+
 ## Workflow
 
 1. **Read documents**: Load requirements and system design
@@ -64,18 +66,37 @@ For detailed templates, see:
 
 ## Constraints
 
+### 覆盖率约束
 - [ ] **Unit tests must cover core business logic with >= 80% line and branch coverage**
 - [ ] **UI automation must cover all P0 scenarios**
 - [ ] Manual test cases must cover all acceptance criteria
+
+### 用例设计约束
 - [ ] Each core feature needs at least 1 positive test case
 - [ ] Each user input needs at least 1 negative test case
 - [ ] Must provide acceptance criteria coverage matrix
 - [ ] Priority labels: P0 (blocker), P1 (major), P2 (minor)
 - [ ] Test steps must be executable, not vague
 - [ ] Unit tests must specify mock strategy
+
+### 质量约束（参考 `/testing-guide`）
+- [ ] **测试依据来自需求，不是代码**
+- [ ] **禁止弱断言**（toBeDefined, toBeTruthy 等不能作为唯一断言）
+- [ ] 测试名称必须描述预期行为
+- [ ] 推荐使用变异测试验证测试有效性（变异得分 ≥ 80%）
+
+### 发布约束
 - [ ] **Must include pre-release regression checklist**
 - [ ] **Must define rollback conditions and post-release verification**
 
 ## Next Step
 
 After user confirms test plan, suggest running `/devdocs-dev-tasks` for development task breakdown.
+
+## Related Skills
+
+| Skill | 用途 |
+|-------|------|
+| `/testing-guide` | 编写测试时的质量约束（断言、Mock、变异测试） |
+| `/devdocs-dev-tasks` | 将测试计划转化为开发任务 |
+| `/code-quality` | 确保代码可测试性 |

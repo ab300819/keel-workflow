@@ -21,6 +21,7 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
+| [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
 | [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `05-refactor-*.md` |
 | [提交规范](#7-commit-convention-提交规范) | - | 提交信息格式化与历史风格同步 | - |
 | [Git 安全](#11-git-safety-git-安全) | - | 强制使用 git mv/rm 规范操作 | - |
@@ -39,10 +40,10 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
                                                                               │
                                                                               ▼
                                                                            开发实现
-                                                                    ┌────────┴────────┐
-                                                                    ▼                  ▼
-                                                              /code-quality      /ui-skills
-                                                              (代码质量约束)     (UI 设计约束)
+                                                                    ┌────────┼────────┐
+                                                                    ▼        ▼        ▼
+                                                              /code-quality /testing-guide /ui-skills
+                                                              (代码质量)    (测试质量)      (UI 约束)
 ```
 
 ### 已有项目改造
@@ -919,6 +920,76 @@ description: 强制使用 git mv/rm 规范操作。
 
 ---
 
+# 12. testing-guide (测试指导)
+
+编写高质量测试的约束规范，确保测试真正验证行为而非仅仅覆盖代码。
+
+## 元数据
+
+```yaml
+name: testing-guide
+description: Opinionated constraints for writing effective tests
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
+```
+
+## 触发条件
+
+- 用户正在编写测试代码
+- 用户需要测试策略指导
+- 用户提到测试覆盖率、断言、变异测试
+- Code Review 中涉及测试代码
+
+## 核心理念
+
+### 测试质量金字塔
+
+```
+Level 3: 测试有效性（最高标准）
+  - 变异得分 ≥ 80%
+  - 需求-测试追溯 100%
+
+Level 2: 断言质量（核心要求）
+  - 禁止弱断言
+  - 测试名称描述预期行为
+
+Level 1: 代码覆盖（基础门槛）
+  - 行/分支覆盖率 ≥ 80%
+  - ⚠️ 必要但不充分
+```
+
+### 关键约束
+
+| 约束 | 说明 |
+|------|------|
+| **测试依据来自需求** | 从需求推导测试，不是从代码推导 |
+| **禁止弱断言** | `toBeDefined()`, `toBeTruthy()` 不能作为唯一断言 |
+| **测试命名规范** | `[方法] 应该 [行为] 当 [条件]` |
+| **Mock 只用于外部依赖** | 不 Mock 内部实现 |
+| **变异测试验证** | 推荐使用 Stryker/mutmut 验证测试有效性 |
+
+## 与其他 Skills 的关系
+
+```
+/devdocs-test-plan  →  生成测试计划文档（what to test）
+/testing-guide      →  指导如何写测试（how to test）
+/code-quality       →  确保代码可测试性（testability）
+/refactor           →  重构前验证测试覆盖
+```
+
+## 输出文件
+
+```
+testing-guide/
+├── SKILL.md                              # 主文件（核心规范）
+└── templates/
+    ├── mutation-testing.md               # 变异测试配置（JS/TS/Python/Java/Go/C#/Rust）
+    └── traceability-matrix.md            # 需求追溯矩阵模板
+```
+
+详见 [testing-guide/SKILL.md](testing-guide/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -944,6 +1015,11 @@ skills/
 │   └── SKILL.md
 ├── code-quality/
 │   └── SKILL.md
+├── testing-guide/
+│   ├── SKILL.md
+│   └── templates/
+│       ├── mutation-testing.md
+│       └── traceability-matrix.md
 ├── refactor/
 │   └── SKILL.md
 ├── git-safety/
@@ -980,6 +1056,7 @@ skills/
 /devdocs-dev-tasks
 /devdocs-retrofit
 /code-quality
+/testing-guide
 /refactor
 /commit-convention
 /ui-skills

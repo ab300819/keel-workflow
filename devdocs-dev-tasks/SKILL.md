@@ -123,13 +123,15 @@ T-02 ─┘           │
 | **优先级** | P0 |
 | **涉及文件** | `src/services/xxx.ts` |
 
-**测试方法**：
+**测试方法**（参考 `/testing-guide`）：
 - [ ] 单元测试覆盖所有公共方法
 - [ ] 测试覆盖率 >= 80%
+- [ ] 断言验证具体值，禁止弱断言
 
 **验收标准**：
 - [ ] 所有单元测试通过
 - [ ] 行覆盖率 >= 80%，分支覆盖率 >= 80%
+- [ ] 变异得分 >= 60%（推荐 >= 80%）
 
 **Review 要点**：
 - [ ] 业务逻辑是否正确
@@ -189,6 +191,7 @@ T-02 ─┘           │
 - [ ] Priority: P0 (blocker), P1 (important), P2 (minor)
 - [ ] Task ID format: T-XX (sequential)
 - [ ] Testing tasks should reference test plan document
+- [ ] **Testing tasks must follow `/testing-guide` quality constraints**
 
 ### TAR Principle Constraints
 

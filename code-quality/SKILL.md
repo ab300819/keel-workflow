@@ -114,6 +114,17 @@ if (!c) return;
 
 ## 可测试性设计
 
+> 详细的测试编写规范请参考 `/testing-guide`
+
+### 核心原则
+
+```
+可测试代码的三个要素:
+1. 依赖可注入 - 外部依赖通过参数传入
+2. 纯函数优先 - 业务逻辑无副作用
+3. 边界分离 - 业务逻辑与 IO 分离
+```
+
 ### 依赖注入
 
 ```typescript
@@ -177,6 +188,8 @@ async function processOrder(orderId) {
   await email.send(order.user, 'confirmed');
 }
 ```
+
+> **编写测试时**：参考 `/testing-guide` 获取断言质量、Mock 策略、变异测试等详细指导
 
 ## 避免过度设计
 

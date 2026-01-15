@@ -55,6 +55,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 | UI 重构 | `/ui-skills` | 应用 UI 约束规范 |
 | 代码质量检查 | `/code-quality` | 应用 MTE 原则 |
 | 需要文档化 | DevDocs 流程 | 生成规范文档 |
+| **编写/补充测试** | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） |
 
 ---
 
@@ -233,50 +234,29 @@ npm run test:coverage  # 或对应命令
 
 ## Step 3: 补充/新建测试
 
+> **重要**: 编写测试时必须遵循 `/testing-guide` 的质量约束
+
 ### 3.1 测试策略
 
-应用 `/code-quality` 中的测试原则：
+参考 `/testing-guide` 测试质量金字塔：
 
 ```
-测试优先级：
-1. 核心业务逻辑（必须）
-2. 边界条件（必须）
-3. 错误处理路径（建议）
-4. 集成点（建议）
+测试质量要求（从基础到高级）:
+Level 1: 覆盖率 - 行/分支 ≥ 80%
+Level 2: 断言质量 - 禁止弱断言，验证具体值
+Level 3: 测试有效性 - 变异得分 ≥ 80%（推荐）
 ```
 
-### 3.2 测试模板
+### 3.2 测试编写规范
 
-```typescript
-// 单元测试模板
-describe('ModuleName', () => {
-  describe('functionName', () => {
-    // 正常路径
-    it('should [expected behavior] when [condition]', () => {
-      // Arrange
-      // Act
-      // Assert
-    });
+遵循 `/testing-guide` 的约束：
 
-    // 边界条件
-    it('should handle [boundary case]', () => {});
+- **测试依据来自需求，不是代码**
+- **每个测试必须有具体断言**（禁止 toBeDefined, toBeTruthy 等弱断言）
+- **测试名称描述预期行为**：`[方法] 应该 [行为] 当 [条件]`
+- **Mock 只用于外部依赖**，不 Mock 内部实现
 
-    // 错误路径
-    it('should throw [error] when [invalid input]', () => {});
-  });
-});
-```
-
-### 3.3 Mock 策略
-
-```
-Mock 原则：
-- 只 Mock 外部依赖（数据库、API、文件系统）
-- 不 Mock 被测试模块的内部实现
-- Mock 应该验证调用参数，不仅是返回值
-```
-
-### 3.4 覆盖率验证
+### 3.3 覆盖率验证
 
 ```bash
 # 运行测试并检查覆盖率
@@ -286,6 +266,17 @@ npm run test:coverage -- --collectCoverageFrom='<target-path>'
 # - 行覆盖率 ≥ 80%
 # - 分支覆盖率 ≥ 80%
 ```
+
+### 3.4 变异测试验证（推荐）
+
+```bash
+# 验证测试有效性
+npx stryker run --mutate '<target-path>'
+
+# 目标：变异得分 ≥ 80%
+```
+
+> 详细的测试编写指导、Mock 策略、变异测试配置请参考 `/testing-guide`
 
 ---
 
