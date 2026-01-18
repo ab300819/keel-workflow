@@ -1,6 +1,6 @@
 # System Design Document Template
 
-Use this template to generate `docs/prd/02-system-design.md`.
+Use this template to generate `docs/devdocs/02-system-design.md`.
 
 ```markdown
 # 系统设计：<功能名称>
@@ -316,6 +316,22 @@ Order *──* Product
 - [ ] 多租户支持（当前单租户）
 - [ ] 国际化（当前中文）
 - [ ] 分库分表（当前单库）
+
+## 13. 需求追溯
+
+> 确保每个功能点都有对应的设计实现
+
+| 功能点 | 用户故事 | 实现模块 | 核心接口 | 数据实体 |
+|--------|----------|----------|----------|----------|
+| F-001 | US-001 | UserModule | IUserService.createUser | User |
+| F-001 | US-002 | UserModule | IUserService.validatePassword | User |
+| F-002 | US-003 | AuthModule | IAuthService.login | Session |
+
+### 覆盖检查
+
+- [ ] 所有功能点 (F-XXX) 都有对应模块
+- [ ] 所有验收标准 (AC-XXX) 都有对应接口方法
+- [ ] 无遗漏的功能点
 ```
 
 ## MTE 原则检查清单

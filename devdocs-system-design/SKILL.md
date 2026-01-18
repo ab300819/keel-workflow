@@ -28,10 +28,11 @@ Create comprehensive system design documents based on product requirements.
 ## Workflow
 
 1. **Read requirements**: Load `docs/devdocs/01-requirements.md`
-2. **Ask user preferences**: Query tech stack and platform preferences
+2. **Ask user preferences**: Query tech stack, platform, and integration needs
 3. **Explore codebase**: Understand existing architecture if applicable
 4. **Create design**: Generate system design document
-5. **Confirm with user**: Get approval before finalizing
+5. **Verify coverage**: Check all F-XXX have corresponding modules/interfaces
+6. **Confirm with user**: Get approval before finalizing
 
 ## Pre-design Questions
 
@@ -48,6 +49,10 @@ Create comprehensive system design documents based on product requirements.
 3. **Deployment Environment**
    - Where will this be deployed?
    - Options: Cloud (AWS/GCP/Azure) / On-premise / Hybrid
+
+4. **Existing System Integration**
+   - Does this need to integrate with existing systems?
+   - Options: No / Yes (specify systems, APIs, databases)
 
 If user has no preference, design the optimal solution based on requirements.
 
@@ -108,12 +113,13 @@ For detailed template, see [templates/design-template.md](templates/design-templ
 4. **Module Design** - Module responsibilities and dependencies, **标注关联功能点 (F-XXX)**
 5. **Core Interfaces** - Key interfaces and method signatures (no implementation), **标注关联 F-XXX**
 6. **Design Patterns** - Applied patterns and rationale
-7. **Data Model** - Entity definitions and relationships
-8. **API Design** - Endpoints with request/response examples, **标注关联 F-XXX, AC-XXX**
-9. **State Flow** - State machines for key business flows
-10. **Error Handling** - Error codes and handling strategies
-11. **Extensibility** - Extension points and future considerations
-12. **需求追溯** - 功能点与模块/接口的映射关系
+7. **Code Structure** - Directory structure design
+8. **Data Model** - Entity definitions and relationships
+9. **API Design** - Endpoints with request/response examples, **标注关联 F-XXX, AC-XXX**
+10. **State Flow** - State machines for key business flows
+11. **Error Handling** - Error codes and handling strategies
+12. **Extensibility** - Extension points and future considerations
+13. **需求追溯** - 功能点与模块/接口的映射关系，**覆盖检查清单**
 
 ## 核心接口设计
 
@@ -200,6 +206,13 @@ src/
 - [ ] 不创建只有一个实现的接口（除非为了可测试性）
 - [ ] 不过早抽象，等到有 3 个以上相似场景再抽象
 - [ ] 配置优于硬编码，但不为所有内容添加配置
+
+### 安全约束
+
+- [ ] **敏感数据（密码、Token）不明文存储**
+- [ ] **需要认证的 API 已标注**
+- [ ] **用户输入有验证（防注入）**
+- [ ] 敏感操作有日志记录
 
 ## Skill 协作
 
