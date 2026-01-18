@@ -4,96 +4,180 @@ description: Expand user requirements into detailed DevDocs documents. Use when 
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ---
 
-# DevDocs Requirements Expansion
+# 需求扩写
 
-Expand brief user requirements into comprehensive product requirement documents.
+将用户简短需求扩展为结构化的需求文档，建立功能点、用户故事、验收标准的关联体系。
 
-## Language
+## 语言规则
 
-- Accept questions in both Chinese and English
-- Always respond in Chinese
-- Generate all documents in Chinese
+- 支持中英文提问
+- 统一中文回复
+- 使用中文生成文档
 
-## Trigger Conditions
+## 触发条件
 
-- User provides a feature requirement or idea
-- User asks to create/write a PRD
-- User wants to clarify or document requirements
+- 用户提供功能需求或想法
+- 用户要求创建/编写 PRD
+- 用户想要澄清或记录需求
 
-## Workflow
+## 工作流程
 
-1. **Understand the requirement**: Read user's initial input
-2. **Explore codebase**: If in an existing project, understand current architecture
-3. **Draft requirements**: Create comprehensive requirement document
-4. **Confirm with user**: Get user approval before finalizing
-
-## Output
-
-**File**: `docs/devdocs/01-requirements.md`
-
-If the document exceeds 300 lines, split into:
-- `docs/devdocs/01-requirements.md` - Overview and core requirements
-- `docs/devdocs/01-requirements-stories.md` - Detailed user stories
-- `docs/devdocs/01-requirements-nfr.md` - Non-functional requirements
-
-## Document Template
-
-```markdown
-# Requirements: <Feature Name>
-
-## 1. Background
-
-<Why this feature is needed, what problem it solves>
-
-## 2. Target Users
-
-<Who will use this feature, user personas>
-
-## 3. Core Features
-
-- [ ] Feature 1: <description>
-- [ ] Feature 2: <description>
-
-## 4. User Stories
-
-| ID | Role | Expectation | Purpose |
-|----|------|-------------|---------|
-| US-01 | As a <role> | I want <feature> | So that <value> |
-
-## 5. Acceptance Criteria
-
-- [ ] AC-01: <measurable criterion>
-- [ ] AC-02: <measurable criterion>
-- [ ] AC-03: <measurable criterion>
-
-## 6. Non-functional Requirements
-
-- **Performance**: <requirements>
-- **Security**: <requirements>
-- **Compatibility**: <requirements>
-
-## 7. Scope Boundaries
-
-### In Scope
-- <included items>
-
-### Out of Scope
-- <excluded items>
-
-## 8. Assumptions and Dependencies
-
-- <preconditions>
+```
+1. 理解需求
+   │
+   ▼
+2. 探索代码库（如适用）
+   │
+   ▼
+3. 识别功能点 (F-XXX)
+   │
+   ▼
+4. 编写用户故事 (US-XXX)
+   │
+   ▼
+5. 定义验收标准 (AC-XXX)
+   │
+   ▼
+6. 生成追溯矩阵
+   │
+   ▼
+7. 用户确认
 ```
 
-## Constraints
+## 编号规范
 
-- [ ] Must confirm core features with user before finalizing
-- [ ] Must define at least 3 acceptance criteria
-- [ ] Must list scope boundaries to prevent scope creep
-- [ ] Must NOT add major features user didn't mention without confirmation
-- [ ] Each user story must follow "As a... I want... So that..." format
-- [ ] Acceptance criteria must be measurable and verifiable
+| 类型 | 前缀 | 格式 | 示例 |
+|------|------|------|------|
+| 功能点 | F | F-XXX | F-001, F-002 |
+| 用户故事 | US | US-XXX | US-001, US-002 |
+| 验收标准 | AC | AC-XXX | AC-001, AC-002 |
 
-## Next Step
+**编号规则**：
+- 全局顺序编号，不嵌套
+- 通过追溯矩阵表达关联关系
+- 编号一旦分配不可复用
 
-After user confirms requirements, suggest running `/devdocs-system-design` for system design phase.
+## 输出文件
+
+**主文件**：`docs/devdocs/01-requirements.md`
+
+如文档超过 300 行，可拆分为：
+- `01-requirements.md` - 概览和功能点
+- `01-requirements-stories.md` - 用户故事详情
+- `01-requirements-nfr.md` - 非功能性需求
+
+详细模板参见 [templates/requirements-template.md](templates/requirements-template.md)
+
+## 文档结构
+
+```markdown
+# 需求文档：<功能名称>
+
+## 1. 背景与目标
+## 2. 功能点清单
+## 3. 用户故事
+## 4. 验收标准
+## 5. 追溯矩阵
+## 6. 非功能性需求
+## 7. 范围边界
+## 8. 风险与假设
+```
+
+## 核心概念
+
+### 功能点 (Feature)
+
+功能点是用户可感知的独立功能单元。
+
+**识别方法**：
+- 可以独立交付和验证
+- 对用户有明确价值
+- 粒度适中（不过大也不过小）
+
+**示例**：
+```markdown
+| 编号 | 功能点 | 描述 | 优先级 |
+|------|--------|------|--------|
+| F-001 | 用户注册 | 新用户通过邮箱注册账号 | P0 |
+| F-002 | 用户登录 | 已注册用户登录系统 | P0 |
+| F-003 | 密码找回 | 用户通过邮箱重置密码 | P1 |
+```
+
+### 用户故事 (User Story)
+
+用户故事描述用户如何使用功能点完成目标。
+
+**格式**：作为 <角色>，我希望 <功能>，以便 <价值>
+
+**示例**：
+```markdown
+| 编号 | 功能点 | 角色 | 期望 | 目的 |
+|------|--------|------|------|------|
+| US-001 | F-001 | 新用户 | 使用邮箱注册 | 获得系统访问权限 |
+| US-002 | F-001 | 新用户 | 设置安全密码 | 保护账号安全 |
+| US-003 | F-002 | 已注册用户 | 使用邮箱密码登录 | 进入系统 |
+```
+
+### 验收标准 (Acceptance Criteria)
+
+验收标准定义用户故事的完成条件，是测试用例设计的依据。
+
+**原则**：
+- 可量化、可验证
+- 描述预期行为，不描述实现
+- 每个用户故事至少 2-3 条验收标准
+
+**示例**：
+```markdown
+### US-001: 使用邮箱注册
+
+| 编号 | 标准描述 | 验证方式 |
+|------|----------|----------|
+| AC-001 | 有效邮箱格式可以提交注册 | 输入 test@example.com，提交成功 |
+| AC-002 | 已存在邮箱显示错误提示 | 输入已注册邮箱，显示"邮箱已存在" |
+| AC-003 | 注册成功后发送验证邮件 | 收到包含验证链接的邮件 |
+```
+
+### 追溯矩阵
+
+追溯矩阵展示功能点、用户故事、验收标准的关联关系。
+
+**示例**：
+```markdown
+| 功能点 | 用户故事 | 验收标准 |
+|--------|----------|----------|
+| F-001 | US-001 | AC-001, AC-002, AC-003 |
+| F-001 | US-002 | AC-004, AC-005 |
+| F-002 | US-003 | AC-006, AC-007, AC-008 |
+```
+
+## 约束
+
+### 功能点约束
+- [ ] 每个功能点必须有唯一编号 (F-XXX)
+- [ ] 功能点必须标注优先级 (P0/P1/P2)
+- [ ] 功能点描述应简洁明确
+
+### 用户故事约束
+- [ ] 每个用户故事必须关联到功能点
+- [ ] 必须遵循"作为...我希望...以便..."格式
+- [ ] 每个功能点至少有 1 个用户故事
+
+### 验收标准约束
+- [ ] 每个验收标准必须有唯一编号 (AC-XXX)
+- [ ] 每个用户故事至少有 2 条验收标准
+- [ ] 验收标准必须可量化、可验证
+- [ ] 必须描述验证方式
+
+### 追溯约束
+- [ ] 必须提供追溯矩阵
+- [ ] 所有功能点必须有对应的用户故事
+- [ ] 所有用户故事必须有对应的验收标准
+
+### 确认约束
+- [ ] 必须与用户确认功能点是否完整
+- [ ] 不得添加用户未提及且未确认的功能
+
+## 下一步
+
+完成后建议运行 `/devdocs-system-design` 进行系统设计。

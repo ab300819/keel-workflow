@@ -1,6 +1,6 @@
 # Skills 模板集合
 
-Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 skills。
+面向**个人开发者**的 Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 skills。
 
 ## 语言规则
 
@@ -11,13 +11,38 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
 
 ---
 
+## 编号规范
+
+DevDocs 流程使用统一的编号体系实现需求到测试的追溯：
+
+| 类型 | 前缀 | 格式 | 说明 |
+|------|------|------|------|
+| 功能点 | F | F-XXX | 用户可感知的独立功能 |
+| 用户故事 | US | US-XXX | 用户使用场景 |
+| 验收标准 | AC | AC-XXX | 可量化的完成条件 |
+| 单元测试 | UT | UT-XXX | 验证内部逻辑 |
+| 集成测试 | IT | IT-XXX | 验证组件协作 |
+| E2E 测试 | E2E | E2E-XXX | 验证用户场景 |
+
+**追溯关系**：
+```
+F-001 (功能点)
+  └── US-001 (用户故事)
+        └── AC-001 (验收标准)
+              ├── UT-001 (单元测试)
+              ├── IT-001 (集成测试)
+              └── E2E-001 (E2E 测试)
+```
+
+---
+
 ## Skills 概览
 
 | Skill | 命令 | 用途 | 输出文件 |
 |-------|------|------|----------|
-| [需求扩写](#1-devdocs-requirements-需求扩写) | `/devdocs-requirements` | 将需求扩展为详细文档 | `01-requirements.md` |
+| [需求扩写](#1-devdocs-requirements-需求扩写) | `/devdocs-requirements` | 功能点、用户故事、验收标准 | `01-requirements.md` |
 | [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计 | `02-system-design*.md` |
-| [测试方案](#3-devdocs-test-plan-测试方案) | `/devdocs-test-plan` | 单元/E2E/手动测试用例 | `03-test-*.md` |
+| [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
@@ -33,10 +58,11 @@ Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 
 ### 新项目
 
 ```
-/devdocs-requirements → /devdocs-system-design → /devdocs-test-plan → /devdocs-dev-tasks
+/devdocs-requirements → /devdocs-system-design → /devdocs-test-cases → /devdocs-dev-tasks
        │                        │                        │                    │
        ▼                        ▼                        ▼                    ▼
-  需求文档                  系统设计                  测试方案              开发任务
+  需求文档                  系统设计                  测试用例              开发任务
+  (F/US/AC)                                         (UT/IT/E2E)
                                                                               │
                                                                               ▼
                                                                            开发实现
@@ -289,127 +315,84 @@ docs/devdocs/
 
 ## 下一步
 
-完成后建议运行 `/devdocs-test-plan`
+完成后建议运行 `/devdocs-test-cases`
 
 ---
 
-# 3. devdocs-test-plan (测试方案)
+# 3. devdocs-test-cases (测试用例)
 
-创建完整的测试方案，包含单元测试、UI 自动化、手动测试和上线回归。
+基于需求文档设计测试用例，建立验收标准与测试用例的追溯关系。
 
 ## 元数据
 
 ```yaml
-name: devdocs-test-plan
-description: Create comprehensive test plans including unit tests, UI automation, and manual test cases
+name: devdocs-test-cases
+description: Design test cases based on requirements
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ```
 
 ## 前置条件
 
 - 需求文档：`docs/devdocs/01-requirements.md`
-- 系统设计：`docs/devdocs/02-system-design.md`
+- 如不存在，建议先运行 `/devdocs-requirements`
 
-## 测试策略
+## 核心理念
 
-| 测试类型 | 覆盖范围 | 覆盖要求 |
-|----------|----------|----------|
-| 单元测试 | 核心业务逻辑 | 行覆盖率 ≥ 80%，分支覆盖率 ≥ 80% |
-| UI 自动化 | 核心用户场景 | 覆盖所有 P0 场景 |
-| 手动测试 | 全部场景 | 覆盖所有验收标准 |
+测试用例从需求推导，不是从代码推导：
+
+```
+验收标准 (AC-XXX)
+    │
+    ├── 单元测试 (UT-XXX)  ← 验证内部逻辑
+    │
+    ├── 集成测试 (IT-XXX)  ← 验证组件协作
+    │
+    └── E2E 测试 (E2E-XXX) ← 验证用户场景
+```
+
+## 测试类型选择
+
+| 验收标准类型 | 推荐测试类型 | 示例 |
+|--------------|--------------|------|
+| 输入验证规则 | 单元测试 | "邮箱格式校验" → UT |
+| 业务逻辑规则 | 单元测试 + 集成测试 | "密码加密存储" → UT + IT |
+| 用户交互流程 | E2E 测试 | "完成注册流程" → E2E |
+| 组件间协作 | 集成测试 | "发送验证邮件" → IT |
 
 ## 输出文件
 
 ```
 docs/devdocs/
-├── 03-test-plan.md          # 测试策略概览和覆盖矩阵
-├── 03-test-unit.md          # 单元测试用例和 Mock 策略
-├── 03-test-e2e.md           # UI 自动化测试用例
-├── 03-test-manual.md        # 手动测试用例
-└── 03-test-regression.md    # 上线前回归检查清单
+├── 03-test-cases.md           # 测试用例概览 + 追溯矩阵
+├── 03-test-unit.md            # 单元测试用例
+├── 03-test-integration.md     # 集成测试用例
+└── 03-test-e2e.md             # E2E 测试用例
 ```
 
-## 单元测试方案
+## 追溯矩阵
 
-### 覆盖率要求
-- **行覆盖率**：≥ 80%
-- **分支覆盖率**：≥ 80%
+| 功能点 | 用户故事 | 验收标准 | 单元测试 | 集成测试 | E2E测试 | 状态 |
+|--------|----------|----------|----------|----------|---------|------|
+| F-001 | US-001 | AC-001 | UT-001 | - | E2E-001 | ✅ |
+| F-001 | US-001 | AC-002 | UT-002 | - | E2E-001 | ✅ |
+| F-001 | US-002 | AC-004 | UT-003, UT-004 | IT-001 | - | ✅ |
 
-### 用例格式
+## 覆盖率要求
 
-| 用例ID | 测试函数 | 场景 | 输入 | 预期输出 |
-|--------|----------|------|------|----------|
-| UT-001 | `functionName()` | 正常情况 | `{input}` | `{output}` |
-
-### Mock 策略
-
-| 依赖 | Mock 方式 | 说明 |
-|------|-----------|------|
-| 数据库 | Mock | 使用内存 Mock |
-| 外部 API | Stub | 返回预定义响应 |
-
-## UI 自动化测试方案
-
-### 核心场景覆盖
-
-| 用例ID | 场景名称 | 操作步骤 | 断言点 | 优先级 |
-|--------|----------|----------|--------|--------|
-| E2E-001 | <场景> | 1. xxx<br>2. xxx | <断言> | P0 |
-
-## 手动测试用例
-
-### 分类
-
-| 分类 | 用例ID前缀 | 说明 |
-|------|------------|------|
-| 正向测试 | TC-P-XXX | 正常业务流程 |
-| 反向测试 | TC-N-XXX | 异常输入和错误处理 |
-| 边界测试 | TC-B-XXX | 边界值和极限情况 |
-| 兼容性测试 | TC-C-XXX | 跨浏览器/设备 |
-| 安全测试 | TC-S-XXX | 基础安全验证 |
-
-## 上线前回归步骤
-
-### 回归检查清单
-
-| # | 检查项 | 执行方式 | 通过标准 | 责任人 |
-|---|--------|----------|----------|--------|
-| 1 | 代码合并 | 手动 | PR 已合并，无冲突 | 开发 |
-| 2 | 单元测试 | CI 自动 | 全部通过，覆盖率达标 | 开发 |
-| 3 | UI 自动化 | CI 自动 | 全部 P0 用例通过 | QA |
-| 4 | 核心功能验证 | 手动 | P0 用例全部通过 | QA |
-| 5 | 兼容性验证 | 手动 | 主流环境无异常 | QA |
-| 6 | 性能验证 | 自动/手动 | 达到性能指标 | 开发 |
-| 7 | 安全检查 | 自动 | 无高危漏洞 | 开发 |
-
-### 回滚条件
-
-| 级别 | 触发条件 | 回滚策略 |
-|------|----------|----------|
-| P0 | 核心功能不可用 | 立即回滚 |
-| P1 | 严重影响用户体验 | 评估后决定 |
-| P2 | 轻微问题 | 热修复 |
-
-### 上线后验证
-
-- [ ] 冒烟测试通过
-- [ ] 核心监控指标正常
-- [ ] 错误日志无异常增长
-- [ ] 用户反馈渠道监控
+| 测试类型 | 覆盖目标 | 覆盖要求 |
+|----------|----------|----------|
+| 单元测试 | 核心业务逻辑 | 行覆盖率 ≥ 80%，分支覆盖率 ≥ 80% |
+| 集成测试 | 组件协作场景 | 每个功能点至少 1 个 IT |
+| E2E 测试 | 用户故事 | 每个 P0 用户故事至少 1 个 E2E |
 
 ## 约束
 
-- [ ] **单元测试必须覆盖核心业务逻辑，行覆盖率 ≥ 80%，分支覆盖率 ≥ 80%**
-- [ ] **UI 自动化测试必须覆盖所有 P0 场景**
-- [ ] 手动测试用例覆盖所有验收标准
-- [ ] 每个核心功能点至少 1 个正向用例
-- [ ] 每个用户输入至少 1 个反向用例
-- [ ] 必须提供验收标准覆盖矩阵
-- [ ] 优先级标注：P0（阻塞）、P1（重要）、P2（一般）
-- [ ] 用例步骤必须可执行，不得含糊
-- [ ] 单元测试必须说明 Mock 策略
-- [ ] **必须包含上线前回归检查清单**
-- [ ] **必须定义回滚条件和上线后验证项**
+- [ ] **每个验收标准至少有 1 个测试用例覆盖**
+- [ ] **必须生成追溯矩阵**
+- [ ] 测试用例必须关联验收标准编号
+- [ ] P0 验收标准必须 100% 测试覆盖
+- [ ] 测试名称必须描述预期行为
+- [ ] 禁止弱断言（toBeDefined, toBeTruthy 不能作为唯一断言）
 
 ## 下一步
 
@@ -997,18 +980,20 @@ skills/
 ├── README.md                           # 本文档
 ├── agent-skill.md                      # Skill 规范参考
 ├── devdocs-requirements/
-│   └── SKILL.md
+│   ├── SKILL.md
+│   └── templates/
+│       └── requirements-template.md
 ├── devdocs-system-design/
 │   ├── SKILL.md
 │   └── templates/
 │       └── design-template.md
-├── devdocs-test-plan/
+├── devdocs-test-cases/
 │   ├── SKILL.md
 │   └── templates/
+│       ├── test-cases-template.md
 │       ├── unit-test-template.md
-│       ├── e2e-test-template.md
-│       ├── manual-test-template.md
-│       └── regression-template.md
+│       ├── integration-test-template.md
+│       └── e2e-test-template.md
 ├── devdocs-dev-tasks/
 │   └── SKILL.md
 ├── devdocs-retrofit/
