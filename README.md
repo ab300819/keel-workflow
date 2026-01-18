@@ -45,6 +45,7 @@ F-001 (功能点)
 | [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
+| [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | - |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
 | [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `05-refactor-*.md` |
@@ -64,7 +65,8 @@ F-001 (功能点)
 | 新功能开发（需求明确） | **路径 A：正向开发** | 从需求开始，逐步细化 |
 | 探索性开发 / 原型验证 | **路径 B：探索后补** | 先写代码，后补文档 |
 | 已有项目规范化 | **路径 B：探索后补** | 从代码逆向生成文档 |
-| 小型修复 / 配置变更 | **直接提交** | 无需 DevDocs，遵循 commit 规范 |
+| Bug 修复 | **`/devdocs-bugfix`** | 测试先行，编写失败测试后修复 |
+| 小型配置变更 | **直接提交** | 无需流程，遵循 commit 规范 |
 
 ---
 
@@ -1072,6 +1074,73 @@ testing-guide/
 
 ---
 
+# 13. devdocs-bugfix (Bug 修复)
+
+测试先行的 Bug 修复流程，确保每个修复都有回归测试保护。
+
+## 元数据
+
+```yaml
+name: devdocs-bugfix
+description: Test-first bug fixing workflow
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
+```
+
+## 触发条件
+
+- 用户报告 Bug 或问题
+- 用户提到"修复"、"bug"、"崩溃"、"报错"
+- 用户提供 Issue 编号
+
+## 核心流程
+
+```
+1. 理解 Bug
+   │
+   ▼
+2. 定位代码
+   │
+   ▼
+3. 编写失败测试（证明 Bug 存在）
+   │
+   ├── 测试通过 → ⚠️ Bug 未复现
+   └── 测试失败 → ✅ 继续
+   │
+   ▼
+4. 修复代码
+   │
+   ▼
+5. 运行测试（测试通过 = 修复完成）
+   │
+   ▼
+6. 提交 fix(<scope>): <description>
+```
+
+## 核心原则
+
+```
+先证明 Bug 存在（失败测试），再修复代码，最后证明 Bug 已修复（测试通过）。
+```
+
+## 约束
+
+- [ ] **必须先编写失败测试，再修复代码**
+- [ ] 测试名称描述 Bug 场景
+- [ ] 提交信息使用 `fix(<scope>):` 前缀
+- [ ] 关联 Issue 编号（如有）
+
+## 与其他 Skills 协作
+
+| 场景 | 协作 Skill |
+|------|-----------|
+| 测试编写 | `/testing-guide` |
+| 代码修改 | `/code-quality` |
+| 提交信息 | `/commit-convention` |
+
+详见 [devdocs-bugfix/SKILL.md](devdocs-bugfix/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -1096,6 +1165,8 @@ skills/
 ├── devdocs-dev-tasks/
 │   └── SKILL.md
 ├── devdocs-retrofit/
+│   └── SKILL.md
+├── devdocs-bugfix/
 │   └── SKILL.md
 ├── code-quality/
 │   └── SKILL.md
