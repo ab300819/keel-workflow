@@ -105,6 +105,44 @@ F-001 (功能点)
 
 ---
 
+## Skill 协作关系
+
+DevDocs 流程中各 Skill 的协作关系：
+
+| 阶段 | 主 Skill | 协作 Skill | 说明 |
+|------|----------|-----------|------|
+| 需求分析 | `/devdocs-requirements` | - | 定义 F/US/AC 编号 |
+| 系统设计 | `/devdocs-system-design` | `/code-quality` | MTE 原则指导设计 |
+| 测试用例 | `/devdocs-test-cases` | `/testing-guide` | 测试质量约束 |
+| 开发任务 | `/devdocs-dev-tasks` | 多个 | 见下表 |
+| 代码重构 | `/refactor` | `/code-quality`, `/testing-guide` | 测试先行 |
+
+### 开发阶段 Skill 协作
+
+```
+/devdocs-dev-tasks 执行任务
+         │
+         ├── 编码实现 ────────── /code-quality (MTE 原则)
+         │
+         ├── UI 实现 ─────────── /ui-skills (无障碍、动画约束)
+         │
+         ├── 测试编写 ────────── /testing-guide (断言质量、变异测试)
+         │
+         └── 代码提交 ────────── /git-safety + /commit-convention
+```
+
+### 约束执行时机
+
+| Skill | 何时执行 | 检查内容 |
+|-------|---------|----------|
+| `/code-quality` | 编写/重构代码时 | 函数长度、参数数量、依赖注入 |
+| `/testing-guide` | 编写测试时 | 断言质量、覆盖率、变异得分 |
+| `/ui-skills` | 实现 UI 时 | 无障碍、动画性能、布局规范 |
+| `/git-safety` | 文件操作时 | 使用 git mv/rm |
+| `/commit-convention` | 提交代码时 | 提交信息格式 |
+
+---
+
 # 1. devdocs-requirements (需求扩写)
 
 将用户简短需求扩展为详细的产品需求文档。
@@ -416,7 +454,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 
 - 需求文档：`docs/devdocs/01-requirements.md`
 - 系统设计：`docs/devdocs/02-system-design.md`
-- 测试方案：`docs/devdocs/03-test-plan.md`
+- 测试用例：`docs/devdocs/03-test-cases.md`（及 `03-test-unit.md`, `03-test-integration.md`, `03-test-e2e.md`）
 
 ## TAR 原则
 
@@ -472,11 +510,14 @@ T-02 ─┘           │
 | **描述** | <任务描述> |
 | **依赖** | 无 |
 | **优先级** | P0 |
+| **关联需求** | F-001, AC-001 |
 | **涉及文件** | `src/db/schema.ts` |
 
-**测试方法**：
-- [ ] 运行数据库迁移脚本
-- [ ] 验证表结构创建成功
+**编码约束**（参考 `/code-quality`）：
+- [ ] 遵循 MTE 原则
+
+**测试用例**（来自 `03-test-*.md`）：
+- [ ] UT-001: AC-001 - <测试场景>
 
 **验收标准**：
 - [ ] 迁移脚本执行无错误
@@ -509,36 +550,43 @@ T-02 ─┘           │
 1. 开始任务
    │
    ▼
-2. 编写代码
+2. 编写代码（遵循 /code-quality, /ui-skills 约束）
    │
    ▼
-3. 执行测试方法
+3. 编写测试（遵循 /testing-guide 约束）
+   │
+   ▼
+4. 执行测试用例（UT/IT/E2E-XXX）
    ├── 通过 ──────────────────┐
    └── 失败 → 修复 → 重新测试 │
                               ▼
-4. 检查验收标准
+5. 检查验收标准（AC-XXX）
    ├── 全部满足 ─────────────┐
    └── 未满足 → 补充 → 重检  │
                              ▼
-5. 自查 Review 要点
+6. 自查 Review 要点
    │
    ▼
-6. 询问用户：是否提交代码？
-   ├── 是 → git add & commit
+7. 询问用户：是否提交代码？
+   ├── 是 → 提交（遵循 /git-safety, /commit-convention）
    └── 否 → 继续修改
 ```
 
 ## Commit 格式
 
+遵循 `/commit-convention` 规范：
+
 ```
-feat(T-XX): <任务名称>
+<type>(T-XX): <任务名称>
 
 - <完成内容1>
 - <完成内容2>
 
-测试: <测试结果>
-验收: <验收状态>
+关联: F-XXX, AC-XXX
+测试: UT-XXX, IT-XXX 通过
 ```
+
+**type 类型**：feat | fix | refactor | test | docs | chore
 
 ## 约束
 
@@ -953,7 +1001,7 @@ Level 1: 代码覆盖（基础门槛）
 ## 与其他 Skills 的关系
 
 ```
-/devdocs-test-plan  →  生成测试计划文档（what to test）
+/devdocs-test-cases →  设计测试用例文档（what to test）
 /testing-guide      →  指导如何写测试（how to test）
 /code-quality       →  确保代码可测试性（testability）
 /refactor           →  重构前验证测试覆盖

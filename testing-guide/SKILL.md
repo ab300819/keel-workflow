@@ -174,6 +174,6 @@ mvn pitest:mutationCoverage    # Java
 
 | 场景 | Skill |
 |------|-------|
-| 测试计划生成 | `/devdocs-test-plan` |
+| 测试用例设计 | `/devdocs-test-cases` |
 | 代码可测试性 | `/code-quality` |
 | 重构前测试 | `/refactor` |

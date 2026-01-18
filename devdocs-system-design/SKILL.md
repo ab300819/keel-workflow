@@ -105,29 +105,30 @@ For detailed template, see [templates/design-template.md](templates/design-templ
 1. **Target Platform** - Platform, version requirements, deployment environment
 2. **Architecture Overview** - High-level architecture diagram (ASCII)
 3. **Tech Stack** - Technology choices with rationale
-4. **Module Design** - Module responsibilities and dependencies
-5. **Core Interfaces** - Key interfaces and method signatures (no implementation)
+4. **Module Design** - Module responsibilities and dependencies, **标注关联功能点 (F-XXX)**
+5. **Core Interfaces** - Key interfaces and method signatures (no implementation), **标注关联 F-XXX**
 6. **Design Patterns** - Applied patterns and rationale
 7. **Data Model** - Entity definitions and relationships
-8. **API Design** - Endpoints with request/response examples
+8. **API Design** - Endpoints with request/response examples, **标注关联 F-XXX, AC-XXX**
 9. **State Flow** - State machines for key business flows
 10. **Error Handling** - Error codes and handling strategies
 11. **Extensibility** - Extension points and future considerations
+12. **需求追溯** - 功能点与模块/接口的映射关系
 
 ## 核心接口设计
 
-设计文档中应体现核心接口定义（**只定义签名，不写实现**）：
+设计文档中应体现核心接口定义（**只定义签名，不写实现**），并标注关联功能点：
 
 ```markdown
 ### 核心接口
 
-#### IUserService
+#### IUserService（关联：F-001 用户注册, F-002 用户登录）
 
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `createUser` | `CreateUserDTO` | `User` | 创建用户 |
-| `getUserById` | `string` | `User \| null` | 根据ID查询 |
-| `updateUser` | `string, UpdateUserDTO` | `User` | 更新用户信息 |
+| 方法 | 参数 | 返回值 | 关联 | 说明 |
+|------|------|--------|------|------|
+| `createUser` | `CreateUserDTO` | `User` | F-001, AC-001 | 创建用户 |
+| `validateEmail` | `string` | `boolean` | F-001, AC-002 | 验证邮箱 |
+| `login` | `LoginDTO` | `AuthToken` | F-002, AC-006 | 用户登录 |
 
 #### IUserRepository
 
@@ -200,6 +201,14 @@ src/
 - [ ] 不过早抽象，等到有 3 个以上相似场景再抽象
 - [ ] 配置优于硬编码，但不为所有内容添加配置
 
+## Skill 协作
+
+| 场景 | 协作 Skill | 说明 |
+|------|-----------|------|
+| 可测试性设计 | `/testing-guide` | 确保核心逻辑可单元测试 |
+| 代码质量 | `/code-quality` | MTE 原则指导设计 |
+| UI 架构 | `/ui-skills` | UI 组件设计约束 |
+
 ## Next Step
 
-After user confirms system design, suggest running `/devdocs-test-plan` for test planning phase.
+After user confirms system design, suggest running `/devdocs-test-cases` for test case design phase.

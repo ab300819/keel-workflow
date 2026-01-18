@@ -24,7 +24,7 @@ Break down system design into actionable, trackable development tasks.
 
 - Requirements document: `docs/devdocs/01-requirements.md`
 - System design document: `docs/devdocs/02-system-design.md`
-- Test plan: `docs/devdocs/03-test-plan.md`
+- Test cases document: `docs/devdocs/03-test-cases.md`（及 `03-test-unit.md`, `03-test-integration.md`, `03-test-e2e.md`）
 - If not exists, suggest running previous phases first
 
 ## Workflow
@@ -95,11 +95,15 @@ T-02 ─┘           │
 | **描述** | <任务描述> |
 | **依赖** | 无 |
 | **优先级** | P0 |
+| **关联需求** | F-001, AC-001 |
 | **涉及文件** | `src/db/schema.ts` |
+
+**测试用例**（来自 `03-test-*.md`）：
+- [ ] IT-001: 验证表结构创建成功
 
 **测试方法**：
 - [ ] 运行数据库迁移脚本
-- [ ] 验证表结构创建成功
+- [ ] 执行 IT-001 集成测试
 
 **验收标准**：
 - [ ] 迁移脚本执行无错误
@@ -121,17 +125,26 @@ T-02 ─┘           │
 | **描述** | <任务描述> |
 | **依赖** | T-01 |
 | **优先级** | P0 |
+| **关联需求** | F-001, AC-002, AC-003 |
 | **涉及文件** | `src/services/xxx.ts` |
 
-**测试方法**（参考 `/testing-guide`）：
-- [ ] 单元测试覆盖所有公共方法
+**编码约束**（参考 `/code-quality`）：
+- [ ] 函数不超过 50 行，参数不超过 5 个
+- [ ] 依赖通过注入，核心逻辑可单元测试
+- [ ] 遵循 MTE 原则
+
+**测试用例**（来自 `03-test-unit.md`）：
+- [ ] UT-001: AC-002 - <测试场景>
+- [ ] UT-002: AC-003 - <测试场景>
+
+**测试约束**（参考 `/testing-guide`）：
 - [ ] 测试覆盖率 >= 80%
-- [ ] 断言验证具体值，禁止弱断言
+- [ ] 禁止弱断言，验证具体值
+- [ ] 变异得分 >= 60%（推荐 >= 80%）
 
 **验收标准**：
 - [ ] 所有单元测试通过
 - [ ] 行覆盖率 >= 80%，分支覆盖率 >= 80%
-- [ ] 变异得分 >= 60%（推荐 >= 80%）
 
 **Review 要点**：
 - [ ] 业务逻辑是否正确
@@ -149,7 +162,11 @@ T-02 ─┘           │
 | **描述** | <任务描述> |
 | **依赖** | T-02 |
 | **优先级** | P0 |
+| **关联需求** | F-001, AC-004 |
 | **涉及文件** | `src/api/xxx.ts` |
+
+**测试用例**（来自 `03-test-integration.md`）：
+- [ ] IT-002: AC-004 - API 接口测试
 
 **测试方法**：
 - [ ] API 接口测试（正向/反向）
@@ -163,6 +180,40 @@ T-02 ─┘           │
 - [ ] 接口设计是否符合 RESTful 规范
 - [ ] 参数校验是否完整
 - [ ] 权限控制是否正确
+
+---
+
+### 4. UI 层（如适用）
+
+#### T-04: <任务名称>
+
+| 属性 | 内容 |
+|------|------|
+| **描述** | <任务描述> |
+| **依赖** | T-03 |
+| **优先级** | P1 |
+| **关联需求** | F-001, US-001 |
+| **涉及文件** | `src/components/xxx.tsx` |
+
+**UI 约束**（参考 `/ui-skills`）：
+- [ ] 使用 Tailwind CSS 默认值
+- [ ] 使用无障碍组件原语（Base UI / Radix）
+- [ ] 图标按钮必须有 aria-label
+- [ ] 使用 h-dvh 替代 h-screen
+- [ ] 动画仅限 transform/opacity
+
+**测试用例**（来自 `03-test-e2e.md`）：
+- [ ] E2E-001: US-001 - 完整用户流程
+
+**验收标准**：
+- [ ] 界面与设计稿一致
+- [ ] E2E 测试通过
+- [ ] 响应式布局正常
+
+**Review 要点**：
+- [ ] 组件是否可复用
+- [ ] 是否遵循 ui-skills 约束
+- [ ] 无障碍性是否达标
 
 ---
 
@@ -183,6 +234,8 @@ T-02 ─┘           │
 
 ## Constraints
 
+### 基础约束
+
 - [ ] **Single task must be completable within 4 hours**
 - [ ] **Must specify task dependencies**
 - [ ] **Must order by dependencies, no circular dependencies**
@@ -190,8 +243,22 @@ T-02 ─┘           │
 - [ ] **Must provide dependency graph**
 - [ ] Priority: P0 (blocker), P1 (important), P2 (minor)
 - [ ] Task ID format: T-XX (sequential)
-- [ ] Testing tasks should reference test plan document
-- [ ] **Testing tasks must follow `/testing-guide` quality constraints**
+
+### 需求追溯约束
+
+- [ ] **每个任务必须关联功能点 (F-XXX) 和验收标准 (AC-XXX)**
+- [ ] **每个任务必须关联测试用例 (UT/IT/E2E-XXX)**
+- [ ] 测试用例来自 `03-test-*.md` 文档
+
+### Skill 协作约束
+
+| 任务类型 | 约束 Skill | 检查点 |
+|----------|-----------|--------|
+| 核心逻辑 | `/code-quality` | MTE 原则、函数长度、依赖注入 |
+| 测试编写 | `/testing-guide` | 覆盖率、断言质量、变异测试 |
+| UI 实现 | `/ui-skills` | 无障碍、动画、布局约束 |
+| 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |
+| 提交信息 | `/commit-convention` | 遵循项目提交规范 |
 
 ### TAR Principle Constraints
 
@@ -210,22 +277,25 @@ When executing a task, follow this workflow:
 1. 开始任务
    │
    ▼
-2. 编写代码
+2. 编写代码（遵循 /code-quality, /ui-skills 约束）
    │
    ▼
-3. 执行测试方法
+3. 编写测试（遵循 /testing-guide 约束）
+   │
+   ▼
+4. 执行测试用例（UT/IT/E2E-XXX）
    ├── 通过 ──────────────────┐
    └── 失败 → 修复 → 重新测试 │
                               ▼
-4. 检查验收标准
+5. 检查验收标准（AC-XXX）
    ├── 全部满足 ─────────────┐
    └── 未满足 → 补充 → 重检  │
                              ▼
-5. 自查 Review 要点
+6. 自查 Review 要点
    │
    ▼
-6. 询问用户：是否提交代码？
-   ├── 是 → git add & commit
+7. 询问用户：是否提交代码？
+   ├── 是 → 提交（遵循 /git-safety, /commit-convention）
    └── 否 → 继续修改
 ```
 
@@ -251,15 +321,19 @@ When completing each task during development:
 
 ### Commit Message Format
 
+遵循 `/commit-convention` 规范，格式如下：
+
 ```
-feat(T-XX): <任务名称>
+<type>(T-XX): <任务名称>
 
 - <完成内容1>
 - <完成内容2>
 
-测试: <测试结果>
-验收: <验收状态>
+关联: F-XXX, AC-XXX
+测试: UT-XXX, IT-XXX 通过
 ```
+
+**type 类型**：feat | fix | refactor | test | docs | chore
 
 ## TodoWrite Integration
 
