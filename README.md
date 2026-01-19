@@ -663,13 +663,13 @@ T-02 ─┘           │
 
 # 5. devdocs-retrofit (项目改造)
 
-将已有工程按 DevDocs 流程改造，自动识别或手动指定各阶段文档。
+将已有工程改造为 DevDocs 流程，或将旧版 DevDocs 迁移到新规范。
 
 ## 元数据
 
 ```yaml
 name: devdocs-retrofit
-description: Retrofit existing projects to DevDocs workflow
+description: Retrofit existing projects or migrate old DevDocs to new standards
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 ```
 
@@ -677,7 +677,8 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 
 - 用户希望将现有项目适配 DevDocs 流程
 - 用户需要标准化项目文档
-- 用户要迁移或整理已有文档
+- 用户要迁移或升级已有 DevDocs 文档
+- 项目缺少文档，需要从代码逆向生成
 
 ## 工作流程
 
@@ -685,60 +686,82 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 1. 扫描项目结构
    │
    ▼
-2. 自动识别已有文档
+2. 检测项目状态
    │
-   ▼
-3. 用户确认/手动指定
+   ├── 无 DevDocs → 新项目改造流程
    │
-   ▼
-4. 分析文档覆盖情况
+   ├── 有 DevDocs（旧版）→ 版本迁移流程
    │
-   ▼
-5. 生成改造计划
-   │
-   ▼
-6. 逐阶段执行改造
-   │
-   ▼
-7. 生成改造报告
+   └── 有 DevDocs（符合规范）→ 无需改造
 ```
 
-## 文档识别规则
+## 版本迁移流程
 
-| DevDocs 阶段 | 识别关键词 | 常见文件名 |
-|----------|------------|------------|
-| 需求文档 | requirement, PRD, 需求, spec | `*requirement*.md`, `*prd*.md` |
-| 系统设计 | design, architecture, 设计 | `*design*.md`, `*architecture*.md` |
-| 测试方案 | test, QA, 测试 | `*test*.md`, `*qa*.md` |
-| 开发任务 | task, todo, 任务 | `*task*.md`, `*todo*.md` |
+当检测到旧版 DevDocs 文档时：
 
-## 改造模式
+```
+1. 规范符合性检查
+   │
+   ▼
+2. 生成迁移差异清单
+   │
+   ▼
+3. 用户确认迁移计划
+   │
+   ▼
+4. 执行迁移（编号、重命名、追溯矩阵）
+```
 
-| 模式 | 说明 |
-|------|------|
-| **完整改造** | 按 DevDocs 模板重新生成所有文档 |
-| **增量补充** | 保留原有内容，仅补充缺失部分 |
-| **仅标准化** | 保留内容，调整格式和结构 |
+### 规范检查清单
+
+| 检查项 | 规范要求 |
+|--------|----------|
+| 编号体系 | F-XXX, US-XXX, AC-XXX |
+| 测试编号 | UT-XXX, IT-XXX, E2E-XXX |
+| 追溯矩阵 | F → US → AC → 测试 |
+| 文件命名 | 03-test-cases.md（非 test-plan） |
+
+## 新项目改造流程
+
+当项目没有 DevDocs 文档时：
+
+```
+1. 自动识别已有文档
+   │
+   ▼
+2. 用户确认/手动指定/代码逆向推导
+   │
+   ▼
+3. 生成 DevDocs 文档（含编号）
+   │
+   ▼
+4. 生成改造报告
+```
 
 ## 输出文件
 
 ```
 docs/devdocs/
 ├── 00-retrofit-report.md    # 改造报告
-├── 01-requirements.md       # 需求文档（新建或补充）
-├── 02-system-design.md      # 系统设计（新建或补充）
-├── 03-test-plan.md          # 测试方案（新建或补充）
-└── 04-dev-tasks.md          # 开发任务（新建或补充）
+├── 01-requirements.md       # 需求文档（含 F/US/AC 编号）
+├── 02-system-design.md      # 系统设计
+├── 03-test-cases.md         # 测试用例概览 + 追溯矩阵
+├── 03-test-unit.md          # 单元测试（含 UT-XXX）
+├── 03-test-integration.md   # 集成测试（含 IT-XXX）
+├── 03-test-e2e.md           # E2E 测试（含 E2E-XXX）
+└── 04-dev-tasks.md          # 开发任务（含 T-XX）
 ```
 
 ## 约束
 
-- [ ] 必须扫描常见文档目录
-- [ ] 识别结果必须让用户确认
-- [ ] 支持用户手动指定/修正
-- [ ] **不得删除原有文档的有效内容**
-- [ ] 缺失内容标注 `[待补充]`
+- [ ] **必须先检测项目状态（无 DevDocs / 旧版 / 符合规范）**
+- [ ] **迁移前必须生成差异清单并用户确认**
+- [ ] **必须为所有内容分配编号（F/US/AC/UT/IT/E2E）**
+- [ ] 文件重命名必须使用 `git mv`
+- [ ] 不得删除原有文档的有效内容
 - [ ] 必须生成改造报告
+
+详见 [devdocs-retrofit/SKILL.md](devdocs-retrofit/SKILL.md)。
 
 ---
 
