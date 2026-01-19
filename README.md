@@ -36,6 +36,42 @@ F-001 (功能点)
 
 ---
 
+## 文档拆分规范
+
+当文档过大时，按以下规则拆分：
+
+| 文档类型 | 拆分阈值 | 拆分方式 |
+|----------|----------|----------|
+| 需求文档 | 300 行 或 5+ 功能点 | 主文档 + 用户故事 + NFR |
+| 系统设计 | 300 行 或 10+ API | 主文档 + API 设计 + 数据模型 |
+| 测试用例 | 300 行 或 30+ 用例 | 概览 + UT + IT + E2E |
+| 开发任务 | 300 行 或 20+ 任务 | 概览 + 按层级拆分 |
+
+**拆分后文件结构**：
+
+```
+docs/devdocs/
+├── 01-requirements.md           # 需求主文档
+├── 01-requirements-stories.md   # 用户故事详情（可选）
+├── 01-requirements-nfr.md       # 非功能性需求（可选）
+├── 02-system-design.md          # 设计主文档
+├── 02-system-design-api.md      # API 设计详情（可选）
+├── 02-system-design-data.md     # 数据模型详情（可选）
+├── 03-test-cases.md             # 测试用例概览 + 追溯矩阵
+├── 03-test-unit.md              # 单元测试详情（可选）
+├── 03-test-integration.md       # 集成测试详情（可选）
+├── 03-test-e2e.md               # E2E 测试详情（可选）
+├── 04-dev-tasks.md              # 任务主文档
+├── 04-dev-tasks-infra.md        # 基础设施任务（可选）
+├── 04-dev-tasks-core.md         # 核心逻辑任务（可选）
+├── 04-dev-tasks-api.md          # 接口层任务（可选）
+└── 04-dev-tasks-test.md         # 测试任务（可选）
+```
+
+**小型项目**：如内容较少，可保持单一文件，无需拆分。
+
+---
+
 ## Skills 概览
 
 | Skill | 命令 | 用途 | 输出文件 |

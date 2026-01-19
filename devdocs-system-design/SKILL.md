@@ -58,14 +58,33 @@ If user has no preference, design the optimal solution based on requirements.
 
 ## Output
 
-**File**: `docs/devdocs/02-system-design.md`
+**主文件**：`docs/devdocs/02-system-design.md`
 
-If the document exceeds 300 lines, split into:
-- `docs/devdocs/02-system-design.md` - Architecture overview and tech stack
-- `docs/devdocs/02-system-design-api.md` - Detailed API design
-- `docs/devdocs/02-system-design-data.md` - Data models and database design
+### 文档拆分规则
 
-For detailed template, see [templates/design-template.md](templates/design-template.md).
+当满足以下条件时，应拆分文档：
+- 文档超过 **300 行**
+- 模块数量超过 **5 个**
+- API 接口超过 **10 个**
+
+**拆分方式**：
+
+```
+docs/devdocs/
+├── 02-system-design.md          # 主文档：架构概览、技术选型、模块划分
+├── 02-system-design-api.md      # API 设计：接口定义、请求响应示例
+└── 02-system-design-data.md     # 数据模型：实体定义、ER 图、索引策略
+```
+
+**拆分内容分配**：
+
+| 文件 | 包含章节 |
+|------|----------|
+| 02-system-design.md | 1-7: 平台、架构、技术选型、模块、接口签名、模式、代码结构 |
+| 02-system-design-api.md | 9-10: 完整 API 设计、状态流转 |
+| 02-system-design-data.md | 8, 11-13: 数据模型、异常处理、扩展性、需求追溯 |
+
+详细模板参见 [templates/design-template.md](templates/design-template.md)。
 
 ## 设计原则
 

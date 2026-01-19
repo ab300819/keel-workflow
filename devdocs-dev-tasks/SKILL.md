@@ -37,16 +37,43 @@ Break down system design into actionable, trackable development tasks.
 6. **Confirm with user**: Get approval
 7. **Load to TodoWrite**: Optionally add tasks to tracking
 
-## Output
+## 输出文件
 
-**File**: `docs/devdocs/04-dev-tasks.md`
+**主文件**：`docs/devdocs/04-dev-tasks.md`
 
-If tasks exceed 20, split into:
-- `docs/devdocs/04-dev-tasks.md` - Overview and dependency graph
-- `docs/devdocs/04-dev-tasks-infra.md` - Infrastructure tasks
-- `docs/devdocs/04-dev-tasks-core.md` - Core logic tasks
-- `docs/devdocs/04-dev-tasks-api.md` - API layer tasks
-- `docs/devdocs/04-dev-tasks-test.md` - Test implementation tasks
+### 文档拆分规则
+
+当满足以下条件时，应拆分文档：
+- 任务数量超过 **20 个**
+- 文档超过 **300 行**
+- 涉及多个独立模块
+
+**拆分方式**：
+
+```
+docs/devdocs/
+├── 04-dev-tasks.md              # 主文档：任务概览、依赖图、执行检查清单
+├── 04-dev-tasks-infra.md        # 基础设施任务：数据库、配置、部署
+├── 04-dev-tasks-core.md         # 核心逻辑任务：Service、Domain 层
+├── 04-dev-tasks-api.md          # 接口层任务：Controller、路由、验证
+└── 04-dev-tasks-test.md         # 测试任务：单元测试、集成测试、E2E
+```
+
+**拆分内容分配**：
+
+| 文件 | 包含内容 |
+|------|----------|
+| 04-dev-tasks.md | 任务概览、依赖关系图、执行检查清单、风险项 |
+| 04-dev-tasks-infra.md | T-01 ~ T-XX 基础设施相关任务 |
+| 04-dev-tasks-core.md | T-XX ~ T-XX 核心业务逻辑任务 |
+| 04-dev-tasks-api.md | T-XX ~ T-XX 接口层任务 |
+| 04-dev-tasks-test.md | T-XX ~ T-XX 测试实现任务 |
+
+**主文档保留内容**：
+- 任务总数和执行顺序
+- 完整的依赖关系图
+- 各子文档的任务范围说明
+- 执行检查清单（汇总）
 
 ## Task Design Principles
 

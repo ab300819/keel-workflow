@@ -94,13 +94,41 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 
 ## 输出文件
 
+**主文件**：`docs/devdocs/03-test-cases.md`
+
+### 文档拆分规则
+
+当满足以下条件时，应拆分文档：
+- 测试用例总数超过 **30 个**
+- 文档超过 **300 行**
+- 单一测试类型用例超过 **15 个**
+
+**拆分方式**：
+
 ```
 docs/devdocs/
-├── 03-test-cases.md           # 测试用例概览 + 追溯矩阵
-├── 03-test-unit.md            # 单元测试用例
-├── 03-test-integration.md     # 集成测试用例
-└── 03-test-e2e.md             # E2E 测试用例
+├── 03-test-cases.md           # 主文档：测试策略、覆盖率要求、追溯矩阵
+├── 03-test-unit.md            # 单元测试用例（UT-XXX）
+├── 03-test-integration.md     # 集成测试用例（IT-XXX）
+└── 03-test-e2e.md             # E2E 测试用例（E2E-XXX）
 ```
+
+**拆分内容分配**：
+
+| 文件 | 包含内容 |
+|------|----------|
+| 03-test-cases.md | 测试策略、覆盖率要求、追溯矩阵、测试用例汇总 |
+| 03-test-unit.md | 所有单元测试用例详情（UT-001 ~ UT-XXX） |
+| 03-test-integration.md | 所有集成测试用例详情（IT-001 ~ IT-XXX） |
+| 03-test-e2e.md | 所有 E2E 测试用例详情（E2E-001 ~ E2E-XXX） |
+
+**主文档保留内容**：
+- 测试策略说明
+- 覆盖率目标
+- 完整追溯矩阵（F → US → AC → 测试）
+- 各子文档的用例范围说明
+
+**小型项目**：如测试用例较少（< 30 个），可合并为单一文件 `03-test-cases.md`。
 
 详细模板参见：
 - [templates/test-cases-template.md](templates/test-cases-template.md)
