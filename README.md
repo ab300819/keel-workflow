@@ -45,6 +45,7 @@ F-001 (功能点)
 | [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
+| [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `00-feature-log.md` |
 | [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | - |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
@@ -63,6 +64,7 @@ F-001 (功能点)
 | 场景 | 推荐路径 | 说明 |
 |------|----------|------|
 | 新功能开发（需求明确） | **路径 A：正向开发** | 从需求开始，逐步细化 |
+| 新功能 / 功能迭代 | **`/devdocs-feature`** | 延续编号，追加文档 |
 | 探索性开发 / 原型验证 | **路径 B：探索后补** | 先写代码，后补文档 |
 | 已有项目规范化 | **路径 B：探索后补** | 从代码逆向生成文档 |
 | Bug 修复 | **`/devdocs-bugfix`** | 测试先行，编写失败测试后修复 |
@@ -1141,6 +1143,72 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ---
 
+# 14. devdocs-feature (新功能)
+
+在已有 DevDocs 项目中追加新功能，确保编号延续、文档一致。
+
+## 元数据
+
+```yaml
+name: devdocs-feature
+description: Add new features to existing DevDocs projects
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
+```
+
+## 触发条件
+
+- 用户要在已有项目中添加新功能
+- 用户提到"新功能"、"迭代"、"新增功能"
+- 用户要求扩展现有功能
+
+## 核心流程
+
+```
+1. 扫描现有文档（获取最大编号）
+   │
+   ▼
+2. 收集增量需求
+   │
+   ▼
+3. 影响分析（是否修改现有设计）
+   │
+   ▼
+4. 追加文档（延续编号）
+   │
+   ├── 01-requirements.md → 追加 F/US/AC
+   ├── 02-system-design*.md → 追加/修改设计
+   ├── 03-test-*.md → 追加测试用例
+   └── 04-dev-tasks*.md → 追加任务
+   │
+   ▼
+5. 生成增量日志
+```
+
+## 核心原则
+
+```
+新功能开发 = 延续编号 + 追加文档 + 影响分析 + 回归保护
+```
+
+## 约束
+
+- [ ] **必须延续现有编号，不得重复**
+- [ ] **追加内容必须标注增量版本和日期**
+- [ ] **不得删除或覆盖现有内容**
+- [ ] 修改现有接口必须说明向后兼容性
+
+## 输出文件
+
+- 更新 `01-requirements.md`（追加）
+- 更新 `02-system-design*.md`（追加/修改）
+- 更新 `03-test-*.md`（追加）
+- 更新 `04-dev-tasks*.md`（追加）
+- 更新/创建 `00-feature-log.md`（功能日志）
+
+详见 [devdocs-feature/SKILL.md](devdocs-feature/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -1167,6 +1235,8 @@ skills/
 ├── devdocs-retrofit/
 │   └── SKILL.md
 ├── devdocs-bugfix/
+│   └── SKILL.md
+├── devdocs-feature/
 │   └── SKILL.md
 ├── code-quality/
 │   └── SKILL.md
