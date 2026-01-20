@@ -4,59 +4,59 @@ description: Create system design documents based on requirements. Use when user
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ---
 
-# DevDocs System Design
+# 系统设计
 
-Create comprehensive system design documents based on product requirements.
+基于需求文档创建完整的系统设计文档。
 
-## Language
+## 语言规则
 
-- Accept questions in both Chinese and English
-- Always respond in Chinese
-- Generate all documents in Chinese
+- 支持中英文提问
+- 统一中文回复
+- 使用中文生成文档
 
-## Trigger Conditions
+## 触发条件
 
-- User has completed requirements document
-- User asks for system/technical design
-- User needs architecture or API design
+- 用户已完成需求文档
+- 用户要求系统/技术设计
+- 用户需要架构或 API 设计
 
-## Prerequisites
+## 前置条件
 
-- Requirements document exists at `docs/devdocs/01-requirements.md`
-- If not exists, suggest running `/devdocs-requirements` first
+- 需求文档：`docs/devdocs/01-requirements.md`
+- 如不存在，建议先运行 `/devdocs-requirements`
 
-## Workflow
+## 工作流程
 
-1. **Read requirements**: Load `docs/devdocs/01-requirements.md`
-2. **Ask user preferences**: Query tech stack, platform, and integration needs
-3. **Explore codebase**: Understand existing architecture if applicable
-4. **Create design**: Generate system design document
-5. **Verify coverage**: Check all F-XXX have corresponding modules/interfaces
-6. **Confirm with user**: Get approval before finalizing
+1. **读取需求**：加载 `docs/devdocs/01-requirements.md`
+2. **询问偏好**：技术栈、平台、集成需求
+3. **探索代码**：了解现有架构或从现有代码提取接口
+4. **创建设计**：生成系统设计文档（使用 ASCII 或 Mermaid 图表）
+5. **验证覆盖**：检查所有 F-XXX 都有对应模块/接口
+6. **用户确认**：获得批准后定稿
 
-## Pre-design Questions
+## 设计前必问
 
-**Must ask user before designing** using AskUserQuestion:
+**必须使用 AskUserQuestion 询问用户**：
 
-1. **Tech Stack Preference**
-   - Do you have a preferred tech stack?
-   - Options: Specify stack / No preference (will recommend based on requirements)
+1. **技术栈偏好**
+   - 是否有偏好的技术栈？
+   - 选项：指定技术栈 / 无偏好（将根据需求推荐）
 
-2. **Target Platform**
-   - What is the target platform?
-   - Options: Web / Mobile (iOS/Android) / Desktop / Server / Cross-platform
+2. **目标平台**
+   - 目标平台是什么？
+   - 选项：Web / Mobile (iOS/Android) / Desktop / Server / 跨平台
 
-3. **Deployment Environment**
-   - Where will this be deployed?
-   - Options: Cloud (AWS/GCP/Azure) / On-premise / Hybrid
+3. **部署环境**
+   - 部署在哪里？
+   - 选项：云服务 (AWS/GCP/Azure) / 私有化 / 混合
 
-4. **Existing System Integration**
-   - Does this need to integrate with existing systems?
-   - Options: No / Yes (specify systems, APIs, databases)
+4. **现有系统集成**
+   - 是否需要与现有系统集成？
+   - 选项：否 / 是（指定系统、API、数据库）
 
-If user has no preference, design the optimal solution based on requirements.
+如用户无偏好，则根据需求设计最优方案。
 
-## Output
+## 输出文件
 
 **主文件**：`docs/devdocs/02-system-design.md`
 
@@ -114,30 +114,30 @@ docs/devdocs/
 
 ```
 ┌─────────────────────────────────────┐
-│           Interface Layer           │  ← API/Controller（薄层，无业务逻辑）
+│             接口层                   │  ← API/Controller（薄层，无业务逻辑）
 ├─────────────────────────────────────┤
-│           Service Layer             │  ← 业务逻辑（核心，可测试）
+│             服务层                   │  ← 业务逻辑（核心，可测试）
 ├─────────────────────────────────────┤
-│           Domain Layer              │  ← 领域模型（实体、值对象）
+│             领域层                   │  ← 领域模型（实体、值对象）
 ├─────────────────────────────────────┤
-│         Infrastructure Layer        │  ← 数据访问、外部服务（可替换）
+│           基础设施层                 │  ← 数据访问、外部服务（可替换）
 └─────────────────────────────────────┘
 ```
 
-## Document Structure
+## 文档结构
 
-1. **Target Platform** - Platform, version requirements, deployment environment
-2. **Architecture Overview** - High-level architecture diagram (ASCII)
-3. **Tech Stack** - Technology choices with rationale
-4. **Module Design** - Module responsibilities and dependencies, **标注关联功能点 (F-XXX)**
-5. **Core Interfaces** - Key interfaces and method signatures (no implementation), **标注关联 F-XXX**
-6. **Design Patterns** - Applied patterns and rationale
-7. **Code Structure** - Directory structure design
-8. **Data Model** - Entity definitions and relationships
-9. **API Design** - Endpoints with request/response examples, **标注关联 F-XXX, AC-XXX**
-10. **State Flow** - State machines for key business flows
-11. **Error Handling** - Error codes and handling strategies
-12. **Extensibility** - Extension points and future considerations
+1. **目标平台** - 平台、版本要求、部署环境
+2. **架构概览** - 高层架构图（**Mermaid**）
+3. **技术选型** - 技术选择及理由
+4. **模块设计** - 模块职责与依赖，**标注关联功能点 (F-XXX)**
+5. **核心接口** - **面向接口 (仅签名)**: 关键接口和方法签名（**严禁包含具体实现逻辑**），标注关联 F-XXX
+6. **设计模式** - 应用的模式及理由
+7. **代码结构** - 目录结构设计
+8. **数据模型** - 实体定义与关系
+9. **API 设计** - 接口端点及请求/响应示例，**标注关联 F-XXX, AC-XXX**
+10. **状态流转** - 关键业务流程的状态机
+11. **异常处理** - 错误码与处理策略
+12. **扩展性** - 扩展点与未来考量
 13. **需求追溯** - 功能点与模块/接口的映射关系，**覆盖检查清单**
 
 ## 核心接口设计
@@ -191,18 +191,18 @@ src/
     └── constants/          # 常量
 ```
 
-## Constraints
+## 约束
 
 ### 基础约束
 
-- [ ] **Must ask user for tech stack preference and target platform first**
-- [ ] Tech stack choices must include rationale
-- [ ] If user has no preference, select optimal solution for requirements
-- [ ] Must specify target platform and minimum version requirements
-- [ ] API design must include request/response examples
-- [ ] Data model must consider indexes and query patterns
-- [ ] Must identify integration points with existing systems
-- [ ] Prefer existing project tech stack when applicable
+- [ ] **必须先询问用户技术栈偏好和目标平台**
+- [ ] 技术选型必须说明理由
+- [ ] 如用户无偏好，根据需求选择最优方案
+- [ ] 必须指定目标平台和最低版本要求
+- [ ] API 设计必须包含请求/响应示例
+- [ ] 数据模型必须考虑索引和查询模式
+- [ ] 必须识别与现有系统的集成点
+- [ ] 优先使用项目现有技术栈
 
 ### MTE 原则约束
 
@@ -240,7 +240,8 @@ src/
 | 可测试性设计 | `/testing-guide` | 确保核心逻辑可单元测试 |
 | 代码质量 | `/code-quality` | MTE 原则指导设计 |
 | UI 架构 | `/ui-skills` | UI 组件设计约束 |
+| 接口自动提取 | `/devdocs-retrofit` | 从现有代码逆向提取接口定义并同步到设计文档 |
 
-## Next Step
+## 下一步
 
-After user confirms system design, suggest running `/devdocs-test-cases` for test case design phase.
+用户确认系统设计后，建议运行 `/devdocs-test-cases` 进入测试用例设计阶段。

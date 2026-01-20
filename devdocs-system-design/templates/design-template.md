@@ -13,33 +13,22 @@ Use this template to generate `docs/devdocs/02-system-design.md`.
 
 ## 2. 架构概览
 
-```
-<ASCII 架构图>
-
-示例：
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Client    │────>│   API GW    │────>│   Service   │
-└─────────────┘     └─────────────┘     └─────────────┘
-                                              │
-                                              v
-                                        ┌─────────────┐
-                                        │  Database   │
-                                        └─────────────┘
+```mermaid
+graph TD
+    Client[Client] --> AGW[API Gateway]
+    AGW --> SVC[Service Layer]
+    SVC --> DB[(Database)]
 ```
 
-### 分层架构
+### 分层架构 (MTE 模式)
 
+```mermaid
+graph BT
+    Infra[Infrastructure Layer] -.-> Domain[Domain Layer]
+    Service[Service Layer] --> Domain
+    Interface[Interface Layer] --> Service
 ```
-┌─────────────────────────────────────┐
-│           Interface Layer           │  ← API/Controller（薄层）
-├─────────────────────────────────────┤
-│           Service Layer             │  ← 业务逻辑（核心）
-├─────────────────────────────────────┤
-│           Domain Layer              │  ← 领域模型
-├─────────────────────────────────────┤
-│         Infrastructure Layer        │  ← 数据访问、外部服务
-└─────────────────────────────────────┘
-```
+
 
 ## 3. 技术选型
 
@@ -72,9 +61,9 @@ Use this template to generate `docs/devdocs/02-system-design.md`.
 - 核心逻辑无外部依赖
 - 外部依赖通过接口注入
 
-## 5. 核心接口
+## 5. 核心接口 (面向接口设计)
 
-> 只定义签名，不写实现代码
+> **原则**：只定义方法签名、参数及返回值，**严禁包含任何实现代码或内部逻辑细节**。
 
 ### 5.1 服务层接口
 

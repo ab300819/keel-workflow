@@ -4,38 +4,38 @@ description: Break down system design into executable development tasks. Use whe
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 ---
 
-# DevDocs Development Tasks
+# 开发任务
 
-Break down system design into actionable, trackable development tasks.
+将系统设计分解为可执行、可追踪的开发任务。
 
-## Language
+## 语言规则
 
-- Accept questions in both Chinese and English
-- Always respond in Chinese
-- Generate all documents in Chinese
+- 支持中英文提问
+- 统一中文回复
+- 使用中文生成文档
 
-## Trigger Conditions
+## 触发条件
 
-- User has completed system design and test plan
-- User asks for development task breakdown
-- User needs sprint/iteration planning
+- 用户已完成系统设计和测试计划
+- 用户要求拆分开发任务
+- 用户需要迭代/Sprint 规划
 
-## Prerequisites
+## 前置条件
 
-- Requirements document: `docs/devdocs/01-requirements.md`
-- System design document: `docs/devdocs/02-system-design.md`
-- Test cases document: `docs/devdocs/03-test-cases.md`（及 `03-test-unit.md`, `03-test-integration.md`, `03-test-e2e.md`）
-- If not exists, suggest running previous phases first
+- 需求文档：`docs/devdocs/01-requirements.md`
+- 系统设计文档：`docs/devdocs/02-system-design.md`
+- 测试用例文档：`docs/devdocs/03-test-cases.md`（及 `03-test-unit.md`, `03-test-integration.md`, `03-test-e2e.md`）
+- 如不存在，建议先运行前置阶段
 
-## Workflow
+## 工作流程
 
-1. **Read documents**: Load all previous phase documents
-2. **Identify components**: Map system modules to tasks
-3. **Define dependencies**: Establish task order
-4. **Estimate scope**: Ensure task granularity
-5. **Create task list**: Generate structured task document
-6. **Confirm with user**: Get approval
-7. **Load to TodoWrite**: Optionally add tasks to tracking
+1. **读取文档**：加载所有前置阶段文档
+2. **识别组件**：将系统模块映射为任务
+3. **定义依赖**：建立任务执行顺序
+4. **评估范围**：确保任务粒度合适
+5. **创建任务列表**：生成结构化任务文档
+6. **用户确认**：获得批准
+7. **加载到 TodoWrite**：可选，添加任务到追踪列表
 
 ## 输出文件
 
@@ -75,17 +75,17 @@ docs/devdocs/
 - 各子文档的任务范围说明
 - 执行检查清单（汇总）
 
-## Task Design Principles
+## 任务设计原则
 
-Every task must satisfy the **TAR** principle:
+每个任务必须满足 **TAR 原则**：
 
-| Principle | Description | Required Content |
-|-----------|-------------|------------------|
-| **Testable** | Can be verified by automated or manual testing | Test method and expected result |
-| **Acceptable** | Has clear acceptance criteria | Specific, measurable completion criteria |
-| **Reviewable** | Can be code reviewed independently | Review focus points |
+| 原则 | 说明 | 必需内容 |
+|------|------|----------|
+| **可测试 (Testable)** | 可通过自动化或手动测试验证 | 测试方法和预期结果 |
+| **可验收 (Acceptable)** | 有明确的验收标准 | 具体、可量化的完成标准 |
+| **可审查 (Reviewable)** | 可独立进行代码审查 | Review 要点 |
 
-## Document Template
+## 文档模板
 
 ```markdown
 # 开发任务：<功能名称>
@@ -259,17 +259,17 @@ T-02 ─┘           │
 | T-XX | <潜在风险> | <缓解策略> |
 ```
 
-## Constraints
+## 约束
 
 ### 基础约束
 
-- [ ] **Single task must be completable within 4 hours**
-- [ ] **Must specify task dependencies**
-- [ ] **Must order by dependencies, no circular dependencies**
-- [ ] **File paths must be specific, not "related files"**
-- [ ] **Must provide dependency graph**
-- [ ] Priority: P0 (blocker), P1 (important), P2 (minor)
-- [ ] Task ID format: T-XX (sequential)
+- [ ] **单个任务必须在 4 小时内可完成**
+- [ ] **必须指定任务依赖**
+- [ ] **必须按依赖排序，不能有循环依赖**
+- [ ] **文件路径必须具体，不能写"相关文件"**
+- [ ] **必须提供依赖关系图**
+- [ ] 优先级：P0（阻塞）、P1（重要）、P2（次要）
+- [ ] 任务编号格式：T-XX（顺序编号）
 
 ### 需求追溯约束
 
@@ -287,18 +287,18 @@ T-02 ─┘           │
 | 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |
 | 提交信息 | `/commit-convention` | 遵循项目提交规范 |
 
-### TAR Principle Constraints
+### TAR 原则约束
 
-- [ ] **Every task must include test method** (how to verify)
-- [ ] **Every task must include acceptance criteria** (measurable completion criteria)
-- [ ] **Every task must include review focus points** (what to check in code review)
-- [ ] Test method must be executable (not vague descriptions)
-- [ ] Acceptance criteria must be quantifiable
-- [ ] Review points must be specific to the task type
+- [ ] **每个任务必须包含测试方法**（如何验证）
+- [ ] **每个任务必须包含验收标准**（可量化的完成标准）
+- [ ] **每个任务必须包含 Review 要点**（代码审查关注点）
+- [ ] 测试方法必须可执行（不能是模糊描述）
+- [ ] 验收标准必须可量化
+- [ ] Review 要点必须针对任务类型
 
-## Task Execution Workflow
+## 任务执行流程
 
-When executing a task, follow this workflow:
+执行任务时，遵循以下流程：
 
 ```
 1. 开始任务
@@ -326,27 +326,27 @@ When executing a task, follow this workflow:
    └── 否 → 继续修改
 ```
 
-## Post-completion Action
+## 完成后操作
 
-After user confirms task document:
-1. Ask if user wants to start development
-2. If yes, use TodoWrite to add all tasks to tracking list
-3. Suggest starting with first task (T-01)
+用户确认任务文档后：
+1. 询问用户是否开始开发
+2. 如是，使用 TodoWrite 添加所有任务到追踪列表
+3. 建议从第一个任务（T-01）开始
 
-## Task Completion Flow
+## 任务完成流程
 
-When completing each task during development:
+开发过程中完成每个任务时：
 
-1. **Execute tests**: Run the test method defined for the task
-2. **Verify acceptance**: Check all acceptance criteria are met
-3. **Self-review**: Go through review points
-4. **Ask for commit**: Use AskUserQuestion to ask:
+1. **执行测试**：运行任务定义的测试方法
+2. **验证验收标准**：检查所有验收标准是否满足
+3. **自查 Review 要点**：检查代码审查要点
+4. **询问提交**：使用 AskUserQuestion 询问：
    - "任务 T-XX 已完成，测试通过，是否提交代码？"
-   - Options: "提交" / "继续修改" / "跳过"
-5. **If commit**: Execute git add and commit with task ID in message
-6. **Update TodoWrite**: Mark task as completed
+   - 选项："提交" / "继续修改" / "跳过"
+5. **如提交**：执行 git add 和 commit，消息包含任务编号
+6. **更新 TodoWrite**：将任务标记为已完成
 
-### Commit Message Format
+### 提交信息格式
 
 遵循 `/commit-convention` 规范，格式如下：
 
@@ -362,14 +362,14 @@ When completing each task during development:
 
 **type 类型**：feat | fix | refactor | test | docs | chore
 
-## TodoWrite Integration
+## TodoWrite 集成
 
-When user confirms to start development:
+用户确认开始开发时：
 
 ```
-Use TodoWrite to add tasks:
-- Each task becomes a todo item
-- Maintain task order as defined
-- Include task ID in todo content
-- Update status after commit
+使用 TodoWrite 添加任务：
+- 每个任务成为一个 todo 项
+- 保持定义的任务顺序
+- todo 内容包含任务编号
+- 提交后更新状态
 ```
