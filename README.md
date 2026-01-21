@@ -82,6 +82,7 @@ docs/devdocs/
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
 | [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `00-feature-log.md` |
+| [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `progress-report.md` |
 | [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | - |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
@@ -125,6 +126,10 @@ docs/devdocs/
                                                                     ▼        ▼        ▼
                                                               /code-quality /testing-guide /ui-skills
                                                               (代码质量)    (测试质量)      (UI 约束)
+                                                                              │
+                                                                              ▼
+                                                                        /devdocs-sync
+                                                                        (文档同步)
 ```
 
 ---
@@ -206,6 +211,7 @@ DevDocs 流程中各 Skill 的协作关系：
 | 系统设计 | `/devdocs-system-design` | `/code-quality` | MTE 原则指导设计 |
 | 测试用例 | `/devdocs-test-cases` | `/testing-guide` | 测试质量约束 |
 | 开发任务 | `/devdocs-dev-tasks` | 多个 | 见下表 |
+| 文档同步 | `/devdocs-sync` | - | 保持文档与实现一致 |
 | 代码重构 | `/refactor` | `/code-quality`, `/testing-guide` | 测试先行 |
 
 ### 开发阶段 Skill 协作
@@ -219,7 +225,9 @@ DevDocs 流程中各 Skill 的协作关系：
          │
          ├── 测试编写 ────────── /testing-guide (断言质量、变异测试)
          │
-         └── 代码提交 ────────── /git-safety + /commit-convention
+         ├── 代码提交 ────────── /git-safety + /commit-convention
+         │
+         └── 进度同步 ────────── /devdocs-sync (文档与实现一致性)
 ```
 
 ### 约束执行时机
@@ -231,6 +239,7 @@ DevDocs 流程中各 Skill 的协作关系：
 | `/ui-skills` | 实现 UI 时 | 无障碍、动画性能、布局规范 |
 | `/git-safety` | 文件操作时 | 使用 git mv/rm |
 | `/commit-convention` | 提交代码时 | 提交信息格式 |
+| `/devdocs-sync` | 任务完成后/Sprint 结束 | 文档与实现一致性 |
 
 ---
 
@@ -1268,6 +1277,92 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ---
 
+# 15. devdocs-sync (文档同步)
+
+保持 DevDocs 文档与实际实现进度一致，检测偏差并更新状态。
+
+## 元数据
+
+```yaml
+name: devdocs-sync
+description: Sync documentation with implementation progress
+allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
+```
+
+## 触发条件
+
+- 用户完成一个或多个开发任务后
+- 用户要求检查文档与代码一致性
+- 用户需要更新文档进度
+- Sprint 结束时定期同步
+
+## 核心流程
+
+```
+1. 读取 DevDocs 文档
+   │
+   ▼
+2. 扫描代码库（文件、测试、git 提交）
+   │
+   ▼
+3. 对比分析
+   │
+   ▼
+4. 生成偏差报告
+   │
+   ▼
+5. 用户确认更新
+   │
+   ▼
+6. 更新文档
+```
+
+## 偏差类型
+
+| 类型 | 说明 | 处理建议 |
+|------|------|----------|
+| 文档有，代码无 | 任务定义但未实现 | 继续开发 或 移除任务 |
+| 代码有，文档无 | 实现未记录 | 补充文档 |
+| 实现与设计不一致 | 接口签名变更等 | 更新文档 或 修改实现 |
+
+## 输出文件
+
+```
+docs/devdocs/
+└── progress-report.md    # 进度报告
+```
+
+## 同步命令
+
+```bash
+# 快速检查（不更新文档）
+/devdocs-sync check
+
+# 完整同步（检查 + 更新文档）
+/devdocs-sync
+```
+
+## 约束
+
+- [ ] **必须读取所有 DevDocs 文档后再进行检查**
+- [ ] **必须生成偏差报告**
+- [ ] **更新文档前必须询问用户确认**
+- [ ] 不自动删除文档内容，只标记状态
+- [ ] 不自动修改代码，只更新文档
+
+## 与其他 Skills 协作
+
+| 场景 | 协作 Skill |
+|------|-----------|
+| 任务完成后 | `/devdocs-dev-tasks` |
+| 需求变更 | `/devdocs-feature` |
+| Bug 修复 | `/devdocs-bugfix` |
+| 项目改造 | `/devdocs-retrofit` |
+
+详见 [devdocs-sync/SKILL.md](devdocs-sync/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -1296,6 +1391,8 @@ skills/
 ├── devdocs-bugfix/
 │   └── SKILL.md
 ├── devdocs-feature/
+│   └── SKILL.md
+├── devdocs-sync/
 │   └── SKILL.md
 ├── code-quality/
 │   └── SKILL.md
@@ -1336,13 +1433,15 @@ skills/
 ```
 /devdocs-requirements 我需要一个用户登录功能
 /devdocs-system-design
-/devdocs-test-plan
+/devdocs-test-cases
 /devdocs-dev-tasks
 /devdocs-retrofit
+/devdocs-feature
+/devdocs-sync
+/devdocs-bugfix
 /code-quality
 /testing-guide
 /refactor
-/commit-convention
 /ui-skills
 /work-report
 ```
@@ -1355,6 +1454,9 @@ skills/
 写测试用例
 拆分开发任务
 把这个项目按 DevDocs 流程改造一下
+添加一个新功能
+同步一下文档进度
+检查文档和代码是否一致
 帮我重构这段代码
 重构 UserService
 Review 一下这个 PR
