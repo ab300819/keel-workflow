@@ -54,10 +54,11 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 1. 读取 DevDocs 文档
    │
    ▼
-2. 扫描代码库
-   ├── 检查文件结构
-   ├── 检查测试文件
-   └── 检查 git 提交记录
+2. 扫描代码库（工作区状态）
+   ├── 检查文件是否存在（Glob）
+   ├── 运行测试（获取实时结果）
+   ├── 检查未提交变更（git status）
+   └── 参考提交记录（git log，辅助）
    │
    ▼
 3. 对比分析
@@ -75,6 +76,8 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 6. 更新文档
 ```
 
+**重要**：检查基于**当前工作区状态**，而非仅依赖 git 提交历史。未提交的代码变更也会被检测到。
+
 ## 检查项目
 
 ### 1. 任务状态检查
@@ -86,8 +89,13 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 |--------|------|----------|
 | 文件是否存在 | Glob 检查 `涉及文件` | 存在 → 进行中/已完成 |
 | 测试是否通过 | 运行测试命令 | 通过 → 已完成 |
-| 是否有相关提交 | git log 检查 | 有提交 → 进行中/已完成 |
+| 文件是否有变更 | git status/diff | 有未提交变更 → 标注 |
 ```
+
+**检查优先级**：
+1. **工作区状态优先**：检查当前文件系统和测试结果
+2. **提交记录辅助**：git log 仅作为参考，不作为主要依据
+3. **未提交变更提示**：如有未提交变更，在报告中标注
 
 ### 2. 测试覆盖检查
 
@@ -176,8 +184,11 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 - [ ] T-10: 日志模块
 - [ ] T-11: 错误处理优化
 
+### 进行中（有未提交变更）
+- [ ] T-09: 缓存模块 ⚠️ `src/cache.ts` 已修改但未提交
+
 ### 待补充文档
-- [ ] `src/utils/validator.ts` - 验证工具
+- [ ] `src/utils/validator.ts` - 验证工具（未提交）
 
 ### 待修正
 - [ ] IUserService 接口签名与实现不一致
