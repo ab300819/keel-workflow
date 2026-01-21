@@ -83,6 +83,7 @@ docs/devdocs/
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
 | [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `00-feature-log.md` |
 | [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `progress-report.md` |
+| [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `00-context.md` |
 | [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | - |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
@@ -1363,6 +1364,94 @@ docs/devdocs/
 
 ---
 
+# 16. devdocs-onboard (项目上下文)
+
+生成项目上下文摘要，帮助 AI 工具或团队成员快速了解项目并接手工作。
+
+## 元数据
+
+```yaml
+name: devdocs-onboard
+description: Generate project context summary for AI tool handover
+allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
+```
+
+## 触发条件
+
+- 用户切换 AI 工具，需要传递上下文
+- 用户开始新的对话会话
+- 团队成员需要了解项目
+- 用户要求生成项目简报
+
+## 核心流程
+
+```
+1. 扫描 DevDocs 文档
+   │
+   ▼
+2. 提取关键信息
+   ├── 项目概述
+   ├── 技术架构
+   ├── 当前进度
+   └── 待办任务
+   │
+   ▼
+3. 扫描代码库结构
+   │
+   ▼
+4. 生成上下文摘要
+```
+
+## 输出文件
+
+```
+docs/devdocs/
+└── 00-context.md    # 项目上下文（可直接传递给新 AI）
+```
+
+## 上下文内容
+
+| 章节 | 内容 | 来源 |
+|------|------|------|
+| 项目概述 | 目标、核心功能、技术栈 | `01-requirements.md`, `02-system-design.md` |
+| 系统架构 | 架构图、核心模块、关键接口 | `02-system-design.md` |
+| 代码结构 | 目录结构、关键文件 | 代码库扫描 |
+| 当前进度 | 完成率、进行中任务、未提交变更 | `04-dev-tasks.md`, `git status` |
+| 待办任务 | 下一步任务、阻塞项 | `04-dev-tasks.md` |
+| 快速开始 | 环境准备、运行命令 | `package.json`, `Makefile` |
+
+## 使用场景
+
+```bash
+# 标准模式：生成上下文文件
+/devdocs-onboard
+
+# 快速模式：仅显示摘要
+/devdocs-onboard --quick
+
+# 完整模式：包含更多细节
+/devdocs-onboard --full
+```
+
+## 约束
+
+- [ ] **必须扫描所有 DevDocs 文档**
+- [ ] **必须检查当前代码库状态**
+- [ ] **输出文件必须自包含**（新 AI 读取后能立即工作）
+- [ ] 敏感信息不得包含
+- [ ] 必须列出下一步可执行的任务
+
+## 与其他 Skills 协作
+
+| 场景 | 协作 Skill |
+|------|-----------|
+| DevDocs 不存在 | `/devdocs-retrofit` |
+| 进度信息过时 | `/devdocs-sync` |
+
+详见 [devdocs-onboard/SKILL.md](devdocs-onboard/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -1393,6 +1482,8 @@ skills/
 ├── devdocs-feature/
 │   └── SKILL.md
 ├── devdocs-sync/
+│   └── SKILL.md
+├── devdocs-onboard/
 │   └── SKILL.md
 ├── code-quality/
 │   └── SKILL.md
@@ -1438,6 +1529,7 @@ skills/
 /devdocs-retrofit
 /devdocs-feature
 /devdocs-sync
+/devdocs-onboard
 /devdocs-bugfix
 /code-quality
 /testing-guide
@@ -1457,6 +1549,8 @@ skills/
 添加一个新功能
 同步一下文档进度
 检查文档和代码是否一致
+生成项目上下文
+帮我了解这个项目
 帮我重构这段代码
 重构 UserService
 Review 一下这个 PR
