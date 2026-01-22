@@ -77,7 +77,7 @@ docs/devdocs/
 | Skill | 命令 | 用途 | 输出文件 |
 |-------|------|------|----------|
 | [需求扩写](#1-devdocs-requirements-需求扩写) | `/devdocs-requirements` | 功能点、用户故事、验收标准 | `01-requirements.md` |
-| [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计 | `02-system-design*.md` |
+| [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计（支持增量） | `02-system-design*.md` |
 | [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
@@ -340,22 +340,29 @@ docs/devdocs/
 
 # 2. devdocs-system-design (系统设计)
 
-围绕需求设计详细技术方案，考虑可维护性、可测试性和适度扩展性。
+围绕需求设计详细技术方案，支持初始设计和增量设计两种模式。
 
 ## 元数据
 
 ```yaml
 name: devdocs-system-design
-description: Create system design documents based on requirements
+description: Create or update system design documents (supports incremental design)
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ```
+
+## 设计模式
+
+| 模式 | 触发条件 | 说明 |
+|------|----------|------|
+| **初始设计** | 无 `02-system-design.md` | 从零创建系统设计 |
+| **增量设计** | 已有设计 + 新需求/优化 | 影响分析 + 设计变更 |
 
 ## 前置条件
 
 - 需求文档：`docs/devdocs/01-requirements.md`
 - 如不存在，建议先运行 `/devdocs-requirements`
 
-## 设计前必问
+## 设计前必问（初始设计）
 
 **必须使用 AskUserQuestion 询问用户**：
 
@@ -453,6 +460,33 @@ docs/devdocs/
 - [ ] **不为"未来可能"的需求设计**
 - [ ] 不创建只有一个实现的接口（除非为可测试性）
 - [ ] 不过早抽象，等到有 3 个以上相似场景再抽象
+
+### 增量设计约束
+- [ ] **增量设计前必须进行影响分析**
+- [ ] **必须评估向后兼容性**
+- [ ] **破坏性变更必须标注处理方式**
+- [ ] **必须生成设计变更记录**
+
+## 增量设计流程
+
+```
+1. 读取现有设计
+   │
+   ▼
+2. 识别变更来源（F-XXX / INS-XXX / 技术改进）
+   │
+   ▼
+3. 影响分析（模块、接口、数据模型）
+   │
+   ▼
+4. 兼容性评估
+   │
+   ▼
+5. 设计变更 + 生成变更记录
+   │
+   ▼
+6. 用户确认
+```
 
 ## 下一步
 

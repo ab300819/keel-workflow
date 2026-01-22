@@ -1,12 +1,12 @@
 ---
 name: devdocs-system-design
-description: Create system design documents based on requirements. Use when users need technical architecture, API design, data models, or system design. Triggers on keywords like "system design", "architecture", "technical design", "API design".
+description: Create or update system design documents. Supports initial design and incremental design modes. Use when users need technical architecture, API design, data models, design changes, or impact analysis. Triggers on keywords like "system design", "architecture", "technical design", "API design", "design change", "impact analysis", "设计变更", "影响分析".
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ---
 
 # 系统设计
 
-基于需求文档创建完整的系统设计文档。
+基于需求文档创建或更新系统设计文档，支持初始设计和增量设计两种模式。
 
 ## 语言规则
 
@@ -16,23 +16,100 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 
 ## 触发条件
 
-- 用户已完成需求文档
+### 初始设计模式
+- 用户已完成需求文档，项目无系统设计
 - 用户要求系统/技术设计
 - 用户需要架构或 API 设计
+
+### 增量设计模式
+- 新功能加入后需要设计变更（来自 `/devdocs-feature`）
+- 优化建议确认后需要设计调整（来自 `/devdocs-insights`）
+- 技术改进需要架构调整
+- 用户要求更新/修改现有设计
 
 ## 前置条件
 
 - 需求文档：`docs/devdocs/01-requirements.md`
 - 如不存在，建议先运行 `/devdocs-requirements`
 
+## 设计模式检测
+
+```
+启动时自动检测
+      │
+      ▼
+检查 02-system-design.md 是否存在
+      │
+      ├── 不存在 → 初始设计模式
+      │
+      └── 存在 → 增量设计模式
+            │
+            ▼
+      检查是否有新增需求（F-XXX）未覆盖
+            │
+            ├── 有 → 提示增量设计
+            │
+            └── 无 → 询问用户意图
+```
+
 ## 工作流程
 
-1. **读取需求**：加载 `docs/devdocs/01-requirements.md`
-2. **询问偏好**：技术栈、平台、集成需求
-3. **探索代码**：了解现有架构或从现有代码提取接口
-4. **创建设计**：生成系统设计文档（使用 ASCII 或 Mermaid 图表）
-5. **验证覆盖**：检查所有 F-XXX 都有对应模块/接口
-6. **用户确认**：获得批准后定稿
+### 初始设计流程
+
+```
+1. 读取需求 → 加载 01-requirements.md
+      │
+      ▼
+2. 询问偏好 → 技术栈、平台、集成需求
+      │
+      ▼
+3. 探索代码 → 了解现有架构
+      │
+      ▼
+4. 创建设计 → 生成系统设计文档
+      │
+      ▼
+5. 验证覆盖 → 检查所有 F-XXX 都有对应模块/接口
+      │
+      ▼
+6. 用户确认 → 获得批准后定稿
+```
+
+### 增量设计流程
+
+```
+1. 读取现有设计 → 加载 02-system-design*.md
+      │
+      ▼
+2. 识别变更来源
+      ├── 新功能需求（F-XXX）
+      ├── 优化建议（INS-XXX）
+      └── 技术改进
+      │
+      ▼
+3. 影响分析
+      ├── 识别受影响的模块
+      ├── 识别受影响的接口
+      └── 识别受影响的数据模型
+      │
+      ▼
+4. 兼容性评估
+      ├── 接口变更是否向后兼容？
+      ├── 数据模型变更是否需要迁移？
+      └── 是否有破坏性变更？
+      │
+      ▼
+5. 设计变更
+      ├── 新增模块/接口/数据模型
+      ├── 修改现有设计
+      └── 标注变更版本
+      │
+      ▼
+6. 生成变更记录 → 追加到设计文档
+      │
+      ▼
+7. 用户确认 → 获得批准后更新文档
+```
 
 ## 设计前必问
 
@@ -55,6 +132,112 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
    - 选项：否 / 是（指定系统、API、数据库）
 
 如用户无偏好，则根据需求设计最优方案。
+
+## 增量设计
+
+### 影响分析
+
+增量设计前必须进行影响分析：
+
+```markdown
+## 影响分析：<变更名称>
+
+**变更来源**：F-XXX / INS-XXX / 技术改进
+**变更日期**：YYYY-MM-DD
+
+### 受影响的模块
+
+| 模块 | 影响类型 | 说明 |
+|------|----------|------|
+| UserService | 修改 | 新增方法 `resetPassword()` |
+| AuthModule | 新增 | 新增密码重置模块 |
+| EmailService | 无变化 | 复用现有邮件服务 |
+
+### 受影响的接口
+
+| 接口 | 变更类型 | 向后兼容 | 说明 |
+|------|----------|----------|------|
+| POST /api/auth/reset-password | 新增 | ✅ | 新接口 |
+| GET /api/user/:id | 修改 | ✅ | 返回值新增字段 |
+| POST /api/auth/login | 修改 | ❌ | 参数结构变更 |
+
+### 受影响的数据模型
+
+| 实体 | 变更类型 | 需要迁移 | 说明 |
+|------|----------|----------|------|
+| User | 修改 | ✅ | 新增 `resetToken` 字段 |
+| PasswordResetLog | 新增 | ✅ | 新表 |
+```
+
+### 兼容性评估
+
+| 变更类型 | 向后兼容判断 | 处理方式 |
+|----------|--------------|----------|
+| 新增接口 | ✅ 兼容 | 直接添加 |
+| 新增字段（可选） | ✅ 兼容 | 直接添加 |
+| 新增字段（必填） | ❌ 不兼容 | 需要迁移计划 |
+| 修改字段类型 | ❌ 不兼容 | 需要迁移计划 |
+| 删除字段/接口 | ❌ 不兼容 | 需要废弃周期 |
+| 修改接口参数 | ⚠️ 视情况 | 评估影响范围 |
+
+**破坏性变更处理**：
+1. 标注废弃（Deprecated）
+2. 设置废弃周期（如 2 个版本）
+3. 提供迁移指南
+4. 在变更记录中说明
+
+### 设计变更记录
+
+增量设计完成后，在设计文档末尾追加变更记录：
+
+```markdown
+---
+
+## 设计变更记录
+
+### v1.2.0 (2024-01-20)
+
+**变更来源**：F-005 密码重置功能, INS-003 登录安全优化
+
+**新增模块**：
+- `PasswordResetModule` - 密码重置模块（关联 F-005）
+
+**修改模块**：
+- `AuthModule` - 新增密码重置入口
+
+**新增接口**：
+- `IPasswordResetService.sendResetEmail()` - 发送重置邮件
+- `IPasswordResetService.resetPassword()` - 执行密码重置
+
+**新增 API**：
+- `POST /api/auth/forgot-password` - 请求密码重置
+- `POST /api/auth/reset-password` - 执行密码重置
+
+**数据模型变更**：
+- `User` 新增字段：`resetToken`, `resetTokenExpiry`
+- 新增实体：`PasswordResetLog`
+
+**破坏性变更**：无
+
+**迁移说明**：
+- 执行数据库迁移脚本 `migrations/001-add-reset-token.sql`
+
+---
+
+### v1.1.0 (2024-01-10)
+
+...
+```
+
+### 增量设计检查清单
+
+- [ ] 已识别所有受影响的模块
+- [ ] 已识别所有受影响的接口
+- [ ] 已识别所有受影响的数据模型
+- [ ] 已评估向后兼容性
+- [ ] 破坏性变更已标注处理方式
+- [ ] 已生成变更记录
+- [ ] 新增内容已标注关联需求（F-XXX / INS-XXX）
 
 ## 输出文件
 
@@ -233,10 +416,22 @@ src/
 - [ ] **用户输入有验证（防注入）**
 - [ ] 敏感操作有日志记录
 
+### 增量设计约束
+
+- [ ] **增量设计前必须进行影响分析**
+- [ ] **必须评估向后兼容性**
+- [ ] **破坏性变更必须标注处理方式**
+- [ ] **必须生成设计变更记录**
+- [ ] 新增内容必须标注关联需求（F-XXX / INS-XXX）
+- [ ] 修改现有接口必须说明兼容性
+- [ ] 数据模型变更必须说明迁移方案
+
 ## Skill 协作
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
+| 新功能设计变更 | `/devdocs-feature` | 新功能触发增量设计 |
+| 优化建议设计变更 | `/devdocs-insights` | 洞察确认后触发增量设计 |
 | 可测试性设计 | `/testing-guide` | 确保核心逻辑可单元测试 |
 | 代码质量 | `/code-quality` | MTE 原则指导设计 |
 | UI 架构 | `/ui-skills` | UI 组件设计约束 |
@@ -244,4 +439,10 @@ src/
 
 ## 下一步
 
+### 初始设计后
 用户确认系统设计后，建议运行 `/devdocs-test-cases` 进入测试用例设计阶段。
+
+### 增量设计后
+1. 如有新增功能点 → 运行 `/devdocs-test-cases` 补充测试用例
+2. 如有数据模型变更 → 准备数据库迁移脚本
+3. 如有破坏性变更 → 通知相关依赖方
