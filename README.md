@@ -84,6 +84,7 @@ docs/devdocs/
 | [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `00-feature-log.md` |
 | [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `progress-report.md` |
 | [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `00-context.md` |
+| [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `05-insights.md` |
 | [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | - |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
@@ -209,6 +210,7 @@ DevDocs 流程中各 Skill 的协作关系：
 | 阶段 | 主 Skill | 协作 Skill | 说明 |
 |------|----------|-----------|------|
 | 需求分析 | `/devdocs-requirements` | - | 定义 F/US/AC 编号 |
+| 洞察收集 | `/devdocs-insights` | `/ui-skills` | 审查/调研结果转需求 |
 | 系统设计 | `/devdocs-system-design` | `/code-quality` | MTE 原则指导设计 |
 | 测试用例 | `/devdocs-test-cases` | `/testing-guide` | 测试质量约束 |
 | 开发任务 | `/devdocs-dev-tasks` | 多个 | 见下表 |
@@ -1462,6 +1464,109 @@ docs/devdocs/
 
 ---
 
+# 17. devdocs-insights (洞察收集)
+
+收集来自 UI/UX 审查、文档调研、外部参考等来源的改进建议，经用户确认后转化为开发需求。
+
+## 元数据
+
+```yaml
+name: devdocs-insights
+description: Collect improvement insights from UI/UX reviews, document research, or external references
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
+```
+
+## 触发条件
+
+- 用户完成 UI/UX 审查，有优化建议
+- 用户调研了文档/方案，发现可借鉴点
+- 用户发现外部参考（竞品、最佳实践）可借鉴
+- 用户有改进想法需要转化为需求
+
+## 洞察来源
+
+| 来源 | 说明 | 示例 |
+|------|------|------|
+| 🎨 UI/UX 审查 | 界面问题、交互优化 | 按钮对比度不足、缺少加载状态 |
+| 📄 文档调研 | 技术方案、设计模式 | 采用 React Query、引入乐观更新 |
+| 🔍 外部参考 | 竞品分析、最佳实践 | 参考 Notion 的拖拽交互 |
+| 💡 内部反馈 | 用户反馈、团队建议 | 列表加载慢需要虚拟滚动 |
+
+## 核心流程
+
+```
+1. 识别洞察来源
+   │
+   ▼
+2. 收集/整理建议（INS-XXX）
+   │
+   ▼
+3. 用户确认（AskUserQuestion）
+   │
+   ▼
+4. 转化为需求（追加到 01-requirements.md）
+   │
+   ▼
+5. 建议后续流程
+```
+
+## 建议格式
+
+```markdown
+### INS-001: <建议标题>
+
+| 属性 | 内容 |
+|------|------|
+| **来源** | 🎨 UI/UX 审查 |
+| **参考** | <来源链接或描述> |
+| **现状** | <当前问题> |
+| **建议** | <改进建议> |
+| **优先级** | P1 |
+| **状态** | ⏳ 待确认 |
+```
+
+## 输出文件
+
+```
+docs/devdocs/
+├── 05-insights.md       # 洞察记录（可选）
+└── 01-requirements.md   # 确认后追加需求
+```
+
+## 使用示例
+
+```bash
+# 标准模式：交互式收集和确认
+/devdocs-insights
+
+# 从 URL 提取建议
+/devdocs-insights --url <url>
+
+# 快速模式：直接输入建议列表
+/devdocs-insights --quick
+```
+
+## 约束
+
+- [ ] **所有建议必须经过用户确认才能转化**
+- [ ] **必须标明建议来源**
+- [ ] **转化后的需求必须可追溯到原始建议**
+- [ ] 拒绝的建议必须记录原因
+- [ ] 单次收集建议不超过 10 条
+
+## 与其他 Skills 协作
+
+| 场景 | 协作 Skill |
+|------|-----------|
+| UI/UX 审查来源 | `/ui-skills` |
+| 确认后设计 | `/devdocs-system-design` |
+| 确认后开发 | `/devdocs-dev-tasks` |
+| Bug 类建议 | `/devdocs-bugfix` |
+
+详见 [devdocs-insights/SKILL.md](devdocs-insights/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -1494,6 +1599,8 @@ skills/
 ├── devdocs-sync/
 │   └── SKILL.md
 ├── devdocs-onboard/
+│   └── SKILL.md
+├── devdocs-insights/
 │   └── SKILL.md
 ├── code-quality/
 │   └── SKILL.md
@@ -1540,6 +1647,7 @@ skills/
 /devdocs-feature
 /devdocs-sync
 /devdocs-onboard
+/devdocs-insights
 /devdocs-bugfix
 /code-quality
 /testing-guide
@@ -1561,6 +1669,8 @@ skills/
 检查文档和代码是否一致
 生成项目上下文
 帮我了解这个项目
+我审查了界面，有一些优化建议
+这篇文章有些可以借鉴的地方
 帮我重构这段代码
 重构 UserService
 Review 一下这个 PR
