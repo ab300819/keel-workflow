@@ -24,8 +24,8 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 ## 运行模式
 
 ```
-/devdocs-sync check              → 仅检查，不更新文档
 /devdocs-sync                    → 完整同步（检查 + 确认 + 更新）
+/devdocs-sync --check            → 仅检查，不更新文档
 /devdocs-sync --absorb           → 吸收模式（自动 + 智能补齐）
 /devdocs-sync --archive          → 强制归档已完成任务
 /devdocs-sync T-01 T-02          → 指定范围同步
@@ -348,7 +348,7 @@ interface ICacheService {
 
 ```bash
 # 检查任务状态（不更新文档）
-/devdocs-sync check
+/devdocs-sync --check
 
 # 输出: 偏差报告（仅显示，不写入）
 ```
@@ -576,7 +576,7 @@ Agent:
 ### 示例二：快速检查
 
 ```
-用户: /devdocs-sync check
+用户: /devdocs-sync --check
 
 Agent:
 **快速检查结果**:
@@ -588,7 +588,7 @@ Agent:
 - 2 个任务状态需更新
 - 1 个新增文件未记录
 
-使用 `/devdocs-sync` 进行完整同步。
+使用 `/devdocs-sync` 或 `/devdocs-sync --absorb` 进行同步。
 ```
 
 ## 下一步

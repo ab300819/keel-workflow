@@ -1349,8 +1349,8 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 ## 运行模式
 
 ```bash
-/devdocs-sync check     # 仅检查，不更新文档
 /devdocs-sync           # 完整同步（检查 + 确认 + 更新）
+/devdocs-sync --check   # 仅检查，不更新文档
 /devdocs-sync --absorb  # 吸收模式（自动 + 智能补齐）
 /devdocs-sync --archive # 强制归档已完成任务
 ```
