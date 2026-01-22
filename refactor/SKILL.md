@@ -391,7 +391,7 @@ UI 重构检查点：
 docs/devdocs/
 ├── 01-requirements.md       # 从代码逆向的需求
 ├── 02-system-design.md      # 新设计（可测试）
-├── 03-test-plan.md          # 测试方案
+├── 03-test-cases.md          # 测试方案
 └── 05-refactor-rewrite.md   # 重写报告
 ```
 
@@ -599,7 +599,7 @@ docs/devdocs/
 DevDocs 工作流（含重构）:
 
 新项目:
-/devdocs-requirements → /devdocs-system-design → /devdocs-test-plan → /devdocs-dev-tasks
+/devdocs-requirements → /devdocs-system-design → /devdocs-test-cases → /devdocs-dev-tasks
                                                                               │
                                                                               ▼
                                                                            开发实现
@@ -627,7 +627,7 @@ DevDocs 工作流（含重构）:
     │                    │
     │                    ├── /devdocs-requirements
     │                    ├── /devdocs-system-design
-    │                    └── /devdocs-test-plan
+    │                    └── /devdocs-test-cases
     │
-    └── 测试编写 → /devdocs-test-plan (测试策略参考)
+    └── 测试编写 → /devdocs-test-cases (测试策略参考)
 ```

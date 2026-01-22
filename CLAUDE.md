@@ -25,8 +25,10 @@ DevDocs workflow uses a unified numbering system for traceability:
 | Unit Test | UT | UT-001 | Verify internal logic |
 | Integration Test | IT | IT-001 | Verify component collaboration |
 | E2E Test | E2E | E2E-001 | Verify user scenario |
+| Insight | INS | INS-001 | Improvement suggestion from review/research |
+| Task | T | T-01 | Development task (2-digit exception) |
 
-**Traceability**: `F → US → AC → (UT/IT/E2E)`
+**Traceability**: `F → US → AC → (UT/IT/E2E)` and `INS → F`
 
 ## Skill Structure
 
