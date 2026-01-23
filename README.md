@@ -1481,17 +1481,17 @@ docs/devdocs/
 | 待办任务 | 下一步任务、阻塞项 | `04-dev-tasks.md` |
 | 快速开始 | 环境准备、运行命令 | `package.json`, `Makefile` |
 
-## 使用场景
+## 运行模式
 
 ```bash
-# 标准模式：生成上下文文件
+# 智能检测：根据文档存在状态询问用户
 /devdocs-onboard
 
-# 快速模式：仅显示摘要
-/devdocs-onboard --quick
+# 只读模式：读取并展示现有文档，不修改（新 AI 接手时使用）
+/devdocs-onboard --read
 
-# 完整模式：包含更多细节
-/devdocs-onboard --full
+# 更新模式：重新扫描项目并更新文档（完成工作后使用）
+/devdocs-onboard --update
 ```
 
 ## 约束

@@ -8,6 +8,32 @@ allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
 
 生成项目上下文摘要，帮助 AI 工具或团队成员快速了解项目并接手工作。
 
+## 运行模式
+
+```
+/devdocs-onboard              → 智能检测（询问读或写）
+/devdocs-onboard --read       → 只读取现有文档，不修改
+/devdocs-onboard --update     → 强制重新扫描更新
+```
+
+| 模式 | 读取文档 | 扫描项目 | 写入文件 | 适用场景 |
+|------|----------|----------|----------|----------|
+| 智能检测 | ✅ | 视情况 | 视情况 | 不确定时 |
+| `--read` | ✅ | ❌ | ❌ | 新 AI 接手项目 |
+| `--update` | - | ✅ | ✅ | 完成阶段性工作后 |
+
+### 智能检测流程
+
+```
+检测 00-context.md 是否存在
+        │
+        ├── 不存在 → 自动进入更新模式
+        │
+        └── 存在 → 询问用户
+                    ├── "读取现有内容" → 展示文档，不修改
+                    └── "重新扫描更新" → 扫描项目，覆盖文件
+```
+
 ## 语言规则
 
 - 支持中英文提问
@@ -245,46 +271,46 @@ allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
 
 ## 使用场景
 
-### 场景一：切换 AI 工具
+### 场景一：完成工作，准备交接（--update）
 
 ```
-用户: /devdocs-onboard
+用户: /devdocs-onboard --update
 
-Agent: 正在生成项目上下文...
-✅ 已生成 docs/devdocs/00-context.md
+Agent: 正在扫描项目并生成上下文...
+✅ 已更新 docs/devdocs/00-context.md
 
 您可以将此文件内容复制给新的 AI 工具，它将快速了解项目并接手工作。
 ```
 
-### 场景二：新会话开始
+### 场景二：新 AI 接手项目（--read）
 
 ```
-用户: 帮我了解这个项目
+用户: /devdocs-onboard --read
 
-Agent: 检测到 DevDocs 文档，正在生成上下文摘要...
+Agent: 正在读取项目上下文...
 
-[显示简化版上下文]
+[展示 00-context.md 内容]
 
 当前进度：8/12 任务已完成 (67%)
 下一步：T-09 用户认证模块
 
-需要查看完整上下文吗？
+建议从"待办任务"部分继续开发。
 ```
 
-### 场景三：团队成员入门
+### 场景三：不确定时（智能检测）
 
 ```
-用户: /devdocs-onboard --full
+用户: /devdocs-onboard
 
-Agent: 正在生成完整项目上下文...
-✅ 已生成 docs/devdocs/00-context.md
+Agent: 检测到 docs/devdocs/00-context.md 已存在（更新于 2 小时前）
 
-包含：
-- 项目概述和技术栈
-- 系统架构和核心接口
-- 代码结构说明
-- 当前进度和待办任务
-- 开发环境配置指南
+请选择：
+1. 读取现有内容（不修改）
+2. 重新扫描更新
+
+用户: 1
+
+Agent: [展示现有文档内容]
 ```
 
 ## 约束
@@ -322,22 +348,23 @@ Agent: 正在生成完整项目上下文...
 ## 命令选项
 
 ```bash
-# 标准模式：生成上下文文件
+# 智能检测：根据文档存在状态询问用户
 /devdocs-onboard
 
-# 快速模式：仅显示摘要，不生成文件
-/devdocs-onboard --quick
+# 只读模式：读取并展示现有文档，不做任何修改
+/devdocs-onboard --read
 
-# 完整模式：包含更多细节
-/devdocs-onboard --full
-
-# 指定输出路径
-/devdocs-onboard --output ./context.md
+# 更新模式：强制重新扫描项目并更新文档
+/devdocs-onboard --update
 ```
 
 ## 下一步
 
-生成上下文后：
-1. 将 `00-context.md` 内容传递给新 AI 工具
-2. 新 AI 可直接从"下一步任务"继续开发
-3. 如需更新上下文，重新运行 `/devdocs-onboard`
+### 交接方（工具 A）
+1. 完成阶段性工作后，运行 `/devdocs-onboard --update`
+2. 将 `00-context.md` 内容传递给新 AI 工具
+
+### 接手方（工具 B）
+1. 运行 `/devdocs-onboard --read` 了解项目
+2. 从"待办任务"部分继续开发
+3. 完成工作后运行 `/devdocs-onboard --update` 更新上下文
