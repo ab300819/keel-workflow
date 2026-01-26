@@ -160,7 +160,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 ### 进度报告
 
-生成 `docs/devdocs/progress-report.md`，包含总体进度、偏差汇总、下一步建议。
+生成 `docs/devdocs/00-progress-report.md`，包含总体进度、偏差汇总、下一步建议。
 
 ### 文档更新
 

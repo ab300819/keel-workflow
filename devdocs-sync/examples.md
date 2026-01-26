@@ -78,7 +78,7 @@
 
 ## 进度报告格式
 
-生成 `docs/devdocs/progress-report.md`：
+生成 `docs/devdocs/00-progress-report.md`：
 
 ```markdown
 # 进度报告
@@ -148,7 +148,7 @@ Agent:
 Agent:
 ✅ 已更新 04-dev-tasks.md
 ✅ 已更新 03-test-cases.md
-✅ 已生成 progress-report.md
+✅ 已生成 00-progress-report.md
 ```
 
 ### 示例二：快速检查

@@ -88,7 +88,7 @@ docs/devdocs/
 | [开发工作流](#18-devdocs-dev-workflow-开发工作流) | `/devdocs-dev-workflow` | 执行单个任务的开发流程 | - |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `docs/devdocs/00-retrofit-report.md` |
 | [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `docs/devdocs/00-feature-log.md` |
-| [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `docs/devdocs/progress-report.md` |
+| [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `docs/devdocs/00-progress-report.md` |
 | [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `docs/devdocs/00-context.md` |
 | [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `docs/devdocs/05-insights.md` |
 | [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | `docs/devdocs/05-bugfix-log.md` |
@@ -1470,7 +1470,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 ```
 docs/devdocs/
-└── progress-report.md    # 进度报告（含吸收报告）
+└── 00-progress-report.md    # 进度报告（含吸收报告）
 ```
 
 ## 任务归档
