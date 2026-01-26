@@ -1677,7 +1677,11 @@ skills/
 │       ├── integration-test-template.md
 │       └── e2e-test-template.md
 ├── devdocs-dev-tasks/
-│   └── SKILL.md
+│   ├── SKILL.md
+│   ├── archive-rules.md
+│   ├── execution-flow.md
+│   ├── skeleton-examples.md
+│   └── task-template.md
 ├── devdocs-retrofit/
 │   └── SKILL.md
 ├── devdocs-bugfix/
@@ -1685,7 +1689,12 @@ skills/
 ├── devdocs-feature/
 │   └── SKILL.md
 ├── devdocs-sync/
-│   └── SKILL.md
+│   ├── SKILL.md
+│   ├── absorb-mode.md
+│   ├── archive.md
+│   ├── audit-mode.md
+│   ├── examples.md
+│   └── trace-mode.md
 ├── devdocs-onboard/
 │   └── SKILL.md
 ├── devdocs-insights/
