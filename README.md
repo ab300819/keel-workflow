@@ -556,7 +556,8 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ## 前置条件
 
 - 需求文档：`docs/devdocs/01-requirements.md`
-- 如不存在，建议先运行 `/devdocs-requirements`
+- 系统设计：`docs/devdocs/02-system-design.md`（设计 UT/IT 时需要了解接口签名和模块划分）
+- 如不存在，建议先运行前置阶段
 
 ## 核心理念
 
@@ -787,6 +788,7 @@ T-02 ─┘           │
 - [ ] 测试方法必须可执行
 - [ ] 验收标准必须可量化
 - [ ] Review 要点必须针对任务类型
+- [ ] **任务执行必须使用 `/devdocs-dev-workflow`**（跳过会导致追溯失效）
 
 ---
 
@@ -1336,12 +1338,17 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ```
 Step 0: 扫描编号 → Step 1: 需求追加 → ✅ 确认
                            ↓
-Step 2: 设计追加 → ✅ 确认 → Step 3: 测试追加 → ✅ 确认
-                                     ↓
-                           Step 4: 任务追加 → ✅ 确认
-                                     ↓
-                           Step 5: 生成功能日志
+Step 2: 委托 /devdocs-system-design → ✅ 确认
+                           ↓
+Step 3: 委托 /devdocs-test-cases → ✅ 确认
+                           ↓
+Step 4: 委托 /devdocs-dev-tasks → ✅ 确认
+                           ↓
+Step 5: 生成功能日志
 ```
+
+> **编排器边界**：`devdocs-feature` 是编排器，负责编号扫描、步骤编排、确认流程。
+> 具体的设计、测试、任务内容由对应的专项 Skill 负责。
 
 ## 核心原则
 
@@ -1372,7 +1379,7 @@ Step 2: 设计追加 → ✅ 确认 → Step 3: 测试追加 → ✅ 确认
 
 # 15. devdocs-sync (文档同步)
 
-保持 DevDocs 文档与实际实现进度一致，检测偏差并更新状态。支持吸收模式自动补齐文档。
+保持 DevDocs 文档与实际实现进度一致，检测偏差并更新状态。支持吸收模式自动补齐文档，具备调度器功能指派修复 Skill。
 
 ## 元数据
 
@@ -1422,13 +1429,17 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 - 发现未记录的新文件 → 建议补充文档
 - 实现与设计不一致 → 提示处理
 
-## 偏差类型
+## 偏差类型与修复路由（调度器功能）
 
-| 类型 | 说明 | 处理建议 |
-|------|------|----------|
-| 文档有，代码无 | 任务定义但未实现 | 继续开发 或 移除任务 |
-| 代码有，文档无 | 实现未记录 | 补充文档（absorb 模式自动处理） |
-| 实现与设计不一致 | 接口签名变更等 | 更新文档 或 修改实现 |
+| 偏差类型 | 说明 | 修复 Skill |
+|----------|------|-----------|
+| 设计缺失/漂移 | 代码有新接口但文档未记录 | `/devdocs-system-design` |
+| AC 缺测试 | 验收标准无对应测试用例 | `/devdocs-test-cases` |
+| F 缺任务闭环 | 功能点无关联开发任务 | `/devdocs-dev-tasks` |
+| 代码已实现文档落后 | 状态未更新、新内容未登记 | `/devdocs-sync --absorb` |
+| 追溯矩阵代码位置缺失 | 代码标注未扫描到矩阵 | `/devdocs-sync --trace` |
+
+> 调度器原则：偏差报告不只列出问题，必须给出明确的修复路由。
 
 ## 输出文件
 
