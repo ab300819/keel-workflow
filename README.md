@@ -84,6 +84,7 @@ docs/devdocs/
 | [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计（支持增量） | `docs/devdocs/02-system-design*.md` |
 | [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `docs/devdocs/03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `docs/devdocs/04-dev-tasks*.md` |
+| [开发工作流](#18-devdocs-dev-workflow-开发工作流) | `/devdocs-dev-workflow` | 执行单个任务的开发流程 | - |
 | [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `docs/devdocs/00-retrofit-report.md` |
 | [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `docs/devdocs/00-feature-log.md` |
 | [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `docs/devdocs/progress-report.md` |
@@ -263,17 +264,19 @@ DevDocs 流程中各 Skill 的协作关系：
 ### 开发阶段 Skill 协作
 
 ```
-/devdocs-dev-tasks 执行任务
+/devdocs-dev-tasks 任务编排（规划层）
          │
-         ├── 编码实现 ────────── /code-quality (MTE 原则)
-         │
-         ├── UI 实现 ─────────── /ui-skills (无障碍、动画约束)
-         │
-         ├── 测试编写 ────────── /testing-guide (断言质量、变异测试)
-         │
-         ├── 代码提交 ────────── /git-safety + /commit-convention
-         │
-         └── 进度同步 ────────── /devdocs-sync (文档与实现一致性)
+         └── 执行任务 ─────────── /devdocs-dev-workflow（执行层）
+                  │
+                  ├── 编码实现 ────────── /code-quality (MTE 原则)
+                  │
+                  ├── UI 实现 ─────────── /ui-skills (无障碍、动画约束)
+                  │
+                  ├── 测试编写 ────────── /testing-guide (断言质量、变异测试)
+                  │
+                  ├── 代码提交 ────────── /git-safety + /commit-convention
+                  │
+                  └── 进度同步 ────────── /devdocs-sync (文档与实现一致性)
 ```
 
 ### 约束执行时机
@@ -1655,6 +1658,76 @@ docs/devdocs/
 
 ---
 
+# 18. devdocs-dev-workflow (开发工作流)
+
+执行单个开发任务的工作流指导，采用自顶向下开发模式和分层 TDD。
+
+## 元数据
+
+```yaml
+name: devdocs-dev-workflow
+description: Execute development tasks with skeleton-first approach and layered TDD
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
+```
+
+## 触发条件
+
+- 用户开始执行某个任务（如 T-01）
+- 用户需要开发指导
+- 用户从 devdocs-dev-tasks 进入开发阶段
+
+## 与 devdocs-dev-tasks 的关系
+
+```
+devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
+        │                              │
+        ├── 任务拆分                   ├── 单任务执行流程
+        ├── TAR 原则                   ├── 自顶向下开发
+        ├── 依赖管理                   ├── 分层 TDD
+        └── 任务归档                   └── 代码追溯标注
+```
+
+## 核心流程
+
+```
+1. 读取任务定义（从 04-dev-tasks.md）
+   │
+   ▼
+2. 生成骨架代码
+   ├── 接口骨架 + @requirement/@satisfies 标注
+   └── 测试骨架 + @verifies/@testcase 标注
+   │
+   ▼
+3. 执行开发（分层 TDD）
+   ├── 核心逻辑 🔴：测试先行
+   ├── 接口层 🟡：推荐测试先行
+   ├── UI 层 🟢：可实现后补测试
+   └── 基础设施 ⚪：集成测试验证
+   │
+   ▼
+4. 完成检查 → 提交代码 → 更新追溯
+```
+
+## 约束
+
+- [ ] **接口骨架必须添加追溯标注**
+- [ ] **测试骨架必须使用 skip/todo 标记**
+- [ ] **核心逻辑任务必须先写测试，后写实现**
+- [ ] **验收标准 (AC-XXX) 全部满足才能完成**
+
+## 与其他 Skills 协作
+
+| 阶段 | 协作 Skill |
+|------|-----------|
+| 写业务代码 | `/code-quality` |
+| 写测试代码 | `/testing-guide` |
+| UI 实现 | `/ui-skills` |
+| 代码提交 | `/git-safety`, `/commit-convention` |
+
+详见 [devdocs-dev-workflow/SKILL.md](devdocs-dev-workflow/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -1679,9 +1752,11 @@ skills/
 ├── devdocs-dev-tasks/
 │   ├── SKILL.md
 │   ├── archive-rules.md
-│   ├── execution-flow.md
-│   ├── skeleton-examples.md
 │   └── task-template.md
+├── devdocs-dev-workflow/
+│   ├── SKILL.md
+│   ├── execution-flow.md
+│   └── skeleton-examples.md
 ├── devdocs-retrofit/
 │   └── SKILL.md
 ├── devdocs-bugfix/

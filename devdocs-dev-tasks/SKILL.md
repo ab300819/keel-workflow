@@ -19,6 +19,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 - 用户已完成系统设计和测试用例
 - 用户要求拆分开发任务
 - 用户需要迭代/Sprint 规划
+- 来自 `/devdocs-feature`、`/devdocs-bugfix`、`/devdocs-insights` 的增量需求
 
 ## 前置条件
 
@@ -75,92 +76,9 @@ docs/devdocs/
 | **可验收 (Acceptable)** | 有明确的验收标准 | 具体、可量化的完成标准 |
 | **可审查 (Reviewable)** | 可独立进行代码审查 | Review 要点 |
 
-## 代码追溯标注规范
+## 任务分层
 
-> 实现文档↔代码的双向追溯，AI 在生成代码时自动添加标注。
-
-### 标注类型
-
-| 标注 | 用途 | 位置 |
-|------|------|------|
-| `@requirement F-XXX` | 关联功能点 | 接口/类/模块 |
-| `@satisfies AC-XXX` | 满足的验收标准 | 接口/方法 |
-| `@verifies AC-XXX` | 验证的验收标准 | 测试用例 |
-| `@testcase UT/IT/E2E-XXX` | 测试编号 | 测试用例 |
-
-### 标注示例
-
-```typescript
-/**
- * 创建用户
- * @requirement F-001 - 用户注册
- * @satisfies AC-001 - 邮箱格式校验
- * @satisfies AC-002 - 密码强度校验
- */
-export async function createUser(dto: CreateUserDTO): Promise<User> {
-  // 实现代码
-}
-
-/**
- * @verifies AC-001 - 邮箱格式校验
- * @testcase UT-001
- */
-test('createUser 应该拒绝无效邮箱格式', () => {
-  // 测试代码
-});
-```
-
-### 标注规则
-
-| 层级 | 标注位置 | 强制性 |
-|------|----------|--------|
-| 公共接口 | Service/API 入口方法 | **必须** |
-| 测试文件 | 每个测试用例 | **必须** |
-| 内部实现 | 复杂逻辑 | 可选 |
-
-详细骨架示例见 [skeleton-examples.md](skeleton-examples.md)
-
-## 自顶向下开发模式
-
-> 先定义骨架，后填充细节。确保追溯链在代码生成时就建立。
-
-### 开发流程
-
-```
-Step 1: 生成接口骨架
-        ├── 方法签名（来自 02-system-design.md）
-        ├── 添加 @requirement/@satisfies 标注
-        └── 方法体: throw new Error('Not implemented')
-                │
-                ▼
-Step 2: 生成测试骨架
-        ├── 测试结构（来自 03-test-cases.md）
-        ├── 添加 @verifies/@testcase 标注
-        └── 测试体: test.skip() 或 test.todo()
-                │
-                ▼
-Step 3: 实现接口细节（遵循 /code-quality）
-                │
-                ▼
-Step 4: 完善测试（遵循 /testing-guide）
-                │
-                ▼
-Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
-```
-
-### 骨架生成约束
-
-- [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）
-- [ ] **接口骨架必须添加追溯标注**
-- [ ] **未实现方法必须抛出 Error 并注明任务编号**
-- [ ] **测试骨架必须使用 skip/todo 标记**
-- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**
-
-详见 [skeleton-examples.md](skeleton-examples.md)
-
-## 分层 TDD 模式
-
-根据任务类型决定测试优先级：
+根据任务类型分层，决定 TDD 模式：
 
 | 层级 | TDD 模式 | 说明 |
 |------|----------|------|
@@ -168,20 +86,6 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 | **接口层** (Controller/API) | 🟡 推荐 | 建议测试先行 |
 | **UI 层** (Component/View) | 🟢 可选 | 可实现后补 |
 | **基础设施** (DB/Config) | ⚪ 不适用 | 集成测试验证 |
-
-### TDD 循环
-
-```
-┌─────┐    ┌─────┐    ┌─────┐
-│ 红  │ → │ 绿  │ → │重构 │ ──┐
-│写测试│    │写实现│    │优化 │   │
-│(失败)│    │(通过)│    │代码 │   │
-└─────┘    └─────┘    └─────┘   │
-    ↑                           │
-    └───────────────────────────┘
-```
-
-详细执行流程见 [execution-flow.md](execution-flow.md)
 
 ## 约束
 
@@ -201,17 +105,6 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 - [ ] **每个任务必须关联测试用例 (UT/IT/E2E-XXX)**
 - [ ] 测试用例来自 `03-test-*.md` 文档
 
-### Skill 协作约束
-
-| 任务类型 | 约束 Skill | 检查点 |
-|----------|-----------|--------|
-| 核心逻辑 🔴 | `/code-quality`, `/testing-guide` | TDD 流程、MTE 原则、依赖注入 |
-| 接口层 🟡 | `/testing-guide` | 接口测试、契约验证 |
-| UI 实现 🟢 | `/ui-skills` | 无障碍、动画、布局约束 |
-| 测试编写 | `/testing-guide` | 覆盖率、断言质量、变异测试 |
-| 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |
-| 提交信息 | `/commit-convention` | 遵循项目提交规范 |
-
 ### TAR 原则约束
 
 - [ ] **每个任务必须包含测试方法**（如何验证）
@@ -221,15 +114,29 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 - [ ] 验收标准必须可量化
 - [ ] Review 要点必须针对任务类型
 
-### 分层 TDD 约束
+### 分层约束
 
 - [ ] **核心逻辑任务必须标记 🔴 强制 TDD**
-- [ ] **核心逻辑任务必须先写测试，后写实现**
-- [ ] **核心逻辑任务禁止在测试通过前提交**
 - [ ] 接口层任务标记 🟡 推荐 TDD
 - [ ] UI 层任务标记 🟢 可选 TDD
 - [ ] 基础设施任务标记 ⚪ 不适用 TDD
-- [ ] TDD 任务必须包含红-绿-重构三步骤
+
+## 增量任务管理
+
+### 来源
+
+| 来源 Skill | 触发场景 | 操作 |
+|-----------|---------|------|
+| `/devdocs-feature` | 新增功能需求 | 追加任务到列表 |
+| `/devdocs-bugfix` | Bug 修复需求 | 插入高优先级任务 |
+| `/devdocs-insights` | 改进建议确认 | 追加任务到列表 |
+
+### 增量操作
+
+- **新增任务**：追加到任务列表末尾，重新编号
+- **插入任务**：高优先级任务插入合适位置
+- **更新依赖**：调整受影响任务的依赖关系
+- **更新状态**：标记任务完成/进行中
 
 ## 完成后操作
 
@@ -237,10 +144,18 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 1. 询问用户是否开始开发
 2. 如是，使用 TodoWrite 添加所有任务到追踪列表
 3. 建议从第一个任务（T-01）开始
+4. **执行任务时使用 `/devdocs-dev-workflow`**
 
 ## 参考资料
 
 - [task-template.md](task-template.md) - 完整任务文档模板
-- [skeleton-examples.md](skeleton-examples.md) - 接口/测试骨架示例
-- [execution-flow.md](execution-flow.md) - 任务执行流程详解
 - [archive-rules.md](archive-rules.md) - 任务归档规则
+
+## 协作 Skill
+
+| 场景 | Skill |
+|------|-------|
+| 执行开发任务 | `/devdocs-dev-workflow` |
+| 同步文档状态 | `/devdocs-sync` |
+| 新增功能需求 | `/devdocs-feature` |
+| 修复 Bug | `/devdocs-bugfix` |
