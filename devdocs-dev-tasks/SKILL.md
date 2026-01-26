@@ -143,6 +143,163 @@ docs/devdocs/
 | **可验收 (Acceptable)** | 有明确的验收标准 | 具体、可量化的完成标准 |
 | **可审查 (Reviewable)** | 可独立进行代码审查 | Review 要点 |
 
+## 代码追溯标注规范
+
+> 实现文档↔代码的双向追溯，AI 在生成代码时自动添加标注。
+
+### 标注类型
+
+| 标注 | 用途 | 位置 |
+|------|------|------|
+| `@requirement F-XXX` | 关联功能点 | 接口/类/模块 |
+| `@satisfies AC-XXX` | 满足的验收标准 | 接口/方法 |
+| `@verifies AC-XXX` | 验证的验收标准 | 测试用例 |
+| `@testcase UT/IT/E2E-XXX` | 测试编号 | 测试用例 |
+
+### 接口/方法标注示例
+
+```typescript
+/**
+ * 创建用户
+ * @requirement F-001 - 用户注册
+ * @satisfies AC-001 - 邮箱格式校验
+ * @satisfies AC-002 - 密码强度校验
+ */
+export async function createUser(dto: CreateUserDTO): Promise<User> {
+  // 实现代码
+}
+```
+
+### 测试标注示例
+
+```typescript
+/**
+ * @verifies AC-001 - 邮箱格式校验
+ * @testcase UT-001
+ */
+test('createUser 应该拒绝无效邮箱格式', () => {
+  // 测试代码
+});
+```
+
+### 标注规则
+
+| 层级 | 标注位置 | 强制性 |
+|------|----------|--------|
+| 公共接口 | Service/API 入口方法 | **必须** |
+| 测试文件 | 每个测试用例 | **必须** |
+| 内部实现 | 复杂逻辑 | 可选 |
+
+## 自顶向下开发模式
+
+> 先定义骨架，后填充细节。确保追溯链在代码生成时就建立。
+
+### 开发流程
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    自顶向下开发流程                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Step 1: 生成接口骨架                                        │
+│          ├── 方法签名（来自 02-system-design.md）            │
+│          ├── 添加 @requirement/@satisfies 标注              │
+│          └── 方法体: throw new Error('Not implemented')     │
+│                           │                                 │
+│                           ▼                                 │
+│  Step 2: 生成测试骨架                                        │
+│          ├── 测试结构（来自 03-test-cases.md）               │
+│          ├── 添加 @verifies/@testcase 标注                  │
+│          └── 测试体: test.skip() 或 test.todo()            │
+│                           │                                 │
+│                           ▼                                 │
+│  Step 3: 实现接口细节                                        │
+│          ├── 逐个方法实现                                    │
+│          └── 遵循 /code-quality 约束                        │
+│                           │                                 │
+│                           ▼                                 │
+│  Step 4: 完善测试                                           │
+│          ├── 移除 skip，编写断言                             │
+│          ├── 运行测试，确保通过                              │
+│          └── 遵循 /testing-guide 约束                       │
+│                           │                                 │
+│                           ▼                                 │
+│  Step 5: 同步追溯矩阵                                        │
+│          └── 运行 /devdocs-sync --trace 更新代码位置        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Step 1 输出示例（接口骨架）
+
+```typescript
+// src/services/user.service.ts
+
+/**
+ * 用户服务
+ * @requirement F-001 - 用户注册
+ */
+export class UserService {
+  /**
+   * 创建用户
+   * @satisfies AC-001 - 邮箱格式校验
+   * @satisfies AC-002 - 密码强度校验
+   * @satisfies AC-003 - 用户名唯一性
+   */
+  async createUser(dto: CreateUserDTO): Promise<User> {
+    throw new Error('Not implemented: T-02');
+  }
+
+  /**
+   * 获取用户
+   * @satisfies AC-004 - 用户查询
+   */
+  async getUser(id: string): Promise<User | null> {
+    throw new Error('Not implemented: T-03');
+  }
+}
+```
+
+### Step 2 输出示例（测试骨架）
+
+```typescript
+// tests/user.service.test.ts
+
+describe('UserService', () => {
+  /**
+   * @verifies AC-001 - 邮箱格式校验
+   * @testcase UT-001
+   */
+  test.skip('createUser 应该拒绝无效邮箱格式', () => {
+    // TODO: 实现测试
+  });
+
+  /**
+   * @verifies AC-002 - 密码强度校验
+   * @testcase UT-002
+   */
+  test.skip('createUser 应该拒绝弱密码', () => {
+    // TODO: 实现测试
+  });
+
+  /**
+   * @verifies AC-003 - 用户名唯一性
+   * @testcase UT-003
+   */
+  test.skip('createUser 应该拒绝重复用户名', () => {
+    // TODO: 实现测试
+  });
+});
+```
+
+### 骨架生成约束
+
+- [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）
+- [ ] **接口骨架必须添加追溯标注**
+- [ ] **未实现方法必须抛出 Error 并注明任务编号**
+- [ ] **测试骨架必须使用 skip/todo 标记**
+- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**
+
 ## 分层 TDD 模式
 
 采用 **分层 TDD**（Test-Driven Development）方式，根据任务类型决定测试优先级：
@@ -436,7 +593,7 @@ T-02 ─┘           │
 
 ## 任务执行流程
 
-根据任务类型选择对应的执行流程。
+采用**自顶向下**模式：先生成骨架建立追溯，再逐步实现细节。
 
 ### 核心逻辑任务（强制 TDD）🔴
 
@@ -444,30 +601,43 @@ T-02 ─┘           │
 1. 开始任务
    │
    ▼
-2. 编写测试代码（基于 03-test-*.md 的 UT-XXX）
+2. 生成接口骨架（Step 1）
+   ├── 方法签名 + @requirement/@satisfies 标注
+   └── 方法体: throw new Error('Not implemented')
    │
    ▼
-3. 运行测试 → 确认失败（红）
+3. 生成测试骨架（Step 2）
+   ├── 测试结构 + @verifies/@testcase 标注
+   └── 测试体: test.skip()
    │
    ▼
-4. 编写最小实现代码（遵循 /code-quality）
+4. 移除 skip，编写测试断言
    │
    ▼
-5. 运行测试 → 确认通过（绿）
+5. 运行测试 → 确认失败（红）
+   │
+   ▼
+6. 实现接口细节（遵循 /code-quality）
+   │
+   ▼
+7. 运行测试 → 确认通过（绿）
    ├── 失败 → 修复实现 → 重新测试
    │
    ▼
-6. 重构代码（保持测试通过）
+8. 重构代码（保持测试通过）
    │
    ▼
-7. 检查验收标准（AC-XXX）
+9. 检查验收标准（AC-XXX）
    ├── 全部满足 ─────────────┐
    └── 未满足 → 补充测试+实现 │
                              ▼
-8. 自查 Review 要点
+10. 自查 Review 要点
    │
    ▼
-9. 询问用户：是否提交代码？
+11. 询问用户：是否提交代码？
+   │
+   ▼
+12. 运行 /devdocs-sync --trace 更新追溯矩阵
 ```
 
 ### 接口层任务（推荐 TDD）🟡
@@ -476,16 +646,25 @@ T-02 ─┘           │
 1. 开始任务
    │
    ▼
-2. [推荐] 编写接口测试（基于 IT-XXX）
+2. 生成接口骨架（带标注）
    │
    ▼
-3. 编写接口实现
+3. 生成测试骨架（带标注）
    │
    ▼
-4. 运行测试 → 确认通过
+4. [推荐] 移除 skip，编写接口测试
    │
    ▼
-5. 检查验收标准 → Review → 提交
+5. 实现接口逻辑
+   │
+   ▼
+6. 运行测试 → 确认通过
+   │
+   ▼
+7. 检查验收标准 → Review → 提交
+   │
+   ▼
+8. 运行 /devdocs-sync --trace 更新追溯矩阵
 ```
 
 ### UI 层任务（可选 TDD）🟢
@@ -494,19 +673,28 @@ T-02 ─┘           │
 1. 开始任务
    │
    ▼
-2. 编写 UI 组件（遵循 /ui-skills）
+2. 生成组件骨架（带标注）
    │
    ▼
-3. 视觉验证（手动检查）
+3. 生成 E2E 测试骨架（带标注）
    │
    ▼
-4. 编写 E2E 测试（基于 E2E-XXX）
+4. 实现 UI 组件（遵循 /ui-skills）
    │
    ▼
-5. 运行测试 → 确认通过
+5. 视觉验证（手动检查）
    │
    ▼
-6. 检查验收标准 → Review → 提交
+6. 移除 skip，完善 E2E 测试
+   │
+   ▼
+7. 运行测试 → 确认通过
+   │
+   ▼
+8. 检查验收标准 → Review → 提交
+   │
+   ▼
+9. 运行 /devdocs-sync --trace 更新追溯矩阵
 ```
 
 ### 基础设施任务 ⚪

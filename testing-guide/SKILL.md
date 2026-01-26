@@ -92,6 +92,105 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 ---
 
+## 测试骨架生成
+
+> AI 驱动的自顶向下开发：先生成测试骨架，后填充实现。
+
+### 标注规范
+
+测试代码必须包含追溯标注，用于 `/devdocs-sync --trace` 扫描：
+
+```typescript
+/**
+ * @verifies AC-XXX - 验收标准描述
+ * @testcase UT/IT/E2E-XXX
+ */
+test('测试名称', () => {
+  // 测试代码
+});
+```
+
+| 标注 | 用途 | 必须性 |
+|------|------|--------|
+| `@verifies AC-XXX` | 关联验收标准 | **必须** |
+| `@testcase UT/IT/E2E-XXX` | 测试用例编号 | **必须** |
+
+### 骨架生成流程
+
+```
+03-test-cases.md (测试用例设计)
+        │
+        ▼
+生成测试骨架
+        ├── describe 结构（按功能点分组）
+        ├── test.skip() 占位（每个测试用例）
+        ├── @verifies/@testcase 标注
+        └── // TODO: 实现测试 注释
+        │
+        ▼
+逐个实现测试
+        ├── 移除 skip
+        ├── 编写 AAA 结构
+        └── 添加具体断言
+```
+
+### 骨架示例
+
+```typescript
+// tests/user.service.test.ts
+
+describe('UserService', () => {
+  describe('createUser', () => {
+    /**
+     * @verifies AC-001 - 邮箱格式校验
+     * @testcase UT-001
+     */
+    test.skip('应该拒绝无效邮箱格式', () => {
+      // TODO: 实现测试
+      // Arrange: 准备无效邮箱
+      // Act: 调用 createUser
+      // Assert: 验证抛出 ValidationError
+    });
+
+    /**
+     * @verifies AC-002 - 密码强度校验
+     * @testcase UT-002
+     */
+    test.skip('应该拒绝弱密码', () => {
+      // TODO: 实现测试
+    });
+
+    /**
+     * @verifies AC-003 - 用户名唯一性
+     * @testcase UT-003
+     */
+    test.skip('应该拒绝重复用户名', () => {
+      // TODO: 实现测试
+    });
+  });
+});
+```
+
+### 骨架生成约束
+
+- [ ] **必须使用 `test.skip()` 或 `test.todo()` 标记未实现测试**
+- [ ] **必须添加 `@verifies` 和 `@testcase` 标注**
+- [ ] **必须按功能点 (F-XXX) 组织 describe 结构**
+- [ ] **必须在注释中提示 AAA 结构**
+- [ ] 测试名称必须描述预期行为
+- [ ] 一个测试只验证一个 AC
+
+### 与 DevDocs 协作
+
+| 阶段 | Skill | 输入 | 输出 |
+|------|-------|------|------|
+| 测试设计 | `/devdocs-test-cases` | 需求文档 | 测试用例矩阵 |
+| 骨架生成 | `/devdocs-dev-tasks` | 测试用例 | 测试骨架代码 |
+| 测试实现 | `/testing-guide` | 骨架代码 | 完整测试 |
+| 追溯同步 | `/devdocs-sync --trace` | 代码标注 | 更新矩阵 |
+
+---
+
 ## Quick Reference
 
 ### 测试命名

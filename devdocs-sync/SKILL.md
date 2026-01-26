@@ -27,6 +27,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 /devdocs-sync                    → 完整同步（检查 + 确认 + 更新）
 /devdocs-sync --check            → 仅检查，不更新文档
 /devdocs-sync --absorb           → 吸收模式（自动 + 智能补齐）
+/devdocs-sync --trace            → 代码追溯扫描（更新矩阵代码位置）
 /devdocs-sync --archive          → 强制归档已完成任务
 /devdocs-sync --audit            → 追溯健康度检查
 /devdocs-sync T-01 T-02          → 指定范围同步
@@ -39,6 +40,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 | check | ✅ | ❌ | ❌ | ❌ |
 | sync（默认） | ✅ | ✅ | ❌ | ✅ 全部 |
 | absorb | ✅ | ✅ | ✅ | ✅ 仅高风险 |
+| trace | ✅ 代码扫描 | ✅ 矩阵 | ❌ | ❌ |
 | audit | ✅ 追溯 | ❌ | ❌ | ❌ |
 
 ## 核心理念
@@ -336,6 +338,96 @@ interface ICacheService {
 /devdocs-sync
 # → 在进度报告末尾显示健康度评分
 ```
+
+---
+
+## 代码追溯扫描 (--trace)
+
+> 扫描代码中的 `@requirement`/`@satisfies`/`@verifies` 标注，与文档进行交叉验证，自动更新追溯矩阵的代码位置列。
+
+### 扫描流程
+
+```
+1. 读取 03-test-cases.md 追溯矩阵
+   │
+   ▼
+2. 扫描代码文件
+   ├── 搜索 @satisfies AC-XXX 标注 → 提取入口代码位置
+   └── 搜索 @verifies AC-XXX 标注 → 提取测试代码位置
+   │
+   ▼
+3. 交叉验证
+   ├── 文档有 AC，代码无标注 → ⚠️ 缺失实现标注
+   └── 代码有标注，文档无 AC → ⚠️ 孤立标注
+   │
+   ▼
+4. 更新追溯矩阵
+   └── 填充"入口代码"和"测试代码"列
+```
+
+### 扫描规则
+
+| 标注 | 搜索模式 | 提取内容 |
+|------|----------|----------|
+| `@satisfies AC-XXX` | 方法/函数上方注释 | 文件路径:行号 |
+| `@verifies AC-XXX` | 测试用例上方注释 | 文件路径:行号 |
+| `@requirement F-XXX` | 类/模块上方注释 | 文件路径 |
+| `@testcase UT/IT/E2E-XXX` | 测试用例上方注释 | 文件路径:行号 |
+
+### 扫描输出
+
+```markdown
+# 代码追溯扫描报告
+
+**扫描时间**：2024-XX-XX
+**扫描范围**：src/, tests/
+
+## 文档 → 代码 验证
+
+| AC 编号 | 入口代码 | 测试代码 | 状态 |
+|---------|----------|----------|------|
+| AC-001 | `src/user.ts:15` | `tests/user.test.ts:20` | ✅ |
+| AC-002 | `src/user.ts:15` | `tests/user.test.ts:35` | ✅ |
+| AC-003 | `src/user.ts:42` | - | ⚠️ 缺测试 |
+| AC-004 | - | - | ❌ 无标注 |
+
+## 代码 → 文档 验证
+
+| 代码位置 | 标注 | 文档存在 | 状态 |
+|----------|------|----------|------|
+| `src/cache.ts:10` | @satisfies AC-099 | ❌ | ⚠️ 孤立标注 |
+| `tests/helper.test.ts:5` | @verifies AC-005 | ✅ | ✅ |
+
+## 矩阵更新
+
+已更新 03-test-cases.md 追溯矩阵：
+- 填充 3 个入口代码位置
+- 填充 2 个测试代码位置
+- 标记 1 个缺失实现
+```
+
+### 使用场景
+
+```bash
+# 任务完成后更新矩阵
+/devdocs-sync --trace
+
+# 结合完整同步
+/devdocs-sync
+# → 自动包含 trace 结果
+
+# 仅查看不更新
+/devdocs-sync --check
+# → 显示追溯状态但不修改文件
+```
+
+### 约束
+
+- [ ] **扫描基于标注，不解析代码逻辑**
+- [ ] **只更新矩阵的代码位置列和状态列**
+- [ ] **不自动创建或删除矩阵行**
+- [ ] 发现孤立标注时提示用户处理
+- [ ] 发现缺失标注时建议补充
 
 ---
 
