@@ -173,6 +173,7 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 | UI 实现 | `/ui-skills` | 无障碍、动画、布局约束 |
 | 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |
 | 提交信息 | `/commit-convention` | 遵循项目提交规范 |
+| 任务完成 | `/devdocs-sync` | 后续：更新追溯矩阵（--trace） |
 
 ## 约束
 

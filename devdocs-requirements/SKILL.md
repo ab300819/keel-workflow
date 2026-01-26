@@ -178,6 +178,16 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 - [ ] 必须与用户确认功能点是否完整
 - [ ] 不得添加用户未提及且未确认的功能
 
+## Skill 协作
+
+| 场景 | 协作 Skill | 说明 |
+|------|-----------|------|
+| 新功能需求 | `/devdocs-feature` | 被调用：新功能触发需求追加 |
+| 洞察转化 | `/devdocs-insights` | 被调用：改进建议转化为需求 |
+| Bug 暴露需求 | `/devdocs-bugfix` | 被调用：Bug 修复发现需求缺失 |
+| 项目改造 | `/devdocs-retrofit` | 被调用：逆向推导生成需求 |
+| 设计阶段 | `/devdocs-system-design` | 后续：需求确认后进入设计 |
+
 ## 下一步
 
 完成后建议运行 `/devdocs-system-design` 进行系统设计。

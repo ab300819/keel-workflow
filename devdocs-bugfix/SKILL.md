@@ -297,14 +297,16 @@ Fixes #123
 
 ## Skill 协作
 
-| 场景 | 协作 Skill |
-|------|-----------|
-| 复杂 Bug 拆分 | `/devdocs-dev-tasks` |
-| 测试编写 | `/testing-guide` |
-| 代码修改 | `/code-quality` |
-| 文件操作 | `/git-safety` |
-| 提交信息 | `/commit-convention` |
-| 文档同步 | `/devdocs-sync` |
+| 场景 | 协作 Skill | 说明 |
+|------|-----------|------|
+| 复杂 Bug 拆分 | `/devdocs-dev-tasks` | 多步骤 Bug 走任务拆分 |
+| 回归测试设计 | `/devdocs-test-cases` | 补充回归测试到测试文档 |
+| 需求缺失 | `/devdocs-requirements` | Bug 暴露需求问题时调用 |
+| 测试编写 | `/testing-guide` | 测试代码质量约束 |
+| 代码修改 | `/code-quality` | 修复代码质量约束 |
+| 文件操作 | `/git-safety` | 使用 git mv/rm |
+| 提交信息 | `/commit-convention` | 提交规范 |
+| 文档同步 | `/devdocs-sync` | 修复后更新追溯矩阵 |
 
 ## 约束
 

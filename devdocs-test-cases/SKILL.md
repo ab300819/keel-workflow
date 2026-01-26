@@ -265,13 +265,17 @@ docs/devdocs/
 - [ ] 禁止弱断言（toBeDefined, toBeTruthy 不能作为唯一断言）
 - [ ] Mock 只用于外部依赖
 
-## 与其他 Skill 的关系
+## Skill 协作
 
-| Skill | 关系 |
-|-------|------|
-| `/devdocs-requirements` | 前置：提供 F/US/AC 作为测试设计依据 |
-| `/testing-guide` | 协作：编写测试代码时的质量约束 |
-| `/devdocs-dev-tasks` | 后续：测试用例转化为开发任务 |
+| 场景 | 协作 Skill | 说明 |
+|------|-----------|------|
+| 需求输入 | `/devdocs-requirements` | 前置：提供 F/US/AC 作为测试设计依据 |
+| 新功能测试 | `/devdocs-feature` | 被调用：新功能需要新增测试用例 |
+| Bug 回归测试 | `/devdocs-bugfix` | 被调用：Bug 修复需要补充回归测试 |
+| 改进测试 | `/devdocs-insights` | 被调用：改进建议可能需要测试覆盖 |
+| 追溯更新 | `/devdocs-sync` | 协作：trace 模式更新追溯矩阵代码位置 |
+| 测试质量 | `/testing-guide` | 协作：编写测试代码时的质量约束 |
+| 任务拆分 | `/devdocs-dev-tasks` | 后续：测试用例转化为开发任务 |
 
 ## 下一步
 

@@ -204,9 +204,12 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
+| 开发完成 | `/devdocs-dev-workflow` | 被调用：任务完成后触发 --trace |
 | 任务完成后 | `/devdocs-dev-tasks` | 执行任务后触发同步 |
+| 测试追溯 | `/devdocs-test-cases` | 协作：更新追溯矩阵代码位置 |
 | 需求变更 | `/devdocs-feature` | 新功能添加后同步 |
 | Bug 修复 | `/devdocs-bugfix` | Bug 修复后更新文档 |
+| 洞察确认 | `/devdocs-insights` | 改进建议确认后同步 |
 | 项目改造 | `/devdocs-retrofit` | 改造后全量同步 |
 
 ## 参考资料
