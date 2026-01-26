@@ -80,25 +80,64 @@ docs/devdocs/
 
 | Skill | 命令 | 用途 | 输出文件 |
 |-------|------|------|----------|
-| [需求扩写](#1-devdocs-requirements-需求扩写) | `/devdocs-requirements` | 功能点、用户故事、验收标准 | `01-requirements.md` |
-| [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计（支持增量） | `02-system-design*.md` |
-| [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `03-test-*.md` |
-| [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `04-dev-tasks*.md` |
-| [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `00-retrofit-report.md` |
-| [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `00-feature-log.md` |
-| [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `progress-report.md` |
-| [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `00-context.md` |
-| [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `05-insights.md` |
+| [需求扩写](#1-devdocs-requirements-需求扩写) | `/devdocs-requirements` | 功能点、用户故事、验收标准 | `docs/devdocs/01-requirements.md` |
+| [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计（支持增量） | `docs/devdocs/02-system-design*.md` |
+| [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `docs/devdocs/03-test-*.md` |
+| [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `docs/devdocs/04-dev-tasks*.md` |
+| [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `docs/devdocs/00-retrofit-report.md` |
+| [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `docs/devdocs/00-feature-log.md` |
+| [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `docs/devdocs/progress-report.md` |
+| [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `docs/devdocs/00-context.md` |
+| [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `docs/devdocs/05-insights.md` |
 | [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | - |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
-| [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `05-refactor-*.md` |
+| [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `docs/devdocs/05-refactor-*.md` |
 | [提交规范](#7-commit-convention-提交规范) | - | 提交信息格式化与历史风格同步 | - |
 | [Git 安全](#11-git-safety-git-安全) | - | 强制使用 git mv/rm 规范操作 | - |
 | [UI 规范](#9-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
 | [工作报告](#8-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
 
 ## DevDocs 工作流
+
+### 入口决策树
+
+不确定用哪个工具？按以下优先级判断：
+
+```
+项目是否有 DevDocs 文档？
+│
+├── 没有 / 不规范 ──────────────────► /devdocs-retrofit（初次改造）
+│
+└── 有 DevDocs
+        │
+        ├── 需要了解项目 ──────────────► /devdocs-onboard --read
+        │
+        └── 需要开发
+                │
+                ├── 代码已写好，文档落后 ──► /devdocs-sync --absorb
+                │
+                └── 计划新增功能
+                        │
+                        ├── 小改动（无架构变更）──► /devdocs-feature --lite
+                        │
+                        └── 大改动（涉及设计）──► /devdocs-feature（分步）
+```
+
+**快速参考**：
+
+| 你的情况 | 使用命令 |
+|----------|----------|
+| 项目没有文档，想规范化 | `/devdocs-retrofit` |
+| 接手项目，想快速了解 | `/devdocs-onboard --read` |
+| 完成开发，准备交接 | `/devdocs-onboard --update` |
+| 写完代码，文档没跟上 | `/devdocs-sync --absorb` |
+| 检查文档和代码是否一致 | `/devdocs-sync --check` |
+| 小功能（配置、UI 微调） | `/devdocs-feature --lite` |
+| 新功能（涉及接口/数据） | `/devdocs-feature` |
+| 修复 Bug | `/devdocs-bugfix` |
+
+---
 
 ### 路径选择
 
@@ -109,7 +148,7 @@ docs/devdocs/
 | 新功能开发（需求明确） | **路径 A：正向开发** | 从需求开始，逐步细化 |
 | 新功能 / 功能迭代 | **`/devdocs-feature`** | 延续编号，追加文档 |
 | 探索性开发 / 原型验证 | **路径 B：探索后补** | 先写代码，后补文档 |
-| 已有项目规范化 | **路径 B：探索后补** | 从代码逆向生成文档 |
+| 已有项目规范化 | **`/devdocs-retrofit`** | 从代码逆向生成文档 |
 | Bug 修复 | **`/devdocs-bugfix`** | 测试先行，编写失败测试后修复 |
 | 小型配置变更 | **直接提交** | 无需流程，遵循 commit 规范 |
 

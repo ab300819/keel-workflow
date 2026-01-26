@@ -16,7 +16,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 
 ## 触发条件
 
-- 用户已完成系统设计和测试计划
+- 用户已完成系统设计和测试用例
 - 用户要求拆分开发任务
 - 用户需要迭代/Sprint 规划
 
