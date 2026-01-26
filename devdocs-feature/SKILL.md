@@ -189,46 +189,25 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## Step 1: 需求追加
 
-### 收集信息
+> **委托执行**：本步骤必须委托给 `/devdocs-requirements --incremental`，由其负责增量需求。
 
-使用 AskUserQuestion 收集：
+### 委托输入
 
-1. **新功能描述**：要添加什么功能？
-2. **用户价值**：解决什么问题？
-3. **范围边界**：包含/不包含什么？
+传递给 `/devdocs-requirements` 的上下文：
+- 用户的新功能描述
+- Step 0 扫描到的现有编号状态
 
-### 追加 01-requirements.md
+### 委托输出
 
-```markdown
----
-
-## 功能 v2: <功能名称> (2024-01-15)
-
-> 本次新增 F-004，包含 2 个用户故事、5 个验收标准。
-
-### F-004: <功能名称>
-
-**描述**：<功能描述>
-
-**用户故事**：
-
-| 编号 | 角色 | 期望 | 目的 |
-|------|------|------|------|
-| US-009 | 作为<角色> | 我希望<功能> | 以便于<价值> |
-
-**验收标准**：
-
-- [ ] AC-016: <标准1>
-- [ ] AC-017: <标准2>
-```
+从 `/devdocs-requirements` 获取：
+- 新增的 F-XXX、US-XXX、AC-XXX 编号列表
+- 更新后的追溯矩阵
 
 ### ✅ 确认点
 
 ```
-已追加到 01-requirements.md：
-- 新增 F-004: <功能名称>
-- 新增 US-009, US-010
-- 新增 AC-016 ~ AC-020
+/devdocs-requirements 已完成需求追加：
+- [新增编号摘要由 requirements 返回]
 
 是否确认并继续到 Step 2（设计追加）？[确认/修改/终止]
 ```
@@ -364,15 +343,15 @@ docs/devdocs/
 
 | 阶段 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 需求追加 | - | 本 skill 处理 |
+| 需求追加 | `/devdocs-requirements` | **完整模式必须委托**（增量更新） |
 | 设计追加 | `/devdocs-system-design` | **完整模式必须委托**（增量更新） |
 | 测试追加 | `/devdocs-test-cases` | **完整模式必须委托**（增量更新 + 矩阵） |
 | 任务追加 | `/devdocs-dev-tasks` | **完整模式必须委托** |
 | 开发实现 | `/devdocs-dev-workflow` | 执行单个任务 |
 | 编码约束 | `/code-quality`, `/testing-guide` | 编码阶段 |
 
-> **编排器边界**：`devdocs-feature` 是编排器，负责编号扫描、步骤编排、确认流程。
-> 具体的设计内容、测试内容、任务内容由对应的专项 Skill 负责，本 Skill 不复制其逻辑。
+> **编排器边界**：`devdocs-feature` 是纯编排器，负责步骤编排、确认流程、功能日志。
+> 具体的需求、设计、测试、任务内容全部由对应的专项 Skill 负责，本 Skill 不复制其逻辑。
 
 ## 约束
 

@@ -310,13 +310,25 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 - 用户提供功能需求或想法
 - 用户要求创建/编写 PRD
 - 用户想要澄清或记录需求
+- 来自 `/devdocs-feature` 的增量需求委托
+
+## 运行模式
+
+| 模式 | 触发条件 | 说明 |
+|------|----------|------|
+| **初始模式** | 无 `01-requirements.md` | 从零创建需求文档 |
+| **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加需求 |
+
+```bash
+/devdocs-requirements              # 自动检测模式
+/devdocs-requirements --incremental # 强制增量模式
+```
 
 ## 工作流程
 
-1. **理解需求**：读取用户输入
-2. **探索代码库**：了解现有架构（如适用）
-3. **起草需求**：创建完整需求文档
-4. **用户确认**：获得用户批准
+**初始模式**：理解需求 → 探索代码库 → 起草需求 → 用户确认
+
+**增量模式**：扫描编号 → 理解新需求 → 追加 F/US/AC → 更新矩阵 → 返回新增编号
 
 ## 输出文件
 
@@ -1347,19 +1359,21 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ## 完整模式流程（分步编排）
 
 ```
-Step 0: 扫描编号 → Step 1: 需求追加 → ✅ 确认
-                           ↓
+Step 0: 扫描编号
+           ↓
+Step 1: 委托 /devdocs-requirements → ✅ 确认
+           ↓
 Step 2: 委托 /devdocs-system-design → ✅ 确认
-                           ↓
+           ↓
 Step 3: 委托 /devdocs-test-cases → ✅ 确认
-                           ↓
+           ↓
 Step 4: 委托 /devdocs-dev-tasks → ✅ 确认
-                           ↓
+           ↓
 Step 5: 生成功能日志
 ```
 
-> **编排器边界**：`devdocs-feature` 是编排器，负责编号扫描、步骤编排、确认流程。
-> 具体的设计、测试、任务内容由对应的专项 Skill 负责。
+> **编排器边界**：`devdocs-feature` 是纯编排器，负责步骤编排、确认流程、功能日志。
+> 具体的需求、设计、测试、任务内容全部由对应的专项 Skill 负责。
 
 ## 核心原则
 
