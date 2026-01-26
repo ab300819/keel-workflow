@@ -1251,7 +1251,11 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ## 核心流程
 
 ```
-1. 理解 Bug
+1. 理解 Bug + 评估复杂度
+   │
+   ├── 复杂 Bug → **必须** /devdocs-dev-tasks 拆分任务
+   │              （用户明确选择时才可跳过）
+   └── 简单 Bug → 继续
    │
    ▼
 2. 定位代码
@@ -1269,7 +1273,10 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 5. 运行测试（测试通过 = 修复完成）
    │
    ▼
-6. 提交 fix(<scope>): <description>
+6. 执行 /devdocs-sync --trace（更新追溯矩阵）
+   │
+   ▼
+7. 提交 fix(<scope>): <description>
 ```
 
 ## 核心原则
@@ -1281,6 +1288,8 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ## 约束
 
 - [ ] **必须先编写失败测试，再修复代码**
+- [ ] **复杂 Bug 必须走 `/devdocs-dev-tasks` 拆分任务**
+- [ ] **修复完成后必须执行 `/devdocs-sync --trace`**
 - [ ] 测试名称描述 Bug 场景
 - [ ] 提交信息使用 `fix(<scope>):` 前缀
 - [ ] 关联 Issue 编号（如有）
@@ -1289,6 +1298,8 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 | 场景 | 协作 Skill |
 |------|-----------|
+| 复杂 Bug 拆分 | `/devdocs-dev-tasks` |
+| 追溯同步 | `/devdocs-sync --trace` |
 | 测试编写 | `/testing-guide` |
 | 代码修改 | `/code-quality` |
 | 提交信息 | `/commit-convention` |
