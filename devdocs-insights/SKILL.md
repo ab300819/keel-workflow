@@ -344,8 +344,8 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
 | UI/UX 审查来源 | `/ui-skills` | 审查结果可作为洞察来源 |
-| 确认后设计 | `/devdocs-system-design` | 需要系统设计时触发 |
-| 确认后开发 | `/devdocs-dev-tasks` | 直接进入开发任务 |
+| 简单改进 | `/devdocs-dev-tasks` | 无架构变更，直接拆分任务 |
+| 复杂改进 | `/devdocs-feature` | 有架构变更，走完整流程 |
 | Bug 类建议 | `/devdocs-bugfix` | 走 Bug 修复流程 |
 | 需求更新 | `/devdocs-sync` | 同步文档状态 |
 
@@ -422,7 +422,49 @@ Agent: 让我分析这篇文章并提取可借鉴的点...
 
 ## 下一步
 
-确认建议并转化为需求后：
-1. 如需系统设计更新，运行 `/devdocs-system-design`
-2. 如可直接开发，运行 `/devdocs-dev-tasks`
-3. 运行 `/devdocs-sync` 同步文档状态
+确认建议并转化为需求后，根据改进复杂度选择路径：
+
+### 路径选择
+
+```
+确认的改进建议
+      │
+      ▼
+评估是否涉及架构变更
+      │
+      ├── 无架构变更（简单改进）
+      │   ├── UI 微调、配置修改、小功能
+      │   └── → /devdocs-dev-tasks 直接拆分任务
+      │
+      └── 有架构变更（复杂改进）
+          ├── 新接口、数据模型变更、新模块
+          └── → /devdocs-feature 完整流程
+                  └── system-design → test-cases → dev-tasks
+```
+
+### 架构变更判断
+
+| 条件 | 是否架构变更 | 推荐路径 |
+|------|-------------|----------|
+| 仅 UI/样式调整 | 否 | `/devdocs-dev-tasks` |
+| 仅配置项修改 | 否 | `/devdocs-dev-tasks` |
+| 新增 API 接口 | **是** | `/devdocs-feature` |
+| 数据模型变更 | **是** | `/devdocs-feature` |
+| 新增独立模块 | **是** | `/devdocs-feature` |
+| 第三方服务集成 | **是** | `/devdocs-feature` |
+
+### 使用 AskUserQuestion 确认
+
+```
+已确认 X 条改进建议，转化为需求。
+
+检测到以下情况：
+- INS-001: UI 按钮样式调整 → 无架构变更
+- INS-003: 新增导出 API → 涉及架构变更
+
+建议路径：
+- INS-001 → /devdocs-dev-tasks（直接拆分任务）
+- INS-003 → /devdocs-feature（完整流程）
+
+是否按建议执行？[是/调整]
+```

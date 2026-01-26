@@ -100,7 +100,8 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - 不新建 F-XXX（功能点），仅追加 AC 到现有功能
 - 不更新 02-system-design（无架构变更）
 - 不更新 03-test-cases（由 `/devdocs-sync` 后续补齐）
-- 任务数量限制 1-3 个
+- 任务数量限制 1-3 个（可直接追加，无需调用 devdocs-dev-tasks）
+- 任务必须遵循 TAR 原则格式
 
 ## 完整模式流程（分步编排）
 
@@ -323,42 +324,28 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## Step 4: 任务追加
 
-### 根据设计和测试拆分任务
+### 调用 devdocs-dev-tasks
 
-遵循 TAR 原则：
-- **T**estable: 有测试方法
-- **A**cceptable: 有完成标准
-- **R**eviewable: 有审查点
+> **重要**：完整模式下，任务拆分由 `/devdocs-dev-tasks` 负责，确保 TAR 原则和分层 TDD 标记的一致性。
 
-### 追加 04-dev-tasks*.md
+**传递给 devdocs-dev-tasks 的上下文**：
+- 新增的 F-XXX、AC-XXX 编号
+- 新增的 UT/IT/E2E-XXX 编号
+- 影响的模块和接口
 
-```markdown
-## 任务 v2: <功能名称> (2024-01-15)
-
-### T-11: 支付模块基础架构 🔴
-
-**关联需求**：F-004, AC-016
-**分层**：Core（强制 TDD）
-**涉及文件**：
-- `src/services/payment.ts`
-- `src/services/payment.test.ts`
-
-**TDD 执行**：
-1. 🔴 编写 `payment.test.ts` 失败测试
-2. 🟢 实现 `payment.ts` 最小代码
-3. 🔵 重构优化
-
-**完成标准**：
-- [ ] UT-013 通过
-- [ ] 代码审查通过
+```
+调用 /devdocs-dev-tasks：
+- 输入：Step 1-3 产生的新增编号
+- 输出：追加到 04-dev-tasks*.md
+- 遵循：TAR 原则、分层 TDD
 ```
 
 ### ✅ 确认点
 
 ```
-已追加到 04-dev-tasks.md：
-- 新增 T-11 ~ T-14（4 个任务）
-- 已标注 TDD 分层
+/devdocs-dev-tasks 已追加任务：
+- 新增 T-XX ~ T-XX（N 个任务）
+- 已标注 TDD 分层（🔴🟡🟢⚪）
 
 是否确认并生成功能日志？[确认/修改/终止]
 ```
@@ -416,8 +403,9 @@ docs/devdocs/
 | 需求追加 | - | 本 skill 处理 |
 | 设计追加 | `/devdocs-system-design` | 复杂设计变更时调用 |
 | 测试追加 | `/devdocs-test-cases` | 复杂测试设计时调用 |
-| 任务追加 | `/devdocs-dev-tasks` | 任务拆分时调用 |
-| 开发实现 | `/code-quality`, `/testing-guide` | 编码阶段 |
+| 任务追加 | `/devdocs-dev-tasks` | **完整模式必须调用** |
+| 开发实现 | `/devdocs-dev-workflow` | 执行单个任务 |
+| 编码约束 | `/code-quality`, `/testing-guide` | 编码阶段 |
 
 ## 约束
 

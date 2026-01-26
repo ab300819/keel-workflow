@@ -24,6 +24,7 @@ DevDocs 流程使用统一的编号体系实现需求到测试的追溯：
 | 集成测试 | IT | IT-XXX | 验证组件协作 |
 | E2E 测试 | E2E | E2E-XXX | 验证用户场景 |
 | 洞察建议 | INS | INS-XXX | 审查/调研的改进建议 |
+| Bug 记录 | BUG | BUG-XXX | Bug 修复记录 |
 | 开发任务 | T | T-XX | 开发任务（2 位编号例外） |
 
 **追溯关系**：
@@ -90,7 +91,7 @@ docs/devdocs/
 | [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `docs/devdocs/progress-report.md` |
 | [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `docs/devdocs/00-context.md` |
 | [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `docs/devdocs/05-insights.md` |
-| [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | - |
+| [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | `docs/devdocs/05-bugfix-log.md` |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
 | [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `docs/devdocs/05-refactor-*.md` |

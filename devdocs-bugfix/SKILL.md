@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 # Bug 修复
 
-测试先行的 Bug 修复流程，确保每个修复都有回归测试保护。
+测试先行的 Bug 修复流程，确保每个修复都有回归测试保护和完整记录。
 
 ## 语言规则
 
@@ -18,17 +18,30 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - 用户报告 Bug 或问题
 - 用户提到"修复"、"bug"、"issue"、"崩溃"、"报错"
 - 用户提供 Issue 编号或链接
+- 测试执行失败（UT/IT/E2E）
 
 ## 核心理念
 
 ```
 先证明 Bug 存在（失败测试），再修复代码，最后证明 Bug 已修复（测试通过）。
+每个 Bug 都要记录，形成知识沉淀。
 ```
+
+## Bug 复杂度判断
+
+| 复杂度 | 特征 | 流程 |
+|--------|------|------|
+| **简单** | 单文件/单函数、原因明确 | 本 Skill 直接修复 |
+| **复杂** | 多模块、需拆分步骤、原因不明 | 建议走 `/devdocs-dev-tasks` |
 
 ## 工作流程
 
 ```
-1. 理解 Bug
+1. 理解 Bug + 评估复杂度
+   │
+   ├── 复杂 Bug → 建议 /devdocs-dev-tasks 拆分任务
+   │
+   └── 简单 Bug → 继续
    │
    ▼
 2. 定位代码
@@ -49,10 +62,25 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
    └── 测试通过 → ✅ 继续
    │
    ▼
-6. 询问用户：是否提交？
+6. 记录 Bug（追加到 05-bugfix-log.md）
+   │
+   ▼
+7. 询问用户：是否提交？
    │
    └── 生成 fix() 提交信息
 ```
+
+## 输出文件
+
+**Bug 修复日志**：`docs/devdocs/05-bugfix-log.md`
+
+## Bug 编号规则
+
+| 类型 | 前缀 | 格式 | 说明 |
+|------|------|------|------|
+| Bug 记录 | BUG | BUG-XXX | Bug 修复记录编号 |
+
+编号延续现有文档中的最大编号。
 
 ## Step 1: 理解 Bug
 
@@ -60,13 +88,31 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 | 信息 | 来源 | 必要性 |
 |------|------|--------|
-| Bug 描述 | 用户输入 | 必须 |
+| Bug 描述 | 用户输入 | **必须** |
 | 复现步骤 | 用户输入 | 建议 |
 | 预期行为 | 用户输入 | 建议 |
-| 实际行为 | 用户输入 | 必须 |
+| 实际行为 | 用户输入 | **必须** |
+| 发现来源 | 测试编号/手动测试/用户反馈 | **必须** |
+| 关联功能 | F-XXX / AC-XXX | 建议 |
 | Issue 编号 | 用户输入 | 可选 |
 
 如信息不足，使用 AskUserQuestion 询问。
+
+### 复杂度评估
+
+使用 AskUserQuestion 确认：
+
+```
+根据 Bug 描述，评估复杂度：
+
+[ ] 涉及多个模块/文件
+[ ] 原因不明确，需要深入分析
+[ ] 修复可能影响其他功能
+[ ] 需要多个步骤完成
+
+如以上任一命中，建议走 /devdocs-dev-tasks 拆分任务。
+是否继续简单修复流程？[是/否]
+```
 
 ## Step 2: 定位代码
 
@@ -74,24 +120,10 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 1. **关键词搜索**：根据 Bug 描述搜索相关代码
 2. **错误信息搜索**：搜索报错信息中的关键字
-3. **用户指定**：用户直接提供文件路径
+3. **测试定位**：从失败的测试用例定位
+4. **用户指定**：用户直接提供文件路径
 
-```bash
-# 搜索示例
-grep -r "login" src/
-grep -r "ErrorMessage" src/
-```
-
-向用户确认定位结果：
-
-```markdown
-找到以下相关代码：
-
-1. `src/services/auth.ts:45` - login() 函数
-2. `src/controllers/user.ts:23` - handleLogin()
-
-请确认 Bug 位置，或提供更多信息。
-```
+向用户确认定位结果。
 
 ## Step 3: 编写失败测试
 
@@ -101,21 +133,18 @@ grep -r "ErrorMessage" src/
 should [预期行为] when [触发条件]
 ```
 
-**示例**：
-- `should return error when username is empty`
-- `should not crash when input contains special characters`
-- `should handle null response from API`
-
 ### 测试结构
 
 ```typescript
-describe('Bug fix: <Bug 描述>', () => {
+/**
+ * @verifies BUG-XXX
+ * @testcase UT-XXX
+ */
+describe('Bug fix: BUG-XXX <Bug 描述>', () => {
   it('should <预期行为> when <条件>', () => {
     // Arrange - 构造触发 Bug 的条件
-    const input = '';
-
-    // Act & Assert - 验证预期行为
-    expect(() => login(input, 'password')).toThrow('Username required');
+    // Act - 执行操作
+    // Assert - 验证预期行为
   });
 });
 ```
@@ -124,14 +153,8 @@ describe('Bug fix: <Bug 描述>', () => {
 
 运行测试，确认测试失败：
 
-```bash
-npm test -- --testNamePattern="Bug fix"
-```
-
 - **测试失败** ✅ → Bug 已复现，继续修复
-- **测试通过** ⚠️ → Bug 未复现，需重新确认：
-  - 复现条件是否正确？
-  - 测试用例是否准确描述了 Bug？
+- **测试通过** ⚠️ → Bug 未复现，需重新确认
 
 ## Step 4: 修复代码
 
@@ -143,10 +166,7 @@ npm test -- --testNamePattern="Bug fix"
 
 ### 修复约束
 
-参考 `/code-quality` 约束：
-- 函数不超过 50 行
-- 参数不超过 5 个
-- 依赖可注入
+参考 `/code-quality` 约束。
 
 ## Step 5: 运行测试
 
@@ -162,12 +182,71 @@ npm test
 - **新测试失败** → 返回步骤 4 继续修复
 - **其他测试失败** → 检查是否引入回归
 
-## Step 6: 提交
+## Step 6: 记录 Bug
+
+### 记录模板
+
+追加到 `docs/devdocs/05-bugfix-log.md`：
+
+```markdown
+## BUG-XXX: <Bug 标题>
+
+| 属性 | 内容 |
+|------|------|
+| **发现来源** | UT-XXX / IT-XXX / E2E-XXX / 手动测试 / 用户反馈 |
+| **关联功能** | F-XXX, AC-XXX |
+| **Issue** | #123（如有）|
+| **严重程度** | P0 / P1 / P2 |
+| **修复日期** | YYYY-MM-DD |
+| **状态** | ✅ 已修复 |
+
+### 问题描述
+
+<Bug 现象描述>
+
+### 复现步骤
+
+1. <步骤1>
+2. <步骤2>
+3. <观察到的错误>
+
+### 根因分析
+
+<为什么会出现这个问题，技术层面的原因>
+
+### 解决方案
+
+<如何修复的，修改了什么>
+
+### 回归测试
+
+- 新增测试：UT-XXX / IT-XXX
+- 关联 commit：`<commit-hash>`
+
+### 经验教训（可选）
+
+<避免类似问题的建议，供团队参考>
+
+---
+```
+
+### 记录要点
+
+| 字段 | 说明 | 必填 |
+|------|------|------|
+| 发现来源 | 哪个测试/谁发现的 | **必须** |
+| 关联功能 | 涉及哪个功能点 | 建议 |
+| 根因分析 | 技术层面的原因 | **必须** |
+| 解决方案 | 如何修复的 | **必须** |
+| 回归测试 | 新增的测试编号 | **必须** |
+
+## Step 7: 提交
 
 ### 提交前检查
 
 - [ ] 新增的测试通过
 - [ ] 全部测试通过
+- [ ] Bug 已记录到 05-bugfix-log.md
 - [ ] 代码符合规范
 
 ### 提交信息格式
@@ -179,7 +258,9 @@ fix(<scope>): <简述问题>
 
 - 根因：<问题原因>
 - 修复：<解决方案>
+- 测试：<新增测试编号>
 
+BUG-XXX
 Fixes #<issue-number>
 ```
 
@@ -190,18 +271,40 @@ fix(auth): handle empty username in login
 
 - 根因：login() 未校验空用户名，直接查询数据库导致异常
 - 修复：添加用户名非空校验，返回明确错误信息
+- 测试：UT-025
 
+BUG-003
 Fixes #123
+```
+
+## 与测试用例的闭环
+
+```
+测试执行（UT/IT/E2E）
+    │
+    ├── 通过 → 正常
+    │
+    └── 失败 → 触发 /devdocs-bugfix
+                    │
+                    ├── 记录 BUG-XXX（关联测试编号）
+                    │
+                    ├── 修复代码
+                    │
+                    ├── 新增回归测试（更新测试编号）
+                    │
+                    └── /devdocs-sync 更新追溯矩阵
 ```
 
 ## Skill 协作
 
 | 场景 | 协作 Skill |
 |------|-----------|
+| 复杂 Bug 拆分 | `/devdocs-dev-tasks` |
 | 测试编写 | `/testing-guide` |
 | 代码修改 | `/code-quality` |
 | 文件操作 | `/git-safety` |
 | 提交信息 | `/commit-convention` |
+| 文档同步 | `/devdocs-sync` |
 
 ## 约束
 
@@ -212,16 +315,25 @@ Fixes #123
 - [ ] **修复后测试必须通过**
 - [ ] **不得跳过测试直接提交**
 
+### 记录约束
+
+- [ ] **每个 Bug 必须记录到 05-bugfix-log.md**
+- [ ] **必须记录发现来源**
+- [ ] **必须记录根因分析**
+- [ ] **必须记录解决方案**
+- [ ] **必须关联回归测试编号**
+
 ### 测试约束
 
 - [ ] 测试名称描述 Bug 场景
 - [ ] 测试覆盖 Bug 的触发条件
+- [ ] 测试必须添加 @verifies BUG-XXX 标注
 - [ ] 禁止弱断言（参考 `/testing-guide`）
 
 ### 提交约束
 
 - [ ] 提交信息使用 `fix(<scope>):` 前缀
-- [ ] 说明根因和修复方案
+- [ ] 提交信息包含 BUG-XXX 编号
 - [ ] 关联 Issue 编号（如有）
 
 ## 特殊情况
@@ -242,15 +354,18 @@ Fixes #123
 - 与报告者确认环境信息
 ```
 
-### Bug 涉及多个模块
+### 复杂 Bug
 
-如 Bug 涉及多个模块，建议拆分为多个小修复：
+如 Bug 涉及多个模块或原因不明：
 
 ```
-1. 识别各模块的问题
-2. 按模块分别修复
-3. 每个模块单独提交
-4. 最后集成测试
+⚠️ 检测到复杂 Bug，建议：
+
+1. 使用 /devdocs-dev-tasks 拆分为多个子任务
+2. 每个子任务独立修复和测试
+3. 最后集成验证
+
+是否继续简单流程？[是/使用任务拆分]
 ```
 
 ### Bug 暴露设计缺陷
@@ -259,13 +374,7 @@ Fixes #123
 
 ```
 1. 先用最小改动修复当前 Bug
-2. 提交修复
-3. 创建重构任务（可选）
+2. 记录设计缺陷到"经验教训"
+3. 创建改进建议（可选 /devdocs-insights）
 4. 使用 /refactor 进行系统性改进
 ```
-
-## 输出
-
-此 Skill 不生成独立文档，只输出：
-- 测试代码（新增的回归测试）
-- Git commit
