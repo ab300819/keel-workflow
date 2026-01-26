@@ -367,12 +367,18 @@ docs/devdocs/
 - [ ] 非功能性需求-性能指标
 - [ ] API 响应示例
 
-## 下一步建议
+## 下一步建议（强制路由）
 
-1. 完善标记为 [待补充] 的内容
-2. 运行 `/devdocs-requirements` 审查需求文档
-3. 运行 `/devdocs-test-cases` 完善测试用例
-4. 使用 `/devdocs-feature` 添加新功能
+改造完成后，**必须**执行以下之一建立基线：
+
+| 场景 | 必须执行 | 说明 |
+|------|----------|------|
+| 首次改造 | `/devdocs-sync --audit` | 检查追溯健康度 |
+| 有待补充项 | `/devdocs-requirements` | 完善需求文档 |
+| 开始开发 | `/devdocs-dev-tasks` → `/devdocs-dev-workflow` | 执行任务 |
+| 添加功能 | `/devdocs-feature` | 增量开发 |
+
+> 改造不是终点，必须通过后续 Skill 进入正常开发循环。
 ```
 
 ---

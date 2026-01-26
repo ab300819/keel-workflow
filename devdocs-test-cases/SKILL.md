@@ -23,7 +23,8 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ## 前置条件
 
 - 需求文档：`docs/devdocs/01-requirements.md`
-- 如不存在，建议先运行 `/devdocs-requirements`
+- 系统设计文档：`docs/devdocs/02-system-design.md`（设计 UT/IT 时需要了解接口签名和模块划分）
+- 如不存在，建议先运行前置阶段
 
 ## 核心理念
 

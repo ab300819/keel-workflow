@@ -220,9 +220,34 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 - [archive.md](archive.md) - 任务归档功能
 - [examples.md](examples.md) - 使用示例与偏差类型
 
+## 偏差修复路由（调度器功能）
+
+当检测到偏差时，必须在报告中指派下一步修复 Skill：
+
+| 偏差类型 | 修复 Skill | 说明 |
+|----------|-----------|------|
+| 设计缺失/漂移 | `/devdocs-system-design` | 代码有新接口但文档未记录 |
+| AC 缺测试 | `/devdocs-test-cases` | 验收标准无对应测试用例 |
+| F 缺任务闭环 | `/devdocs-dev-tasks` | 功能点无关联开发任务 |
+| 代码已实现文档落后 | `/devdocs-sync --absorb` | 状态未更新、新内容未登记 |
+| 追溯矩阵代码位置缺失 | `/devdocs-sync --trace` | 代码标注未扫描到矩阵 |
+
+> **调度器原则**：偏差报告不能只列出问题，必须给出明确的修复路由。
+
+## 调用顺序建议
+
+任务完成后的推荐顺序：
+
+```
+/devdocs-sync --trace    # 1. 先更新追溯矩阵代码位置
+        │
+        ▼
+/devdocs-sync            # 2. 再检查整体状态并更新
+  或 --absorb            #    （absorb 自动包含 trace 步骤）
+```
+
+> `--trace` 专注于代码标注扫描，`--absorb` 专注于状态吸收。两者可独立使用，也可组合使用。
+
 ## 下一步
 
-同步完成后，可根据进度报告：
-- 继续开发未完成任务
-- 补充缺失的文档记录
-- 修正不一致的设计
+同步完成后，根据进度报告中的**偏差修复路由**执行对应 Skill。

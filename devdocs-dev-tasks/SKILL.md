@@ -121,6 +121,12 @@ docs/devdocs/
 - [ ] UI 层任务标记 🟢 可选 TDD
 - [ ] 基础设施任务标记 ⚪ 不适用 TDD
 
+### 执行约束
+
+- [ ] **任务执行必须使用 `/devdocs-dev-workflow`**
+- [ ] 禁止跳过 dev-workflow 直接写代码（会导致追溯失效）
+- [ ] 任务完成后必须执行 `/devdocs-sync --trace`
+
 ## 增量任务管理
 
 ### 来源
@@ -144,7 +150,10 @@ docs/devdocs/
 1. 询问用户是否开始开发
 2. 如是，使用 TodoWrite 添加所有任务到追踪列表
 3. 建议从第一个任务（T-01）开始
-4. **执行任务时使用 `/devdocs-dev-workflow`**
+4. **执行任务时必须使用 `/devdocs-dev-workflow`**
+
+> **重要**：直接写代码而不使用 dev-workflow 会导致代码缺失 `@satisfies`/`@verifies` 标注，
+> 使 `/devdocs-sync --trace` 无法自动追溯，破坏文档↔代码的闭环。
 
 ## 参考资料
 

@@ -235,88 +235,52 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## Step 2: 设计追加（完整模式）
 
-### 影响分析
+> **委托执行**：本步骤必须委托给 `/devdocs-system-design`，由其负责增量设计。
 
-| 维度 | 问题 | 影响级别 |
-|------|------|----------|
-| 模块 | 是否需要新增模块？ | 高 |
-| 接口 | 是否修改现有接口签名？ | 高 |
-| 数据 | 是否修改现有数据模型？ | 高 |
-| 依赖 | 是否引入新依赖？ | 中 |
-| 配置 | 是否需要新配置项？ | 低 |
+### 委托输入
 
-### 追加 02-system-design*.md
+传递给 `/devdocs-system-design` 的上下文：
+- Step 1 新增的 F-XXX、US-XXX、AC-XXX 编号
+- 现有架构摘要（来自 Step 0）
+- 影响分析问题清单
 
-```markdown
-## 设计变更 v2: <功能名称> (2024-01-15)
+### 委托输出
 
-### 影响摘要
-
-| 影响类型 | 说明 | 级别 |
-|----------|------|------|
-| 新增模块 | PaymentModule | 高 |
-| 修改接口 | IOrderService.create() 增加参数 | 高 |
-
-### 接口变更
-
-#### IOrderService（变更）
-
-| 方法 | 变更类型 | 说明 |
-|------|----------|------|
-| `create` | 参数新增 | 新增 `paymentMethod` 参数 |
-| `processPayment` | 新增 | 处理支付（关联 F-004） |
-
-**向后兼容性**：
-- `paymentMethod` 参数可选，默认值为 `'default'`
-
-### 回归风险
-
-- [ ] OrderService 的现有测试需要更新
-- [ ] checkout 流程的 E2E 测试需要验证
-```
+从 `/devdocs-system-design` 获取：
+- 新增/变更的模块和接口
+- 影响摘要
+- 回归风险点
 
 ### ✅ 确认点
 
 ```
-已追加到 02-system-design.md：
-- 新增模块: PaymentModule
-- 接口变更: IOrderService
+/devdocs-system-design 已完成设计追加：
+- [设计变更摘要由 system-design 返回]
 
 是否确认并继续到 Step 3（测试追加）？[确认/修改/终止]
 ```
 
 ## Step 3: 测试追加（完整模式）
 
-### 根据新增 AC 设计测试
+> **委托执行**：本步骤必须委托给 `/devdocs-test-cases`，由其负责增量测试设计。
 
-为每个新增的 AC-XXX 设计对应测试用例。
+### 委托输入
 
-### 追加 03-test-cases*.md
+传递给 `/devdocs-test-cases` 的上下文：
+- Step 1 新增的 AC-XXX 编号
+- Step 2 新增的接口和模块（来自 system-design）
 
-```markdown
-## 测试用例 v2: <功能名称> (2024-01-15)
+### 委托输出
 
-### 新增单元测试
-
-| 编号 | 测试名称 | 关联 AC | 测试类型 |
-|------|----------|---------|----------|
-| UT-013 | 支付金额计算 | AC-016 | 单元测试 |
-| UT-014 | 支付状态转换 | AC-017 | 单元测试 |
-
-### 追溯矩阵更新
-
-| AC 编号 | 单元测试 | 集成测试 | E2E 测试 | 状态 |
-|---------|----------|----------|----------|------|
-| AC-016 | UT-013 | IT-004 | - | ⏳ |
-| AC-017 | UT-014 | - | E2E-003 | ⏳ |
-```
+从 `/devdocs-test-cases` 获取：
+- 新增的 UT/IT/E2E-XXX 编号
+- 更新后的追溯矩阵
 
 ### ✅ 确认点
 
 ```
-已追加到 03-test-cases.md：
-- 新增 UT-013, UT-014
-- 新增 IT-004, E2E-003
+/devdocs-test-cases 已完成测试追加：
+- [测试编号摘要由 test-cases 返回]
 - 追溯矩阵已更新
 
 是否确认并继续到 Step 4（任务追加）？[确认/修改/终止]
@@ -401,11 +365,14 @@ docs/devdocs/
 | 阶段 | 协作 Skill | 说明 |
 |------|-----------|------|
 | 需求追加 | - | 本 skill 处理 |
-| 设计追加 | `/devdocs-system-design` | 复杂设计变更时调用 |
-| 测试追加 | `/devdocs-test-cases` | 复杂测试设计时调用 |
-| 任务追加 | `/devdocs-dev-tasks` | **完整模式必须调用** |
+| 设计追加 | `/devdocs-system-design` | **完整模式必须委托**（增量更新） |
+| 测试追加 | `/devdocs-test-cases` | **完整模式必须委托**（增量更新 + 矩阵） |
+| 任务追加 | `/devdocs-dev-tasks` | **完整模式必须委托** |
 | 开发实现 | `/devdocs-dev-workflow` | 执行单个任务 |
 | 编码约束 | `/code-quality`, `/testing-guide` | 编码阶段 |
+
+> **编排器边界**：`devdocs-feature` 是编排器，负责编号扫描、步骤编排、确认流程。
+> 具体的设计内容、测试内容、任务内容由对应的专项 Skill 负责，本 Skill 不复制其逻辑。
 
 ## 约束
 
