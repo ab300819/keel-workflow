@@ -160,7 +160,7 @@ T-02 ─┘           │
 2. [ ] 视觉验证
 3. [ ] 编写 E2E 测试（实现后补）
 
-**UI 约束**（参考 `/ui-skills`）：
+**UI 约束**（参考 `/ui-orchestrator`）：
 - [ ] 使用 Tailwind CSS 默认值
 - [ ] 使用无障碍组件原语（Base UI / Radix）
 - [ ] 图标按钮必须有 aria-label
@@ -177,7 +177,7 @@ T-02 ─┘           │
 
 **Review 要点**：
 - [ ] 组件是否可复用
-- [ ] 是否遵循 ui-skills 约束
+- [ ] 是否遵循 ui-orchestrator 约束
 - [ ] 无障碍性是否达标
 
 ---

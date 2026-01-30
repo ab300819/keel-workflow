@@ -97,7 +97,7 @@ docs/devdocs/
 | [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `docs/devdocs/05-refactor-*.md` |
 | [提交规范](#7-commit-convention-提交规范) | - | 提交信息格式化与历史风格同步 | - |
 | [Git 安全](#11-git-safety-git-安全) | - | 强制使用 git mv/rm 规范操作 | - |
-| [UI 规范](#9-ui-skills-ui-规范) | `/ui-skills` | 构建更好界面的意见约束 | - |
+| [UI 调度器](#9-ui-orchestrator-ui-调度器) | `/ui-orchestrator` | 路由到专业的外部 UI/UX Skill | - |
 | [工作报告](#8-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
 
 ## DevDocs 工作流
@@ -171,7 +171,7 @@ docs/devdocs/
                                                                            开发实现
                                                                     ┌────────┼────────┐
                                                                     ▼        ▼        ▼
-                                                              /code-quality /testing-guide /ui-skills
+                                                              /code-quality /testing-guide /ui-orchestrator
                                                               (代码质量)    (测试质量)      (UI 约束)
                                                                               │
                                                                               ▼
@@ -240,7 +240,7 @@ docs/devdocs/
        │
        ├── 3. 执行重构
        │       ├── 普通代码 → /code-quality
-       │       └── UI 代码 → /ui-skills
+       │       └── UI 代码 → /ui-orchestrator
        │
        └── 4. 重写流程（如需要）
                └── /devdocs-retrofit → 逆向分析 → 重新实现
@@ -255,7 +255,7 @@ DevDocs 流程中各 Skill 的协作关系：
 | 阶段 | 主 Skill | 协作 Skill | 说明 |
 |------|----------|-----------|------|
 | 需求分析 | `/devdocs-requirements` | - | 定义 F/US/AC 编号 |
-| 洞察收集 | `/devdocs-insights` | `/ui-skills` | 审查/调研结果转需求 |
+| 洞察收集 | `/devdocs-insights` | `/ui-orchestrator` | 审查/调研结果转需求 |
 | 系统设计 | `/devdocs-system-design` | `/code-quality` | MTE 原则指导设计 |
 | 测试用例 | `/devdocs-test-cases` | `/testing-guide` | 测试质量约束 |
 | 开发任务 | `/devdocs-dev-tasks` | 多个 | 见下表 |
@@ -271,7 +271,7 @@ DevDocs 流程中各 Skill 的协作关系：
                   │
                   ├── 编码实现 ────────── /code-quality (MTE 原则)
                   │
-                  ├── UI 实现 ─────────── /ui-skills (无障碍、动画约束)
+                  ├── UI 实现 ─────────── /ui-orchestrator (无障碍、动画约束)
                   │
                   ├── 测试编写 ────────── /testing-guide (断言质量、变异测试)
                   │
@@ -286,7 +286,7 @@ DevDocs 流程中各 Skill 的协作关系：
 |-------|---------|----------|
 | `/code-quality` | 编写/重构代码时 | 函数长度、参数数量、依赖注入 |
 | `/testing-guide` | 编写测试时 | 断言质量、覆盖率、变异得分 |
-| `/ui-skills` | 实现 UI 时 | 无障碍、动画性能、布局规范 |
+| `/ui-orchestrator` | 实现 UI 时 | 无障碍、动画性能、布局规范 |
 | `/git-safety` | 文件操作时 | 使用 git mv/rm |
 | `/commit-convention` | 提交代码时 | 提交信息格式 |
 | `/devdocs-sync` | 任务完成后/Sprint 结束 | 文档与实现一致性 |
@@ -747,7 +747,7 @@ T-02 ─┘           │
 1. 开始任务
    │
    ▼
-2. 编写代码（遵循 /code-quality, /ui-skills 约束）
+2. 编写代码（遵循 /code-quality, /ui-orchestrator 约束）
    │
    ▼
 3. 编写测试（遵循 /testing-guide 约束）
@@ -1058,16 +1058,16 @@ allowed-tools: Read, Bash, Write, Glob, Grep, AskUserQuestion
 
 ---
 
-# 9. ui-skills (UI 规范)
+# 9. ui-orchestrator (UI 调度器)
 
-构建更好界面的意见约束。在 DevDocs 流程开发阶段实现 UI 相关任务时应用此 skill。
+UI/UX 技能调度器，根据项目需求路由到专业的外部 Skill。
 
 ## 元数据
 
 ```yaml
-name: ui-skills
-description: Opinionated constraints for building better interfaces with agents
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
+name: ui-orchestrator
+description: UI/UX skill dispatcher that routes to specialized external skills
+allowed-tools: Read, Glob, Bash, AskUserQuestion
 ```
 
 ## 触发条件
@@ -1075,18 +1075,36 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - DevDocs 开发阶段涉及 UI 实现
 - 用户要求优化 UI/UX
 - 用户要求构建新界面
-- 涉及 CSS、布局、动画等前端开发任务
+- SwiftUI 开发任务
 
-## 在 DevDocs 流程中的位置
+## 外部 Skill 路由
+
+| Skill | 定位 | 适用场景 | 安装命令 |
+|-------|------|----------|----------|
+| `baseline-ui` | 代码审查 & 质量守护 | 企业内部系统、代码审查 | `npx skills add ibelick/ui-orchestrator` |
+| `ui-ux-pro-max` | 设计系统生成 | 行业垂直产品、新项目设计 | `npm install -g uipro-cli` |
+| `frontend-design` | 创意美学 & 视觉冲击 | 营销着陆页、品牌官网 | `npx skills add anthropics/skills` |
+| `swiftui-expert-skill` | SwiftUI 专家指导 | iOS/macOS 开发 | `npx skills add avdlee/swiftui-agent-skill` |
+
+## 设计哲学光谱
 
 ```
-/devdocs-dev-tasks → 开发实现 → /ui-skills (UI 相关任务)
-                             → /code-quality (代码质量)
+保守/安全                    中性/平衡                    大胆/创意
+    │                          │                          │
+    ▼                          ▼                          ▼
+baseline-ui              ui-ux-pro-max              frontend-design
+
+"不出错"                   "符合行业"                  "令人难忘"
 ```
 
-## 核心规范
+## 约束
 
-详见 [ui-skills/SKILL.md](ui-skills/SKILL.md)。
+- [ ] **必须先检测目标 Skill 是否存在**
+- [ ] **不存在时必须提示安装命令**
+- [ ] **禁止复制外部 Skill 的具体规则**
+- [ ] SwiftUI 项目 → 必须路由到 `swiftui-expert-skill`
+
+详见 [ui-orchestrator/SKILL.md](ui-orchestrator/SKILL.md)。
 
 ---
 
@@ -1128,7 +1146,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 | 场景 | 协作 Skill |
 |------|------------|
 | 代码不可测试 | `/devdocs-retrofit` |
-| UI 重构 | `/ui-skills` |
+| UI 重构 | `/ui-orchestrator` |
 | 代码质量检查 | `/code-quality` |
 
 ## 输出文件
@@ -1146,7 +1164,7 @@ docs/devdocs/
 - [ ] **每步重构后运行测试**
 - [ ] **重构后所有测试必须通过**
 - [ ] **不得在重构中添加新功能**
-- [ ] UI 重构必须应用 `/ui-skills`
+- [ ] UI 重构必须应用 `/ui-orchestrator`
 - [ ] 代码重构必须应用 `/code-quality`
 
 详见 [refactor/SKILL.md](refactor/SKILL.md)。
@@ -1686,7 +1704,7 @@ docs/devdocs/
 
 | 场景 | 协作 Skill |
 |------|-----------|
-| UI/UX 审查来源 | `/ui-skills` |
+| UI/UX 审查来源 | `/ui-orchestrator` |
 | 确认后设计 | `/devdocs-system-design` |
 | 确认后开发 | `/devdocs-dev-tasks` |
 | Bug 类建议 | `/devdocs-bugfix` |
@@ -1758,7 +1776,7 @@ devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
 |------|-----------|
 | 写业务代码 | `/code-quality` |
 | 写测试代码 | `/testing-guide` |
-| UI 实现 | `/ui-skills` |
+| UI 实现 | `/ui-orchestrator` |
 | 代码提交 | `/git-safety`, `/commit-convention` |
 
 详见 [devdocs-dev-workflow/SKILL.md](devdocs-dev-workflow/SKILL.md)。
@@ -1824,7 +1842,7 @@ skills/
 │   └── SKILL.md
 ├── commit-convention/
 │   └── SKILL.md
-├── ui-skills/
+├── ui-orchestrator/
 │   └── SKILL.md
 └── work-report/
     ├── SKILL.md
@@ -1861,7 +1879,7 @@ skills/
 /code-quality
 /testing-guide
 /refactor
-/ui-skills
+/ui-orchestrator
 /work-report
 ```
 

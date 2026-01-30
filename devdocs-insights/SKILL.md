@@ -165,7 +165,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 **输入**：
 - 用户提供截图/原型
 - 用户描述交互问题
-- 运行 /ui-skills 审查结果
+- 运行 /ui-orchestrator 审查结果
 
 **关注点**：
 - 可用性问题
@@ -343,7 +343,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| UI/UX 审查来源 | `/ui-skills` | 审查结果可作为洞察来源 |
+| UI/UX 审查来源 | `/ui-orchestrator` | 审查结果可作为洞察来源 |
 | 需求转化 | `/devdocs-requirements` | 被调用：洞察转化为需求 |
 | 设计变更 | `/devdocs-system-design` | 触发：复杂改进需要设计调整 |
 | 测试补充 | `/devdocs-test-cases` | 触发：改进建议需要测试覆盖 |

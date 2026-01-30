@@ -519,7 +519,7 @@ src/
 | 优化建议设计变更 | `/devdocs-insights` | 洞察确认后触发增量设计 |
 | 可测试性设计 | `/testing-guide` | 确保核心逻辑可单元测试 |
 | 代码质量 | `/code-quality` | MTE 原则指导设计 |
-| UI 架构 | `/ui-skills` | UI 组件设计约束 |
+| UI 架构 | `/ui-orchestrator` | 路由到专业的外部 UI/UX Skill |
 | 接口自动提取 | `/devdocs-retrofit` | 从现有代码逆向提取接口定义并同步到设计文档 |
 
 ## 下一步

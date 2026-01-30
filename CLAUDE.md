@@ -58,7 +58,7 @@ Some skills have a `templates/` subdirectory for additional reference files.
 ### Development Guidance (No Output Files)
 - `code-quality` - MTE principles (Maintainability, Testability, Extensibility)
 - `testing-guide` - Test quality constraints, mutation testing (≥80% mutation score)
-- `ui-skills` - UI/UX constraints for frontend development
+- `ui-orchestrator` - UI/UX constraints for frontend development
 - `refactor` - Test-driven refactoring (requires ≥80% coverage before refactoring)
 - `git-safety` - Enforce `git mv`/`git rm` for tracked files
 - `commit-convention` - Learn from `git log` then apply Conventional Commits

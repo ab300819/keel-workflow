@@ -52,7 +52,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 | 场景 | 协作 Skill | 说明 |
 |------|------------|------|
 | 代码无法测试 | `/devdocs-retrofit` | 逆向分析后重写 |
-| UI 重构 | `/ui-skills` | 应用 UI 约束规范 |
+| UI 重构 | `/ui-orchestrator` | 应用 UI 约束规范 |
 | 代码质量检查 | `/code-quality` | 应用 MTE 原则 |
 | 需要文档化 | DevDocs 流程 | 生成规范文档 |
 | **编写/补充测试** | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） |
@@ -84,7 +84,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 4. 执行重构
    │
    ├── 普通代码 → 应用 /code-quality
-   └── UI 代码 → 应用 /ui-skills
+   └── UI 代码 → 应用 /ui-orchestrator
    │
    ▼
 5. 重写流程（如需要）
@@ -304,7 +304,7 @@ npx stryker run --mutate '<target-path>'
 
 #### UI 代码重构
 
-调用 `/ui-skills` 约束：
+调用 `/ui-orchestrator` 约束：
 
 ```
 UI 重构检查点：
@@ -365,7 +365,7 @@ UI 重构检查点：
 2. 基于 DevDocs 文档重新实现
    │
    ├── 遵循 /code-quality MTE 原则
-   ├── UI 部分遵循 /ui-skills
+   ├── UI 部分遵循 /ui-orchestrator
    │
    ▼
 3. 编写测试（测试先行）
@@ -525,7 +525,7 @@ docs/devdocs/
 
 ### 协作约束
 
-- [ ] UI 重构必须应用 `/ui-skills` 约束
+- [ ] UI 重构必须应用 `/ui-orchestrator` 约束
 - [ ] 代码重构必须应用 `/code-quality` MTE 原则
 - [ ] 重写时必须使用 `/devdocs-retrofit` 生成文档
 
@@ -605,7 +605,7 @@ DevDocs 工作流（含重构）:
                                                                            开发实现
                                                                     ┌────────┼────────┐
                                                                     ▼        ▼        ▼
-                                                              /code-quality /ui-skills /refactor
+                                                              /code-quality /ui-orchestrator /refactor
                                                                                         │
 已有项目:                                                                               │
 /devdocs-retrofit ←─────────────────────────────────────────────────────────────────────┘
@@ -621,7 +621,7 @@ DevDocs 工作流（含重构）:
     │
     ├── 代码审查 → /code-quality (MTE 原则)
     │
-    ├── UI 重构 → /ui-skills (UI 约束)
+    ├── UI 重构 → /ui-orchestrator (UI 约束)
     │
     ├── 不可测试 → /devdocs-retrofit (逆向分析)
     │                    │

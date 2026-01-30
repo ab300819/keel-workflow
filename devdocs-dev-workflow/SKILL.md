@@ -170,7 +170,7 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 |------|-----------|------|
 | 写业务代码 | `/code-quality` | MTE 原则、依赖注入、避免过度设计 |
 | 写测试代码 | `/testing-guide` | 断言质量、变异测试、覆盖率 |
-| UI 实现 | `/ui-skills` | 无障碍、动画、布局约束 |
+| UI 实现 | `/ui-orchestrator` | 无障碍、动画、布局约束 |
 | 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |
 | 提交信息 | `/commit-convention` | 遵循项目提交规范 |
 | 任务完成 | `/devdocs-sync` | 后续：更新追溯矩阵（--trace） |
