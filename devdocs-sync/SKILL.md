@@ -28,7 +28,12 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 /devdocs-sync --check            → 仅检查，不更新文档
 /devdocs-sync --absorb           → 吸收模式（自动 + 智能补齐）
 /devdocs-sync --trace            → 代码追溯扫描（更新矩阵代码位置）
-/devdocs-sync --archive          → 强制归档已完成任务
+/devdocs-sync --archive          → 全量归档检查（所有文档类型）
+/devdocs-sync --archive requirements  → 仅归档需求文档
+/devdocs-sync --archive design        → 仅归档设计文档
+/devdocs-sync --archive tests         → 仅归档测试用例
+/devdocs-sync --archive tasks         → 仅归档开发任务
+/devdocs-sync --archive --release v1.0.0  → 创建版本快照
 /devdocs-sync --audit            → 追溯健康度检查
 /devdocs-sync T-01 T-02          → 指定范围同步
 ```
@@ -41,6 +46,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 | sync（默认） | ✅ | ✅ | ❌ | ✅ 全部 |
 | absorb | ✅ | ✅ | ✅ | ✅ 仅高风险 |
 | trace | ✅ 代码扫描 | ✅ 矩阵 | ❌ | ❌ |
+| archive | ✅ 归档条件 | ✅ 归档文件 | ❌ | ✅ 全部 |
 | audit | ✅ 追溯 | ❌ | ❌ | ❌ |
 
 ## 核心理念
@@ -120,9 +126,18 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 详见 [trace-mode.md](trace-mode.md)
 
-### 任务归档
+### 文档归档 (--archive)
 
-当已完成任务过多时自动建议归档，保持主文档简洁。
+支持所有文档类型的归档，控制文档膨胀，同时保留历史记录便于追溯：
+
+| 文档类型 | 归档条件 | 归档文件 |
+|---------|---------|---------|
+| 需求 | 功能已完成/已废弃 | `archive/01-requirements-archive.md` |
+| 设计 | 关联功能已归档 | `archive/02-system-design-archive.md` |
+| 测试 | 关联 AC 已归档 | `archive/03-test-cases-archive.md` |
+| 任务 | 已完成 > 15 个 | `archive/04-dev-tasks-archive.md` |
+
+归档时支持级联：归档 F-001 时可同时归档关联的设计/测试/任务。
 
 详见 [archive.md](archive.md)
 
