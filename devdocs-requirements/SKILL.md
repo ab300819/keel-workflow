@@ -1,7 +1,7 @@
 ---
 name: devdocs-requirements
-description: Expand user requirements into detailed DevDocs documents. Use when users provide feature requirements, want to clarify requirements, or need to create product requirement documents. Triggers on keywords like "requirements", "PRD", "feature request", "user story".
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
+description: Expand user requirements into detailed DevDocs documents. Use when users provide feature requirements, want to clarify requirements, need to create product requirement documents, or add project context/background information. Triggers on keywords like "requirements", "PRD", "feature request", "user story", "项目背景", "补充信息", "context", "background".
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 ---
 
 # 需求扩写
@@ -20,18 +20,22 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 - 用户要求创建/编写 PRD
 - 用户想要澄清或记录需求
 - 来自 `/devdocs-feature` 的增量需求委托
+- 用户需要补充项目背景信息（尤其是 retrofit 后）
+- 用户提供参考资料、领域知识、技术约束
 
 ## 运行模式
 
 ```
 /devdocs-requirements              → 自动检测模式
-/devdocs-requirements --incremental → 强制增量模式
+/devdocs-requirements --incremental → 强制增量模式（追加功能点）
+/devdocs-requirements --context     → 背景信息模式（追加/更新背景）
 ```
 
 | 模式 | 触发条件 | 说明 |
 |------|----------|------|
 | **初始模式** | 无 `01-requirements.md` | 从零创建需求文档 |
-| **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加需求 |
+| **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加功能点/用户故事/验收标准 |
+| **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
 
 ## 工作流程
 
@@ -84,6 +88,36 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
    │
    ▼
 6. 返回新增编号列表（供调用方使用）
+```
+
+### 背景信息模式
+
+```
+1. 读取现有文档
+   │
+   ├── 检查 01-requirements.md 是否存在
+   └── 提取现有"背景与目标"章节内容
+   │
+   ▼
+2. 收集背景信息
+   │
+   ├── 引导用户提供信息（AskUserQuestion）
+   ├── 接收用户直接输入
+   ├── 从文件路径提取（Read）
+   └── 从 URL 提取摘要（WebFetch）
+   │
+   ▼
+3. 整合信息
+   │
+   ├── 合并到"背景与目标"章节
+   ├── 补充到"技术约束"子章节
+   └── 补充到"参考资料"子章节
+   │
+   ▼
+4. 更新文档
+   │
+   ▼
+5. 用户确认
 ```
 
 ## 编号规范
@@ -245,6 +279,110 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 - AC-016 ~ AC-020
 ```
 
+## 背景信息模式详解
+
+### 典型场景
+
+1. **Retrofit 后补充**：代码逆向推导完成后，补充代码中看不出的背景
+2. **新项目初始化**：在定义功能点之前，先记录项目背景
+3. **迭代过程中**：随时补充新发现的约束或参考资料
+
+### 信息收集引导
+
+使用 AskUserQuestion 引导用户提供信息：
+
+```markdown
+## 背景信息收集
+
+当前"背景与目标"章节状态：
+> [显示现有内容，或"暂无内容"]
+
+请选择要补充的信息类型：
+
+1. **项目背景** - 为什么做这个项目、解决什么问题
+2. **领域知识** - 关键业务概念、术语解释
+3. **技术约束** - 兼容性要求、性能指标、安全要求
+4. **参考资料** - 设计稿、竞品、文档链接
+5. **决策记录** - 关键技术/产品选择及原因
+```
+
+### 信息输入方式
+
+| 输入方式 | 处理方法 | 示例 |
+|----------|----------|------|
+| **直接描述** | 直接整合到文档 | "这个项目是为了替换旧系统..." |
+| **文件路径** | 使用 Read 提取关键信息 | "参考 docs/old-design.md" |
+| **URL 链接** | 使用 WebFetch 提取摘要 | "参考 https://example.com/spec" |
+| **图片路径** | 记录路径，标注用途 | "设计稿在 designs/v1.png" |
+
+### 文档结构更新
+
+背景信息模式会更新"背景与目标"章节的结构：
+
+```markdown
+## 1. 背景与目标
+
+### 1.1 项目背景
+
+**项目起源**：<为什么启动这个项目>
+
+**目标用户**：<谁会使用这个系统>
+
+**核心问题**：<解决什么问题>
+
+### 1.2 领域知识
+
+| 术语 | 解释 |
+|------|------|
+| <术语1> | <解释> |
+| <术语2> | <解释> |
+
+### 1.3 技术约束
+
+| 约束类型 | 约束内容 | 原因 |
+|----------|----------|------|
+| 兼容性 | 需支持 iOS 15+ | 用户设备分布 |
+| 性能 | 首屏加载 < 2s | 用户体验要求 |
+| 安全 | 数据需加密存储 | 合规要求 |
+
+### 1.4 参考资料
+
+| 资料 | 链接/路径 | 说明 |
+|------|-----------|------|
+| 设计稿 | `designs/v1.fig` | Figma 原型 |
+| 竞品分析 | `docs/competitor.md` | 竞品功能对比 |
+| API 文档 | https://api.example.com/docs | 第三方接口 |
+
+### 1.5 决策记录
+
+| 决策 | 选择 | 原因 | 日期 |
+|------|------|------|------|
+| 状态管理 | Redux | 团队熟悉，生态成熟 | 2024-01-10 |
+| 数据库 | PostgreSQL | 需要复杂查询支持 | 2024-01-10 |
+```
+
+### 增量更新
+
+背景信息模式支持增量更新，不会覆盖现有内容：
+
+```markdown
+---
+
+## 背景信息更新 (2024-01-20)
+
+### 新增技术约束
+
+| 约束类型 | 约束内容 | 原因 |
+|----------|----------|------|
+| 国际化 | 需支持中英文 | 海外市场需求 |
+
+### 新增参考资料
+
+| 资料 | 链接/路径 | 说明 |
+|------|-----------|------|
+| 新设计稿 | `designs/v2.fig` | 迭代版本 |
+```
+
 ## 约束
 
 ### 功能点约束
@@ -274,6 +412,15 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 - [ ] **不得删除或覆盖现有内容**
 - [ ] **完成后必须返回新增编号列表**
 
+### 背景信息模式约束
+- [ ] **必须先读取现有"背景与目标"章节内容**
+- [ ] **不得删除或覆盖现有背景信息**
+- [ ] **新增内容必须标注更新日期**
+- [ ] **URL 引用必须使用 WebFetch 提取摘要，不能仅记录链接**
+- [ ] **文件引用必须使用 Read 验证文件存在**
+- [ ] 敏感信息（密钥、密码、内部 URL）不得写入文档
+- [ ] 参考资料必须注明用途和关联性
+
 ### 确认约束
 - [ ] 必须与用户确认功能点是否完整
 - [ ] 不得添加用户未提及且未确认的功能
@@ -286,8 +433,14 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 | 洞察转化 | `/devdocs-insights` | 被调用：改进建议转化为需求 |
 | Bug 暴露需求 | `/devdocs-bugfix` | 被调用：Bug 修复发现需求缺失 |
 | 项目改造 | `/devdocs-retrofit` | 被调用：逆向推导生成需求 |
+| **改造后补充背景** | `/devdocs-retrofit` | **后续**：逆向完成后用 `--context` 补充背景 |
 | 设计阶段 | `/devdocs-system-design` | 后续：需求确认后进入设计 |
+| 上下文生成 | `/devdocs-onboard` | 后续：背景信息会被提取到上下文摘要 |
 
 ## 下一步
 
-完成后建议运行 `/devdocs-system-design` 进行系统设计。
+| 完成模式 | 建议下一步 |
+|----------|------------|
+| 初始模式 | `/devdocs-system-design` 进入系统设计 |
+| 增量模式 | `/devdocs-system-design` 增量设计或 `/devdocs-test-cases` 补充测试 |
+| 背景信息模式 | 继续 `/devdocs-requirements` 定义功能点，或 `/devdocs-system-design` 设计 |

@@ -373,12 +373,15 @@ docs/devdocs/
 
 | 场景 | 必须执行 | 说明 |
 |------|----------|------|
+| **补充背景信息** | `/devdocs-requirements --context` | **推荐**：补充代码中看不出的背景、约束、参考资料 |
 | 首次改造 | `/devdocs-sync --audit` | 检查追溯健康度 |
 | 有待补充项 | `/devdocs-requirements` | 完善需求文档 |
 | 开始开发 | `/devdocs-dev-tasks` → `/devdocs-dev-workflow` | 执行任务 |
 | 添加功能 | `/devdocs-feature` | 增量开发 |
 
 > 改造不是终点，必须通过后续 Skill 进入正常开发循环。
+>
+> **提示**：逆向推导只能从代码提取结构信息，建议用 `--context` 模式补充项目背景、技术约束、参考资料等代码中看不出的信息。
 ```
 
 ---
