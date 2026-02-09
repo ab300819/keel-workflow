@@ -1,0 +1,12 @@
+{
+  "name": "devdocs-skills",
+  "version": "1.0.0",
+  "description": "DevDocs 开发文档工作流 + 代码质量 Skill 集合",
+  "author": {
+    "name": "ab300819"
+  },
+  "repository": "https://github.com/ab300819/skills",
+  "license": "MIT",
+  "keywords": ["devdocs", "code-quality", "testing", "refactoring"],
+  "skills": "./skills/"
+}

@@ -1,6 +1,39 @@
 # Skills 模板集合
 
-面向**个人开发者**的 Claude Code Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 skills。
+面向**个人开发者**的 AI Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 skills。
+
+兼容 **Claude Code**、**Codex CLI**、**OpenCode** 等遵循 [Agent Skills](https://agentskills.io) 开放标准的 AI 编码工具。
+
+## 安装方式
+
+### 方式 1：Claude Plugin Marketplace（推荐，自动更新）
+
+```
+/plugin marketplace add ab300819/skills
+```
+
+安装后 skill 以命名空间形式可用：`/devdocs-skills:code-quality`
+
+### 方式 2：npx skills（跨工具通用）
+
+```bash
+# 列出所有 skill
+npx skills add ab300819/skills --list
+
+# 安装单个 skill
+npx skills add ab300819/skills@code-quality
+```
+
+### 方式 3：本地部署（Claude Code + Codex + OpenCode）
+
+```bash
+git clone https://github.com/ab300819/skills.git
+bash skills/scripts/deploy-skills.sh
+```
+
+部署脚本会为每个 skill 在 `~/.claude/skills/` 和 `~/.agents/skills/` 创建 symlink。
+
+---
 
 ## 语言规则
 
@@ -904,7 +937,7 @@ docs/devdocs/
 - [ ] 不得删除原有文档的有效内容
 - [ ] 必须生成改造报告
 
-详见 [devdocs-retrofit/SKILL.md](devdocs-retrofit/SKILL.md)。
+详见 [devdocs-retrofit/SKILL.md](skills/devdocs-retrofit/SKILL.md)。
 
 ---
 
@@ -1104,7 +1137,7 @@ baseline-ui              ui-ux-pro-max              frontend-design
 - [ ] **禁止复制外部 Skill 的具体规则**
 - [ ] SwiftUI 项目 → 必须路由到 `swiftui-expert-skill`
 
-详见 [ui-orchestrator/SKILL.md](ui-orchestrator/SKILL.md)。
+详见 [ui-orchestrator/SKILL.md](skills/ui-orchestrator/SKILL.md)。
 
 ---
 
@@ -1167,7 +1200,7 @@ docs/devdocs/
 - [ ] UI 重构必须应用 `/ui-orchestrator`
 - [ ] 代码重构必须应用 `/code-quality`
 
-详见 [refactor/SKILL.md](refactor/SKILL.md)。
+详见 [refactor/SKILL.md](skills/refactor/SKILL.md)。
 
 ---
 
@@ -1256,7 +1289,7 @@ testing-guide/
     └── traceability-matrix.md            # 需求追溯矩阵模板
 ```
 
-详见 [testing-guide/SKILL.md](testing-guide/SKILL.md)。
+详见 [testing-guide/SKILL.md](skills/testing-guide/SKILL.md)。
 
 ---
 
@@ -1334,7 +1367,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 | 代码修改 | `/code-quality` |
 | 提交信息 | `/commit-convention` |
 
-详见 [devdocs-bugfix/SKILL.md](devdocs-bugfix/SKILL.md)。
+详见 [devdocs-bugfix/SKILL.md](skills/devdocs-bugfix/SKILL.md)。
 
 ---
 
@@ -1416,7 +1449,7 @@ Step 5: 生成功能日志
 - 更新 `04-dev-tasks*.md`（追加）
 - 更新/创建 `00-feature-log.md`（功能日志）
 
-详见 [devdocs-feature/SKILL.md](devdocs-feature/SKILL.md)。
+详见 [devdocs-feature/SKILL.md](skills/devdocs-feature/SKILL.md)。
 
 ---
 
@@ -1518,7 +1551,7 @@ docs/devdocs/
 | 项目改造 | `/devdocs-retrofit` |
 | 轻量新增 | `/devdocs-feature --lite` |
 
-详见 [devdocs-sync/SKILL.md](devdocs-sync/SKILL.md)。
+详见 [devdocs-sync/SKILL.md](skills/devdocs-sync/SKILL.md)。
 
 ---
 
@@ -1606,7 +1639,7 @@ docs/devdocs/
 | DevDocs 不存在 | `/devdocs-retrofit` |
 | 进度信息过时 | `/devdocs-sync` |
 
-详见 [devdocs-onboard/SKILL.md](devdocs-onboard/SKILL.md)。
+详见 [devdocs-onboard/SKILL.md](skills/devdocs-onboard/SKILL.md)。
 
 ---
 
@@ -1709,7 +1742,7 @@ docs/devdocs/
 | 确认后开发 | `/devdocs-dev-tasks` |
 | Bug 类建议 | `/devdocs-bugfix` |
 
-详见 [devdocs-insights/SKILL.md](devdocs-insights/SKILL.md)。
+详见 [devdocs-insights/SKILL.md](skills/devdocs-insights/SKILL.md)。
 
 ---
 
@@ -1779,76 +1812,42 @@ devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
 | UI 实现 | `/ui-orchestrator` |
 | 代码提交 | `/git-safety`, `/commit-convention` |
 
-详见 [devdocs-dev-workflow/SKILL.md](devdocs-dev-workflow/SKILL.md)。
+详见 [devdocs-dev-workflow/SKILL.md](skills/devdocs-dev-workflow/SKILL.md)。
 
 ---
 
 # 项目结构
 
 ```
-skills/
-├── README.md                           # 本文档
-├── agent-skill.md                      # Skill 规范参考
-├── devdocs-requirements/
-│   ├── SKILL.md
-│   └── templates/
-│       └── requirements-template.md
-├── devdocs-system-design/
-│   ├── SKILL.md
-│   └── templates/
-│       └── design-template.md
-├── devdocs-test-cases/
-│   ├── SKILL.md
-│   └── templates/
-│       ├── test-cases-template.md
-│       ├── unit-test-template.md
-│       ├── integration-test-template.md
-│       └── e2e-test-template.md
-├── devdocs-dev-tasks/
-│   ├── SKILL.md
-│   ├── archive-rules.md
-│   └── task-template.md
-├── devdocs-dev-workflow/
-│   ├── SKILL.md
-│   ├── execution-flow.md
-│   └── skeleton-examples.md
-├── devdocs-retrofit/
-│   └── SKILL.md
-├── devdocs-bugfix/
-│   └── SKILL.md
-├── devdocs-feature/
-│   └── SKILL.md
-├── devdocs-sync/
-│   ├── SKILL.md
-│   ├── absorb-mode.md
-│   ├── archive.md
-│   ├── audit-mode.md
-│   ├── examples.md
-│   └── trace-mode.md
-├── devdocs-onboard/
-│   └── SKILL.md
-├── devdocs-insights/
-│   └── SKILL.md
-├── code-quality/
-│   └── SKILL.md
-├── testing-guide/
-│   ├── SKILL.md
-│   └── templates/
-│       ├── mutation-testing.md
-│       └── traceability-matrix.md
-├── refactor/
-│   └── SKILL.md
-├── git-safety/
-│   └── SKILL.md
-├── commit-convention/
-│   └── SKILL.md
-├── ui-orchestrator/
-│   └── SKILL.md
-└── work-report/
-    ├── SKILL.md
-    └── templates/
-        ├── weekly-report.md
-        └── year-end.md
+.                                           # Git 仓库根目录
+├── .claude-plugin/
+│   └── plugin.json                         # Claude Plugin 清单
+├── skills/                                 # 所有 skill
+│   ├── code-quality/
+│   ├── commit-convention/
+│   ├── devdocs-bugfix/
+│   ├── devdocs-dev-tasks/
+│   ├── devdocs-dev-workflow/
+│   ├── devdocs-feature/
+│   ├── devdocs-insights/
+│   ├── devdocs-onboard/
+│   ├── devdocs-requirements/
+│   ├── devdocs-retrofit/
+│   ├── devdocs-sync/
+│   ├── devdocs-system-design/
+│   ├── devdocs-test-cases/
+│   ├── git-safety/
+│   ├── refactor/
+│   ├── testing-guide/
+│   ├── ui-orchestrator/
+│   └── work-report/
+├── scripts/
+│   └── deploy-skills.sh                    # 本地部署脚本
+├── CLAUDE.md                               # Claude Code 项目指令
+├── AGENTS.md                               # Codex / OpenCode 项目指令
+├── README.md                               # 本文档
+├── claude-skill-spec.md                    # Claude Skill 规范参考
+└── codex-skill-spec.md                     # Codex Skill 规范参考
 ```
 
 ---
@@ -1857,9 +1856,7 @@ skills/
 
 ## 安装
 
-将 skill 目录复制到：
-- 个人使用：`~/.claude/skills/`
-- 项目使用：`.claude/skills/`
+详见文档顶部 [安装方式](#安装方式)。
 
 ## 调用
 

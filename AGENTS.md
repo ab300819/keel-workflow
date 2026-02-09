@@ -1,12 +1,12 @@
-<!-- Keep in sync with AGENTS.md -->
+<!-- Keep in sync with CLAUDE.md -->
 
-# CLAUDE.md
+# AI Agent Skills
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project Overview
 
-This is a **Claude Code Agent Skills template collection** for **solo developers** - a set of reusable SKILL.md files that extend Claude's capabilities for software development workflows. This is NOT a traditional codebase with build/test processes - it's a specification library of Markdown + YAML skill definitions.
+This is an **AI Agent Skills template collection** for **solo developers** - a set of reusable SKILL.md files that extend AI coding agents' capabilities for software development workflows. This is NOT a traditional codebase with build/test processes - it's a specification library of Markdown + YAML skill definitions.
 
 ## Language Rules
 
@@ -35,12 +35,12 @@ DevDocs workflow uses a unified numbering system for traceability:
 
 ## Skill Structure
 
-Each skill lives in its own directory with a `SKILL.md` file:
+Each skill lives in `skills/<skill-name>/` with a `SKILL.md` file:
 
 ```yaml
 ---
 name: skill-name
-description: What the skill does (used by Claude for auto-discovery)
+description: What the skill does (used by agents for auto-discovery)
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 user-invocable: true  # (optional, defaults to true)
 ---
@@ -94,7 +94,7 @@ refactor(skill-name): reorganize templates
 ## When Modifying Skills
 
 1. Keep `SKILL.md` under 500 lines - use `templates/` for detailed reference material
-2. Description field is critical - Claude uses it for auto-discovery
+2. Description field is critical - agents use it for auto-discovery
 3. Use `allowed-tools` to restrict tool access when appropriate
-4. Test skill triggering by asking Claude questions that match the description
+4. Test skill triggering by asking questions that match the description
 5. All test cases must reference AC (Acceptance Criteria) numbers for traceability

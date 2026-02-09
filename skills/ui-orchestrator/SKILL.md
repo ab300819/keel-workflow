@@ -90,11 +90,15 @@ baseline-ui              ui-ux-pro-max              frontend-design
 ### 检测方法
 
 ```bash
-# 检查 skills 目录（Claude Code）
-ls -la ~/.claude/skills/ 2>/dev/null | grep -E "(baseline-ui|ui-ux-pro-max|frontend-design|swiftui-expert)"
+# 检查 skills 目录（Claude Code / Codex / OpenCode）
+for dir in ~/.claude/skills ~/.agents/skills; do
+    ls -la "$dir" 2>/dev/null | grep -E "(baseline-ui|ui-ux-pro-max|frontend-design|swiftui-expert)"
+done
 
 # 检查项目本地 skills
-ls -la .skills/ 2>/dev/null | grep -E "(baseline-ui|ui-ux-pro-max|frontend-design|swiftui-expert)"
+for dir in .claude/skills .agents/skills; do
+    ls -la "$dir" 2>/dev/null | grep -E "(baseline-ui|ui-ux-pro-max|frontend-design|swiftui-expert)"
+done
 ```
 
 ### 未安装提示模板
