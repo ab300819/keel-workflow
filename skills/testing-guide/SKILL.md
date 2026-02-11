@@ -1,6 +1,6 @@
 ---
 name: testing-guide
-description: Opinionated constraints for writing effective tests. Guide unit tests, integration tests, and E2E tests with quality metrics beyond coverage. Use when users write tests, review test code, or need testing strategy. Triggers on keywords like "test", "testing", "单元测试", "集成测试", "E2E", "测试质量", "coverage", "断言".
+description: Opinionated constraints for writing effective tests. Guide unit tests, integration tests, and E2E tests with quality metrics beyond coverage. Includes AI-driven branch coverage analysis. Use when users write tests, review test code, or need testing strategy. Triggers on keywords like "test", "testing", "单元测试", "集成测试", "E2E", "测试质量", "coverage", "断言", "分支分析", "branch analysis", "未测试路径".
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 
@@ -18,7 +18,9 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - 用户正在编写测试代码
 - 用户需要测试策略指导
 - 用户提到测试覆盖率、断言、变异测试
+- 用户要求分析代码分支覆盖情况
 - Code Review 中涉及测试代码
+- 关键词："分支分析"、"branch analysis"、"未测试路径"、"覆盖盲区"
 
 ---
 
@@ -191,6 +193,85 @@ describe('UserService', () => {
 
 ---
 
+## 代码分支覆盖分析（AI 驱动）
+
+> 代码实现完成后，AI 分析所有代码分支，找出未被测试覆盖的路径，生成补充测试用例。
+> 这是对需求驱动测试（AC → 测试）的**补充**，不是替代。
+
+### 定位
+
+```
+需求驱动测试（AC → 测试）  ← 主路径，覆盖业务规则
+         ＋
+代码分支分析（代码 → 测试） ← 补充路径，覆盖防御性逻辑
+         ＝
+完整测试覆盖
+```
+
+### 适用场景
+
+| 场景 | 说明 |
+|------|------|
+| 代码包含防御性逻辑 | 参数校验、null 检查、类型保护 |
+| 复杂条件分支 | switch/case、多条件组合 |
+| 覆盖率工具显示分支不足 | 行覆盖≥80% 但分支覆盖<80% |
+| 变异测试发现存活变异体 | 补充测试以杀死变异体 |
+
+### 分析流程
+
+```
+Step 1: 分析代码分支
+        ├── 条件语句（if/else, switch, 三元, &&/||）
+        ├── 异常处理路径（try/catch, throw）
+        ├── 早返回（guard clause）
+        └── 循环边界（空集合、单元素、多元素）
+                │
+                ▼
+Step 2: 映射现有测试
+        ├── 匹配 @verifies 标注的 AC 覆盖范围
+        ├── 分析每个测试实际触发的分支
+        └── 标记已覆盖/未覆盖分支
+                │
+                ▼
+Step 3: 生成补充测试
+        ├── 为未覆盖分支生成测试用例
+        ├── 使用 BCA-XXX 编号
+        ├── 添加 @covers-branch 标注
+        └── 遵循 AAA 结构和断言质量约束
+```
+
+### 标注规范
+
+```typescript
+/**
+ * @covers-branch createUser:null-email-guard
+ * @testcase BCA-001
+ */
+test('createUser 应该抛出错误当 email 为 null', () => {
+  // Arrange
+  const dto = { email: null, password: 'Strong1234' };
+  // Act & Assert
+  expect(() => createUser(dto)).toThrow('Email is required');
+});
+```
+
+| 标注 | 用途 | 必须性 |
+|------|------|--------|
+| `@covers-branch <函数>:<分支描述>` | 标记覆盖的代码分支 | **必须** |
+| `@testcase BCA-XXX` | 分支补充测试编号 | **必须** |
+
+### 分支覆盖分析约束
+
+- [ ] **分支分析在需求驱动测试之后执行**（先 AC 测试，后分支补充）
+- [ ] **补充测试必须标注 @covers-branch**（区分需求驱动和分支补充）
+- [ ] **补充测试使用 BCA-XXX 编号**（不占用 UT/IT/E2E 编号空间）
+- [ ] **补充测试同样遵循断言质量约束**（禁止弱断言）
+- [ ] 分支分析不改变需求驱动测试的优先级
+
+> 详细分析流程和示例见 [templates/branch-coverage-analysis.md](templates/branch-coverage-analysis.md)
+
+---
+
 ## Quick Reference
 
 ### 测试命名
@@ -249,6 +330,7 @@ mvn pitest:mutationCoverage    # Java
 
 | 模板 | 说明 |
 |------|------|
+| [branch-coverage-analysis.md](templates/branch-coverage-analysis.md) | AI 驱动的代码分支覆盖分析详解 |
 | [mutation-testing.md](templates/mutation-testing.md) | 8种语言变异测试配置 |
 | [ci-integration.md](templates/ci-integration.md) | CI/CD 集成配置 |
 | [traceability-matrix.md](templates/traceability-matrix.md) | 需求追溯矩阵 |
@@ -276,3 +358,4 @@ mvn pitest:mutationCoverage    # Java
 | 测试用例设计 | `/devdocs-test-cases` |
 | 代码可测试性 | `/code-quality` |
 | 重构前测试 | `/refactor` |
+| 分支覆盖分析 | `/devdocs-dev-workflow` — 完成检查阶段可选调用 |

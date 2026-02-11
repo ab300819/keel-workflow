@@ -30,8 +30,9 @@ DevDocs workflow uses a unified numbering system for traceability:
 | Insight | INS | INS-001 | Improvement suggestion from review/research |
 | Bug | BUG | BUG-001 | Bug fix record |
 | Task | T | T-01 | Development task (2-digit exception) |
+| Branch Coverage Test | BCA | BCA-001 | Code branch coverage supplement test |
 
-**Traceability**: `F → US → AC → (UT/IT/E2E)` and `INS → F`
+**Traceability**: `F → US → AC → (UT/IT/E2E)` and `INS → F` and `BCA` (branch coverage supplement)
 
 ## Skill Structure
 
@@ -63,6 +64,7 @@ Some skills have a `templates/` subdirectory for additional reference files.
 - `ui-orchestrator` - UI/UX constraints for frontend development
 - `refactor` - Test-driven refactoring (requires ≥80% coverage before refactoring)
 - `git-safety` - Enforce `git mv`/`git rm` for tracked files
+- `code-self-describe` - Self-fractal code descriptions (module CLAUDE.md + INPUT/OUTPUT/POS headers)
 - `commit-convention` - Learn from `git log` then apply Conventional Commits
 
 ### Utility
