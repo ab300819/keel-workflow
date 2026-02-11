@@ -56,6 +56,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 | 代码质量检查 | `/code-quality` | 应用 MTE 原则 |
 | 需要文档化 | DevDocs 流程 | 生成规范文档 |
 | **编写/补充测试** | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） |
+| **重构后更新描述** | `/code-self-describe` | 更新模块自描述（--update） |
 
 ---
 
@@ -629,5 +630,7 @@ DevDocs 工作流（含重构）:
     │                    ├── /devdocs-system-design
     │                    └── /devdocs-test-cases
     │
-    └── 测试编写 → /devdocs-test-cases (测试策略参考)
+    ├── 测试编写 → /devdocs-test-cases (测试策略参考)
+    │
+    └── 重构完成 → /code-self-describe --update (更新模块自描述)
 ```
