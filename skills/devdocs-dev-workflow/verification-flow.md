@@ -205,12 +205,12 @@
 
 ### 代码质量 Blocker
 
-| 问题 | 阈值 | Blocker 判定 |
-|------|------|-------------|
-| 函数长度 | > 80 行 | 🚫 Blocker |
-| 函数长度 | 50-80 行 | 💡 Suggestion |
-| 嵌套深度 | > 4 层 | 🚫 Blocker |
-| 嵌套深度 | 3-4 层 | 💡 Suggestion |
+| 问题 | 阈值 | Blocker 判定 | 依据 |
+|------|------|-------------|------|
+| 函数长度 | > 50 行 | 🚫 Blocker | /code-quality 最大 50 行 |
+| 函数长度 | 30-50 行 | 💡 Suggestion | /code-quality 建议 30 行 |
+| 嵌套深度 | > 3 层 | 🚫 Blocker | /code-quality 最大 3 层 |
+| 嵌套深度 | 2-3 层 | 💡 Suggestion | /code-quality 建议 2 层 |
 | 重复代码 | > 3 处相同 | 🚫 Blocker |
 | 安全漏洞 | 任何 | 🚫 Blocker |
 
