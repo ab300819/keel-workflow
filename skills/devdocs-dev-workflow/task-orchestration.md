@@ -143,17 +143,19 @@ Step 5: 工作区决策
           ▼
 ┌─ 逐任务循环 ─────────────────────────────────┐
 │  1. 断点检测 → 跳过 / 续做 / 全新            │
-│  2. [--headless] 启动子 Agent 执行单任务      │
-│     └── Task tool → 子 Agent 返回结果         │
-│  2. [交互] 执行单任务工作流（SKILL.md 主流程）│
-│  3. Commit 1: <type>(T-XX): <名称>           │
-│     └── git add [代码文件] && git commit      │
+│  2. 启动子 Agent 执行单任务（Task tool）      │
+│     ├── 子 Agent 获得：任务定义+关联编号      │
+│     ├── 子 Agent 执行：骨架→TDD→验证→commit 1│
+│     └── 子 Agent 返回：结果 → 编排器处理      │
+│  3. 编排器处理结果                            │
+│     ├── 成功 → 继续                          │
+│     └── 失败 → 交互：询问用户 / headless：终止│
 │  4. 更新 04-dev-tasks*.md 状态为 已完成       │
 │  5. /devdocs-sync --trace                     │
 │  6. Commit 2: docs(T-XX): 更新任务状态+追踪    │
 │     └── git add [文档文件] && git commit      │
-│  7. [--headless] 洁净校验 + 写检查点          │
-│     └── git status --porcelain 非空 → fail-fast│
+│  7. 洁净校验 + 写检查点                       │
+│     └── git status --porcelain 非空 → 报错    │
 │  8. TodoWrite 标记任务完成                     │
 │  9. → 下一任务                                │
 └──────────────────────────────────────────────┘
@@ -225,9 +227,9 @@ docs(T-XX): 更新任务状态并同步 trace
 4. 断点续做：读取 TodoWrite 状态辅助判断进度
 ```
 
-### 检查点文件（`--headless`）
+### 检查点文件
 
-每任务完成后写入 `docs/devdocs/.headless-checkpoint.json`：
+批量模式下每任务完成后写入 `docs/devdocs/.batch-checkpoint.json`：
 
 ```json
 {
@@ -243,15 +245,20 @@ docs(T-XX): 更新任务状态并同步 trace
 }
 ```
 
-用途：上下文压缩后恢复批量状态、fail-fast 续做信息、交付报告数据源。
+用途：
+- 上下文压缩后恢复批量状态（交互和 headless 均受益）
+- fail-fast / 会话中断后提供精确续做信息
+- 批量完成后生成执行报告的数据源
 
-### Headless 增强报告
+### 批量执行报告
 
-成功时输出完整交付报告（commit 表 + 统计），失败时输出中断详情 + 续做命令。
+成功时输出完整报告（commit 表 + 统计），失败时输出中断详情 + 续做命令。
 
-> 详见 [auto-mode.md](auto-mode.md) 交付报告模板
+> `--headless` 模式下输出交付报告，详见 [auto-mode.md](auto-mode.md)
 
-### 子 Agent 协议（`--headless`）
+### 子 Agent 协议
+
+批量模式统一使用编排器-执行器架构，每个任务由独立子 Agent 执行（Task tool）。
 
 **输入**（编排器 → 子 Agent）：
 
@@ -261,17 +268,20 @@ docs(T-XX): 更新任务状态并同步 trace
 | 任务定义 | 从 04-dev-tasks*.md 提取的完整任务块 |
 | 关联编号 | F-XXX, AC-XXX, UT-XXX |
 | 涉及文件 | src/xxx.ts, tests/xxx.test.ts |
-| 运行模式 | --headless |
-| max_retries | N（默认 3） |
+| 决策模式 | `交互`（子 Agent 内 AskUserQuestion）或 `--headless`（策略自动决策） |
+| max_retries | N（默认 3，仅 headless 生效） |
 
 **输出**（子 Agent → 编排器）：
 
 | 字段 | 说明 |
 |------|------|
-| status | success \| failed |
+| status | success \| failed \| skipped |
 | commit_hash | 成功时的 Commit 1 hash |
 | failure_reason | 失败原因（失败时） |
 | failure_context | 失败位置（失败时） |
 | test_summary | 测试通过情况 + 覆盖率 |
 | blockers_resolved | 已修复 Blocker 数量 |
 | suggestions_skipped | 已跳过 Suggestion 数量 |
+
+> 交互模式下子 Agent 可通过 AskUserQuestion 与用户交互；headless 模式下由策略自动决策。
+> 架构相同，决策方式不同。

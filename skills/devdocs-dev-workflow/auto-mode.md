@@ -2,11 +2,17 @@
 
 ## 概述
 
-`--headless` 模式实现编码执行阶段的无人值守：策略驱动决策 + 子 Agent 执行 + fail-fast 语义。
+`--headless` 模式在批量模式的编排器-执行器架构之上，叠加无人值守决策策略。
+
+```
+批量模式通用架构：编排器 + 子 Agent 执行器 + 检查点
+                                ↑
+--headless 叠加层：策略驱动决策 + fail-fast + 交付报告
+```
 
 核心理念：
-- 所有交互点由预定义策略自动决策
-- 每个任务由独立子 Agent 执行，隔离上下文
+- 编排器-执行器架构为所有批量模式共享（上下文隔离）
+- `--headless` 的区别仅在于：交互点由预定义策略自动决策
 - 任何不可恢复的问题立即终止，输出续做命令
 
 ## 调用语法
@@ -33,6 +39,9 @@
 | 编号完整 | 任务包含关联 F/AC/UT 编号 | fail-fast |
 
 ## 编排器-执行器架构
+
+> 此架构为所有批量模式共享。交互批量模式下子 Agent 通过 AskUserQuestion 与用户交互；
+> `--headless` 模式下由决策策略表自动决策。详见 [task-orchestration.md](task-orchestration.md) 子 Agent 协议。
 
 ### 架构总览
 
@@ -72,7 +81,7 @@
 任务定义: （从 04-dev-tasks*.md 提取的完整任务块）
 关联编号: F-XXX, AC-XXX, UT-XXX
 涉及文件: src/xxx.ts, tests/xxx.test.ts
-运行模式: --headless
+决策模式: --headless（策略自动决策）
 max_retries: 3
 ```
 
@@ -158,7 +167,7 @@ if not all_passed:
 
 ## 检查点文件
 
-每任务完成后写入 `docs/devdocs/.headless-checkpoint.json`：
+每任务完成后写入 `docs/devdocs/.batch-checkpoint.json`：
 
 ```json
 {
