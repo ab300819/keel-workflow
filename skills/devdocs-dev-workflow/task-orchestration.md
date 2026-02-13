@@ -234,6 +234,7 @@ docs(T-XX): 更新任务状态并同步 trace
 ```json
 {
   "batch_id": "2024-01-15T10:30:00",
+  "mode": "--headless",
   "total_tasks": 5,
   "completed": [
     {"task": "T-01", "status": "success", "commit1": "abc1234", "commit2": "def5678"},
@@ -244,6 +245,9 @@ docs(T-XX): 更新任务状态并同步 trace
   "resume_command": "/devdocs-dev-workflow T-03~T-05 --headless"
 }
 ```
+
+> `mode` 字段记录原始调用模式（`"--headless"` 或 `"interactive"`），`resume_command` 据此生成——
+> 交互批量的续做命令不带 `--headless`，避免意外切换到无人值守模式。
 
 用途：
 - 上下文压缩后恢复批量状态（交互和 headless 均受益）

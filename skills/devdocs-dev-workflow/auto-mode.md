@@ -33,10 +33,13 @@
 
 | 条件 | 检测方式 | 失败处理 |
 |------|----------|----------|
-| 工作区洁净 | `git status --porcelain` 为空 | fail-fast |
+| 工作区洁净或续做 | `git status --porcelain` 为空，**或**变更属于执行队列首个任务（续做豁免） | 不属于首任务的脏工作区 → fail-fast |
 | 依赖状态 | 无"进行中"的前置依赖 | fail-fast，报告阻塞链 |
 | 任务文档存在 | `04-dev-tasks*.md` 可读 | fail-fast |
 | 编号完整 | 任务包含关联 F/AC/UT 编号 | fail-fast |
+
+> **续做豁免**：fail-fast 后工作区可能残留失败任务的未提交变更。前置校验检测到非空工作区时，
+> 对比变更文件与执行队列首个任务的"涉及文件"字段——若匹配则判定为续做场景，放行至断点检测（Step 4a）处理。
 
 ## 编排器-执行器架构
 
@@ -50,7 +53,7 @@
   │
   ├── 1. 解析指定符 → 任务列表
   ├── 2. 依赖解析 → 拓扑排序 → 执行队列
-  ├── 3. 前置校验（洁净工作区、依赖状态）
+  ├── 3. 前置校验（洁净工作区或续做豁免、依赖状态）
   │
   ├── 4. 逐任务循环：
   │     │
@@ -162,7 +165,7 @@ if not all_passed:
 
 | 时机 | 检测 | 失败处理 |
 |------|------|----------|
-| 批量启动前 | `git status --porcelain` 为空 | fail-fast（不自动 stash） |
+| 批量启动前 | `git status --porcelain` 为空，或变更属于首任务（续做豁免） | 不属于首任务 → fail-fast |
 | 每任务 Commit 2 后 | `git status --porcelain` 为空 | fail-fast |
 
 ## 检查点文件
@@ -172,6 +175,7 @@ if not all_passed:
 ```json
 {
   "batch_id": "2024-01-15T10:30:00",
+  "mode": "--headless",
   "total_tasks": 5,
   "completed": [
     {"task": "T-01", "status": "success", "commit1": "abc1234", "commit2": "def5678"},
