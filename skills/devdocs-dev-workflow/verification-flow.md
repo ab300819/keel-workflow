@@ -179,6 +179,9 @@
 2. [Phase 2] `src/x.ts` 分支覆盖 62%，建议补充 guard clause 测试
 ```
 
+> `--headless` 模式下：Suggestion 自动跳过（`--fix-suggestions` 时尝试单次修复，不重试）；
+> Blocker 自动修复（最多 N 次），超限则 fail-fast。
+
 ---
 
 ## Blocker 修复流程
@@ -190,14 +193,37 @@
 展示问题详情和修复建议
     │
     ▼
-修复问题
+修复问题（触发修复安全网检测）
     │
     ▼
 重新运行对应 Phase（不需全部重跑）
     │
     ├── 通过 → 继续提交流程
-    └── 仍有 Blocker → 再次修复
+    └── 仍有 Blocker → 再次修复（最多 N 次，默认 3）
+        └── 超过重试上限 → 标记任务失败，不提交
+            ├── --headless 模式：fail-fast 终止批量
+            └── 交互模式：AskUserQuestion 询问用户
 ```
+
+---
+
+## 修复安全网
+
+修复 Blocker 或 Suggestion 时，以下检测自动执行（交互和 `--headless` 模式均生效）：
+
+### 标注删减检测
+
+修复前快照所有 `@verifies` 和 `@testcase` 标注集合。
+修复后重新扫描。若任何标注被移除，视为新增 Blocker：
+
+> "🚫 Blocker: 修复过程中移除了 @verifies AC-003 标注（文件: tests/user.test.ts:20）"
+
+### 断言数量不减检测
+
+修复前统计测试文件中断言调用总数（`expect`/`assert`/`should` 等）。
+修复后重新统计。若总数减少，视为新增 Blocker：
+
+> "🚫 Blocker: 修复后断言数量从 12 减少到 9（文件: tests/user.test.ts）"
 
 ---
 

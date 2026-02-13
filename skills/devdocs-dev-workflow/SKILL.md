@@ -1,7 +1,7 @@
 ---
 name: devdocs-dev-workflow
-description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification. Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "--review".
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
+description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and --headless unattended mode (无人值守). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "--review", "--headless", "无人值守".
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, Task
 ---
 
 # 开发工作流
@@ -34,16 +34,18 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 | 功能点 | `F-001` | 通过 `关联需求` 字段反查所有关联任务 |
 | 用户故事 | `US-001` | 同上 |
 | 全部 | `--all` | 所有 `状态≠已完成` 的任务 |
+| 无人值守 | `--headless` | 批量模式 + 全自动决策（fail-fast） |
 
 ### 模式对比
 
-| 特性 | 单任务模式 | 批量模式 |
-|------|-----------|---------|
-| 依赖解析 | 自动补充前置依赖 | 拓扑排序全部任务 |
-| 断点检测 | 执行 | 每个任务前执行 |
-| 提交方式 | 用户选择 | 原子提交（代码+文档分离） |
-| 中断处理 | N/A | 暂停询问：修复/跳过/终止 |
-| 完成汇总 | 无 | 输出批量执行报告 |
+| 特性 | 单任务模式 | 批量模式 | 无人值守模式（`--headless`） |
+|------|-----------|---------|---------------------------|
+| 依赖解析 | 自动补充前置依赖 | 拓扑排序全部任务 | 拓扑排序 + 前置校验 |
+| 断点检测 | 执行 | 每个任务前执行 | 编排器轻量执行 |
+| 提交方式 | 用户选择 | 原子提交（代码+文档分离） | 自动提交（安全不变量保证） |
+| 中断处理 | N/A | 暂停询问：修复/跳过/终止 | fail-fast 终止 + 续做命令 |
+| 完成汇总 | 无 | 输出批量执行报告 | 交付报告 + 检查点文件 |
+| 执行模式 | 主 Agent 直接执行 | 主 Agent 直接执行 | 编排器 + 子 Agent 执行器 |
 
 ### 批量执行流程
 
@@ -302,7 +304,7 @@ Phase 3: 综合审查报告 📋
 | 级别 | 标记 | 处理 |
 |------|------|------|
 | 🚫 Blocker | 必须修复 | 阻止提交，修复后重新验证 |
-| 💡 Suggestion | 建议修复 | 询问用户，可选择忽略 |
+| 💡 Suggestion | 建议修复 | 询问用户，可选择忽略（`--headless` 下自动跳过，`--fix-suggestions` 时尝试修复） |
 
 ### 对抗式验证约束
 
@@ -340,6 +342,18 @@ Phase 3: 综合审查报告 📋
 
 > 详见 [task-orchestration.md](task-orchestration.md)
 
+### 无人值守约束（--headless）
+
+- [ ] **工作区必须洁净**（启动前 + 每任务 Commit 2 后校验）
+- [ ] **前置依赖不得处于"进行中"状态**（否则 fail-fast）
+- [ ] **fail-fast 后输出续做命令**
+- [ ] **修复过程中标注不得删减**
+- [ ] **修复过程中断言数量不得减少**
+- [ ] **Suggestion 自动跳过**（除非 `--fix-suggestions`）
+- [ ] **绝不推送远程**
+
+> 详见 [auto-mode.md](auto-mode.md)
+
 ## 任务完成流程
 
 ### TDD 任务（核心逻辑 🔴）
@@ -353,9 +367,11 @@ Phase 3: 综合审查报告 📋
    - Phase 2: 测试完备性审查（/testing-guide 视角）
    - Phase 3: 综合报告，处理 Blocker
 6. **更新自描述**：运行 /code-self-describe --update
-7. **询问提交**：使用 AskUserQuestion 询问：
-   - "任务 T-XX（TDD）已完成，测试通过，是否提交代码？"
-   - 选项："提交" / "继续修改" / "跳过"
+7. **提交决策**：
+   - `--headless` 模式：自动提交（安全不变量已在前置步骤保证）
+   - 交互模式：使用 AskUserQuestion 询问：
+     - "任务 T-XX（TDD）已完成，测试通过，是否提交代码？"
+     - 选项："提交" / "继续修改" / "跳过"
 8. **如提交**（原子提交）：
    - Commit 1: 代码提交 `<type>(T-XX): <名称>`
    - 更新 04-dev-tasks*.md 状态 + /devdocs-sync --trace
@@ -368,7 +384,9 @@ Phase 3: 综合审查报告 📋
 2. **验证验收标准**：检查所有验收标准是否满足
 3. **对抗式验证**（如 --review 触发）：同上 Phase 1-3
 4. **自查 Review 要点**：检查代码审查要点
-5. **询问提交**：使用 AskUserQuestion 询问
+5. **提交决策**：
+   - `--headless` 模式：自动提交（安全不变量已在前置步骤保证）
+   - 交互模式：使用 AskUserQuestion 询问
 6. **如提交**（原子提交）：同 TDD 任务步骤 8
 7. **更新状态**：TodoWrite 标记为已完成
 
@@ -394,3 +412,4 @@ Phase 3: 综合审查报告 📋
 - [execution-flow.md](execution-flow.md) - 任务执行流程详解
 - [verification-flow.md](verification-flow.md) - 对抗式验证流程详解
 - [task-orchestration.md](task-orchestration.md) - 多任务编排（批量/依赖/断点续做）
+- [auto-mode.md](auto-mode.md) - 无人值守模式详解

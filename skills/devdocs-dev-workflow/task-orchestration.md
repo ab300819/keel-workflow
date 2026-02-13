@@ -60,7 +60,7 @@
 |------|------|
 | 循环依赖 | 报错，列出循环路径（如 T-03 → T-05 → T-03），终止 |
 | 依赖任务不存在 | 报错，列出缺失任务 ID，终止 |
-| 依赖任务"进行中" | 警告，AskUserQuestion："任务 T-XX 状态为进行中，选择：先完成该依赖 / 跳过 / 终止" |
+| 依赖任务"进行中" | 交互模式：AskUserQuestion："任务 T-XX 状态为进行中，选择：先完成该依赖 / 跳过 / 终止"；`--headless` 模式：fail-fast，报告阻塞链 |
 | 依赖任务"已完成" | 跳过，不加入执行队列 |
 
 ### 自动补充前置依赖
@@ -100,8 +100,9 @@ Step 4: 变更归属判定
         ├── 变更属于当前任务 → 续做模式（见下方信号表）
         └── 变更不属于当前任务 → Step 5
 
-Step 5: 用户决策
-        └── AskUserQuestion:
+Step 5: 工作区决策
+        ├── --headless 模式：fail-fast（无人值守要求洁净工作区）
+        └── 交互模式：AskUserQuestion:
             "检测到不相关未提交变更：[文件列表]"
             选项："暂存(stash)后继续" / "忽略继续" / "终止"
 ```
@@ -142,15 +143,19 @@ Step 5: 用户决策
           ▼
 ┌─ 逐任务循环 ─────────────────────────────────┐
 │  1. 断点检测 → 跳过 / 续做 / 全新            │
-│  2. 执行单任务工作流（SKILL.md 主流程）       │
+│  2. [--headless] 启动子 Agent 执行单任务      │
+│     └── Task tool → 子 Agent 返回结果         │
+│  2. [交互] 执行单任务工作流（SKILL.md 主流程）│
 │  3. Commit 1: <type>(T-XX): <名称>           │
 │     └── git add [代码文件] && git commit      │
 │  4. 更新 04-dev-tasks*.md 状态为 已完成       │
 │  5. /devdocs-sync --trace                     │
 │  6. Commit 2: docs(T-XX): 更新任务状态+追踪    │
 │     └── git add [文档文件] && git commit      │
-│  7. TodoWrite 标记任务完成                     │
-│  8. → 下一任务                                │
+│  7. [--headless] 洁净校验 + 写检查点          │
+│     └── git status --porcelain 非空 → fail-fast│
+│  8. TodoWrite 标记任务完成                     │
+│  9. → 下一任务                                │
 └──────────────────────────────────────────────┘
           │
           ▼
@@ -202,12 +207,12 @@ docs(T-XX): 更新任务状态并同步 trace
 
 ### 批量模式中断处理
 
-| 情况 | 处理 |
-|------|------|
-| 某任务完成检查失败 | 暂停，AskUserQuestion："T-XX 完成检查未通过，选择：修复 / 跳过 / 终止批量" |
-| 某任务测试失败 | 暂停，AskUserQuestion："T-XX 测试失败，选择：修复 / 跳过 / 终止批量" |
-| 用户中断（Ctrl+C） | 已提交的任务保留，当前任务变更保留在工作区 |
-| 依赖任务被跳过 | 后续依赖该任务的任务也跳过，警告用户 |
+| 情况 | 交互模式 | `--headless` 模式 |
+|------|----------|-------------------|
+| 某任务完成检查失败 | AskUserQuestion：修复/跳过/终止 | 重试 ≤N 次，耗尽则 fail-fast 终止批量 |
+| 某任务测试失败 | AskUserQuestion：修复/跳过/终止 | 重试 ≤N 次，耗尽则 fail-fast 终止批量 |
+| 用户中断（Ctrl+C） | 保留已提交，变更留在工作区 | 同左 |
+| 依赖任务被跳过 | 后续依赖也跳过，警告用户 | N/A（headless 不跳过，直接终止） |
 
 ### TodoWrite 集成
 
@@ -219,3 +224,54 @@ docs(T-XX): 更新任务状态并同步 trace
 3. 完成时：任务标记为 completed
 4. 断点续做：读取 TodoWrite 状态辅助判断进度
 ```
+
+### 检查点文件（`--headless`）
+
+每任务完成后写入 `docs/devdocs/.headless-checkpoint.json`：
+
+```json
+{
+  "batch_id": "2024-01-15T10:30:00",
+  "total_tasks": 5,
+  "completed": [
+    {"task": "T-01", "status": "success", "commit1": "abc1234", "commit2": "def5678"},
+    {"task": "T-02", "status": "success", "commit1": "111aaaa", "commit2": "222bbbb"}
+  ],
+  "current": "T-03",
+  "remaining": ["T-03", "T-04", "T-05"],
+  "resume_command": "/devdocs-dev-workflow T-03~T-05 --headless"
+}
+```
+
+用途：上下文压缩后恢复批量状态、fail-fast 续做信息、交付报告数据源。
+
+### Headless 增强报告
+
+成功时输出完整交付报告（commit 表 + 统计），失败时输出中断详情 + 续做命令。
+
+> 详见 [auto-mode.md](auto-mode.md) 交付报告模板
+
+### 子 Agent 协议（`--headless`）
+
+**输入**（编排器 → 子 Agent）：
+
+| 字段 | 说明 |
+|------|------|
+| 任务编号 | T-XX |
+| 任务定义 | 从 04-dev-tasks*.md 提取的完整任务块 |
+| 关联编号 | F-XXX, AC-XXX, UT-XXX |
+| 涉及文件 | src/xxx.ts, tests/xxx.test.ts |
+| 运行模式 | --headless |
+| max_retries | N（默认 3） |
+
+**输出**（子 Agent → 编排器）：
+
+| 字段 | 说明 |
+|------|------|
+| status | success \| failed |
+| commit_hash | 成功时的 Commit 1 hash |
+| failure_reason | 失败原因（失败时） |
+| failure_context | 失败位置（失败时） |
+| test_summary | 测试通过情况 + 覆盖率 |
+| blockers_resolved | 已修复 Blocker 数量 |
+| suggestions_skipped | 已跳过 Suggestion 数量 |
