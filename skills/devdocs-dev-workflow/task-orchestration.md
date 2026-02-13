@@ -87,7 +87,7 @@ Step 1: 文档状态检测
 Step 2: Git 历史检测
         ├── git log --grep="(T-XX)" --oneline
         ├── 有代码提交 + 有文档提交 → 跳过（任务已完成，文档状态滞后）
-        ├── 有代码提交 + 无文档提交 → 仅执行文档同步（devdocs-sync + Commit 2）
+        ├── 有代码提交 + 无文档提交 → 仅执行文档同步（/devdocs-sync --trace + Commit 2）
         └── 无提交 → Step 3
 
 Step 3: 工作区检测

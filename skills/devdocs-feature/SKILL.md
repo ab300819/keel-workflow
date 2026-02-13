@@ -99,7 +99,9 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 - 不新建 F-XXX（功能点），仅追加 AC 到现有功能
 - 不更新 02-system-design（无架构变更）
-- 不更新 03-test-cases（由 `/devdocs-sync` 后续补齐）
+- 不更新 03-test-cases（追加任务中直接内联测试用例编号和验收标准；
+  进入 dev-workflow 前须确认 03-test-cases 中已有对应条目，
+  如缺失则先运行 `/devdocs-test-cases` 补齐）
 - 任务数量限制 1-3 个（可直接追加，无需调用 devdocs-dev-tasks）
 - 任务必须遵循 TAR 原则格式
 

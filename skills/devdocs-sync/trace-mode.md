@@ -10,7 +10,8 @@
    ▼
 2. 扫描代码文件
    ├── 搜索 @satisfies AC-XXX 标注 → 提取入口代码位置
-   └── 搜索 @verifies AC-XXX 标注 → 提取测试代码位置
+   ├── 搜索 @verifies AC-XXX 标注 → 提取测试代码位置
+   └── 搜索 @verifies BUG-XXX 标注 → 通过 Bug 文档的 关联功能 字段映射到 AC，更新对应行
    │
    ▼
 3. 交叉验证
@@ -28,6 +29,7 @@
 |------|----------|----------|
 | `@satisfies AC-XXX` | 方法/函数上方注释 | 文件路径:行号 |
 | `@verifies AC-XXX` | 测试用例上方注释 | 文件路径:行号 |
+| `@verifies BUG-XXX` | 测试用例上方注释 | 通过 Bug 关联功能 映射到 AC 行 |
 | `@requirement F-XXX` | 类/模块上方注释 | 文件路径 |
 | `@testcase UT/IT/E2E-XXX` | 测试用例上方注释 | 文件路径:行号 |
 

@@ -94,7 +94,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 | 预期行为 | 用户输入 | 建议 |
 | 实际行为 | 用户输入 | **必须** |
 | 发现来源 | 测试编号/手动测试/用户反馈 | **必须** |
-| 关联功能 | F-XXX / AC-XXX | 建议 |
+| 关联功能 | F-XXX / AC-XXX | **必须** |
 | Issue 编号 | 用户输入 | 可选 |
 
 如信息不足，使用 AskUserQuestion 询问。
@@ -138,7 +138,8 @@ should [预期行为] when [触发条件]
 
 ```typescript
 /**
- * @verifies BUG-XXX
+ * @verifies AC-XXX   // 关联的验收标准（必须，确保 trace 可追溯）
+ * @verifies BUG-XXX  // Bug 编号（保留，用于 Bug 追踪）
  * @testcase UT-XXX
  */
 describe('Bug fix: BUG-XXX <Bug 描述>', () => {
@@ -336,7 +337,8 @@ Fixes #123
 
 - [ ] 测试名称描述 Bug 场景
 - [ ] 测试覆盖 Bug 的触发条件
-- [ ] 测试必须添加 @verifies BUG-XXX 标注
+- [ ] 测试必须添加 @verifies AC-XXX 标注（关联的验收标准，确保 trace 可追溯）
+- [ ] 测试必须添加 @verifies BUG-XXX 标注（Bug 编号）
 - [ ] 禁止弱断言（参考 `/testing-guide`）
 
 ### 提交约束
