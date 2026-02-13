@@ -149,8 +149,9 @@ docs/devdocs/
 用户确认任务文档后：
 1. 询问用户是否开始开发
 2. 如是，使用 TodoWrite 添加所有任务到追踪列表
-3. 建议从第一个任务（T-01）开始
+3. 建议从第一个任务开始，或使用批量模式：`/devdocs-dev-workflow T-01~T-XX`
 4. **执行任务时必须使用 `/devdocs-dev-workflow`**
+5. 支持按功能点（`F-XXX`）或用户故事（`US-XXX`）批量执行
 
 > **重要**：直接写代码而不使用 dev-workflow 会导致代码缺失 `@satisfies`/`@verifies` 标注，
 > 使 `/devdocs-sync --trace` 无法自动追溯，破坏文档↔代码的闭环。

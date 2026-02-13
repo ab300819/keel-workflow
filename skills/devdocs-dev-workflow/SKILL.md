@@ -1,12 +1,12 @@
 ---
 name: devdocs-dev-workflow
-description: Execute development tasks with skeleton-first approach and layered TDD. Includes optional adversarial verification (code quality + test completeness review). Use when users start working on a task (T-XX), need development guidance, or implement features/bugfixes. Triggers on keywords like "execute task", "start T-XX", "implement", "develop", "开发任务", "执行任务", "对抗式验证", "--review".
+description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification. Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "--review".
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 ---
 
 # 开发工作流
 
-执行单个开发任务的工作流指导，采用自顶向下开发模式和分层 TDD。
+执行开发任务的工作流指导，支持单任务和批量执行，采用自顶向下开发模式和分层 TDD。
 
 ## 语言规则
 
@@ -16,9 +16,42 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 ## 触发条件
 
 - 用户开始执行某个任务（如 T-01）
+- 用户批量执行任务（如 T-01~T-05、F-001、--all）
+- 用户需要继续开发（断点续做）
 - 用户需要开发指导
 - 用户从 devdocs-dev-tasks 进入开发阶段
-- 关键词："开发任务"、"执行任务"、"开始 T-XX"
+- 关键词："开发任务"、"执行任务"、"开始 T-XX"、"批量开发"、"继续开发"
+
+## 运行模式
+
+### 语法
+
+| 指定符 | 示例 | 说明 |
+|--------|------|------|
+| 单任务 | `T-03` | 执行单个任务（现有行为） |
+| 范围 | `T-01~T-05` | 执行范围内所有任务 |
+| 枚举 | `T-01,T-03,T-07` | 执行指定任务列表 |
+| 功能点 | `F-001` | 通过 `关联需求` 字段反查所有关联任务 |
+| 用户故事 | `US-001` | 同上 |
+| 全部 | `--all` | 所有 `状态≠已完成` 的任务 |
+
+### 模式对比
+
+| 特性 | 单任务模式 | 批量模式 |
+|------|-----------|---------|
+| 依赖解析 | 自动补充前置依赖 | 拓扑排序全部任务 |
+| 断点检测 | 执行 | 每个任务前执行 |
+| 提交方式 | 用户选择 | 原子提交（代码+文档分离） |
+| 中断处理 | N/A | 暂停询问：修复/跳过/终止 |
+| 完成汇总 | 无 | 输出批量执行报告 |
+
+### 批量执行流程
+
+```
+解析指定符 → 依赖解析 + 拓扑排序 → 逐任务循环（断点检测 → 执行 → 原子提交）→ 汇总
+```
+
+> 详见 [task-orchestration.md](task-orchestration.md)
 
 ## 前置条件
 
@@ -61,10 +94,10 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 4.5 更新自描述（/code-self-describe --update）
            │
            ▼
-5. 提交代码（遵循 /commit-convention）
+5. 提交代码（Commit 1: 代码，遵循 /commit-convention）
            │
            ▼
-6. 更新追溯（运行 /devdocs-sync --trace）
+6. 更新追溯 + 文档提交（/devdocs-sync --trace → Commit 2: 文档）
 ```
 
 ## 代码追溯标注规范
@@ -184,6 +217,7 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 | 完成检查 | `/code-self-describe` | 更新模块自描述（--update） |
 | 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |
 | 提交信息 | `/commit-convention` | 遵循项目提交规范 |
+| 依赖解析 | `/devdocs-dev-tasks` | 读取任务依赖关系和状态 |
 | 任务完成 | `/devdocs-sync` | 后续：更新追溯矩阵（--trace） |
 
 ## 约束
@@ -280,6 +314,32 @@ Phase 3: 综合审查报告 📋
 
 > 详细审查清单和报告模板见 [verification-flow.md](verification-flow.md)
 
+### 依赖解析约束
+
+- [ ] **执行前必须完成依赖解析**
+- [ ] **循环依赖必须报错终止**（列出循环路径）
+- [ ] **已完成依赖跳过**，不重复执行
+- [ ] 自动补充未完成的前置依赖到执行队列
+- [ ] "进行中"依赖通过 AskUserQuestion 询问用户
+
+### 原子提交约束
+
+- [ ] **每个任务独立提交**，不跨任务合并
+- [ ] **代码提交和文档提交分离**（Commit 1: 代码，Commit 2: 文档状态 + trace 同步结果）
+- [ ] **提交前必须通过完成检查**
+- [ ] 提交后更新 04-dev-tasks*.md 任务状态为 `已完成`
+- [ ] `--single-commit` 可将代码+文档合并为单次提交
+
+### 断点续做约束
+
+- [ ] **每个任务开始前执行状态检测**（5 步流水线）
+- [ ] **不相关变更必须警告用户**（AskUserQuestion：stash/忽略/终止）
+- [ ] **已完成任务自动跳过**
+- [ ] 进行中任务分析续做起点（骨架/红/绿/验证）
+- [ ] 文档状态 + Git 历史 + 工作区三重验证
+
+> 详见 [task-orchestration.md](task-orchestration.md)
+
 ## 任务完成流程
 
 ### TDD 任务（核心逻辑 🔴）
@@ -296,8 +356,11 @@ Phase 3: 综合审查报告 📋
 7. **询问提交**：使用 AskUserQuestion 询问：
    - "任务 T-XX（TDD）已完成，测试通过，是否提交代码？"
    - 选项："提交" / "继续修改" / "跳过"
-8. **如提交**：执行 git add 和 commit，消息包含任务编号
-9. **更新状态**：将任务标记为已完成
+8. **如提交**（原子提交）：
+   - Commit 1: 代码提交 `<type>(T-XX): <名称>`
+   - 更新 04-dev-tasks*.md 状态 + /devdocs-sync --trace
+   - Commit 2: 文档提交 `docs(T-XX): 更新任务状态并同步 trace`
+9. **更新状态**：TodoWrite 标记为已完成
 
 ### 非 TDD 任务（接口/UI/基础设施）
 
@@ -306,8 +369,8 @@ Phase 3: 综合审查报告 📋
 3. **对抗式验证**（如 --review 触发）：同上 Phase 1-3
 4. **自查 Review 要点**：检查代码审查要点
 5. **询问提交**：使用 AskUserQuestion 询问
-6. **如提交**：执行 git add 和 commit
-7. **更新状态**：将任务标记为已完成
+6. **如提交**（原子提交）：同 TDD 任务步骤 8
+7. **更新状态**：TodoWrite 标记为已完成
 
 ## 提交信息格式
 
@@ -330,3 +393,4 @@ Phase 3: 综合审查报告 📋
 - [skeleton-examples.md](skeleton-examples.md) - 接口/测试骨架示例
 - [execution-flow.md](execution-flow.md) - 任务执行流程详解
 - [verification-flow.md](verification-flow.md) - 对抗式验证流程详解
+- [task-orchestration.md](task-orchestration.md) - 多任务编排（批量/依赖/断点续做）
