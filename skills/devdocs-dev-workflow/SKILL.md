@@ -207,7 +207,7 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
     └───────────────────────────┘
 ```
 
-详细执行流程见 [execution-flow.md](execution-flow.md)
+> 详见 [execution-flow.md](execution-flow.md)
 
 ## Skill 协作
 
@@ -315,7 +315,7 @@ Phase 3: 综合审查报告 📋
 - [ ] 核心逻辑任务（🔴）默认触发
 - [ ] 修复 Blocker 后必须重新运行验证
 
-> 详细审查清单和报告模板见 [verification-flow.md](verification-flow.md)
+> 详见 [verification-flow.md](verification-flow.md)
 
 ### 依赖解析约束
 

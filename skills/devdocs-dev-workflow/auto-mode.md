@@ -77,28 +77,9 @@
 
 ### 子 Agent 协议
 
-**输入**（编排器 → 子 Agent）：
-
-```
-任务编号: T-XX
-任务定义: （从 04-dev-tasks*.md 提取的完整任务块）
-关联编号: F-XXX, AC-XXX, UT-XXX
-涉及文件: src/xxx.ts, tests/xxx.test.ts
-决策模式: --headless（策略自动决策）
-max_retries: 3
-```
-
-**输出**（子 Agent → 编排器）：
-
-```
-status: success | failed
-commit_hash: abc1234（成功时）
-failure_reason: "测试失败（重试 3/3）"（失败时）
-failure_context: "tests/user.test.ts:45"（失败时）
-test_summary: "UT-001~003 通过, 覆盖率 85%"
-blockers_resolved: 2
-suggestions_skipped: 1
-```
+> 输入/输出字段定义见 [task-orchestration.md](task-orchestration.md) 子 Agent 协议。
+>
+> `--headless` 的区别：`决策模式` 字段为 `--headless`，子 Agent 内所有交互点由决策策略表自动决策。
 
 ## 决策策略表
 
@@ -149,17 +130,9 @@ if not all_passed:
 
 ## 修复安全网
 
-### 标注删减检测
+> 检测规则见 [verification-flow.md](verification-flow.md) 修复安全网。
 
-修复前快照所有 `@verifies` 和 `@testcase` 标注集合。修复后重新扫描。若任何标注被移除，视为新增 Blocker：
-
-> "🚫 Blocker: 修复过程中移除了 @verifies AC-003 标注（文件: tests/user.test.ts:20）"
-
-### 断言数量不减检测
-
-修复前统计测试文件中断言调用总数（`expect`/`assert`/`should` 等）。修复后重新统计。若总数减少，视为新增 Blocker：
-
-> "🚫 Blocker: 修复后断言数量从 12 减少到 9（文件: tests/user.test.ts）"
+`--headless` 模式下：安全网检测触发的新增 Blocker 同样计入重试计数，耗尽则 fail-fast。
 
 ## 工作区洁净协议
 
@@ -170,27 +143,11 @@ if not all_passed:
 
 ## 检查点文件
 
-每任务完成后写入 `docs/devdocs/.batch-checkpoint.json`：
+> 格式定义见 [task-orchestration.md](task-orchestration.md) 检查点文件。
 
-```json
-{
-  "batch_id": "2024-01-15T10:30:00",
-  "mode": "--headless",
-  "total_tasks": 5,
-  "completed": [
-    {"task": "T-01", "status": "success", "commit1": "abc1234", "commit2": "def5678"},
-    {"task": "T-02", "status": "success", "commit1": "111aaaa", "commit2": "222bbbb"}
-  ],
-  "current": "T-03",
-  "remaining": ["T-03", "T-04", "T-05"],
-  "resume_command": "/devdocs-dev-workflow T-03~T-05 --headless"
-}
-```
-
-用途：
-- 上下文压缩后仍可读取检查点恢复批量状态
-- fail-fast 后提供精确续做信息
-- 批量完成后生成交付报告的数据源
+`--headless` 模式下检查点的额外用途：
+- fail-fast 后提供精确续做命令
+- 批量完成后作为交付报告的数据源
 
 ## 交付报告模板
 

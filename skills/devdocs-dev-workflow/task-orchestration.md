@@ -233,7 +233,7 @@ docs(T-XX): 更新任务状态并同步 trace
 
 ```json
 {
-  "batch_id": "2024-01-15T10:30:00",
+  "batch_id": "<ISO-8601 时间戳>",
   "mode": "--headless",
   "total_tasks": 5,
   "completed": [
