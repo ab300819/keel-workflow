@@ -35,7 +35,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, 
 | 用户故事 | `US-001` | 同上 |
 | 全部 | `--all` | 所有 `状态≠已完成` 的任务 |
 | 无人值守 | `--headless` | 批量模式 + 全自动决策（fail-fast） |
-| 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停 |
+| 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停（与 `--headless` 互斥） |
 
 ### 模式对比
 

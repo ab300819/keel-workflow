@@ -370,7 +370,7 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）
    ▼
 2. 提取精华
    ├── 技术栈（从 02-system-design.md）
-   ├── ADR 摘要（从设计变更记录）
+   ├── ADR 摘要（从设计变更记录；若无 ADR 格式则从自由格式变更记录提取关键决策）
    ├── 领域术语（从 01-requirements.md 背景章节）
    ├── 活跃任务 + 进度（从 04-dev-tasks.md）
    ├── 编号状态（从所有文档扫描 max 编号）
@@ -395,7 +395,7 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）
 | 活跃任务 + 进度 | AGENTS.md | 即时行动上下文 |
 | 领域术语、业务边界 | AGENTS.md | 高频稳定，防止误解 |
 | 代码约定、提交格式 | AGENTS.md | 跨工具一致 |
-| 编号状态 (max F/US/AC/T) | `.claude/rules/devdocs-state.md` | Claude 专属运行态 |
+| 编号状态 (max F/US/AC/T/ADR) | `.claude/rules/devdocs-state.md` | Claude 专属运行态 |
 | 完整需求/设计/测试详情 | 留在 `docs/devdocs/` | 太详细，不适合记忆文件 |
 | 临时/阶段信息 | 留在 `00-context.md` | 变化频繁，不进常驻记忆 |
 
