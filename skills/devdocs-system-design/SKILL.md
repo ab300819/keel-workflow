@@ -1,7 +1,7 @@
 ---
 name: devdocs-system-design
 description: Create or update system design documents. Supports initial design and incremental design modes. Use when users need technical architecture, API design, data models, design changes, or impact analysis. Triggers on keywords like "system design", "architecture", "technical design", "API design", "design change", "impact analysis", "设计变更", "影响分析".
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 ---
 
 # 系统设计
@@ -66,13 +66,19 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 3. 探索代码 → 了解现有架构
       │
       ▼
-4. 创建设计 → 生成系统设计文档
+4. 进入 Plan 模式 → 呈现设计方案草案
+      │              （技术选型、架构方向、模块划分）
+      ▼
+5. 用户审批 Plan → 确认方向或调整
       │
       ▼
-5. 验证覆盖 → 检查所有 F-XXX 都有对应模块/接口
+6. 退出 Plan 模式 → 生成系统设计文档
       │
       ▼
-6. 用户确认 → 获得批准后定稿
+7. 验证覆盖 → 检查所有 F-XXX 都有对应模块/接口
+      │
+      ▼
+8. 用户确认 → 获得批准后定稿
 ```
 
 ### 增量设计流程
@@ -99,17 +105,80 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
       └── 是否有破坏性变更？
       │
       ▼
-5. 设计变更
+5. 进入 Plan 模式 → 呈现变更方案
+      │              （影响范围、兼容性结论、变更策略）
+      ▼
+6. 用户审批 Plan → 确认方案或调整
+      │
+      ▼
+7. 退出 Plan 模式 → 执行设计变更
       ├── 新增模块/接口/数据模型
       ├── 修改现有设计
       └── 标注变更版本
       │
       ▼
-6. 生成变更记录 → 追加到设计文档
+8. 生成变更记录 → 追加到设计文档
       │
       ▼
-7. 用户确认 → 获得批准后更新文档
+9. 用户确认 → 获得批准后更新文档
 ```
+
+## Plan 模式规范
+
+在分析完成、写入文档前，**必须使用 EnterPlanMode 呈现设计方案草案**，等用户审批后再执行。
+
+### 初始设计 Plan 内容
+
+```markdown
+## 设计方案草案
+
+### 技术选型
+- 语言/框架：<选择> — <理由>
+- 数据库：<选择> — <理由>
+- 其他关键依赖：<列表>
+
+### 架构方向
+- 架构风格：<分层/微服务/Serverless/...>
+- 核心设计决策：<列表>
+
+### 模块划分
+| 模块 | 职责 | 关联功能点 |
+|------|------|-----------|
+| ... | ... | F-XXX |
+
+### 关键接口概要
+- <接口名>: <职责摘要>
+
+### 风险与权衡
+- <取舍点1>: 选择 A 而非 B，因为 ...
+```
+
+### 增量设计 Plan 内容
+
+```markdown
+## 变更方案草案
+
+### 变更来源
+- F-XXX / INS-XXX: <描述>
+
+### 影响范围
+| 影响对象 | 影响类型 | 向后兼容 |
+|----------|----------|----------|
+| ... | 新增/修改/删除 | ✅/❌ |
+
+### 变更策略
+- <具体变更动作列表>
+
+### 破坏性变更处理
+- <如有，列出迁移方案>
+```
+
+### Plan 模式时机
+
+| 模式 | 进入时机 | Plan 内容 |
+|------|----------|-----------|
+| 初始设计 | 读取需求 + 询问偏好 + 探索代码后 | 技术选型、架构方向、模块划分 |
+| 增量设计 | 影响分析 + 兼容性评估后 | 影响范围、变更策略、迁移方案 |
 
 ## 设计前必问
 
@@ -326,129 +395,21 @@ docs/devdocs/
 
 ## 核心接口设计
 
-设计文档中应体现核心接口定义（**只定义签名，不写实现**），并标注关联功能点：
+设计文档中应体现核心接口定义（**只定义签名，不写实现**），并标注关联功能点。
 
-```markdown
-### 核心接口
-
-#### IUserService（关联：F-001 用户注册, F-002 用户登录）
-
-| 方法 | 参数 | 返回值 | 关联 | 说明 |
-|------|------|--------|------|------|
-| `createUser` | `CreateUserDTO` | `User` | F-001, AC-001 | 创建用户 |
-| `validateEmail` | `string` | `boolean` | F-001, AC-002 | 验证邮箱 |
-| `login` | `LoginDTO` | `AuthToken` | F-002, AC-006 | 用户登录 |
-
-#### IUserRepository
-
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `save` | `User` | `User` | 保存用户 |
-| `findById` | `string` | `User \| null` | 根据ID查询 |
-| `findByEmail` | `string` | `User \| null` | 根据邮箱查询 |
-```
+详细格式和示例参见 [templates/design-template.md](templates/design-template.md)。
 
 ## 代码结构设计
 
-```markdown
-### 目录结构
+按分层架构（接口层 → 服务层 → 领域层 → 基础设施层）组织目录结构。
 
-src/
-├── api/                    # 接口层
-│   ├── controllers/        # 控制器（路由处理）
-│   ├── middlewares/        # 中间件（认证、日志等）
-│   └── validators/         # 请求验证
-├── services/               # 服务层
-│   ├── interfaces/         # 服务接口定义
-│   └── impl/               # 服务实现
-├── domain/                 # 领域层
-│   ├── entities/           # 实体
-│   ├── value-objects/      # 值对象
-│   └── events/             # 领域事件
-├── infrastructure/         # 基础设施层
-│   ├── repositories/       # 数据仓储实现
-│   ├── external/           # 外部服务适配
-│   └── config/             # 配置
-└── shared/                 # 共享
-    ├── types/              # 类型定义
-    ├── utils/              # 工具函数
-    └── constants/          # 常量
-```
+详细目录结构示例参见 [templates/design-template.md](templates/design-template.md)。
 
 ## 日志设计
 
-> 日志是调试和问题排查的关键工具，特别是对于手动测试和 E2E 测试场景。
+设计文档必须包含日志设计章节（级别、关键日志点、格式、追溯 ID）。
 
-### 日志级别
-
-| 级别 | 用途 | 示例场景 |
-|------|------|----------|
-| **ERROR** | 需要立即处理的错误 | 数据库连接失败、支付失败、关键服务不可用 |
-| **WARN** | 潜在问题但不影响核心功能 | 重试成功、降级处理、资源接近阈值 |
-| **INFO** | 关键业务操作 | 用户登录、订单创建、状态变更 |
-| **DEBUG** | 调试信息 | 函数入参、中间状态、性能指标 |
-
-### 关键日志点
-
-设计文档中应列出关键操作的日志点：
-
-```markdown
-| 操作 | 日志级别 | 日志内容 | 关联编号 |
-|------|----------|----------|----------|
-| 用户登录成功 | INFO | `[F-002] User login: userId={}, ip={}` | F-002, AC-006 |
-| 用户登录失败 | WARN | `[F-002] Login failed: userId={}, reason={}` | F-002, AC-007 |
-| 密码验证失败 | WARN | `[F-002] Password mismatch: userId={}` | AC-007 |
-| 数据库异常 | ERROR | `[INFRA] DB error: {}, query={}` | - |
-| 订单创建 | INFO | `[F-003] Order created: orderId={}, userId={}` | F-003 |
-```
-
-### 日志格式
-
-```
-[时间] [级别] [追溯ID] [模块] 消息 {结构化数据}
-```
-
-**示例**：
-```
-2024-01-26 10:30:15 INFO [req-abc123] [UserService] User created {"userId": "u001", "email": "user@example.com"}
-2024-01-26 10:30:16 ERROR [req-abc123] [EmailService] Failed to send verification email {"userId": "u001", "error": "SMTP timeout"}
-```
-
-### 追溯 ID (Correlation ID)
-
-| 属性 | 说明 |
-|------|------|
-| **生成时机** | 每个请求入口生成唯一 ID |
-| **传递方式** | 通过 Context/Header 贯穿整个调用链 |
-| **命名约定** | `traceId` 或 `correlationId` |
-| **格式** | UUID 或 `req-{timestamp}-{random}` |
-
-**用途**：
-- E2E 测试失败时，通过 `traceId` 查询完整日志链
-- 分布式系统中跨服务追踪
-- 问题排查时关联所有相关日志
-
-### E2E 测试日志策略
-
-| 场景 | 日志策略 | 说明 |
-|------|----------|------|
-| 测试通过 | 仅保留 ERROR/WARN | 减少日志量 |
-| 测试失败 | 保留完整日志（含 DEBUG） | 便于排查 |
-| 手动复现 | 启用 DEBUG 级别 | 最大化信息 |
-
-**失败分析流程**：
-```
-1. 获取失败测试的 traceId
-   │
-   ▼
-2. 查询该 traceId 的完整日志链
-   │
-   ▼
-3. 定位首个 ERROR/异常点
-   │
-   ▼
-4. 分析上下文日志
-```
+详细规范和示例参见 [templates/log-design-guide.md](templates/log-design-guide.md)。
 
 ### 日志设计约束
 
@@ -500,6 +461,14 @@ src/
 - [ ] **需要认证的 API 已标注**
 - [ ] **用户输入有验证（防注入）**
 - [ ] 敏感操作有日志记录
+
+### Plan 模式约束
+
+- [ ] **初始设计：读取需求 + 询问偏好 + 探索代码后，必须进入 Plan 模式**
+- [ ] **增量设计：影响分析 + 兼容性评估后，必须进入 Plan 模式**
+- [ ] **Plan 必须包含技术选型理由（初始）或影响范围（增量）**
+- [ ] **用户审批 Plan 后才能写入文档**
+- [ ] 用户要求调整时，更新 Plan 后重新审批
 
 ### 增量设计约束
 

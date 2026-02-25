@@ -1,7 +1,7 @@
 ---
 name: devdocs-retrofit
 description: Retrofit existing projects to DevDocs workflow, or migrate old DevDocs to new standards. Use when users want to adapt existing projects, migrate documentation, standardize documents, or upgrade DevDocs version. Triggers on keywords like "retrofit", "改造", "适配", "迁移", "标准化", "逆向", "升级文档".
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, EnterPlanMode
 ---
 
 # 项目改造
@@ -36,18 +36,34 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
    └── 有 DevDocs（符合规范）│      │
        → 无需改造            │      │
                              ▼      ▼
-3a. 版本迁移流程      3b. 新项目改造流程
-    │                       │
-    ├── 规范检查            ├── 自动识别文档
-    ├── 生成差异清单        ├── 用户确认/手动指定
-    ├── 用户确认            ├── 代码逆向推导（可选）
-    └── 执行迁移            └── 生成 DevDocs 文档
-                             │
-                             ▼
-4. 生成改造报告
+3. 进入 Plan 模式 → 呈现改造策略
+   │              （改造类型、范围、推导方式、预估工作量）
+   ▼
+4. 用户审批 Plan → 确认策略或调整
+   │
+   ▼
+5. 退出 Plan 模式 → 执行改造
+   │
+   ├── 版本迁移流程          新项目改造流程
+   │   ├── 规范检查            ├── 自动识别文档
+   │   ├── 生成差异清单        ├── 代码逆向推导（可选）
+   │   └── 执行迁移            └── 生成 DevDocs 文档
+   │
+   ▼
+6. 生成改造报告
 ```
 
 ---
+
+## Plan 模式规范
+
+扫描项目结构和检测状态后，**必须使用 EnterPlanMode 呈现改造策略**，等用户审批后再执行。
+
+### Plan 必须包含
+
+**新项目改造**：项目概况（类型、技术栈、规模）→ 文档识别结果 → 改造方式（文档转换/逆向推导/混合）→ 推导范围和粒度 → 预估产出（F/US/AC 数量）→ 风险与注意
+
+**版本迁移**：规范检查结果 → 迁移动作清单（含影响范围和风险）→ 迁移方式（完整/选择性/仅报告）
 
 ## 项目状态检测
 
@@ -328,61 +344,11 @@ docs/devdocs/
 
 ## 改造报告
 
-```markdown
-# DevDocs 改造报告
+改造完成后必须生成 `00-retrofit-report.md`，包含改造概览、文档状态、编号分配、待完善项、下一步建议。
 
-## 改造概览
+详细模板参见 [templates/retrofit-report-template.md](templates/retrofit-report-template.md)。
 
-- **项目名称**：<project>
-- **改造时间**：<timestamp>
-- **改造类型**：新项目改造 / 版本迁移
-
-## 改造结果
-
-### 文档状态
-
-| 文档 | 改造前 | 改造后 | 动作 |
-|------|--------|--------|------|
-| 需求文档 | docs/req.md | docs/devdocs/01-requirements.md | 转换 + 编号 |
-| 系统设计 | - | docs/devdocs/02-system-design.md | 新建 |
-| 测试用例 | tests/README.md | docs/devdocs/03-test-cases.md | 转换 + 编号 |
-| 开发任务 | TODO.md | docs/devdocs/04-dev-tasks.md | 标准化 |
-
-### 编号分配
-
-| 类型 | 数量 | 范围 |
-|------|------|------|
-| 功能点 (F) | 5 | F-001 ~ F-005 |
-| 用户故事 (US) | 12 | US-001 ~ US-012 |
-| 验收标准 (AC) | 28 | AC-001 ~ AC-028 |
-| 单元测试 (UT) | 15 | UT-001 ~ UT-015 |
-| 集成测试 (IT) | 4 | IT-001 ~ IT-004 |
-| E2E 测试 (E2E) | 3 | E2E-001 ~ E2E-003 |
-
-### 待完善项
-
-以下内容标记为 [待补充]：
-
-- [ ] AC-015 ~ AC-020 验收标准细化
-- [ ] 非功能性需求-性能指标
-- [ ] API 响应示例
-
-## 下一步建议（强制路由）
-
-改造完成后，**必须**执行以下之一建立基线：
-
-| 场景 | 必须执行 | 说明 |
-|------|----------|------|
-| **补充背景信息** | `/devdocs-requirements --context` | **推荐**：补充代码中看不出的背景、约束、参考资料 |
-| 首次改造 | `/devdocs-sync --audit` | 检查追溯健康度 |
-| 有待补充项 | `/devdocs-requirements` | 完善需求文档 |
-| 开始开发 | `/devdocs-dev-tasks` → `/devdocs-dev-workflow` | 执行任务 |
-| 添加功能 | `/devdocs-feature` | 增量开发 |
-
-> 改造不是终点，必须通过后续 Skill 进入正常开发循环。
->
-> **提示**：逆向推导只能从代码提取结构信息，建议用 `--context` 模式补充项目背景、技术约束、参考资料等代码中看不出的信息。
-```
+**关键规则**：改造不是终点，必须通过后续 Skill 进入正常开发循环。推荐先用 `/devdocs-requirements --context` 补充背景信息。
 
 ---
 
@@ -401,6 +367,13 @@ docs/devdocs/
 ---
 
 ## 约束
+
+### Plan 模式约束
+
+- [ ] **扫描项目 + 检测状态后，必须进入 Plan 模式**
+- [ ] **Plan 必须包含改造策略和预估产出（新项目）或迁移动作清单（版本迁移）**
+- [ ] **用户审批 Plan 后才能开始改造执行**
+- [ ] 用户要求调整时，更新 Plan 后重新审批
 
 ### 检测约束
 

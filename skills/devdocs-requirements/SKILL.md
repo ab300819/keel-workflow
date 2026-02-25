@@ -1,7 +1,7 @@
 ---
 name: devdocs-requirements
 description: Expand user requirements into detailed DevDocs documents. Use when users provide feature requirements, want to clarify requirements, need to create product requirement documents, or add project context/background information. Triggers on keywords like "requirements", "PRD", "feature request", "user story", "项目背景", "补充信息", "context", "background".
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 ---
 
 # 需求扩写
@@ -48,19 +48,25 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 2. 探索代码库（如适用）
    │
    ▼
-3. 识别功能点 (F-XXX)
+3. 进入 Plan 模式 → 呈现需求拆解方案
+   │              （功能点划分、边界范围、优先级）
+   ▼
+4. 用户审批 Plan → 确认拆解方向或调整
    │
    ▼
-4. 编写用户故事 (US-XXX)
+5. 退出 Plan 模式 → 识别功能点 (F-XXX)
    │
    ▼
-5. 定义验收标准 (AC-XXX)
+6. 编写用户故事 (US-XXX)
    │
    ▼
-6. 生成追溯矩阵
+7. 定义验收标准 (AC-XXX)
    │
    ▼
-7. 用户确认
+8. 生成追溯矩阵
+   │
+   ▼
+9. 用户确认
 ```
 
 ### 增量模式
@@ -119,6 +125,44 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
    ▼
 5. 用户确认
 ```
+
+## Plan 模式规范
+
+**仅初始模式**使用 Plan 模式。增量模式和背景信息模式方向明确，无需 Plan。
+
+### 初始模式 Plan 内容
+
+在理解需求和探索代码后，**必须使用 EnterPlanMode 呈现需求拆解方案**：
+
+```markdown
+## 需求拆解方案
+
+### 功能点划分
+| 编号 | 功能点 | 描述 | 优先级 |
+|------|--------|------|--------|
+| F-001 | ... | ... | P0 |
+| F-002 | ... | ... | P1 |
+
+### 范围边界
+- 包含：<本次范围内的功能>
+- 排除：<明确不做的功能>
+
+### 关键决策
+- <需要用户确认的拆解决策>
+
+### 预估规模
+- 功能点数量：X 个
+- 用户故事数量：约 Y 个
+- 验收标准数量：约 Z 个
+```
+
+### Plan 模式时机
+
+| 模式 | 是否使用 Plan | 理由 |
+|------|-------------|------|
+| 初始模式 | **是** | F 编号一旦确立，下游全部引用，改动成本高 |
+| 增量模式 | 否 | 追加方向明确，编号延续现有体系 |
+| 背景信息模式 | 否 | 信息整合，无架构决策 |
 
 ## 编号规范
 
@@ -420,6 +464,13 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 - [ ] **文件引用必须使用 Read 验证文件存在**
 - [ ] 敏感信息（密钥、密码、内部 URL）不得写入文档
 - [ ] 参考资料必须注明用途和关联性
+
+### Plan 模式约束
+- [ ] **初始模式：理解需求 + 探索代码后，必须进入 Plan 模式**
+- [ ] **Plan 必须包含功能点划分和范围边界**
+- [ ] **用户审批 Plan 后才能开始编号分配和文档写入**
+- [ ] 用户要求调整时，更新 Plan 后重新审批
+- [ ] 增量模式和背景信息模式不使用 Plan 模式
 
 ### 确认约束
 - [ ] 必须与用户确认功能点是否完整
