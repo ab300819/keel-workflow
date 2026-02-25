@@ -10,10 +10,11 @@ allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
 
 ## 运行模式
 
-```
+```bash
 /devdocs-onboard              → 智能检测（询问读或写）
 /devdocs-onboard --read       → 只读取现有文档，不修改
 /devdocs-onboard --update     → 强制重新扫描更新
+/devdocs-onboard --memory     → 从 DevDocs 提取精华，更新 AGENTS.md + CLAUDE.md + .claude/rules/devdocs-state.md
 ```
 
 | 模式 | 读取文档 | 扫描项目 | 写入文件 | 适用场景 |
@@ -21,10 +22,11 @@ allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
 | 智能检测 | ✅ | 视情况 | 视情况 | 不确定时 |
 | `--read` | ✅ | ❌ | ❌ | 新 AI 接手项目 |
 | `--update` | - | ✅ | ✅ | 完成阶段性工作后 |
+| `--memory` | ✅ | ✅ | AGENTS.md + CLAUDE.md + devdocs-state.md | 同步记忆文件 |
 
 ### 智能检测流程
 
-```
+```text
 检测 00-context.md 是否存在
         │
         ├── 不存在 → 自动进入更新模式
@@ -51,7 +53,7 @@ allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
 
 ### 上下文传递问题
 
-```
+```text
 会话 A (Claude Code)          会话 B (新 AI 工具)
         │                            │
         ├── 了解项目结构              │ ← 需要重新了解
@@ -77,7 +79,7 @@ allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
 
 ## 工作流程
 
-```
+```text
 1. 扫描 DevDocs 文档
    │
    ▼
@@ -273,7 +275,7 @@ allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
 
 ### 场景一：完成工作，准备交接（--update）
 
-```
+```text
 用户: /devdocs-onboard --update
 
 Agent: 正在扫描项目并生成上下文...
@@ -284,7 +286,7 @@ Agent: 正在扫描项目并生成上下文...
 
 ### 场景二：新 AI 接手项目（--read）
 
-```
+```text
 用户: /devdocs-onboard --read
 
 Agent: 正在读取项目上下文...
@@ -299,7 +301,7 @@ Agent: 正在读取项目上下文...
 
 ### 场景三：不确定时（智能检测）
 
-```
+```text
 用户: /devdocs-onboard
 
 Agent: 检测到 docs/devdocs/00-context.md 已存在（更新于 2 小时前）
@@ -345,6 +347,72 @@ Agent: [展示现有文档内容]
 | 进度信息过时 | `/devdocs-sync` | 先同步文档状态 |
 | 需要详细任务 | `/devdocs-dev-tasks` | 查看完整任务列表 |
 
+## `--memory` 模式详解
+
+### 核心理念：AGENTS.md 为唯一事实源
+
+```text
+DevDocs 产物（详细、版本化、持续增长）
+    │
+    │  提取精华（distill）
+    ▼
+AGENTS.md（精简、稳定、跨 AI 工具通用）
+    │
+    ├── CLAUDE.md（自动镜像，不直接编辑）
+    └── .claude/rules/devdocs-state.md（Claude 专属运行态）
+```
+
+### 工作流程
+
+```text
+1. 扫描 docs/devdocs/ 所有文档（复用现有逻辑）
+   │
+   ▼
+2. 提取精华
+   ├── 技术栈（从 02-system-design.md）
+   ├── ADR 摘要（从设计变更记录）
+   ├── 领域术语（从 01-requirements.md 背景章节）
+   ├── 活跃任务 + 进度（从 04-dev-tasks.md）
+   ├── 编号状态（从所有文档扫描 max 编号）
+   └── 运行命令（从 package.json / Makefile）
+   │
+   ▼
+3. 生成/更新 AGENTS.md（使用 templates/memory-template.md）
+   │
+   ▼
+4. 生成/更新 CLAUDE.md（AGENTS.md 内容 + 镜像标注头）
+   │
+   ▼
+5. 生成/更新 .claude/rules/devdocs-state.md（使用 templates/devdocs-state-template.md）
+```
+
+### 分流规则
+
+| 信息类型 | 目标位置 | 理由 |
+|----------|----------|------|
+| 技术栈、运行命令 | AGENTS.md | 跨工具通用，每次会话都需要 |
+| 架构决策 (ADR) 摘要 | AGENTS.md | 防止重复询问 |
+| 活跃任务 + 进度 | AGENTS.md | 即时行动上下文 |
+| 领域术语、业务边界 | AGENTS.md | 高频稳定，防止误解 |
+| 代码约定、提交格式 | AGENTS.md | 跨工具一致 |
+| 编号状态 (max F/US/AC/T) | `.claude/rules/devdocs-state.md` | Claude 专属运行态 |
+| 完整需求/设计/测试详情 | 留在 `docs/devdocs/` | 太详细，不适合记忆文件 |
+| 临时/阶段信息 | 留在 `00-context.md` | 变化频繁，不进常驻记忆 |
+
+### `--memory` 模式约束
+
+- [ ] **AGENTS.md 不超过 60 行**
+- [ ] **AGENTS.md 不包含特定 AI 工具的专属语法**
+- [ ] **CLAUDE.md 为 AGENTS.md 的完整镜像**（头部加镜像标注）
+- [ ] **编号状态仅写入 `.claude/rules/devdocs-state.md`**
+- [ ] 不生成/不修改 `00-context.md`
+- [ ] 可删则删，优先命令、约束、检查点
+
+### 模板引用
+
+- AGENTS.md 模板：[templates/memory-template.md](templates/memory-template.md)
+- 编号状态模板：[templates/devdocs-state-template.md](templates/devdocs-state-template.md)
+
 ## 命令选项
 
 ```bash
@@ -356,6 +424,9 @@ Agent: [展示现有文档内容]
 
 # 更新模式：强制重新扫描项目并更新文档
 /devdocs-onboard --update
+
+# 记忆同步：从 DevDocs 提取精华更新记忆文件
+/devdocs-onboard --memory
 ```
 
 ## 下一步

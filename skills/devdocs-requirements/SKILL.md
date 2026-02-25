@@ -25,10 +25,11 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 
 ## 运行模式
 
-```
+```bash
 /devdocs-requirements              → 自动检测模式
 /devdocs-requirements --incremental → 强制增量模式（追加功能点）
 /devdocs-requirements --context     → 背景信息模式（追加/更新背景）
+/devdocs-requirements --fast        → 跳过 Plan 模式，直接生成，仅最终确认
 ```
 
 | 模式 | 触发条件 | 说明 |
@@ -37,11 +38,20 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 | **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加功能点/用户故事/验收标准 |
 | **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
 
+### `--fast` 模式
+
+`--fast` 可与任意模式组合，行为变更：
+
+- 跳过 EnterPlanMode 步骤（初始模式）
+- 使用合理默认值（不询问技术栈偏好等）
+- 仅保留最终写入前的 1 次确认
+- 默认行为不变，`--fast` 是 opt-in
+
 ## 工作流程
 
 ### 初始模式
 
-```
+```text
 1. 理解需求
    │
    ▼
@@ -71,7 +81,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 
 ### 增量模式
 
-```
+```text
 1. 扫描现有编号
    │
    ├── 读取 01-requirements.md
@@ -98,7 +108,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 
 ### 背景信息模式
 
-```
+```text
 1. 读取现有文档
    │
    ├── 检查 01-requirements.md 是否存在
@@ -205,71 +215,12 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 
 ## 核心概念
 
-### 功能点 (Feature)
+- **功能点 (F-XXX)**：用户可感知的独立功能单元，可独立交付和验证
+- **用户故事 (US-XXX)**：格式 "作为 \<角色\>，我希望 \<功能\>，以便 \<价值\>"
+- **验收标准 (AC-XXX)**：可量化、可验证的完成条件，每个 US 至少 2-3 条
+- **追溯矩阵**：展示 F → US → AC 的关联关系
 
-功能点是用户可感知的独立功能单元。
-
-**识别方法**：
-- 可以独立交付和验证
-- 对用户有明确价值
-- 粒度适中（不过大也不过小）
-
-**示例**：
-```markdown
-| 编号 | 功能点 | 描述 | 优先级 |
-|------|--------|------|--------|
-| F-001 | 用户注册 | 新用户通过邮箱注册账号 | P0 |
-| F-002 | 用户登录 | 已注册用户登录系统 | P0 |
-| F-003 | 密码找回 | 用户通过邮箱重置密码 | P1 |
-```
-
-### 用户故事 (User Story)
-
-用户故事描述用户如何使用功能点完成目标。
-
-**格式**：作为 <角色>，我希望 <功能>，以便 <价值>
-
-**示例**：
-```markdown
-| 编号 | 功能点 | 角色 | 期望 | 目的 |
-|------|--------|------|------|------|
-| US-001 | F-001 | 新用户 | 使用邮箱注册 | 获得系统访问权限 |
-| US-002 | F-001 | 新用户 | 设置安全密码 | 保护账号安全 |
-| US-003 | F-002 | 已注册用户 | 使用邮箱密码登录 | 进入系统 |
-```
-
-### 验收标准 (Acceptance Criteria)
-
-验收标准定义用户故事的完成条件，是测试用例设计的依据。
-
-**原则**：
-- 可量化、可验证
-- 描述预期行为，不描述实现
-- 每个用户故事至少 2-3 条验收标准
-
-**示例**：
-```markdown
-### US-001: 使用邮箱注册
-
-| 编号 | 标准描述 | 验证方式 |
-|------|----------|----------|
-| AC-001 | 有效邮箱格式可以提交注册 | 输入 test@example.com，提交成功 |
-| AC-002 | 已存在邮箱显示错误提示 | 输入已注册邮箱，显示"邮箱已存在" |
-| AC-003 | 注册成功后发送验证邮件 | 收到包含验证链接的邮件 |
-```
-
-### 追溯矩阵
-
-追溯矩阵展示功能点、用户故事、验收标准的关联关系。
-
-**示例**：
-```markdown
-| 功能点 | 用户故事 | 验收标准 |
-|--------|----------|----------|
-| F-001 | US-001 | AC-001, AC-002, AC-003 |
-| F-001 | US-002 | AC-004, AC-005 |
-| F-002 | US-003 | AC-006, AC-007, AC-008 |
-```
+详细格式和示例参见 [templates/requirements-template.md](templates/requirements-template.md)
 
 ## 增量模式详解
 
@@ -316,7 +267,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 
 增量模式完成后，返回新增编号列表供调用方使用：
 
-```
+```text
 新增编号：
 - F-004
 - US-009, US-010
@@ -439,11 +390,31 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 - [ ] 必须遵循"作为...我希望...以便..."格式
 - [ ] 每个功能点至少有 1 个用户故事
 
+### 用户故事质量检查 (INVEST)
+
+生成时自动验证，无需额外用户交互：
+
+- [ ] **I**ndependent：可独立交付
+- [ ] **N**egotiable：可协商细节
+- [ ] **V**aluable：对用户有价值
+- [ ] **E**stimable：可估算工作量
+- [ ] **S**mall：一次迭代可完成
+- [ ] **T**estable：可通过测试验证
+
 ### 验收标准约束
+
 - [ ] 每个验收标准必须有唯一编号 (AC-XXX)
 - [ ] 每个用户故事至少有 2 条验收标准
 - [ ] 验收标准必须可量化、可验证
 - [ ] 必须描述验证方式
+
+**格式选项**：
+
+- 表格格式（默认）：适合简单条件
+- Given-When-Then：适合复杂行为场景
+  - **Given** \<前置条件\>
+  - **When** \<操作\>
+  - **Then** \<预期结果\>
 
 ### 追溯约束
 - [ ] 必须提供追溯矩阵
@@ -495,3 +466,5 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 | 初始模式 | `/devdocs-system-design` 进入系统设计 |
 | 增量模式 | `/devdocs-system-design` 增量设计或 `/devdocs-test-cases` 补充测试 |
 | 背景信息模式 | 继续 `/devdocs-requirements` 定义功能点，或 `/devdocs-system-design` 设计 |
+
+> **提示**：文档变更较大时，建议运行 `/devdocs-onboard --memory` 同步记忆文件。

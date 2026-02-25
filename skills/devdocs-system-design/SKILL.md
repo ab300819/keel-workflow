@@ -34,7 +34,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 
 ## 设计模式检测
 
-```
+```text
 启动时自动检测
       │
       ▼
@@ -52,11 +52,25 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
             └── 无 → 询问用户意图
 ```
 
+## 运行模式
+
+```bash
+/devdocs-system-design              → 自动检测模式（初始/增量）
+/devdocs-system-design --fast       → 跳过 Plan 模式，使用合理默认值，仅最终确认
+```
+
+### `--fast` 模式
+
+- 跳过 EnterPlanMode 步骤和技术栈偏好询问
+- 使用合理默认值（根据代码库推断技术栈）
+- 仅保留最终写入前的 1 次确认
+- 默认行为不变，`--fast` 是 opt-in
+
 ## 工作流程
 
 ### 初始设计流程
 
-```
+```text
 1. 读取需求 → 加载 01-requirements.md
       │
       ▼
@@ -83,7 +97,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 
 ### 增量设计流程
 
-```
+```text
 1. 读取现有设计 → 加载 02-system-design*.md
       │
       ▼
@@ -255,48 +269,22 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 3. 提供迁移指南
 4. 在变更记录中说明
 
-### 设计变更记录
+### 设计变更记录（ADR 格式）
 
-增量设计完成后，在设计文档末尾追加变更记录：
+增量设计完成后，在设计文档末尾追加结构化变更记录：
 
 ```markdown
----
+### ADR-001: <决策标题>
 
-## 设计变更记录
-
-### v1.2.0 (2024-01-20)
-
-**变更来源**：F-005 密码重置功能, INS-003 登录安全优化
-
-**新增模块**：
-- `PasswordResetModule` - 密码重置模块（关联 F-005）
-
-**修改模块**：
-- `AuthModule` - 新增密码重置入口
-
-**新增接口**：
-- `IPasswordResetService.sendResetEmail()` - 发送重置邮件
-- `IPasswordResetService.resetPassword()` - 执行密码重置
-
-**新增 API**：
-- `POST /api/auth/forgot-password` - 请求密码重置
-- `POST /api/auth/reset-password` - 执行密码重置
-
-**数据模型变更**：
-- `User` 新增字段：`resetToken`, `resetTokenExpiry`
-- 新增实体：`PasswordResetLog`
-
-**破坏性变更**：无
-
-**迁移说明**：
-- 执行数据库迁移脚本 `migrations/001-add-reset-token.sql`
-
----
-
-### v1.1.0 (2024-01-10)
-
-...
+- **状态**：已采纳 | 已废弃 | 已取代
+- **背景**：<为什么需要做这个决策>
+- **决策**：<选择了什么>
+- **替代方案**：<考虑过但未采用>
+- **后果**：<影响>
+- **关联**：F-XXX / INS-XXX
 ```
+
+详细 ADR 模板参见 [templates/design-template.md](templates/design-template.md)
 
 ### 增量设计检查清单
 
@@ -321,7 +309,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 
 **拆分方式**：
 
-```
+```text
 docs/devdocs/
 ├── 02-system-design.md          # 主文档：架构概览、技术选型、模块划分
 ├── 02-system-design-api.md      # API 设计：接口定义、请求响应示例
@@ -364,7 +352,7 @@ docs/devdocs/
 
 ### 设计层次
 
-```
+```text
 ┌─────────────────────────────────────┐
 │             接口层                   │  ← API/Controller（薄层，无业务逻辑）
 ├─────────────────────────────────────┤
@@ -497,6 +485,9 @@ docs/devdocs/
 用户确认系统设计后，建议运行 `/devdocs-test-cases` 进入测试用例设计阶段。
 
 ### 增量设计后
+
 1. 如有新增功能点 → 运行 `/devdocs-test-cases` 补充测试用例
 2. 如有数据模型变更 → 准备数据库迁移脚本
 3. 如有破坏性变更 → 通知相关依赖方
+
+> **提示**：文档变更较大时，建议运行 `/devdocs-onboard --memory` 同步记忆文件。

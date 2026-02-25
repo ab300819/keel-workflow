@@ -28,6 +28,19 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 - 测试用例文档：`docs/devdocs/03-test-cases.md`
 - 如不存在，建议先运行前置阶段
 
+## 运行模式
+
+```bash
+/devdocs-dev-tasks              → 标准模式（逐步确认）
+/devdocs-dev-tasks --fast       → 跳过逐步确认，直接生成，仅最终确认
+```
+
+### `--fast` 模式
+
+- 使用合理默认值（不询问任务粒度偏好等）
+- 仅保留最终写入前的 1 次确认
+- 默认行为不变，`--fast` 是 opt-in
+
 ## 工作流程
 
 1. **读取文档**：加载所有前置阶段文档
@@ -51,7 +64,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 
 **拆分方式**：
 
-```
+```text
 docs/devdocs/
 ├── 04-dev-tasks.md              # 主文档：任务概览、依赖图、执行检查清单
 ├── 04-dev-tasks-infra.md        # 基础设施任务
@@ -64,7 +77,7 @@ docs/devdocs/
 
 已完成任务过多时归档到 `04-dev-tasks-archive.md`。
 
-详见 [archive-rules.md](archive-rules.md)
+详见 [templates/archive-rules.md](templates/archive-rules.md)
 
 ## 任务设计原则
 
@@ -158,8 +171,14 @@ docs/devdocs/
 
 ## 参考资料
 
-- [task-template.md](task-template.md) - 完整任务文档模板
-- [archive-rules.md](archive-rules.md) - 任务归档规则
+- [templates/task-template.md](templates/task-template.md) - 完整任务文档模板
+- [templates/archive-rules.md](templates/archive-rules.md) - 任务归档规则
+
+## 下一步
+
+完成后建议使用 `/devdocs-dev-workflow` 执行开发任务。
+
+> **提示**：文档变更较大时，建议运行 `/devdocs-onboard --memory` 同步记忆文件。
 
 ## 协作 Skill
 

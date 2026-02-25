@@ -23,7 +23,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 ## 运行模式
 
-```
+```bash
 /devdocs-sync                    → 完整同步（检查 + 确认 + 更新）
 /devdocs-sync --check            → 仅检查，不更新文档
 /devdocs-sync --absorb           → 吸收模式（自动 + 智能补齐）
@@ -53,7 +53,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 ### 文档与代码的关系
 
-```
+```text
 文档定义（计划）          代码实现（实际）
      │                        │
      ├── F-XXX 功能点    ←→   ├── 功能模块
@@ -78,7 +78,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 ## 工作流程
 
-```
+```text
 1. 读取 DevDocs 文档
    │
    ▼
@@ -253,7 +253,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 任务完成后的推荐顺序：
 
-```
+```text
 /devdocs-sync --trace    # 1. 先更新追溯矩阵代码位置
         │
         ▼
@@ -262,6 +262,10 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 ```
 
 > `--trace` 专注于代码标注扫描，`--absorb` 专注于状态吸收。两者可独立使用，也可组合使用。
+
+## 批量确认优化
+
+同一会话内的低风险变更（状态更新、进度统计等）合并为文档级批量确认，而非逐个确认。默认执行顺序固定为 `--trace` 前置扫描 + 状态同步，避免用户二次决策。
 
 ## 下一步
 

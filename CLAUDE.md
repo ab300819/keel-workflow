@@ -1,16 +1,16 @@
-<!-- Keep in sync with AGENTS.md -->
+<!-- 由 AGENTS.md 镜像，请勿直接编辑 -->
+<!-- 运行 /devdocs-onboard --memory 更新 -->
 
-# CLAUDE.md
+# AI Agent Skills
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project Overview
 
-This is a **Claude Code Agent Skills template collection** for **solo developers** - a set of reusable SKILL.md files that extend Claude's capabilities for software development workflows. This is NOT a traditional codebase with build/test processes - it's a specification library of Markdown + YAML skill definitions.
+This is an **AI Agent Skills template collection** for **solo developers** - a set of reusable SKILL.md files that extend AI coding agents' capabilities for software development workflows. This is NOT a traditional codebase - it's a specification library of Markdown + YAML skill definitions. There are **no build, test, or lint commands** to run.
 
 ## Language Rules
 
-All skills follow consistent language rules:
 - Accept questions in both Chinese and English
 - Always respond in Chinese
 - Generate all documents in Chinese
@@ -32,16 +32,16 @@ DevDocs workflow uses a unified numbering system for traceability:
 | Task | T | T-01 | Development task (2-digit exception) |
 | Branch Coverage Test | BCA | BCA-001 | Code branch coverage supplement test |
 
-**Traceability**: `F → US → AC → (UT/IT/E2E)` and `INS → F` and `BCA` (branch coverage supplement)
+**Traceability**: `F -> US -> AC -> (UT/IT/E2E)` and `INS -> F` and `BCA` (branch coverage supplement)
 
 ## Skill Structure
 
-Each skill lives in its own directory with a `SKILL.md` file:
+Each skill lives in `skills/<skill-name>/` with a `SKILL.md` file:
 
 ```yaml
 ---
 name: skill-name
-description: What the skill does (used by Claude for auto-discovery)
+description: What the skill does (used by agents for auto-discovery)
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 user-invocable: true  # (optional, defaults to true)
 ---
@@ -49,54 +49,11 @@ user-invocable: true  # (optional, defaults to true)
 # Skill instructions in Markdown...
 ```
 
-Some skills have a `templates/` subdirectory for additional reference files.
+**Discovery**: Read `skills/*/SKILL.md` description fields to find available skills.
 
-## Core Skills
-
-### DevDocs Workflow (Document Generation)
-- `devdocs-requirements` → `devdocs-system-design` → `devdocs-test-cases` → `devdocs-dev-tasks`
-- Output location: `docs/devdocs/0X-[document-type].md`
-- `devdocs-retrofit` adapts existing projects to the DevDocs flow
-
-### Development Guidance (No Output Files)
-- `code-quality` - MTE principles (Maintainability, Testability, Extensibility)
-- `testing-guide` - Test quality constraints, mutation testing (≥80% mutation score)
-- `ui-orchestrator` - UI/UX constraints for frontend development
-- `refactor` - Test-driven refactoring (requires ≥80% coverage before refactoring)
-- `git-safety` - Enforce `git mv`/`git rm` for tracked files
-- `code-self-describe` - Self-fractal code descriptions (module CLAUDE.md + INPUT/OUTPUT/POS headers)
-- `commit-convention` - Learn from `git log` then apply Conventional Commits
-
-### Utility
-- `work-report` - Generate weekly/monthly/quarterly/annual reports
-
-## Key Principles
-
-**MTE (Code Quality)**:
-- Maintainability: Single responsibility, clear dependencies
-- Testability: Core logic unit-testable, dependencies mockable (≥80% coverage)
-- Extensibility: Reasonable extension points, no over-engineering
-
-**TAR (Dev Tasks)**:
-- Testable: Has test method and expected results
-- Acceptable: Has quantifiable completion criteria
-- Reviewable: Has code review checkpoints
-
-## Commit Convention
-
-Follow Conventional Commits style observed in git history:
-```
-type(scope): subject
-
-Examples:
-feat(testing-guide): add mutation testing support
-refactor(skill-name): reorganize templates
-```
+**Templates**: Each skill's output document format is defined by templates in its `templates/` subdirectory.
 
 ## When Modifying Skills
 
 1. Keep `SKILL.md` under 500 lines - use `templates/` for detailed reference material
-2. Description field is critical - Claude uses it for auto-discovery
-3. Use `allowed-tools` to restrict tool access when appropriate
-4. Test skill triggering by asking Claude questions that match the description
-5. All test cases must reference AC (Acceptance Criteria) numbers for traceability
+2. Description field is critical - agents use it for auto-discovery

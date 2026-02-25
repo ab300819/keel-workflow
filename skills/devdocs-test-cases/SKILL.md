@@ -30,7 +30,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 
 ### 测试用例来源
 
-```
+```text
 功能点 (F-XXX)
     │
     └── 用户故事 (US-XXX)
@@ -66,9 +66,23 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 | 集成测试 | IT | IT-XXX | IT-001, IT-002 |
 | E2E 测试 | E2E | E2E-XXX | E2E-001, E2E-002 |
 
+## 运行模式
+
+```bash
+/devdocs-test-cases              → 标准模式（逐步确认）
+/devdocs-test-cases --fast       → 跳过逐步确认，直接生成，仅最终确认
+```
+
+### `--fast` 模式
+
+- 跳过测试类型选择的逐步确认
+- 自动根据 AC 性质选择最佳测试类型
+- 仅保留最终写入前的 1 次确认
+- 默认行为不变，`--fast` 是 opt-in
+
 ## 工作流程
 
-```
+```text
 1. 读取需求文档
    │
    ▼
@@ -106,7 +120,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 
 **拆分方式**：
 
-```
+```text
 docs/devdocs/
 ├── 03-test-cases.md           # 主文档：测试策略、覆盖率要求、追溯矩阵
 ├── 03-test-unit.md            # 单元测试用例（UT-XXX）
@@ -193,7 +207,7 @@ docs/devdocs/
 
 ### 矩阵维护流程
 
-```
+```text
 设计阶段                    开发阶段                     同步阶段
     │                          │                           │
     ▼                          ▼                           ▼
@@ -281,3 +295,5 @@ docs/devdocs/
 ## 下一步
 
 完成后建议运行 `/devdocs-dev-tasks` 进行开发任务拆分。
+
+> **提示**：文档变更较大时，建议运行 `/devdocs-onboard --memory` 同步记忆文件。

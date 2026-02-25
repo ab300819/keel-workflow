@@ -32,9 +32,11 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ### 模式选择
 
-```
-/devdocs-feature "功能描述"        → 自动检测模式
-/devdocs-feature --lite "功能描述" → 强制轻量模式
+```bash
+/devdocs-feature "功能描述"             → 自动检测模式
+/devdocs-feature --lite "功能描述"      → 强制轻量模式
+/devdocs-feature --fast "功能描述"      → 连续执行 Step 1-5，仅最终汇总确认
+/devdocs-feature --lite --fast "功能描述" → 轻量 + 快速组合
 ```
 
 ### 模式对比
@@ -48,7 +50,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 分析需求描述，检测是否涉及：
 
-```
+```text
 [ ] 新增 API 接口
 [ ] 数据模型变更
 [ ] 组件间依赖变化
@@ -68,13 +70,13 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## 核心理念
 
-```
+```text
 新功能开发 = 延续编号 + 追加文档 + 影响分析 + 回归保护
 ```
 
 ## 轻量模式流程 (--lite)
 
-```
+```text
 1. 扫描编号
    │
    ├── 读取 01-requirements.md → 获取 AC 最大编号
@@ -109,7 +111,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 > **核心变更**：不再一次性更新 4 份文档，而是分步执行，每步确认后再进入下一步。
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │  Step 0: 扫描现有文档，获取编号和架构摘要                    │
 └─────────────────────────────────────────────────────────────┘
@@ -205,14 +207,9 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - 新增的 F-XXX、US-XXX、AC-XXX 编号列表
 - 更新后的追溯矩阵
 
-### ✅ 确认点
+### ✅ 确认点（默认模式）
 
-```
-/devdocs-requirements 已完成需求追加：
-- [新增编号摘要由 requirements 返回]
-
-是否确认并继续到 Step 2（设计追加）？[确认/修改/终止]
-```
+展示步骤摘要块（编号 + 关键变更），等待用户确认。`--fast` 模式跳过此确认。
 
 ## Step 2: 设计追加（完整模式）
 
@@ -232,14 +229,9 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - 影响摘要
 - 回归风险点
 
-### ✅ 确认点
+### ✅ 确认点（默认模式）
 
-```
-/devdocs-system-design 已完成设计追加：
-- [设计变更摘要由 system-design 返回]
-
-是否确认并继续到 Step 3（测试追加）？[确认/修改/终止]
-```
+展示步骤摘要块（影响范围 + 兼容性结论），等待用户确认。`--fast` 模式跳过此确认。
 
 ## Step 3: 测试追加（完整模式）
 
@@ -257,15 +249,9 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - 新增的 UT/IT/E2E-XXX 编号
 - 更新后的追溯矩阵
 
-### ✅ 确认点
+### ✅ 确认点（默认模式）
 
-```
-/devdocs-test-cases 已完成测试追加：
-- [测试编号摘要由 test-cases 返回]
-- 追溯矩阵已更新
-
-是否确认并继续到 Step 4（任务追加）？[确认/修改/终止]
-```
+展示步骤摘要块（新增测试编号 + 矩阵更新状态），等待用户确认。`--fast` 模式跳过此确认。
 
 ## Step 4: 任务追加
 
@@ -278,68 +264,27 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - 新增的 UT/IT/E2E-XXX 编号
 - 影响的模块和接口
 
-```
+```text
 调用 /devdocs-dev-tasks：
 - 输入：Step 1-3 产生的新增编号
 - 输出：追加到 04-dev-tasks*.md
 - 遵循：TAR 原则、分层 TDD
 ```
 
-### ✅ 确认点
+### ✅ 确认点（默认模式）
 
-```
-/devdocs-dev-tasks 已追加任务：
-- 新增 T-XX ~ T-XX（N 个任务）
-- 已标注 TDD 分层（🔴🟡🟢⚪）
-
-是否确认并生成功能日志？[确认/修改/终止]
-```
+展示步骤摘要块（新增任务范围 + TDD 分层标注），等待用户确认。`--fast` 模式跳过此确认。
 
 ## Step 5: 生成功能日志
 
 ### 输出文件
 
-```
+```text
 docs/devdocs/
 └── 00-feature-log.md    # 功能日志（追加）
 ```
 
-### 报告模板
-
-```markdown
-# 新功能开发日志
-
-## v2: <功能名称> (2024-01-15)
-
-### 新增内容
-
-| 类型 | 编号 | 描述 |
-|------|------|------|
-| 功能点 | F-004 | <描述> |
-| 用户故事 | US-009, US-010 | <描述> |
-| 验收标准 | AC-016 ~ AC-020 | 5 条 |
-| 测试用例 | UT-013 ~ UT-015, E2E-003 | 4 条 |
-| 开发任务 | T-11 ~ T-14 | 4 个 |
-
-### 影响范围
-
-- 新增模块：PaymentModule
-- 修改接口：IOrderService
-- 回归风险：OrderService 测试
-
-### 关联文档
-
-- [01-requirements.md](01-requirements.md) - 已更新
-- [02-system-design.md](02-system-design.md) - 已更新
-- [03-test-cases.md](03-test-cases.md) - 已更新
-- [04-dev-tasks.md](04-dev-tasks.md) - 已更新
-
----
-
-## v1: 初始版本 (2024-01-01)
-
-...
-```
+详细模板参见 [templates/feature-log-template.md](templates/feature-log-template.md)
 
 ## Skill 协作
 
@@ -372,9 +317,10 @@ docs/devdocs/
 
 ### 分步编排约束（完整模式）
 
-- [ ] **每步完成后必须等待用户确认**
+- [ ] **默认每步完成后等待用户确认**
+- [ ] **`--fast` 模式：Step 0 扫描照常，Step 1-4 连续执行不逐步确认，Step 5 生成功能日志后展示汇总做 1 次确认**
 - [ ] **不得跳过步骤（除非用户明确要求）**
-- [ ] 用户可在任意步骤选择"终止"
+- [ ] 用户可在任意步骤选择"终止"（`--fast` 下可 Ctrl+C）
 - [ ] 每步只关注当前文档的编号和格式
 - [ ] 步骤间传递的信息仅限：新增编号列表
 
@@ -403,7 +349,7 @@ docs/devdocs/
 
 如果只有部分文档存在：
 
-```
+```text
 1. 提示用户缺失的文档
 2. 建议先补全文档（使用 /devdocs-retrofit）
 3. 或仅追加到已有文档
@@ -413,7 +359,7 @@ docs/devdocs/
 
 如果新功能需求较大（超过 3 个功能点）：
 
-```
+```text
 建议拆分为多次迭代：
 1. 按功能模块拆分
 2. 每次迭代独立完成
@@ -424,7 +370,7 @@ docs/devdocs/
 
 如果是修改现有需求而非新增：
 
-```
+```text
 ⚠️ 这是需求变更，不是新功能需求。
 
 建议：
