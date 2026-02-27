@@ -136,9 +136,9 @@ CLAUDE.md 可放置在多个位置，实现分层覆盖：
 
 | 阶段 | 负责方 | 说明 |
 |------|--------|------|
-| 首次创建 | `/init` + `/agent-memory` | `/init` 生成初始记忆文件，`/agent-memory` 保证 AGENTS.md 架构 |
+| 首次创建 | `/agent-memory` | 从项目源扫描创建；若 `/init` 已创建则增量更新 |
 | 质量基准 | 本文档 | 创建和更新时参考此文档的筛选标准 |
 | 后续更新 | `/agent-memory --update` | 从项目源提取信息，同步 AGENTS.md |
 | 结构重组 | `/agent-memory --restructure` | 按本文档规范重组记忆文件 |
 
-> `/init` 生成的初始文件是起点，应在使用中根据本文档的质量守则逐步精炼。
+> `/init` 的产出因工具而异。`/agent-memory` 不依赖 `/init` 创建 AGENTS.md，可独立完成首次创建。

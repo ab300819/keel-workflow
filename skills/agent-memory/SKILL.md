@@ -38,8 +38,9 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
 
 ### 与 `/init` 的协作
 
-各 AI 工具的 `/init` 行为不同（如 Claude Code 创建 CLAUDE.md）。本 skill 不假设 `/init` 产出什么文件，而是在 `/init` 之后保证 AGENTS.md 架构正确：
-- 智能检测：AGENTS.md 不存在时提示先运行 `/init`，再运行 `/agent-memory`
+各 AI 工具的 `/init` 行为不同（如 Claude Code 创建 CLAUDE.md）。本 skill 不假设 `/init` 产出什么文件，而是保证 AGENTS.md 架构正确：
+- AGENTS.md 不存在时：自动从项目源扫描并创建
+- `/init` 已创建 AGENTS.md 时：后续 `--update` 在此基础上增量更新
 - [best-practices.md](templates/best-practices.md) 作为内容质量参考
 - [memory-template.md](templates/memory-template.md) 作为 AGENTS.md 输出模板
 
@@ -67,7 +68,7 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
 ```text
 检测 AGENTS.md 是否存在
         │
-        ├── 不存在 → 提示用户先运行 /init，再运行 /agent-memory
+        ├── 不存在 → 扫描项目源，首次创建 AGENTS.md + CLAUDE.md
         │
         └── 存在 → 分析内容状态
                     ├── 信息过时 → 建议 --update
@@ -103,8 +104,8 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
    │
    ▼
 1.5 检查 AGENTS.md 是否存在
-   ├── 不存在 → 提示先运行 /init，再运行 /agent-memory，终止
-   └── 存在 → 继续
+   ├── 不存在 → 使用 memory-template.md 创建
+   └── 存在 → 增量更新
    │
    ▼
 2. 提取精华
@@ -206,14 +207,13 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
 
 - [ ] 不生成/不修改 `00-context.md`
 - [ ] 可删则删，优先命令、约束、检查点
-- [ ] AGENTS.md 不存在时提示 `/init`，不自行创建
 - [ ] `--restructure` 重组前必须确认
 
 ## Skill 协作
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 首次创建 | `/init`（AI 工具内置） | 创建初始记忆文件（产出因工具而异） |
+| 首次创建 | `/agent-memory` 自行完成 | 从项目源扫描创建；若 `/init` 已创建则增量更新 |
 | 阶段性文档变更 | `/devdocs-onboard` | onboard 完成后建议运行 /agent-memory |
 | 任务完成轻量更新 | `/devdocs-dev-workflow` | dev-workflow 步骤 6.5 内联更新"当前状态" |
 | 上下文摘要 | `/devdocs-onboard` | onboard 生成 00-context.md，不涉及记忆文件 |
