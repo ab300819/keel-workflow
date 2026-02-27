@@ -178,7 +178,7 @@ docs/devdocs/
 
 完成后建议使用 `/devdocs-dev-workflow` 执行开发任务。
 
-> **提示**：文档变更较大时，建议运行 `/devdocs-onboard --memory` 同步记忆文件。
+> **提示**：文档变更较大时，建议运行 `/agent-memory` 同步记忆文件。
 
 ## 协作 Skill
 

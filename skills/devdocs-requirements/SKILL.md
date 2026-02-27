@@ -467,4 +467,4 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 | 增量模式 | `/devdocs-system-design` 增量设计或 `/devdocs-test-cases` 补充测试 |
 | 背景信息模式 | 继续 `/devdocs-requirements` 定义功能点，或 `/devdocs-system-design` 设计 |
 
-> **提示**：文档变更较大时，建议运行 `/devdocs-onboard --memory` 同步记忆文件。
+> **提示**：文档变更较大时，建议运行 `/agent-memory` 同步记忆文件。

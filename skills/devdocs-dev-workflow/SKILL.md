@@ -104,7 +104,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, 
 6. 更新追溯 + 文档提交（/devdocs-sync --trace → Commit 2: 文档）
         │
         ▼
-6.5 更新 AGENTS.md + CLAUDE.md "当前状态"（若存在）
+6.5 更新 AGENTS.md "当前状态"（若存在）
     ├── 更新活跃任务编号 (T-XX)
     └── 更新进度统计 (X/Y)
 ```
@@ -361,8 +361,9 @@ Phase 3: 综合审查报告 📋
 
 - [ ] **任务完成后检查项目根目录是否存在 AGENTS.md**
 - [ ] **若存在，更新"当前状态"章节**（活跃任务、进度统计）
-- [ ] **同步更新 CLAUDE.md**（AGENTS.md 为源，CLAUDE.md 镜像）
-- [ ] 仅做文本替换，不调用 devdocs-onboard
+- [ ] CLAUDE.md 通过 @AGENTS.md 自动导入，无需同步
+- [ ] 仅做文本替换，不调用 /agent-memory
+- [ ] 格式须与 `/agent-memory` 模板保持一致
 - [ ] 若 AGENTS.md 不存在则跳过
 
 ### 无人值守约束（--headless）

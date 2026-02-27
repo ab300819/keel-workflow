@@ -296,4 +296,4 @@ docs/devdocs/
 
 完成后建议运行 `/devdocs-dev-tasks` 进行开发任务拆分。
 
-> **提示**：文档变更较大时，建议运行 `/devdocs-onboard --memory` 同步记忆文件。
+> **提示**：文档变更较大时，建议运行 `/agent-memory` 同步记忆文件。
