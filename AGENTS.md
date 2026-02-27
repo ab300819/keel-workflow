@@ -1,6 +1,6 @@
-# AI Agent Skills
+<!-- 由 /agent-memory 生成，请通过该命令更新 -->
 
-This file provides guidance to AI coding agents when working with code in this repository.
+# AI Agent Skills
 
 ## Project Overview
 
@@ -11,25 +11,6 @@ This is an **AI Agent Skills template collection** for **solo developers** - a s
 - Accept questions in both Chinese and English
 - Always respond in Chinese
 - Generate all documents in Chinese
-
-## Numbering System
-
-DevDocs workflow uses a unified numbering system for traceability:
-
-| Type | Prefix | Example | Description |
-|------|--------|---------|-------------|
-| Feature | F | F-001 | User-perceivable function |
-| User Story | US | US-001 | User scenario |
-| Acceptance Criteria | AC | AC-001 | Measurable completion condition |
-| Unit Test | UT | UT-001 | Verify internal logic |
-| Integration Test | IT | IT-001 | Verify component collaboration |
-| E2E Test | E2E | E2E-001 | Verify user scenario |
-| Insight | INS | INS-001 | Improvement suggestion from review/research |
-| Bug | BUG | BUG-001 | Bug fix record |
-| Task | T | T-01 | Development task (2-digit exception) |
-| Branch Coverage Test | BCA | BCA-001 | Code branch coverage supplement test |
-
-**Traceability**: `F -> US -> AC -> (UT/IT/E2E)` and `INS -> F` and `BCA` (branch coverage supplement)
 
 ## Skill Structure
 
@@ -58,7 +39,8 @@ Skills that generate repetitive structured content across multiple batches are p
 2. **Quality Anchor** — First batch output serves as the quality reference; for data-driven skills, use completeness verification instead (reported count == actual count)
 3. **Consistency Self-Check** — After each batch, compare against the anchor on key dimensions specific to that skill
 
-## When Modifying Skills
+## 约定
 
-1. Keep `SKILL.md` under 500 lines - use `templates/` for detailed reference material
-2. Description field is critical - agents use it for auto-discovery
+- 提交格式：Conventional Commits — `feat/fix/refactor/docs(scope): description`
+- SKILL.md 不超过 500 行，用 `templates/` 存放详细参考材料
+- Description 字段是 agents 自动发现的关键，务必准确
