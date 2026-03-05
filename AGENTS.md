@@ -50,6 +50,14 @@ user-invocable: true  # (optional, defaults to true)
 
 **Templates**: Each skill's output document format is defined by templates in its `templates/` subdirectory.
 
+## Context Management Pattern
+
+Skills that generate repetitive structured content across multiple batches are prone to attention decay — later batches may have less detail or completeness than earlier ones. These skills MUST implement three elements:
+
+1. **Batch Unit** — Natural boundary for splitting work (e.g., feature point F-XXX, test layer UT/IT/E2E)
+2. **Quality Anchor** — First batch output serves as the quality reference; for data-driven skills, use completeness verification instead (reported count == actual count)
+3. **Consistency Self-Check** — After each batch, compare against the anchor on key dimensions specific to that skill
+
 ## When Modifying Skills
 
 1. Keep `SKILL.md` under 500 lines - use `templates/` for detailed reference material
