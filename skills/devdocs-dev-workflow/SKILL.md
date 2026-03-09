@@ -88,6 +88,10 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, 
    │   ├── 测试通过
    │   └── Review 要点自查
    │
+   ├── 前置验证（--review 触发时，对抗式验证之前）
+   │   ├── /devdocs-review：AC 满足度 + 设计一致性（若存在 DevDocs 文档）
+   │   └── /devdocs-ui-alignment：设计稿↔实现对齐（仅 UI 任务 + 有设计稿）
+   │
    └── 对抗式验证（🔴自动触发 / 其他层级 --review 手动触发）
        ├── 🔍 代码质量审查（/code-quality 视角）
        ├── 🧪 测试完备性审查（/testing-guide 视角）
@@ -221,6 +225,8 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 | 写业务代码 | `/code-quality` | MTE 原则、依赖注入、避免过度设计 |
 | 写测试代码 | `/testing-guide` | 断言质量、变异测试、覆盖率 |
 | UI 实现 | `/ui-orchestrator` | 无障碍、动画、布局约束 |
+| 实现审查 | `/devdocs-review` | 前置验证：AC 满足度 + 设计一致性（DevDocs 功能开发任务） |
+| UI 对齐 | `/devdocs-ui-alignment` | 前置验证：设计稿↔实现对齐（仅 UI 任务 + 有设计稿时） |
 | 完成验证 | `/code-quality` + `/testing-guide` | 对抗式验证：多视角审查 |
 | 完成检查 | `/code-self-describe` | 更新模块自描述（--update） |
 | 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |

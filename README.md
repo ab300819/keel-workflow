@@ -125,6 +125,9 @@ docs/devdocs/
 | [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `docs/devdocs/00-context.md` |
 | [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `docs/devdocs/05-insights.md` |
 | [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | `docs/devdocs/05-bugfix-log.md` |
+| [实现审查](#19-devdocs-review-实现审查) | `/devdocs-review` | AC 满足度、设计一致性、追溯完整性 | `docs/devdocs/review-report.md` |
+| [需求对齐](#20-devdocs-requirements-alignment-需求对齐) | `/devdocs-requirements-alignment` | 三层对齐检查（原始需求→文档→设计→测试） | `docs/devdocs/alignment-report.md` |
+| [UI 对齐](#21-devdocs-ui-alignment-ui-对齐) | `/devdocs-ui-alignment` | 设计稿↔需求↔实现三方对齐验证 | `docs/devdocs/ui-alignment-report.md` |
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
 | [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `docs/devdocs/05-refactor-*.md` |
@@ -208,6 +211,16 @@ docs/devdocs/
                                                               (代码质量)    (测试质量)      (UI 约束)
                                                                               │
                                                                               ▼
+                                                                     前置验证（可选）
+                                                              ┌────────┼────────────┐
+                                                              ▼        ▼            ▼
+                                                     /devdocs-review  /devdocs-ui-alignment
+                                                     (实现正确性)     (UI 设计对齐，仅 UI 任务)
+                                                                              │
+                                                                              ▼
+                                                                        对抗式验证
+                                                                              │
+                                                                              ▼
                                                                         /devdocs-sync
                                                                         (文档同步)
 ```
@@ -288,11 +301,14 @@ DevDocs 流程中各 Skill 的协作关系：
 | 阶段 | 主 Skill | 协作 Skill | 说明 |
 |------|----------|-----------|------|
 | 需求分析 | `/devdocs-requirements` | - | 定义 F/US/AC 编号 |
+| 需求对齐 | `/devdocs-requirements-alignment` | - | 三层文档对齐检查 |
 | 洞察收集 | `/devdocs-insights` | `/ui-orchestrator` | 审查/调研结果转需求 |
 | 系统设计 | `/devdocs-system-design` | `/code-quality` | MTE 原则指导设计 |
 | 测试用例 | `/devdocs-test-cases` | `/testing-guide` | 测试质量约束 |
 | 开发任务 | `/devdocs-dev-tasks` | 多个 | 见下表 |
 | 文档同步 | `/devdocs-sync` | - | 保持文档与实现一致 |
+| 实现审查 | `/devdocs-review` | `/code-quality`, `/testing-guide` | AC 满足度 + 设计一致性 |
+| UI 对齐 | `/devdocs-ui-alignment` | `/ui-orchestrator` | 设计稿↔需求↔实现对齐 |
 | 代码重构 | `/refactor` | `/code-quality`, `/testing-guide` | 测试先行 |
 
 ### 开发阶段 Skill 协作
@@ -307,6 +323,10 @@ DevDocs 流程中各 Skill 的协作关系：
                   ├── UI 实现 ─────────── /ui-orchestrator (无障碍、动画约束)
                   │
                   ├── 测试编写 ────────── /testing-guide (断言质量、变异测试)
+                  │
+                  ├── 实现审查 ────────── /devdocs-review (AC 满足度、设计一致性)
+                  │
+                  ├── UI 对齐 ─────────── /devdocs-ui-alignment (仅 UI 任务，需设计稿)
                   │
                   ├── 代码提交 ────────── /git-safety + /commit-convention
                   │
@@ -1816,6 +1836,89 @@ devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
 
 ---
 
+# 19. devdocs-review (实现审查)
+
+验证实现是否正确——与对抗式验证（代码质量 + 测试完备性）互补，聚焦 AC 满足度、设计一致性、追溯完整性。
+
+## 元数据
+
+```yaml
+name: devdocs-review
+description: Review implementation correctness against requirements and design
+allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
+```
+
+## 定位
+
+```
+对抗式验证 Phase 1：MTE 原则、安全检查       → 代码质量
+对抗式验证 Phase 2：覆盖率、断言质量          → 测试完备性
+devdocs-review：AC 满足度、设计一致性、追溯完整性 → 实现正确性
+```
+
+## 触发时机
+
+开发完成后、对抗式验证之前（前置验证阶段）。
+
+详见 [devdocs-review/SKILL.md](skills/devdocs-review/SKILL.md)。
+
+---
+
+# 20. devdocs-requirements-alignment (需求对齐)
+
+三层对齐检查，防止需求精化过程中的偏移和遗漏。
+
+## 元数据
+
+```yaml
+name: devdocs-requirements-alignment
+description: Three-layer alignment check for requirement drift detection
+allowed-tools: Read, Glob, Grep, AskUserQuestion
+```
+
+## 检查层级
+
+| 层级 | 检查内容 |
+|------|----------|
+| 层 1 | 原始需求 → 需求文档（F/US/AC） |
+| 层 2 | 需求文档 → 系统设计 |
+| 层 3 | 需求文档 → 测试用例 |
+
+## 触发时机
+
+各层文档产出后按需触发——需求完成后（层 1）、设计完成后（层 2）、测试设计完成后（层 3）。
+
+详见 [devdocs-requirements-alignment/SKILL.md](skills/devdocs-requirements-alignment/SKILL.md)。
+
+---
+
+# 21. devdocs-ui-alignment (UI 对齐)
+
+两阶段 UI 对齐验证——设计稿↔需求↔实现三方一致性检查。
+
+## 元数据
+
+```yaml
+name: devdocs-ui-alignment
+description: Verify alignment between UI design and implementation
+allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
+```
+
+## 验证阶段
+
+| 阶段 | 检查内容 |
+|------|----------|
+| 阶段 1 | 设计稿 ↔ 需求（AC 覆盖矩阵） |
+| 阶段 2 | 设计稿 ↔ 实现（视觉差异检查） |
+
+## 触发时机
+
+仅 UI 相关任务完成后、存在设计稿输入时触发。
+
+详见 [devdocs-ui-alignment/SKILL.md](skills/devdocs-ui-alignment/SKILL.md)。
+
+---
+
 # 项目结构
 
 ```
@@ -1832,13 +1935,16 @@ devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
 │   ├── devdocs-insights/
 │   ├── devdocs-onboard/
 │   ├── devdocs-requirements/
+│   ├── devdocs-requirements-alignment/
 │   ├── devdocs-retrofit/
+│   ├── devdocs-review/
 │   ├── devdocs-sync/
 │   ├── devdocs-system-design/
 │   ├── devdocs-test-cases/
 │   ├── git-safety/
 │   ├── refactor/
 │   ├── testing-guide/
+│   ├── devdocs-ui-alignment/
 │   ├── ui-orchestrator/
 │   └── work-report/
 ├── scripts/
@@ -1873,6 +1979,9 @@ devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
 /devdocs-onboard
 /devdocs-insights
 /devdocs-bugfix
+/devdocs-review
+/devdocs-requirements-alignment
+/devdocs-ui-alignment
 /code-quality
 /testing-guide
 /refactor
