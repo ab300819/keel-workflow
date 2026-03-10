@@ -58,6 +58,56 @@ Skills that generate repetitive structured content across multiple batches are p
 2. **Quality Anchor** — First batch output serves as the quality reference; for data-driven skills, use completeness verification instead (reported count == actual count)
 3. **Consistency Self-Check** — After each batch, compare against the anchor on key dimensions specific to that skill
 
+## DevDocs Skill Architecture
+
+### Orchestration Layer (user-facing entry points)
+
+| Skill | Command | Purpose |
+|-------|---------|---------|
+| devdocs-pipeline | `/devdocs-pipeline` | Top-level orchestrator — 5 entry points (init/feature/bugfix/verify/close) |
+| devdocs-feature | `/devdocs-feature` | Add new features — routes to atomic skills, auto-chains to dev-workflow |
+| devdocs-bugfix | `/devdocs-bugfix` | Test-first bug fixing |
+
+### Atomic Skills (called by orchestrators or directly)
+
+| Skill | Command | Purpose |
+|-------|---------|---------|
+| devdocs-requirements | `/devdocs-requirements` | Expand requirements into F/US/AC |
+| devdocs-system-design | `/devdocs-system-design` | Create/update system design (searches patterns/) |
+| devdocs-test-cases | `/devdocs-test-cases` | Design test cases (UT/IT/E2E) |
+| devdocs-dev-tasks | `/devdocs-dev-tasks` | Break down into executable tasks |
+| devdocs-dev-workflow | `/devdocs-dev-workflow` | Execute development (skeleton-first + layered TDD) |
+| devdocs-verify | `/devdocs-verify` | Unified verification: --docs / --impl / --ui |
+| devdocs-sync | `/devdocs-sync` | Sync docs with implementation (trace+audit auto-serial) |
+| devdocs-insights | `/devdocs-insights` | Collect improvement insights → requirements |
+| devdocs-test-run | `/devdocs-test-run` | Execute test suites |
+| devdocs-onboard | `/devdocs-onboard` | Generate project context for handover |
+| devdocs-compound | `/devdocs-compound` | Extract experience patterns (recommended after sync) |
+| devdocs-retrofit | `/devdocs-retrofit` | Migrate existing projects to DevDocs |
+
+### Key Collaboration Chains
+
+- **Init**: pipeline → requirements → system-design → test-cases → dev-tasks → dev-workflow → verify → sync
+- **Feature**: pipeline → feature(→requirements→design→tests→tasks→dev-workflow) → verify → sync
+- **Bugfix**: pipeline → bugfix(→dev-tasks→dev-workflow) → verify → sync
+- **Close**: pipeline → sync → compound → onboard --update
+
+### Sub-Agent Architecture
+
+- Pipeline orchestrates via Task tool — each stage skill runs as independent sub-agent
+- Sub-agents return structured YAML summaries (new IDs, status, blockers, output paths)
+- Cross-stage data passes through filesystem (devdocs docs = source of truth)
+- Main agent retains only: pipeline definition + stage summaries (~10K tokens)
+
+## Pattern Library
+
+DevDocs 工作流通过 `/devdocs-compound` 沉淀的经验模式存放在 `docs/devdocs/patterns/` 目录下。
+
+- 每个模式文档遵循统一结构（问题背景、解决方式、适用条件、禁忌条件）
+- 模式文档由 `/devdocs-compound` 在开发周期结束后自动生成
+- Agent 在设计和开发阶段应检索此目录，复用已有经验
+- 模式模板：`skills/devdocs-compound/templates/pattern.md`
+
 ## Conventions
 
 - Commit format: Conventional Commits — `feat/fix/refactor/docs(scope): description`

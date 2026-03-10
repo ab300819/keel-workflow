@@ -42,7 +42,7 @@ devdocs-compound：提取经验、沉淀模式          → 知识层面的复�
 
 ```text
 1. 回顾本次开发
-   ├── 读取 review-report.md / alignment-report.md（若存在）
+   ├── 读取 verify-report.md（若存在）
    ├── 读取 04-dev-tasks*.md 了解完成的任务
    ├── 读取 git log 了解提交历史
    └── 回顾对话中的关键决策点
@@ -146,7 +146,7 @@ devdocs-compound：提取经验、沉淀模式          → 知识层面的复�
 
 ### 提取约束
 
-- [ ] **必须回顾 review/alignment 报告和任务文档**
+- [ ] **必须回顾 verify-report 和任务文档**
 - [ ] **必须与用户确认后再写入**（`--extract-only` 仅预览）
 - [ ] **必须检查已有模式避免重复**
 - [ ] 模式文档遵循模板结构
@@ -176,9 +176,28 @@ devdocs-compound：提取经验、沉淀模式          → 知识层面的复�
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
 | 前置 | `/devdocs-sync` | 在 sync 完成后执行 compound |
-| 前置 | `/devdocs-review` | 读取审查报告提取改进模式 |
-| 前置 | `/devdocs-dev-workflow` | 在工作流末尾提示可选执行 |
+| 前置 | `/devdocs-verify` | 读取验证报告提取改进模式 |
+| 前置 | `/devdocs-dev-workflow` | 在工作流末尾推荐执行（批量模式默认） |
 | 知识更新 | `/agent-memory` | 大范围知识更新时可配合使用 |
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-compound
+patterns_extracted: 2
+patterns_updated: 1
+patterns_skipped: 0  # 已存在的相似模式
+system_learning:
+  rules_gap: false
+  template_gap: true
+  checker_gap: false
+status: completed
+output_files:
+  - docs/devdocs/patterns/strategy-payment-channels.md
+  - docs/devdocs/patterns/sqlite-wal-concurrency.md
+```
 
 ## 下一步
 

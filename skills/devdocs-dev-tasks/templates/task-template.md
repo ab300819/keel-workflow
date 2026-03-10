@@ -217,7 +217,7 @@ T-02 ─┘           │
 
 - [ ] 代码已提交（含 `@satisfies`/`@verifies` 标注）
 - [ ] 所有关联测试通过
-- [ ] 文档已同步（`/devdocs-sync --trace`）
+- [ ] 文档已同步（`/devdocs-sync`）
 - [ ] 代码审查已完成（Review 要点已检查）
 - [ ] AGENTS.md 状态已更新（若有）
 ```

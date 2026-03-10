@@ -502,6 +502,22 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 | 设计阶段 | `/devdocs-system-design` | 后续：需求确认后进入设计 |
 | 上下文生成 | `/devdocs-onboard` | 后续：背景信息会被提取到上下文摘要 |
 
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-requirements
+mode: initial | incremental
+new_ids:
+  features: [F-001~F-003]
+  stories: [US-001~US-008]
+  acceptance: [AC-001~AC-015]
+status: completed
+output_files:
+  - docs/devdocs/01-requirements.md
+```
+
 ## 下一步
 
 | 完成模式 | 建议下一步 |

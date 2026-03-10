@@ -23,7 +23,7 @@
 │     │  b. 启动子 Agent 执行单任务（Task）   │       │
 │     │     └── 骨架→TDD→验证→Commit 1       │       │
 │     │  c. 编排器处理子 Agent 结果           │       │
-│     │  d. 更新任务状态 + /devdocs-sync --trace │    │
+│     │  d. 更新任务状态 + /devdocs-sync          │    │
 │     │  e. Commit 2: 文档+追踪提交          │       │
 │     │  f. 写检查点文件                     │       │
 │     └──────────────────────────────────────┘       │
@@ -118,7 +118,7 @@
 13. Commit 1: 代码提交
    │
    ▼
-14. 更新任务状态 + /devdocs-sync --trace → Commit 2: 文档提交
+14. 更新任务状态 + /devdocs-sync → Commit 2: 文档提交
 ```
 
 > **跳过记录**：□ 或 ○ 步骤被跳过时，在提交信息中记录 `跳过: 步骤X（原因）`。
@@ -144,7 +144,7 @@
 8. **如提交**（原子提交）：
    - Commit 1: `git add [代码文件] && git commit -m "<type>(T-XX): <名称>"`
    - 更新 04-dev-tasks*.md 状态为 `已完成`
-   - 运行 /devdocs-sync --trace
+   - 运行 /devdocs-sync
    - Commit 2: `git add [文档文件] && git commit -m "docs(T-XX): 更新任务状态并同步 trace"`
 9. **更新 TodoWrite**：将任务标记为已完成
 

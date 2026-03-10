@@ -242,6 +242,22 @@ UT（单元测试）→ IT（集成测试）→ E2E（端到端测试）
 - [ ] **标注不一致必须警告**（代码 vs 文档）
 - [ ] **追溯结果不修改源文件**（仅报告，修改由 /devdocs-sync 负责）
 
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-test-run
+tests_run:
+  unit: { passed: X, failed: 0, total: X }
+  integration: { passed: X, failed: 0, total: X }
+  e2e: { passed: X, failed: 0, total: X }
+coverage: "XX%"
+trace_verified: true
+status: pass | fail
+output_file: docs/devdocs/05-test-report.md
+```
+
 ## 参考资料
 
 - [templates/test-report-template.md](templates/test-report-template.md) - 测试报告模板

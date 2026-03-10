@@ -443,6 +443,25 @@ docs/devdocs/
 
 ---
 
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-retrofit
+docs_generated:
+  - docs/devdocs/01-requirements.md
+  - docs/devdocs/02-system-design.md
+features_extracted: X
+apis_extracted: X
+coverage:
+  requirements: "XX%"
+  design: "XX%"
+  tests: "XX%"
+status: completed
+output_file: docs/devdocs/00-retrofit-report.md
+```
+
 ## 输出文件
 
 ```

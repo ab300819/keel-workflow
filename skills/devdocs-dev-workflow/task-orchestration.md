@@ -87,7 +87,7 @@ Step 1: 文档状态检测
 Step 2: Git 历史检测
         ├── git log --grep="(T-XX)" --oneline
         ├── 有代码提交 + 有文档提交 → 跳过（任务已完成，文档状态滞后）
-        ├── 有代码提交 + 无文档提交 → 仅执行文档同步（/devdocs-sync --trace + Commit 2）
+        ├── 有代码提交 + 无文档提交 → 仅执行文档同步（/devdocs-sync + Commit 2）
         └── 无提交 → Step 3
 
 Step 3: 工作区检测
@@ -151,7 +151,7 @@ Step 5: 工作区决策
 │     ├── 成功 → 继续                          │
 │     └── 失败 → 交互：询问用户 / headless：终止│
 │  4. 更新 04-dev-tasks*.md 状态为 已完成       │
-│  5. /devdocs-sync --trace                     │
+│  5. /devdocs-sync                              │
 │  6. Commit 2: docs(T-XX): 更新任务状态+追踪    │
 │     └── git add [文档文件] && git commit      │
 │  7. 洁净校验 + 写检查点                       │

@@ -329,7 +329,7 @@ Fixes #123
 
 ### 追溯同步约束
 
-- [ ] **修复完成后必须执行 `/devdocs-sync --trace`**
+- [ ] **修复完成后必须执行 `/devdocs-sync`**
 - [ ] 新增的回归测试必须登记到 `03-test-*.md` 追溯矩阵
 - [ ] 如不执行 trace，Bug 修复将成为"旁路"，测试无法追溯
 
@@ -346,6 +346,21 @@ Fixes #123
 - [ ] 提交信息使用 `fix(<scope>):` 前缀
 - [ ] 提交信息包含 BUG-XXX 编号
 - [ ] 关联 Issue 编号（如有）
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-bugfix
+bug_id: BUG-XXX
+complexity: simple | complex
+status: fixed | not_reproduced | in_progress
+related: { feature: F-XXX, ac: AC-XXX }
+test_added: [UT-025]
+commit_hash: "abc1234"
+output_file: docs/devdocs/05-bugfix-log.md
+```
 
 ## 特殊情况
 

@@ -107,6 +107,18 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - 任务数量限制 1-3 个（可直接追加，无需调用 devdocs-dev-tasks）
 - 任务必须遵循 TAR 原则格式
 
+### ⚠️ 轻量模式追溯警告
+
+轻量模式跳过 02（系统设计）和 03（测试用例）文档更新，**追溯链不完整**（F → US → AC → UT/IT/E2E 的链路在设计层和测试层断裂）。在 Step 4 用户确认时必须显示以下警告：
+
+```
+⚠️ 轻量模式跳过了设计文档和测试用例更新，追溯链不完整。
+建议在开发前补齐：
+  - /devdocs-system-design（补充设计）
+  - /devdocs-test-cases（补充测试用例）
+或切换到完整模式：/devdocs-feature "功能描述"
+```
+
 ## 完整模式流程（分步编排）
 
 > **核心变更**：不再一次性更新 4 份文档，而是分步执行，每步确认后再进入下一步。
@@ -286,6 +298,22 @@ docs/devdocs/
 
 详细模板参见 [templates/feature-log-template.md](templates/feature-log-template.md)
 
+## Step 6: 衔接开发执行（可选）
+
+完整模式下，任务分解完成后，询问用户是否继续执行开发：
+
+```
+任务分解已完成，新增 N 个开发任务（T-XX ~ T-YY）。
+
+是否继续执行开发？[是(默认)/否]
+- 是 → 自动衔接 /devdocs-dev-workflow T-XX~T-YY
+- 否 → 结束 feature 流程，用户后续手动调用 dev-workflow
+```
+
+**默认行为**：是（继续执行）。用户选择"否"时，输出任务编号范围供后续手动调用。
+
+> 轻量模式同样支持 Step 6，直接衔接 1-3 个任务的开发。
+
 ## Skill 协作
 
 | 阶段 | 协作 Skill | 说明 |
@@ -294,7 +322,7 @@ docs/devdocs/
 | 设计追加 | `/devdocs-system-design` | **完整模式必须委托**（增量更新） |
 | 测试追加 | `/devdocs-test-cases` | **完整模式必须委托**（增量更新 + 矩阵） |
 | 任务追加 | `/devdocs-dev-tasks` | **完整模式必须委托** |
-| 开发实现 | `/devdocs-dev-workflow` | 执行单个任务 |
+| 开发实现 | `/devdocs-dev-workflow` | Step 6 自动衔接（用户可跳过） |
 | 编码约束 | `/code-quality`, `/testing-guide` | 编码阶段 |
 
 > **编排器边界**：`devdocs-feature` 是纯编排器，负责步骤编排、确认流程、功能日志。
@@ -378,6 +406,27 @@ docs/devdocs/
 2. 更新相关 US/AC
 3. 更新受影响的测试用例
 4. 记录变更原因
+```
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-feature
+mode: lite | full
+new_ids:
+  features: [F-004]
+  stories: [US-009, US-010]
+  acceptance: [AC-016~AC-020]
+  tests: [UT-013~UT-015, IT-004]
+  tasks: [T-11~T-13]
+status: completed | interrupted
+step_reached: 1~6
+dev_workflow_triggered: true | false
+output_files:
+  - docs/devdocs/01-requirements.md
+  - docs/devdocs/00-feature-log.md
 ```
 
 ## 输出

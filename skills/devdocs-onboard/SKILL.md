@@ -359,6 +359,23 @@ Agent: [展示现有文档内容]
 /devdocs-onboard --update
 ```
 
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-onboard
+mode: read | update | auto
+summary:
+  project_name: "<项目名>"
+  progress: "X/Y tasks completed (XX%)"
+  next_task: T-XX
+  blockers: []
+context_age: "<N hours/days since last update>"
+status: completed
+output_file: docs/devdocs/00-context.md
+```
+
 ## 下一步
 
 ### 交接方（工具 A）

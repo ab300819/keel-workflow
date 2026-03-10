@@ -13,6 +13,24 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, 
 - 支持中英文提问
 - 统一中文回复
 
+## 模式选择
+
+入口处根据任务规模选择合适的开发模式：
+
+| 模式 | 适用场景 | 流程 |
+|------|---------|------|
+| **轻量** | Bug fix、小改动、配置变更 | → `/devdocs-bugfix`（已有） |
+| **标准** | 新功能、需求变更 | → 完整 Requirements→Design→Tests→Tasks→Dev |
+| **探索** | 原型、技术调研 | → 允许跳过部分验证，事后 `/devdocs-retrofit` 补文档 |
+
+### 模式判断指引
+
+- 若任务来自 `devdocs-dev-tasks`（已有完整文档链）→ **标准模式**
+- 若用户描述为 bug/hotfix/配置变更 → **轻量模式**，路由到 `/devdocs-bugfix`
+- 若用户描述为原型/调研/探索/spike → **探索模式**，跳过对抗式验证和追溯标注强制，开发完成后提示运行 `/devdocs-retrofit`
+
+> 以下流程为**标准模式**。轻量模式和探索模式见上述路由。
+
 ## 触发条件
 
 - 用户开始执行某个任务（如 T-01）
@@ -89,8 +107,8 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, 
    │   └── Review 要点自查
    │
    ├── 前置验证（--review 触发时，对抗式验证之前）
-   │   ├── /devdocs-review：AC 满足度 + 设计一致性（若存在 DevDocs 文档）
-   │   └── /devdocs-ui-alignment：设计稿↔实现对齐（仅 UI 任务 + 有设计稿）
+   │   ├── /devdocs-verify --impl：AC 满足度 + 设计一致性（若存在 DevDocs 文档）
+   │   └── /devdocs-verify --ui：设计稿↔实现对齐（仅 UI 任务 + 有设计稿）
    │
    └── 对抗式验证（🔴自动触发 / 其他层级 --review 手动触发）
        ├── 🔍 代码质量审查（/code-quality 视角）
@@ -104,12 +122,17 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, 
 5. 提交代码（Commit 1: 代码，遵循 /commit-convention）
            │
            ▼
-6. 更新追溯 + 文档提交（/devdocs-sync --trace → Commit 2: 文档）
+6. 更新追溯 + 文档提交（/devdocs-sync → Commit 2: 文档）
         │
         ▼
 6.5 更新 AGENTS.md "当前状态"（若存在）
     ├── 更新活跃任务编号 (T-XX)
     └── 更新进度统计 (X/Y)
+        │
+        ▼
+7. [推荐] 知识沉淀（/devdocs-compound）
+    ├── 批量模式完成后默认执行（用户可跳过）
+    └── 单任务模式：提示用户是否运行 /devdocs-compound
 ```
 
 ## 代码追溯标注规范
@@ -180,7 +203,7 @@ Step 3: 实现接口细节（遵循 /code-quality）
 Step 4: 完善测试（遵循 /testing-guide）
                 │
                 ▼
-Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
+Step 5: 运行 /devdocs-sync 更新追溯矩阵
 ```
 
 ### 骨架生成约束
@@ -225,14 +248,15 @@ Step 5: 运行 /devdocs-sync --trace 更新追溯矩阵
 | 写业务代码 | `/code-quality` | MTE 原则、依赖注入、避免过度设计 |
 | 写测试代码 | `/testing-guide` | 断言质量、变异测试、覆盖率 |
 | UI 实现 | `/ui-orchestrator` | 无障碍、动画、布局约束 |
-| 实现审查 | `/devdocs-review` | 前置验证：AC 满足度 + 设计一致性（DevDocs 功能开发任务） |
-| UI 对齐 | `/devdocs-ui-alignment` | 前置验证：设计稿↔实现对齐（仅 UI 任务 + 有设计稿时） |
+| 实现审查 | `/devdocs-verify --impl` | 前置验证：AC 满足度 + 设计一致性（DevDocs 功能开发任务） |
+| UI 对齐 | `/devdocs-verify --ui` | 前置验证：设计稿↔实现对齐（仅 UI 任务 + 有设计稿时） |
 | 完成验证 | `/code-quality` + `/testing-guide` | 对抗式验证：多视角审查 |
 | 完成检查 | `/code-self-describe` | 更新模块自描述（--update） |
 | 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |
 | 提交信息 | `/commit-convention` | 遵循项目提交规范 |
 | 依赖解析 | `/devdocs-dev-tasks` | 读取任务依赖关系和状态 |
-| 任务完成 | `/devdocs-sync` | 后续：更新追溯矩阵（--trace） |
+| 任务完成 | `/devdocs-sync` | 后续：更新追溯矩阵（追溯同步） |
+| 知识沉淀 | `/devdocs-compound` | 推荐：sync 后提取经验模式（批量模式默认执行） |
 | 全量测试 | `/devdocs-test-run` | 批量完成后：全量测试 + 追溯验证（--trace） |
 
 ## 约束
@@ -414,7 +438,7 @@ Phase 3: 综合审查报告 📋
      - 选项："提交" / "继续修改" / "跳过"
 8. **如提交**（原子提交）：
    - Commit 1: 代码提交 `<type>(T-XX): <名称>`
-   - 更新 04-dev-tasks*.md 状态 + /devdocs-sync --trace
+   - 更新 04-dev-tasks*.md 状态 + /devdocs-sync
    - Commit 2: 文档提交 `docs(T-XX): 更新任务状态并同步 trace`
 9. **更新状态**：TodoWrite 标记为已完成
 
@@ -433,6 +457,27 @@ Phase 3: 综合审查报告 📋
 ```
 
 **type 类型**：feat | fix | refactor | test | docs | chore
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-dev-workflow
+task: T-XX
+status: success | failed | skipped
+commits:
+  code: "abc1234"      # Commit 1 hash
+  docs: "def5678"      # Commit 2 hash
+test_summary:
+  passed: X
+  failed: 0
+  coverage: "XX%"
+blockers_resolved: 0
+suggestions_skipped: 0
+ac_verified: [AC-001, AC-002]
+next_task: T-YY | null
+```
 
 ## 参考资料
 

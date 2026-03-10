@@ -96,15 +96,24 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 
 ## 输出文件
 
-### 洞察记录（可选）
+### 需求追加（唯一源）
+
+确认的建议将追加到：`docs/devdocs/01-requirements.md`（**唯一内容源**）
+
+### 洞察变更日志
 
 **文件**：`docs/devdocs/05-insights.md`
 
-用于记录洞察来源和转化历史，便于追溯。
+降级为**变更日志**——仅记录 INS 编号、来源、确认时间和转化目标，不重复需求内容。避免 `05-insights.md` 与 `01-requirements.md` 之间的双写不同步风险。
 
-### 需求追加
+```markdown
+## 洞察变更日志
 
-确认的建议将追加到：`docs/devdocs/01-requirements.md`
+| INS 编号 | 来源 | 确认时间 | 状态 | 转化目标 |
+|----------|------|----------|------|----------|
+| INS-001 | 🎨 UI/UX 审查 | 2024-01-15 | 🔄 已转化 | F-015, AC-030~031 |
+| INS-002 | 📄 文档调研 | 2024-01-15 | ❌ 已拒绝 | -（原因：优先级不足） |
+```
 
 ## 建议结构
 
@@ -405,6 +414,25 @@ Agent: 让我分析这篇文章并提取可借鉴的点...
 | INS-003 | 引入 Custom Hooks 复用逻辑 | 第7节 | P1 |
 
 请确认要采纳的建议：
+```
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-insights
+source_type: ui_review | doc_research | external_ref | internal_feedback
+insights_collected: 3
+insights_confirmed: 2
+insights_rejected: 1
+new_ids:
+  features: [F-015, F-016]
+  acceptance: [AC-030~AC-033]
+status: completed
+output_files:
+  - docs/devdocs/01-requirements.md
+  - docs/devdocs/05-insights.md
 ```
 
 ## 命令选项

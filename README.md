@@ -112,22 +112,35 @@ docs/devdocs/
 
 ## Skills 概览
 
+### 编排层（用户主入口）
+
+| Skill | 命令 | 用途 | 输出文件 |
+|-------|------|------|----------|
+| **工作流编排器** | `/devdocs-pipeline` | 顶层编排器，5 个入口（init/feature/bugfix/verify/close） | - |
+| [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能（自动衔接开发） | `docs/devdocs/00-feature-log.md` |
+| [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | `docs/devdocs/05-bugfix-log.md` |
+
+### 原子 Skill（由编排层调用或直接使用）
+
 | Skill | 命令 | 用途 | 输出文件 |
 |-------|------|------|----------|
 | [需求扩写](#1-devdocs-requirements-需求扩写) | `/devdocs-requirements` | 功能点、用户故事、验收标准 | `docs/devdocs/01-requirements.md` |
-| [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计（支持增量） | `docs/devdocs/02-system-design*.md` |
+| [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计（支持增量，检索 patterns/） | `docs/devdocs/02-system-design*.md` |
 | [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `docs/devdocs/03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `docs/devdocs/04-dev-tasks*.md` |
-| [开发工作流](#18-devdocs-dev-workflow-开发工作流) | `/devdocs-dev-workflow` | 执行单个任务的开发流程 | - |
-| [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `docs/devdocs/00-retrofit-report.md` |
-| [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能 | `docs/devdocs/00-feature-log.md` |
-| [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现进度 | `docs/devdocs/00-progress-report.md` |
-| [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `docs/devdocs/00-context.md` |
+| [开发工作流](#18-devdocs-dev-workflow-开发工作流) | `/devdocs-dev-workflow` | 执行开发任务（骨架优先 + 分层 TDD） | - |
+| **统一验证** | `/devdocs-verify` | 三合一验证：--docs / --impl / --ui | `docs/devdocs/verify-report.md` |
+| [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现（trace+audit 自动串行） | `docs/devdocs/00-progress-report.md` |
 | [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `docs/devdocs/05-insights.md` |
-| [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | `docs/devdocs/05-bugfix-log.md` |
-| [实现审查](#19-devdocs-review-实现审查) | `/devdocs-review` | AC 满足度、设计一致性、追溯完整性 | `docs/devdocs/review-report.md` |
-| [需求对齐](#20-devdocs-requirements-alignment-需求对齐) | `/devdocs-requirements-alignment` | 三层对齐检查（原始需求→文档→设计→测试） | `docs/devdocs/alignment-report.md` |
-| [UI 对齐](#21-devdocs-ui-alignment-ui-对齐) | `/devdocs-ui-alignment` | 设计稿↔需求↔实现三方对齐验证 | `docs/devdocs/ui-alignment-report.md` |
+| [测试执行](#devdocs-test-run) | `/devdocs-test-run` | 执行测试套件并生成报告 | `docs/devdocs/05-test-report.md` |
+| [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `docs/devdocs/00-context.md` |
+| [知识沉淀](#devdocs-compound) | `/devdocs-compound` | 提取经验模式（sync 后推荐执行） | `docs/devdocs/patterns/*.md` |
+| [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `docs/devdocs/00-retrofit-report.md` |
+
+### 通用工具 Skill
+
+| Skill | 命令 | 用途 | 输出文件 |
+|-------|------|------|----------|
 | [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
 | [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
 | [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `docs/devdocs/05-refactor-*.md` |
@@ -140,12 +153,16 @@ docs/devdocs/
 
 ### 入口决策树
 
-不确定用哪个工具？按以下优先级判断：
+不确定用哪个工具？直接运行 `/devdocs-pipeline`，通过 2-3 个问题自动路由。
+
+或按以下优先级判断：
 
 ```
 项目是否有 DevDocs 文档？
 │
-├── 没有 / 不规范 ──────────────────► /devdocs-retrofit（初次改造）
+├── 没有
+│     ├── 全新项目 ─────────────────► /devdocs-pipeline init
+│     └── 已有代码 ─────────────────► /devdocs-retrofit（初次改造）
 │
 └── 有 DevDocs
         │
@@ -153,27 +170,26 @@ docs/devdocs/
         │
         └── 需要开发
                 │
-                ├── 代码已写好，文档落后 ──► /devdocs-sync --absorb
-                │
-                └── 计划新增功能
-                        │
-                        ├── 小改动（无架构变更）──► /devdocs-feature --lite
-                        │
-                        └── 大改动（涉及设计）──► /devdocs-feature（分步）
+                ├── 新功能 ─────────────► /devdocs-pipeline feature
+                ├── 修 Bug ─────────────► /devdocs-pipeline bugfix
+                ├── 检查质量 ────────────► /devdocs-pipeline verify
+                └── 周期收尾 ────────────► /devdocs-pipeline close
 ```
 
 **快速参考**：
 
 | 你的情况 | 使用命令 |
 |----------|----------|
-| 项目没有文档，想规范化 | `/devdocs-retrofit` |
-| 接手项目，想快速了解 | `/devdocs-onboard --read` |
-| 完成开发，准备交接 | `/devdocs-onboard --update` |
-| 写完代码，文档没跟上 | `/devdocs-sync --absorb` |
-| 检查文档和代码是否一致 | `/devdocs-sync --check` |
+| 不确定用哪个 | `/devdocs-pipeline`（提问式自动路由） |
+| 全新项目 | `/devdocs-pipeline init` |
+| 新功能（涉及接口/数据） | `/devdocs-pipeline feature` 或 `/devdocs-feature` |
 | 小功能（配置、UI 微调） | `/devdocs-feature --lite` |
-| 新功能（涉及接口/数据） | `/devdocs-feature` |
-| 修复 Bug | `/devdocs-bugfix` |
+| 修复 Bug | `/devdocs-pipeline bugfix` 或 `/devdocs-bugfix` |
+| 检查质量 | `/devdocs-pipeline verify` 或 `/devdocs-verify` |
+| 写完代码，文档没跟上 | `/devdocs-sync --absorb` |
+| 接手项目，想快速了解 | `/devdocs-onboard --read` |
+| 完成开发，周期收尾 | `/devdocs-pipeline close` |
+| 项目没有文档，想规范化 | `/devdocs-retrofit` |
 
 ---
 
@@ -214,15 +230,19 @@ docs/devdocs/
                                                                      前置验证（可选）
                                                               ┌────────┼────────────┐
                                                               ▼        ▼            ▼
-                                                     /devdocs-review  /devdocs-ui-alignment
-                                                     (实现正确性)     (UI 设计对齐，仅 UI 任务)
+                                                     /devdocs-verify --impl    --ui
+                                                     (实现正确性)     (UI 对齐，仅 UI 任务)
                                                                               │
                                                                               ▼
                                                                         对抗式验证
                                                                               │
                                                                               ▼
                                                                         /devdocs-sync
-                                                                        (文档同步)
+                                                                        (trace+audit)
+                                                                              │
+                                                                              ▼
+                                                                     /devdocs-compound
+                                                                     (知识沉淀，推荐)
 ```
 
 ---
@@ -300,15 +320,15 @@ DevDocs 流程中各 Skill 的协作关系：
 
 | 阶段 | 主 Skill | 协作 Skill | 说明 |
 |------|----------|-----------|------|
+| 编排入口 | `/devdocs-pipeline` | 全部 DevDocs Skill | 顶层路由 |
 | 需求分析 | `/devdocs-requirements` | - | 定义 F/US/AC 编号 |
-| 需求对齐 | `/devdocs-requirements-alignment` | - | 三层文档对齐检查 |
 | 洞察收集 | `/devdocs-insights` | `/ui-orchestrator` | 审查/调研结果转需求 |
-| 系统设计 | `/devdocs-system-design` | `/code-quality` | MTE 原则指导设计 |
+| 系统设计 | `/devdocs-system-design` | `/code-quality` | MTE 原则指导设计，检索 patterns/ |
 | 测试用例 | `/devdocs-test-cases` | `/testing-guide` | 测试质量约束 |
 | 开发任务 | `/devdocs-dev-tasks` | 多个 | 见下表 |
-| 文档同步 | `/devdocs-sync` | - | 保持文档与实现一致 |
-| 实现审查 | `/devdocs-review` | `/code-quality`, `/testing-guide` | AC 满足度 + 设计一致性 |
-| UI 对齐 | `/devdocs-ui-alignment` | `/ui-orchestrator` | 设计稿↔需求↔实现对齐 |
+| 文档同步 | `/devdocs-sync` | - | trace+audit 自动串行 |
+| 统一验证 | `/devdocs-verify` | `/code-quality`, `/testing-guide` | --docs/--impl/--ui 三合一 |
+| 知识沉淀 | `/devdocs-compound` | `/devdocs-verify` | sync 后推荐执行 |
 | 代码重构 | `/refactor` | `/code-quality`, `/testing-guide` | 测试先行 |
 
 ### 开发阶段 Skill 协作
@@ -324,13 +344,14 @@ DevDocs 流程中各 Skill 的协作关系：
                   │
                   ├── 测试编写 ────────── /testing-guide (断言质量、变异测试)
                   │
-                  ├── 实现审查 ────────── /devdocs-review (AC 满足度、设计一致性)
-                  │
-                  ├── UI 对齐 ─────────── /devdocs-ui-alignment (仅 UI 任务，需设计稿)
+                  ├── 统一验证 ────────── /devdocs-verify --impl (AC + 设计一致性)
+                  │                       /devdocs-verify --ui (仅 UI 任务)
                   │
                   ├── 代码提交 ────────── /git-safety + /commit-convention
                   │
-                  └── 进度同步 ────────── /devdocs-sync (文档与实现一致性)
+                  ├── 进度同步 ────────── /devdocs-sync (trace+audit 自动串行)
+                  │
+                  └── 知识沉淀 ────────── /devdocs-compound (推荐，批量模式默认)
 ```
 
 ### 约束执行时机
@@ -1356,7 +1377,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 5. 运行测试（测试通过 = 修复完成）
    │
    ▼
-6. 执行 /devdocs-sync --trace（更新追溯矩阵）
+6. 执行 /devdocs-sync（更新追溯矩阵）
    │
    ▼
 7. 提交 fix(<scope>): <description>
@@ -1372,7 +1393,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 - [ ] **必须先编写失败测试，再修复代码**
 - [ ] **复杂 Bug 必须走 `/devdocs-dev-tasks` 拆分任务**
-- [ ] **修复完成后必须执行 `/devdocs-sync --trace`**
+- [ ] **修复完成后必须执行 `/devdocs-sync`**
 - [ ] 测试名称描述 Bug 场景
 - [ ] 提交信息使用 `fix(<scope>):` 前缀
 - [ ] 关联 Issue 编号（如有）
@@ -1382,7 +1403,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 | 场景 | 协作 Skill |
 |------|-----------|
 | 复杂 Bug 拆分 | `/devdocs-dev-tasks` |
-| 追溯同步 | `/devdocs-sync --trace` |
+| 追溯同步 | `/devdocs-sync` |
 | 测试编写 | `/testing-guide` |
 | 代码修改 | `/code-quality` |
 | 提交信息 | `/commit-convention` |
@@ -1533,7 +1554,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 | AC 缺测试 | 验收标准无对应测试用例 | `/devdocs-test-cases` |
 | F 缺任务闭环 | 功能点无关联开发任务 | `/devdocs-dev-tasks` |
 | 代码已实现文档落后 | 状态未更新、新内容未登记 | `/devdocs-sync --absorb` |
-| 追溯矩阵代码位置缺失 | 代码标注未扫描到矩阵 | `/devdocs-sync --trace` |
+| 追溯矩阵代码位置缺失 | 代码标注未扫描到矩阵 | `/devdocs-sync` |
 
 > 调度器原则：偏差报告不只列出问题，必须给出明确的修复路由。
 
@@ -1836,86 +1857,34 @@ devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
 
 ---
 
-# 19. devdocs-review (实现审查)
+# 19. devdocs-verify (统一验证)
 
-验证实现是否正确——与对抗式验证（代码质量 + 测试完备性）互补，聚焦 AC 满足度、设计一致性、追溯完整性。
+三合一验证 Skill，替代原 devdocs-review、devdocs-requirements-alignment、devdocs-ui-alignment。
 
 ## 元数据
 
 ```yaml
-name: devdocs-review
-description: Review implementation correctness against requirements and design
+name: devdocs-verify
+description: Unified verification — --docs / --impl / --ui
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 ```
 
-## 定位
+## 验证维度
 
-```
-对抗式验证 Phase 1：MTE 原则、安全检查       → 代码质量
-对抗式验证 Phase 2：覆盖率、断言质量          → 测试完备性
-devdocs-review：AC 满足度、设计一致性、追溯完整性 → 实现正确性
-```
-
-## 触发时机
-
-开发完成后、对抗式验证之前（前置验证阶段）。
-
-详见 [devdocs-review/SKILL.md](skills/devdocs-review/SKILL.md)。
-
----
-
-# 20. devdocs-requirements-alignment (需求对齐)
-
-三层对齐检查，防止需求精化过程中的偏移和遗漏。
-
-## 元数据
-
-```yaml
-name: devdocs-requirements-alignment
-description: Three-layer alignment check for requirement drift detection
-allowed-tools: Read, Glob, Grep, AskUserQuestion
-```
-
-## 检查层级
-
-| 层级 | 检查内容 |
-|------|----------|
-| 层 1 | 原始需求 → 需求文档（F/US/AC） |
-| 层 2 | 需求文档 → 系统设计 |
-| 层 3 | 需求文档 → 测试用例 |
+| 维度 | 检查内容 | 原 Skill |
+|------|----------|----------|
+| `--docs` | 三层文档对齐（原始需求→文档→设计→测试） | devdocs-requirements-alignment |
+| `--impl` | AC 满足度 + 设计一致性 + 追溯完整性 | devdocs-review |
+| `--ui` | 设计稿↔需求↔实现三方对齐 | devdocs-ui-alignment |
 
 ## 触发时机
 
-各层文档产出后按需触发——需求完成后（层 1）、设计完成后（层 2）、测试设计完成后（层 3）。
+- `--docs`：各层文档产出后
+- `--impl`：开发完成后、对抗式验证之前
+- `--ui`：UI 任务完成后（需设计稿输入）
+- 无参数：自动检测项目状态选择维度
 
-详见 [devdocs-requirements-alignment/SKILL.md](skills/devdocs-requirements-alignment/SKILL.md)。
-
----
-
-# 21. devdocs-ui-alignment (UI 对齐)
-
-两阶段 UI 对齐验证——设计稿↔需求↔实现三方一致性检查。
-
-## 元数据
-
-```yaml
-name: devdocs-ui-alignment
-description: Verify alignment between UI design and implementation
-allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
-```
-
-## 验证阶段
-
-| 阶段 | 检查内容 |
-|------|----------|
-| 阶段 1 | 设计稿 ↔ 需求（AC 覆盖矩阵） |
-| 阶段 2 | 设计稿 ↔ 实现（视觉差异检查） |
-
-## 触发时机
-
-仅 UI 相关任务完成后、存在设计稿输入时触发。
-
-详见 [devdocs-ui-alignment/SKILL.md](skills/devdocs-ui-alignment/SKILL.md)。
+详见 [devdocs-verify/SKILL.md](skills/devdocs-verify/SKILL.md)。
 
 ---
 
@@ -1934,17 +1903,18 @@ allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 │   ├── devdocs-feature/
 │   ├── devdocs-insights/
 │   ├── devdocs-onboard/
+│   ├── devdocs-pipeline/                  # 新增：顶层编排器
 │   ├── devdocs-requirements/
-│   ├── devdocs-requirements-alignment/
 │   ├── devdocs-retrofit/
-│   ├── devdocs-review/
 │   ├── devdocs-sync/
 │   ├── devdocs-system-design/
 │   ├── devdocs-test-cases/
+│   ├── devdocs-test-run/
+│   ├── devdocs-verify/                    # 新增：统一验证（替代 review + alignment + ui-alignment）
+│   ├── devdocs-compound/
 │   ├── git-safety/
 │   ├── refactor/
 │   ├── testing-guide/
-│   ├── devdocs-ui-alignment/
 │   ├── ui-orchestrator/
 │   └── work-report/
 ├── scripts/
@@ -1969,6 +1939,12 @@ allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 直接输入命令或使用触发词：
 
 ```
+/devdocs-pipeline                  # 推荐入口：自动路由
+/devdocs-pipeline init             # 新项目全流程
+/devdocs-pipeline feature          # 新功能开发
+/devdocs-pipeline bugfix           # Bug 修复
+/devdocs-pipeline verify           # 质量检查
+/devdocs-pipeline close            # 周期收尾
 /devdocs-requirements 我需要一个用户登录功能
 /devdocs-system-design
 /devdocs-test-cases
@@ -1979,9 +1955,10 @@ allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 /devdocs-onboard
 /devdocs-insights
 /devdocs-bugfix
-/devdocs-review
-/devdocs-requirements-alignment
-/devdocs-ui-alignment
+/devdocs-verify
+/devdocs-verify --docs
+/devdocs-verify --impl
+/devdocs-verify --ui
 /code-quality
 /testing-guide
 /refactor

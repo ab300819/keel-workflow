@@ -205,7 +205,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 
 **研究三步骤**：
 
-1. **现有代码模式扫描** — 扫描项目架构和 `docs/devdocs/patterns/` 已有经验，确认兼容性
+1. **现有代码模式扫描** — 扫描项目架构和 `docs/devdocs/patterns/` 已有经验，确认兼容性。**必须检索 patterns/ 目录**：扫描标题列表，匹配当前设计需求的关键词，如命中则读取详情作为设计参考（避免重复踩坑、复用已验证方案）
 2. **官方文档确认**（若有外部检索工具可用）— 查阅官方文档确认 API 可用性、版本兼容性、已知限制（可用 context7 MCP）
 3. **最佳实践摘要**（若有外部检索工具可用）— 搜索社区最佳实践和常见陷阱，对比方案优劣
 
@@ -482,6 +482,23 @@ docs/devdocs/
 | 代码质量 | `/code-quality` | MTE 原则指导设计 |
 | UI 架构 | `/ui-orchestrator` | 路由到专业的外部 UI/UX Skill |
 | 接口自动提取 | `/devdocs-retrofit` | 从现有代码逆向提取接口定义并同步到设计文档 |
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-system-design
+mode: initial | incremental
+modules_added: [AuthModule, UserModule]
+interfaces_added: ["POST /api/register", "POST /api/login"]
+data_models_added: [User, Session]
+breaking_changes: false
+patterns_referenced: []  # 从 docs/devdocs/patterns/ 匹配的模式
+status: completed
+output_files:
+  - docs/devdocs/02-system-design.md
+```
 
 ## 下一步
 
