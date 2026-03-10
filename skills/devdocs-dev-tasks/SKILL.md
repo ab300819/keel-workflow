@@ -159,7 +159,7 @@ docs/devdocs/
 
 - [ ] **任务执行必须使用 `/devdocs-dev-workflow`**
 - [ ] 禁止跳过 dev-workflow 直接写代码（会导致追溯失效）
-- [ ] 任务完成后必须执行 `/devdocs-sync --trace`
+- [ ] 任务完成后必须执行 `/devdocs-sync`
 
 ## 增量任务管理
 
@@ -188,12 +188,30 @@ docs/devdocs/
 5. 支持按功能点（`F-XXX`）或用户故事（`US-XXX`）批量执行
 
 > **重要**：直接写代码而不使用 dev-workflow 会导致代码缺失 `@satisfies`/`@verifies` 标注，
-> 使 `/devdocs-sync --trace` 无法自动追溯，破坏文档↔代码的闭环。
+> 使 `/devdocs-sync` 无法自动追溯，破坏文档↔代码的闭环。
 
 ## 参考资料
 
 - [templates/task-template.md](templates/task-template.md) - 完整任务文档模板
 - [templates/archive-rules.md](templates/archive-rules.md) - 任务归档规则
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-dev-tasks
+tasks_created: X
+task_range: "T-01~T-10"
+layers:
+  core: X      # 🔴
+  api: X       # 🟡
+  ui: X        # 🟢
+  infra: X     # ⚪
+status: completed
+output_files:
+  - docs/devdocs/04-dev-tasks.md
+```
 
 ## 下一步
 

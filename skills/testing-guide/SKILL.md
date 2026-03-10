@@ -100,7 +100,7 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 ### 标注规范
 
-测试代码必须包含追溯标注，用于 `/devdocs-sync --trace` 扫描：
+测试代码必须包含追溯标注，用于 `/devdocs-sync` 扫描：
 
 ```typescript
 /**
@@ -189,7 +189,7 @@ describe('UserService', () => {
 | 测试设计 | `/devdocs-test-cases` | 需求文档 | 测试用例矩阵 |
 | 骨架生成 | `/devdocs-dev-tasks` | 测试用例 | 测试骨架代码 |
 | 测试实现 | `/testing-guide` | 骨架代码 | 完整测试 |
-| 追溯同步 | `/devdocs-sync --trace` | 代码标注 | 更新矩阵 |
+| 追溯同步 | `/devdocs-sync` | 代码标注 | 更新矩阵 |
 
 ---
 

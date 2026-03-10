@@ -184,7 +184,7 @@ docs/devdocs/
 
 ### 完整格式（开发阶段，含代码位置）
 
-> 代码位置由 `/devdocs-sync --trace` 自动填充，基于代码中的 `@satisfies`/`@verifies` 标注扫描。
+> 代码位置由 `/devdocs-sync` 自动填充，基于代码中的 `@satisfies`/`@verifies` 标注扫描。
 
 ```markdown
 | AC 编号 | 验收标准 | 测试编号 | 入口代码 | 测试代码 | 状态 |
@@ -217,7 +217,7 @@ docs/devdocs/
 设计阶段                    开发阶段                     同步阶段
     │                          │                           │
     ▼                          ▼                           ▼
-生成基础矩阵          生成骨架代码（带标注）        /devdocs-sync --trace
+生成基础矩阵          生成骨架代码（带标注）        /devdocs-sync
 (AC → 测试编号)       (入口 + 测试)                      │
                                                         ▼
                                                  扫描代码标注
@@ -299,6 +299,23 @@ docs/devdocs/
 | 追溯更新 | `/devdocs-sync` | 协作：trace 模式更新追溯矩阵代码位置 |
 | 测试质量 | `/testing-guide` | 协作：编写测试代码时的质量约束 |
 | 任务拆分 | `/devdocs-dev-tasks` | 后续：测试用例转化为开发任务 |
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-test-cases
+mode: initial | incremental
+new_ids:
+  unit_tests: [UT-001~UT-012]
+  integration_tests: [IT-001~IT-003]
+  e2e_tests: [E2E-001~E2E-002]
+traceability_matrix_updated: true
+status: completed
+output_files:
+  - docs/devdocs/03-test-cases.md
+```
 
 ## 下一步
 

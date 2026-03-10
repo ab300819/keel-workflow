@@ -46,7 +46,7 @@
 | 场景 | 必须执行 | 说明 |
 |------|----------|------|
 | **补充背景信息** | `/devdocs-requirements --context` | **推荐**：补充代码中看不出的背景、约束、参考资料 |
-| 首次改造 | `/devdocs-sync --audit` | 检查追溯健康度 |
+| 首次改造 | `/devdocs-sync` | 检查追溯健康度 |
 | 有待补充项 | `/devdocs-requirements` | 完善需求文档 |
 | 开始开发 | `/devdocs-dev-tasks` → `/devdocs-dev-workflow` | 执行任务 |
 | 添加功能 | `/devdocs-feature` | 增量开发 |

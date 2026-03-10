@@ -24,30 +24,30 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 ## 运行模式
 
 ```bash
-/devdocs-sync                    → 完整同步（检查 + 确认 + 更新）
+/devdocs-sync                    → 默认模式：trace → audit 自动串行
 /devdocs-sync --check            → 仅检查，不更新文档
 /devdocs-sync --absorb           → 吸收模式（自动 + 智能补齐）
-/devdocs-sync --trace            → 代码追溯扫描（更新矩阵代码位置）
 /devdocs-sync --archive          → 全量归档检查（所有文档类型）
 /devdocs-sync --archive requirements  → 仅归档需求文档
 /devdocs-sync --archive design        → 仅归档设计文档
 /devdocs-sync --archive tests         → 仅归档测试用例
 /devdocs-sync --archive tasks         → 仅归档开发任务
 /devdocs-sync --archive --release v1.0.0  → 创建版本快照
-/devdocs-sync --audit            → 追溯健康度检查
 /devdocs-sync T-01 T-02          → 指定范围同步
 ```
+
+### 默认模式变更
+
+原 `--trace` 和 `--audit` 已合并到默认模式。无参数调用时自动执行 `trace → audit` 串行流程（audit 依赖 trace 的输出，因此不再作为独立子命令）。`--absorb` 自动包含 trace 步骤。
 
 ### 模式对比
 
 | 模式 | 检查 | 自动更新 | 智能补齐 | 用户确认 |
 |------|------|----------|----------|----------|
 | check | ✅ | ❌ | ❌ | ❌ |
-| sync（默认） | ✅ | ✅ | ❌ | ✅ 全部 |
-| absorb | ✅ | ✅ | ✅ | ✅ 仅高风险 |
-| trace | ✅ 代码扫描 | ✅ 矩阵 | ❌ | ❌ |
+| sync（默认） | ✅ trace+audit | ✅ | ❌ | ✅ 全部 |
+| absorb | ✅ trace+吸收 | ✅ | ✅ | ✅ 仅高风险 |
 | archive | ✅ 归档条件 | ✅ 归档文件 | ❌ | ✅ 全部 |
-| audit | ✅ 追溯 | ❌ | ❌ | ❌ |
 
 ## 核心理念
 
@@ -108,23 +108,20 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 ## 模式详解
 
+### 默认模式（trace → audit 自动串行）
+
+无参数调用时自动执行两步流程：
+
+1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注，与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](trace-mode.md)
+2. **audit 阶段**：检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号。详见 [audit-mode.md](audit-mode.md)
+
+> audit 依赖 trace 的扫描结果，因此自动串行执行，不再作为独立子命令。
+
 ### 吸收模式 (--absorb)
 
-从"检查员"进化为"记录员"，支持代码优先开发路径。低风险偏差自动吸收，高风险需确认。
+从"检查员"进化为"记录员"，支持代码优先开发路径。低风险偏差自动吸收，高风险需确认。自动包含 trace 步骤。
 
 详见 [absorb-mode.md](absorb-mode.md)
-
-### 追溯健康度检查 (--audit)
-
-检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号。
-
-详见 [audit-mode.md](audit-mode.md)
-
-### 代码追溯扫描 (--trace)
-
-扫描代码中的 `@satisfies`/`@verifies` 标注，与文档交叉验证，更新追溯矩阵代码位置列。
-
-详见 [trace-mode.md](trace-mode.md)
 
 ### 文档归档 (--archive)
 
@@ -150,18 +147,18 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 # 输出: 偏差报告（仅显示，不写入）
 ```
 
-### 完整同步
+### 完整同步（默认）
 
 ```bash
 /devdocs-sync
-# 流程: 检查 → 显示报告 → 确认 → 更新文档
+# 流程: trace 扫描 → audit 检查 → 显示报告 → 确认 → 更新文档
 ```
 
 ### 吸收模式
 
 ```bash
 /devdocs-sync --absorb
-# 流程: 检查 → 自动吸收低风险 → 确认高风险 → 生成报告
+# 流程: trace 扫描 → 自动吸收低风险 → 确认高风险 → 生成报告
 ```
 
 ### 指定范围
@@ -245,27 +242,47 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 | AC 缺测试 | `/devdocs-test-cases` | 验收标准无对应测试用例 |
 | F 缺任务闭环 | `/devdocs-dev-tasks` | 功能点无关联开发任务 |
 | 代码已实现文档落后 | `/devdocs-sync --absorb` | 状态未更新、新内容未登记 |
-| 追溯矩阵代码位置缺失 | `/devdocs-sync --trace` | 代码标注未扫描到矩阵 |
+| 追溯矩阵代码位置缺失 | `/devdocs-sync` | 代码标注未扫描到矩阵 |
 
 > **调度器原则**：偏差报告不能只列出问题，必须给出明确的修复路由。
 
-## 调用顺序建议
+## 调用说明
 
-任务完成后的推荐顺序：
+任务完成后直接运行：
 
 ```text
-/devdocs-sync --trace    # 1. 先更新追溯矩阵代码位置
-        │
-        ▼
-/devdocs-sync            # 2. 再检查整体状态并更新
-  或 --absorb            #    （absorb 自动包含 trace 步骤）
+/devdocs-sync            # trace → audit 自动串行 → 显示报告 → 确认更新
+  或 --absorb            # trace + 自动吸收低风险 → 确认高风险
 ```
 
-> `--trace` 专注于代码标注扫描，`--absorb` 专注于状态吸收。两者可独立使用，也可组合使用。
+> 默认模式已将 trace 和 audit 合并为自动串行流程，无需手动分两步调用。
 
 ## 批量确认优化
 
-同一会话内的低风险变更（状态更新、进度统计等）合并为文档级批量确认，而非逐个确认。默认执行顺序固定为 `--trace` 前置扫描 + 状态同步，避免用户二次决策。
+同一会话内的低风险变更（状态更新、进度统计等）合并为文档级批量确认，而非逐个确认。
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: devdocs-sync
+mode: default | check | absorb | archive
+trace_results:
+  satisfies_found: X
+  verifies_found: X
+  coverage: "XX%"
+audit_results:
+  orphan_ids: []
+  missing_tests: []
+  health_score: "XX%"
+deviations:
+  total: X
+  auto_absorbed: X  # absorb 模式
+  needs_confirm: X
+status: synced | deviations_found
+output_file: docs/devdocs/00-progress-report.md
+```
 
 ## 下一步
 
