@@ -35,9 +35,43 @@ user-invocable: true
 /devdocs-pipeline close          → 周期收尾
 ```
 
-## 提问式调度
+## 提问式调度（智能引导）
 
-无参数调用时，通过 2-3 个问题收敛到合适的入口：
+无参数调用时，通过阶段感知 + 智能引导收敛到合适的入口：
+
+### 阶段检测
+
+首先扫描 `docs/devdocs/` 已有文件，判断当前阶段：
+
+```text
+扫描 docs/devdocs/ 目录
+    │
+    ├── 无文件 → 新项目判断（见下方 Q1）
+    │
+    └── 有文件 → 分析当前阶段
+          │
+          ├── 仅 01-requirements.md → "需求已完成，建议运行 /devdocs-system-design"
+          ├── 有 01 + 02 → "设计已完成，建议运行 /devdocs-test-cases"
+          ├── 有 01~03 → "测试设计已完成，建议运行 /devdocs-dev-tasks"
+          ├── 有 01~04 + 有 readiness-report → "就绪检查已通过，建议运行 /devdocs-dev-workflow"
+          ├── 有 01~04 + 无 readiness-report → "任务已拆分，建议运行 /devdocs-verify --readiness"
+          ├── 有代码提交 + 任务进行中 → "开发进行中，建议继续 /devdocs-dev-workflow"
+          └── 有 verify-report → "验证已完成，建议运行 /devdocs-sync 或 /devdocs-compound"
+```
+
+### 轻量分轨提示
+
+根据用户描述的变更规模，给出路径建议：
+
+| 变更规模 | 特征 | 建议路径 |
+|----------|------|----------|
+| 小改动 | bugfix、单文件修复、配置变更 | `/devdocs-pipeline bugfix` |
+| 标准功能 | 新功能、需求变更、多文件改动 | `/devdocs-pipeline feature` |
+| 大功能 | 跨模块、新架构、全新项目 | `/devdocs-pipeline init` 完整路径 |
+
+### 兜底问答
+
+阶段检测无法判断时，通过 2-3 个问题收敛：
 
 ```text
 Q1: "项目已有 DevDocs 文档吗？"
@@ -77,6 +111,9 @@ Q3（feature/bugfix 追加，可选）:
 /devdocs-dev-tasks
     │
     ▼
+/devdocs-verify --readiness   ← 就绪关卡（P1 阻塞则修复后重试）
+    │
+    ▼
 /devdocs-dev-workflow（批量模式）
     │  ← 批量模式内部已含逐任务 sync + compound
     ▼
@@ -86,6 +123,8 @@ Q3（feature/bugfix 追加，可选）:
 /devdocs-sync          ← 全量补充同步（幂等，捕获跨任务遗漏）
 ```
 
+> **就绪关卡**：dev-tasks 完成后自动调用 `verify --readiness`。检查项包括：AC↔测试用例对齐、任务文件路径具体性、依赖无环、设计↔任务一致性。P1 问题阻塞进入 dev-workflow，显示问题清单并建议修复后重试。
+>
 > **粒度说明**：dev-workflow 批量模式内部已执行逐任务 sync 和 compound。pipeline 此处的 verify → sync 是**全量验证+补充同步**，覆盖跨任务的整体一致性。sync 是幂等的，多次执行不会产生错误结果。不再额外执行 compound——dev-workflow 批量模式已默认执行。
 
 **上下文传递**：pipeline 启动时优先检查 `docs/devdocs/00-context.md`，如存在且未过期（< 24h），读取作为快速上下文，避免重复扫描。
@@ -95,7 +134,8 @@ Q3（feature/bugfix 追加，可选）:
 适用于已有项目追加新功能。
 
 ```text
-/devdocs-feature（含 requirements/design/tests/tasks + 自动衔接 dev-workflow）
+/devdocs-feature（含 requirements/design/tests/tasks + readiness 关卡 + 自动衔接 dev-workflow）
+    │  ← feature 内置 Step 4.5 verify --readiness，P1 阻塞则修复后重试
     │  ← dev-workflow 内部已含逐任务 sync
     ▼
 /devdocs-verify        ← 全量验证（覆盖所有新增任务的整体一致性）
@@ -104,7 +144,7 @@ Q3（feature/bugfix 追加，可选）:
 /devdocs-sync          ← 全量补充同步（幂等，捕获跨任务遗漏）
 ```
 
-> `/devdocs-feature` 已内置 Step 6 自动衔接 dev-workflow，pipeline 只需在 feature 完成后补充 verify 和 sync。verify 是全量验证，覆盖 dev-workflow 逐任务验证可能遗漏的跨任务一致性；sync 是幂等的全量补充同步，不是重复执行。
+> `/devdocs-feature` 已内置 Step 4.5 readiness 关卡和 Step 6 自动衔接 dev-workflow，pipeline 只需在 feature 完成后补充 verify 和 sync。verify 是全量验证，覆盖 dev-workflow 逐任务验证可能遗漏的跨任务一致性；sync 是幂等的全量补充同步，不是重复执行。
 
 ### bugfix — Bug 修复
 
@@ -179,6 +219,40 @@ pipeline 在每个阶段完成后：
 是否继续进入系统设计阶段？[是(默认)/否]
 ```
 
+## 编排规范（子 Agent 调度）
+
+### 调度原则
+
+pipeline 调用其他技能时，**必须通过 Task tool 启动子 Agent**：
+
+```text
+pipeline（编排层）
+    │
+    ├── Task: /devdocs-requirements → YAML 摘要
+    ├── Task: /devdocs-system-design → YAML 摘要
+    ├── Task: /devdocs-test-cases → YAML 摘要
+    ├── Task: /devdocs-dev-tasks → YAML 摘要
+    ├── Task: /devdocs-verify --readiness → YAML 摘要
+    ├── Task: /devdocs-dev-workflow → YAML 摘要
+    ├── Task: /devdocs-verify → YAML 摘要
+    └── Task: /devdocs-sync → YAML 摘要
+```
+
+### 摘要传递
+
+阶段间只传递 YAML 摘要 + 文件路径。编排 Agent **不读取**子技能的完整输出文档。
+
+### 异常回退
+
+子 Agent 返回 `status: failed` + `blockers` 时：
+1. 展示阻塞项给用户
+2. 询问用户处理方式（修复/跳过/终止）
+3. **不自行读取文档排障**
+
+### 上下文隔离
+
+每个子 Agent 自行读取所需的前置文档（从 `docs/devdocs/` 文件系统），不依赖编排 Agent 传递全文。
+
 ## 约束
 
 ### 编排约束
@@ -190,9 +264,11 @@ pipeline 在每个阶段完成后：
 
 ### 提问式调度约束
 
-- [ ] **最多 3 个问题收敛到入口**
+- [ ] **优先使用阶段检测自动判断，无法判断时才提问**
+- [ ] **兜底问答最多 3 个问题收敛到入口**
 - [ ] **问题必须有明确的选项（不开放式提问）**
 - [ ] 识别到 retrofit 场景时，路由到 `/devdocs-retrofit` 并退出 pipeline
+- [ ] **分轨提示基于变更规模，不引入额外术语**
 
 ### 上下文约束
 
@@ -200,12 +276,19 @@ pipeline 在每个阶段完成后：
 - [ ] pipeline 编排层不读取大量源代码（委托给子 skill）
 - [ ] 每个阶段完成后展示简要摘要（< 10 行）
 
+### 编排约束（子 Agent）
+
+- [ ] **调用其他技能时必须通过 Task tool 启动子 Agent**
+- [ ] **阶段间只传递 YAML 摘要 + 文件路径**
+- [ ] **子 Agent 失败时展示阻塞项询问用户，不自行排障**
+- [ ] **每个子 Agent 自行读取前置文档，编排层不传递全文**
+
 ## Skill 协作
 
 | 入口 | 编排的 Skill 链 |
 |------|----------------|
-| init | requirements → system-design → test-cases → dev-tasks → dev-workflow → verify → sync |
-| feature | feature(含 dev-workflow) → verify → sync |
+| init | requirements → system-design → test-cases → dev-tasks → **verify --readiness** → dev-workflow → verify → sync |
+| feature | feature(含 readiness + dev-workflow) → verify → sync |
 | bugfix | bugfix / (dev-tasks → dev-workflow) → verify → sync |
 | verify | verify --docs/--impl/--ui |
 | close | sync → compound → onboard --update |

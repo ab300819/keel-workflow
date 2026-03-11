@@ -135,6 +135,12 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, 
     └── 单任务模式：提示用户是否运行 /devdocs-compound
 ```
 
+### 步骤状态追踪
+
+11 步执行流程中，每步完成后记录状态标记（S1~S11），用于断点恢复时精确定位。比原有 5 步检查点更精确，减少重复工作。
+
+> 详见 [execution-flow.md](execution-flow.md) 步骤状态追踪表
+
 ## 代码追溯标注规范
 
 > 实现文档↔代码的双向追溯，AI 在生成代码时自动添加标注。
@@ -240,6 +246,25 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
 ```
 
 > 详见 [execution-flow.md](execution-flow.md) 统一任务执行流程 + 强制程度矩阵
+
+## 编排规范（子 Agent 调度）
+
+dev-workflow 调用以下技能时，**必须通过 Task tool 启动子 Agent**：
+
+| 阶段 | 被调度技能 | 调度方式 |
+|------|-----------|----------|
+| 前置验证 | `/devdocs-verify --impl` | Task tool 子 Agent |
+| UI 对齐 | `/devdocs-verify --ui` | Task tool 子 Agent |
+| 追溯同步 | `/devdocs-sync` | Task tool 子 Agent |
+| 知识沉淀 | `/devdocs-compound` | Task tool 子 Agent |
+| 全量测试 | `/devdocs-test-run` | Task tool 子 Agent |
+
+### 调度原则
+
+1. **上下文隔离**：每个子 Agent 自行读取所需文档，dev-workflow 不传递全文
+2. **摘要传递**：只接收子 Agent 返回的 YAML 摘要，据此决定下一步
+3. **异常回退**：子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项询问用户
+4. **不自行排障**：编排层不读取子技能的完整输出文档来尝试修复
 
 ## Skill 协作
 
@@ -355,6 +380,8 @@ Phase 3: 综合审查报告 📋
 
 > 详见 [verification-flow.md](verification-flow.md)
 
+> **强化内容**：声称 vs 实际验证（AC↔git diff 交叉验证）、最低 3 发现门槛、三种解决路径分类（🔧自动修复/📋行动项/💬详细解释）。
+
 ### 依赖解析约束
 
 - [ ] **执行前必须完成依赖解析**
@@ -376,7 +403,7 @@ Phase 3: 综合审查报告 📋
 - [ ] **每个任务开始前执行状态检测**（5 步流水线）
 - [ ] **不相关变更必须警告用户**（AskUserQuestion：stash/忽略/终止）
 - [ ] **已完成任务自动跳过**
-- [ ] 进行中任务分析续做起点（骨架/红/绿/验证）
+- [ ] 进行中任务分析续做起点（11 步精确定位：S1~S11）
 - [ ] 文档状态 + Git 历史 + 工作区三重验证
 
 > 详见 [task-orchestration.md](task-orchestration.md)
@@ -392,7 +419,8 @@ Phase 3: 综合审查报告 📋
 ### 记忆文件同步约束
 
 - [ ] **任务完成后检查项目根目录是否存在 AGENTS.md**
-- [ ] **若存在，更新"当前状态"章节**（活跃任务、进度统计）
+- [ ] **仅允许更新 `## 当前状态` 章节**（活跃任务编号、进度统计）
+- [ ] **禁止修改结构性章节**（Project Overview、Skill Architecture、Conventions 等由 /agent-memory 管理）
 - [ ] CLAUDE.md 通过 @AGENTS.md 自动导入，无需同步
 - [ ] 仅做文本替换，不调用 /agent-memory
 - [ ] 格式须与 `/agent-memory` 模板保持一致

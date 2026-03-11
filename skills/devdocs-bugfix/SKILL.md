@@ -1,7 +1,7 @@
 ---
 name: devdocs-bugfix
 description: Test-first bug fixing workflow. Guide users through reproducing bugs, writing failing tests, fixing code, and committing. Use when users report bugs, need to fix issues, or mention keywords like "bug", "fix", "issue", "崩溃", "报错", "修复".
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 ---
 
 # Bug 修复
@@ -297,6 +297,25 @@ Fixes #123
                     └── /devdocs-sync 更新追溯矩阵
 ```
 
+## 编排规范（子 Agent 调度）
+
+复杂 Bug 路径下，devdocs-bugfix 调用子技能时**必须通过 Task tool 启动子 Agent**：
+
+| 场景 | 被调度技能 | 调度方式 |
+|------|-----------|----------|
+| 复杂 Bug 拆分 | `/devdocs-dev-tasks` | Task tool 子 Agent |
+| 复杂 Bug 开发 | `/devdocs-dev-workflow` | Task tool 子 Agent |
+| 文档同步 | `/devdocs-sync` | Task tool 子 Agent |
+
+### 调度原则
+
+1. **上下文隔离**：每个子 Agent 自行读取所需文档，bugfix 编排层不传递全文
+2. **摘要传递**：只接收子 Agent 返回的 YAML 摘要，据此决定下一步
+3. **异常回退**：子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项询问用户
+4. **不自行排障**：编排层不读取子技能的完整输出文档来尝试修复
+
+> 简单 Bug 因流程短（单文件修复），直接在 bugfix 上下文内执行，不启动子 Agent。
+
 ## Skill 协作
 
 | 场景 | 协作 Skill | 说明 |
@@ -318,6 +337,8 @@ Fixes #123
 - [ ] **测试必须先失败，证明 Bug 存在**
 - [ ] **修复后测试必须通过**
 - [ ] **不得跳过测试直接提交**
+- [ ] **复杂 Bug 走 dev-tasks + dev-workflow 时必须通过 Task tool 启动子 Agent**
+- [ ] **简单 Bug 直接在 bugfix 上下文内执行**
 
 ### 记录约束
 

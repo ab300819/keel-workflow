@@ -1,12 +1,12 @@
 ---
 name: devdocs-verify
-description: Unified verification skill combining document alignment, implementation correctness, and UI design alignment. Supports --docs (three-layer document alignment), --impl (AC satisfaction + design conformance + traceability), --ui (design-to-implementation visual alignment). Auto-detects appropriate dimensions when called without flags. Triggers on "verify", "review", "alignment", "验证", "审查", "对齐检查", "需求验证", "设计一致性", "UI 对齐".
+description: Unified verification skill combining document alignment, implementation correctness, UI design alignment, and development readiness checks. Supports --docs (three-layer document alignment), --impl (AC satisfaction + design conformance + traceability), --ui (design-to-implementation visual alignment), --readiness (pre-development quality gate). Auto-detects appropriate dimensions when called without flags. Triggers on "verify", "review", "alignment", "验证", "审查", "对齐检查", "需求验证", "设计一致性", "UI 对齐", "就绪检查", "readiness".
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion  # 可选: Playwright MCP, Chrome DevTools MCP, Pencil MCP
 ---
 
 # 统一验证
 
-三合一验证 Skill：文档对齐 + 实现正确性 + UI 设计对齐，替代原 `devdocs-review`、`devdocs-requirements-alignment`、`devdocs-ui-alignment`。
+四合一验证 Skill：文档对齐 + 实现正确性 + UI 设计对齐 + 开发就绪检查，替代原 `devdocs-review`、`devdocs-requirements-alignment`、`devdocs-ui-alignment`。
 
 ## 语言规则
 
@@ -21,15 +21,17 @@ devdocs-verify --docs  ：各层文档之间是否对齐（原 requirements-alig
 devdocs-verify --impl  ：实现是否正确（原 review）
 devdocs-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
 对抗式验证            ：代码质量是否合格（dev-workflow 内置）
+devdocs-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 ```
 
-**互补关系**：`--docs` 检查"文档写对了没"，`--impl` 检查"代码做对了没"，`--ui` 检查"界面做对了没"，对抗式验证检查"代码写得好不好"。
+**互补关系**：`--docs` 检查"文档写对了没"，`--impl` 检查"代码做对了没"，`--ui` 检查"界面做对了没"，`--readiness` 检查"能开工了没"，对抗式验证检查"代码写得好不好"。
 
 ## 触发条件
 
 - 需求/设计/测试文档完成后（`--docs`）
 - 任务开发完成后、对抗式验证之前（`--impl`）
 - UI 相关任务开发完成后（`--ui`）
+- 任务拆分完成、进入开发前（`--readiness`）
 - 用户要求检查文档/实现/UI 对齐
 
 ## 运行模式
@@ -47,6 +49,7 @@ devdocs-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
 /devdocs-verify --ui               → 仅 UI 设计对齐（两阶段）
 /devdocs-verify --ui --design      → 仅设计稿 ↔ 需求
 /devdocs-verify --ui --impl        → 仅设计稿 ↔ 实现
+/devdocs-verify --readiness          → 开发就绪检查（进入 dev-workflow 前的质量关卡）
 /devdocs-verify T-01 T-02          → 指定任务范围（自动 --impl）
 ```
 
@@ -77,7 +80,8 @@ devdocs-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
 3. 按维度执行检查
    ├── --docs：三层对齐检查
    ├── --impl：三维度正确性审查
-   └── --ui：两阶段设计对齐
+   ├── --ui：两阶段设计对齐
+   └── --readiness：四维度就绪检查
    │
    ▼
 4. 生成验证报告
@@ -197,6 +201,49 @@ devdocs-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
 
 ---
 
+## 维度 D：开发就绪检查（--readiness）
+
+验证任务文档是否达到开发就绪状态——在 dev-tasks → dev-workflow 过渡时作为质量关卡。
+
+**与 --docs 的区别**：`--docs` 检查文档层间对齐（漂移检测），`--readiness` 检查任务级开发就绪条件（具体性、一致性、可执行性）。
+
+### D1：AC ↔ 测试用例对齐
+
+检查每条 AC 是否有对应的测试用例设计：
+
+1. 读取 `01-requirements.md` 中所有 AC
+2. 读取 `03-test-cases*.md` 中的追溯矩阵
+3. 逐条检查 AC → UT/IT/E2E 映射
+4. 输出未覆盖的 AC 列表
+
+### D2：任务文件路径具体性
+
+检查 `04-dev-tasks*.md` 中每个任务的文件路径是否具体可执行：
+
+| 检查项 | 合格标准 | 不合格示例 |
+|--------|---------|-----------|
+| 文件路径 | 明确到文件名 | "修改相关文件" |
+| 方法/接口 | 明确到方法名或接口名 | "调整接口" |
+| 测试方法 | 指定测试类型和编号 | "编写测试" |
+
+### D3：任务依赖无环
+
+检查任务依赖关系是否存在循环：
+
+1. 从 `04-dev-tasks*.md` 提取所有任务依赖关系
+2. 构建有向图，执行拓扑排序
+3. 若存在环路 → 报告环路路径
+
+### D4：设计 ↔ 任务一致性
+
+检查任务定义是否与系统设计一致：
+
+1. 任务引用的模块/接口在 `02-system-design*.md` 中存在
+2. 任务的文件路径与设计文档的代码结构一致
+3. 无孤立任务（任务未关联任何 F-XXX/AC-XXX）
+
+---
+
 ## CE 三个审查问题（--impl 专属）
 
 `--impl` 审查完成后，必须追加回答：
@@ -220,24 +267,30 @@ devdocs-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
 - **--docs**：原始需求遗漏（层 1）、AC 无设计支撑（层 2）、AC 无对应测试（层 3）
 - **--impl**：AC 未满足（❌）、接口签名与设计不符、模块职责严重偏离、核心 AC 无 @satisfies 标注
 - **--ui**：布局结构与设计稿不符、关键交互状态未实现、AC 描述的 UI 行为在设计稿中缺失
+- **--readiness**：AC 无对应测试用例（D1）、任务存在循环依赖（D3）、孤立任务无需求关联（D4）
 
 ### P2 判定标准
 
 - **--docs**：原始需求偏移（层 1）、AC 缺异常路径测试（层 3）
 - **--impl**：AC 部分满足（⚠️）、数据流轻微偏离、@satisfies 覆盖率 < 80%
 - **--ui**：间距/颜色/字体的显著偏差、响应式断点差异
+- **--readiness**：任务文件路径不够具体（D2）、设计↔任务文件路径不一致（D4）
 
 ### P3 判定标准
 
 - **--docs**：过度扩展（层 1）、设计孤立项（层 2）
 - **--impl**：非核心代码缺少标注、非关键路径微偏离
 - **--ui**：间距/颜色/字体的轻微偏差
+- **--readiness**：任务描述过于简略但路径具体
 
 ## 输出文件
 
-生成 `docs/devdocs/verify-report.md`
+| 维度 | 输出文件 |
+|------|----------|
+| --docs / --impl / --ui | `docs/devdocs/verify-report.md` |
+| --readiness | `docs/devdocs/readiness-report.md` |
 
-详细模板参见 [templates/verify-report.md](templates/verify-report.md)
+详细模板参见 [templates/verify-report.md](templates/verify-report.md)（--docs/--impl/--ui）和 [templates/readiness-report.md](templates/readiness-report.md)（--readiness）
 
 ## 上下文管理
 
@@ -246,12 +299,14 @@ devdocs-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
 - **--docs**：按层级分批（层 1、层 2、层 3 各为一个批次）
 - **--impl**：按任务 (T-XX) 或功能点 (F-XXX) 分批，每批完成全部三个子维度
 - **--ui**：按页面/组件分批
+- **--readiness**：一次性全量检查（通常任务数量有限，不需分批）
 
 ### 质量锚点
 
 - **--docs**：使用**完备性验证**——每层检查后核对已报告数量 == 输入编号总数
 - **--impl**：首个功能点的审查结果作为**质量锚点**，后续深度不低于首批
 - **--ui**：首个页面的检查结果作为质量锚点
+- **--readiness**：使用**完备性验证**——所有任务和 AC 均已出现在检查结果中
 
 ### 一致性自检
 
@@ -311,6 +366,7 @@ devdocs-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
 | 代码质量 | `/code-quality` | 互补：code-quality 关注代码质量约束 |
 | UI 开发 | `/ui-orchestrator` | 互补：路由开发 vs 验证对齐 |
 | 知识沉淀 | `/devdocs-compound` | 前置：读取验证报告提取改进模式 |
+| 开发就绪 | `/devdocs-pipeline` | 被调用：dev-tasks 完成后、dev-workflow 前的质量关卡 |
 
 ## 子 Agent 摘要格式
 
@@ -318,7 +374,7 @@ devdocs-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
 
 ```yaml
 skill: devdocs-verify
-dimensions: [docs, impl, ui]  # 实际执行的维度
+dimensions: [docs, impl, ui, readiness]  # 实际执行的维度
 summary:
   total_p1: 0
   total_p2: 0
@@ -336,9 +392,16 @@ summary:
   ui:
     stage1: pass | fail | skipped
     stage2: pass | fail | skipped
+  readiness:
+    ac_test_coverage: "X/Y covered"
+    path_specificity: pass | fail
+    dependency_cycle: false
+    design_task_consistency: pass | fail
 blockers:
   - "P1: AC-003 未满足（--impl）"
-output_file: docs/devdocs/verify-report.md
+output_files:
+  verify: docs/devdocs/verify-report.md      # --docs / --impl / --ui
+  readiness: docs/devdocs/readiness-report.md # --readiness
 ```
 
 ## 下一步
@@ -354,4 +417,8 @@ output_file: docs/devdocs/verify-report.md
 | --impl 设计偏离 | - | `/devdocs-system-design` 更新设计文档 |
 | --ui 阶段 1 有缺失 | P1 | 补充设计稿，覆盖缺失的 AC |
 | --ui 阶段 2 有 P1 | P1 | 修复实现后重新验证 |
+| --readiness AC 无测试 | P1 | `/devdocs-test-cases` 补充测试用例 |
+| --readiness 循环依赖 | P1 | `/devdocs-dev-tasks` 重新拆分任务 |
+| --readiness 路径不具体 | P2 | `/devdocs-dev-tasks` 细化任务定义 |
+| --readiness 全部通过 | - | 进入 `/devdocs-dev-workflow` 开发执行 |
 | 全部通过 | - | 进入对抗式验证 |

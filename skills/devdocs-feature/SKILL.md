@@ -1,7 +1,7 @@
 ---
 name: devdocs-feature
 description: Add new features to existing DevDocs projects. Use when users need to add new features, iterate on existing functionality, or mention keywords like "add feature", "new feature", "新功能", "迭代", "新增功能".
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 ---
 
 # 新功能
@@ -287,6 +287,27 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 展示步骤摘要块（新增任务范围 + TDD 分层标注），等待用户确认。`--fast` 模式跳过此确认。
 
+## Step 4.5: 就绪检查（完整模式）
+
+> **委托执行**：本步骤必须委托给 `/devdocs-verify --readiness`，作为进入开发前的质量关卡。
+
+### 委托输入
+
+传递给 `/devdocs-verify --readiness` 的上下文：
+- Step 1-4 新增的编号列表
+
+### 委托输出
+
+从 `/devdocs-verify --readiness` 获取：
+- readiness 检查结果（P1/P2/P3 问题列表）
+- 就绪状态（pass / fail）
+
+### 关卡规则
+
+- **P1 问题存在** → 阻塞进入 Step 6，展示问题清单并建议修复后重试
+- **仅 P2/P3** → 展示警告，询问用户是否继续
+- **全部通过** → 自动进入 Step 5
+
 ## Step 5: 生成功能日志
 
 ### 输出文件
@@ -314,6 +335,28 @@ docs/devdocs/
 
 > 轻量模式同样支持 Step 6，直接衔接 1-3 个任务的开发。
 
+## 编排规范（子 Agent 调度）
+
+完整模式下，devdocs-feature 调用子技能时**必须通过 Task tool 启动子 Agent**：
+
+| Step | 被调度技能 | 调度方式 |
+|------|-----------|----------|
+| Step 1 | `/devdocs-requirements --incremental` | Task tool 子 Agent |
+| Step 2 | `/devdocs-system-design` | Task tool 子 Agent |
+| Step 3 | `/devdocs-test-cases` | Task tool 子 Agent |
+| Step 4 | `/devdocs-dev-tasks` | Task tool 子 Agent |
+| Step 4.5 | `/devdocs-verify --readiness` | Task tool 子 Agent |
+| Step 6 | `/devdocs-dev-workflow` | Task tool 子 Agent |
+
+### 调度原则
+
+1. **上下文隔离**：每个子 Agent 自行读取所需文档，feature 编排层不传递全文
+2. **摘要传递**：步骤间只传递 YAML 摘要 + 新增编号列表
+3. **异常回退**：子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项询问用户
+4. **不自行排障**：编排层不读取子技能的完整输出文档来尝试修复
+
+> 轻量模式因任务简单（1-3 个任务），直接在 feature 上下文内执行，不启动子 Agent。
+
 ## Skill 协作
 
 | 阶段 | 协作 Skill | 说明 |
@@ -322,6 +365,7 @@ docs/devdocs/
 | 设计追加 | `/devdocs-system-design` | **完整模式必须委托**（增量更新） |
 | 测试追加 | `/devdocs-test-cases` | **完整模式必须委托**（增量更新 + 矩阵） |
 | 任务追加 | `/devdocs-dev-tasks` | **完整模式必须委托** |
+| 就绪检查 | `/devdocs-verify --readiness` | **完整模式必须委托**（Step 4.5 质量关卡） |
 | 开发实现 | `/devdocs-dev-workflow` | Step 6 自动衔接（用户可跳过） |
 | 编码约束 | `/code-quality`, `/testing-guide` | 编码阶段 |
 
@@ -351,6 +395,8 @@ docs/devdocs/
 - [ ] 用户可在任意步骤选择"终止"（`--fast` 下可 Ctrl+C）
 - [ ] 每步只关注当前文档的编号和格式
 - [ ] 步骤间传递的信息仅限：新增编号列表
+- [ ] **完整模式 Step 1-4、Step 4.5、Step 6 必须通过 Task tool 启动子 Agent**
+- [ ] **步骤间只传递 YAML 摘要 + 编号列表，不传递文档全文**
 
 ### 轻量模式约束
 

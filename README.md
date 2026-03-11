@@ -129,7 +129,7 @@ docs/devdocs/
 | [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `docs/devdocs/03-test-*.md` |
 | [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `docs/devdocs/04-dev-tasks*.md` |
 | [开发工作流](#18-devdocs-dev-workflow-开发工作流) | `/devdocs-dev-workflow` | 执行开发任务（骨架优先 + 分层 TDD） | - |
-| **统一验证** | `/devdocs-verify` | 三合一验证：--docs / --impl / --ui | `docs/devdocs/verify-report.md` |
+| **统一验证** | `/devdocs-verify` | 四合一验证：--docs / --impl / --ui / --readiness | `docs/devdocs/verify-report.md`, `readiness-report.md` |
 | [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现（trace+audit 自动串行） | `docs/devdocs/00-progress-report.md` |
 | [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `docs/devdocs/05-insights.md` |
 | [测试执行](#devdocs-test-run) | `/devdocs-test-run` | 执行测试套件并生成报告 | `docs/devdocs/05-test-report.md` |
@@ -327,7 +327,7 @@ DevDocs 流程中各 Skill 的协作关系：
 | 测试用例 | `/devdocs-test-cases` | `/testing-guide` | 测试质量约束 |
 | 开发任务 | `/devdocs-dev-tasks` | 多个 | 见下表 |
 | 文档同步 | `/devdocs-sync` | - | trace+audit 自动串行 |
-| 统一验证 | `/devdocs-verify` | `/code-quality`, `/testing-guide` | --docs/--impl/--ui 三合一 |
+| 统一验证 | `/devdocs-verify` | `/code-quality`, `/testing-guide` | --docs/--impl/--ui/--readiness 四合一 |
 | 知识沉淀 | `/devdocs-compound` | `/devdocs-verify` | sync 后推荐执行 |
 | 代码重构 | `/refactor` | `/code-quality`, `/testing-guide` | 测试先行 |
 
@@ -1859,13 +1859,13 @@ devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
 
 # 19. devdocs-verify (统一验证)
 
-三合一验证 Skill，替代原 devdocs-review、devdocs-requirements-alignment、devdocs-ui-alignment。
+四合一验证 Skill，替代原 devdocs-review、devdocs-requirements-alignment、devdocs-ui-alignment。
 
 ## 元数据
 
 ```yaml
 name: devdocs-verify
-description: Unified verification — --docs / --impl / --ui
+description: Unified verification — --docs / --impl / --ui / --readiness
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 ```
 
@@ -1876,12 +1876,14 @@ allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 | `--docs` | 三层文档对齐（原始需求→文档→设计→测试） | devdocs-requirements-alignment |
 | `--impl` | AC 满足度 + 设计一致性 + 追溯完整性 | devdocs-review |
 | `--ui` | 设计稿↔需求↔实现三方对齐 | devdocs-ui-alignment |
+| `--readiness` | 开发就绪四维检查（AC 覆盖/路径具体性/依赖无环/设计-任务一致性） | 新增 |
 
 ## 触发时机
 
 - `--docs`：各层文档产出后
 - `--impl`：开发完成后、对抗式验证之前
 - `--ui`：UI 任务完成后（需设计稿输入）
+- `--readiness`：dev-tasks 完成后、进入 dev-workflow 前
 - 无参数：自动检测项目状态选择维度
 
 详见 [devdocs-verify/SKILL.md](skills/devdocs-verify/SKILL.md)。

@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-This is an **AI Agent Skills template collection** for **solo developers** - a set of reusable SKILL.md files that extend AI coding agents' capabilities for software development workflows. This is NOT a traditional codebase - it's a specification library of Markdown + YAML skill definitions. There are **no build, test, or lint commands** to run.
+This is an **AI Agent Skills template collection** — a set of reusable SKILL.md files that extend AI coding agents' capabilities for software development workflows. This is NOT a traditional codebase - it's a specification library of Markdown + YAML skill definitions. There are **no build, test, or lint commands** to run.
 
 ## Language Rules
 
@@ -77,7 +77,7 @@ Skills that generate repetitive structured content across multiple batches are p
 | devdocs-test-cases | `/devdocs-test-cases` | Design test cases (UT/IT/E2E) |
 | devdocs-dev-tasks | `/devdocs-dev-tasks` | Break down into executable tasks |
 | devdocs-dev-workflow | `/devdocs-dev-workflow` | Execute development (skeleton-first + layered TDD) |
-| devdocs-verify | `/devdocs-verify` | Unified verification: --docs / --impl / --ui |
+| devdocs-verify | `/devdocs-verify` | Unified verification: --docs / --impl / --ui / --readiness |
 | devdocs-sync | `/devdocs-sync` | Sync docs with implementation (trace+audit auto-serial) |
 | devdocs-insights | `/devdocs-insights` | Collect improvement insights → requirements |
 | devdocs-test-run | `/devdocs-test-run` | Execute test suites |
@@ -87,14 +87,14 @@ Skills that generate repetitive structured content across multiple batches are p
 
 ### Key Collaboration Chains
 
-- **Init**: pipeline → requirements → system-design → test-cases → dev-tasks → dev-workflow → verify → sync
-- **Feature**: pipeline → feature(→requirements→design→tests→tasks→dev-workflow) → verify → sync
+- **Init**: pipeline → requirements → system-design → test-cases → dev-tasks → verify --readiness → dev-workflow → verify → sync
+- **Feature**: pipeline → feature(→requirements→design→tests→tasks→readiness→dev-workflow) → verify → sync
 - **Bugfix**: pipeline → bugfix(→dev-tasks→dev-workflow) → verify → sync
 - **Close**: pipeline → sync → compound → onboard --update
 
 ### Sub-Agent Architecture
 
-- Pipeline orchestrates via Task tool — each stage skill runs as independent sub-agent
+- Pipeline/Feature/Bugfix orchestrate via Task tool — each stage skill runs as independent sub-agent
 - Sub-agents return structured YAML summaries (new IDs, status, blockers, output paths)
 - Cross-stage data passes through filesystem (devdocs docs = source of truth)
 - Main agent retains only: pipeline definition + stage summaries (~10K tokens)
