@@ -1,6 +1,6 @@
 ---
 name: devdocs-dev-tasks
-description: Break down system design into executable development tasks. Use when users need task breakdown, sprint planning, or development task lists. Triggers on keywords like "dev tasks", "task breakdown", "sprint planning", "implementation tasks".
+description: Break down system design into executable, trackable development tasks with dependency resolution and layer classification (🔴🟡🟢⚪). Use when users need task breakdown, sprint planning, or implementation planning. Triggers on "dev tasks", "task breakdown", "sprint planning", "implementation tasks", "拆分任务", "任务列表", "implementation plan", "开发任务拆分". NOT for executing tasks (use devdocs-dev-workflow) or defining features (use devdocs-feature).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 ---
 

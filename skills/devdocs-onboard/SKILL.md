@@ -1,6 +1,6 @@
 ---
 name: devdocs-onboard
-description: Generate project context summary for AI tool handover. Use when switching AI tools, starting new sessions, or onboarding team members. Triggers on keywords like "project context", "handover", "onboard", "项目上下文", "交接", "接手项目".
+description: Generate project context summary for AI tool handover. Supports --read (view only) and --update (rescan) modes. Use when switching AI tools, starting new sessions, or onboarding team members. Triggers on "project context", "handover", "onboard", "项目上下文", "交接", "接手项目", "新会话", "new session", "项目概览". NOT for retrofitting projects (use devdocs-retrofit) or requirements definition (use devdocs-requirements).
 allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
 ---
 

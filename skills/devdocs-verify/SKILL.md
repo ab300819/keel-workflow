@@ -1,6 +1,6 @@
 ---
 name: devdocs-verify
-description: Unified verification skill combining document alignment, implementation correctness, UI design alignment, and development readiness checks. Supports --docs (three-layer document alignment), --impl (AC satisfaction + design conformance + traceability), --ui (design-to-implementation visual alignment), --readiness (pre-development quality gate). Auto-detects appropriate dimensions when called without flags. Triggers on "verify", "review", "alignment", "验证", "审查", "对齐检查", "需求验证", "设计一致性", "UI 对齐", "就绪检查", "readiness".
+description: Unified verification skill combining document alignment, implementation correctness, UI design alignment, and development readiness checks. Supports --docs, --impl, --ui, --readiness flags; auto-detects dimensions when called without flags. Triggers on "verify", "review", "alignment", "验证", "审查", "对齐检查", "需求验证", "设计一致性", "UI 对齐", "就绪检查", "质量关卡", "readiness". NOT for syncing docs with progress (use devdocs-sync).
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion  # 可选: Playwright MCP, Chrome DevTools MCP, Pencil MCP
 ---
 

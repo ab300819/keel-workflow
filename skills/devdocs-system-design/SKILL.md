@@ -1,6 +1,6 @@
 ---
 name: devdocs-system-design
-description: Create or update system design documents. Supports initial design and incremental design modes. Use when users need technical architecture, API design, data models, design changes, or impact analysis. Triggers on keywords like "system design", "architecture", "technical design", "API design", "design change", "impact analysis", "设计变更", "影响分析".
+description: Create or update system design documents. Supports initial design and incremental design (impact analysis + compatibility assessment) modes. Use when users need technical architecture, API design, data models, module design, or design changes. Triggers on "system design", "architecture", "technical design", "API design", "design change", "impact analysis", "模块设计", "技术方案", "接口设计", "设计变更", "影响分析". NOT for UI/UX design (use ui-orchestrator) or requirements definition (use devdocs-requirements).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 ---
 
@@ -246,141 +246,14 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 
 ## 增量设计
 
-### 影响分析
+增量设计遵循三步流程：**变更范围分类 → 影响分析 → 兼容性评估**，然后执行变更并生成 ADR 记录。
 
-增量设计前必须进行影响分析：
+- 变更范围分为三级：仅内部实现（轻量分析）、涉及模块接口（标准分析）、涉及架构（完整分析 + ADR）
+- 影响分析需覆盖受影响的模块、接口、数据模型，并自动扫描关联文档
+- 兼容性评估判断向后兼容性，破坏性变更须标注废弃周期和迁移方案
+- 每个变更项使用统一的变更对比格式（变更前/变更后/原因/影响范围）
 
-#### 变更范围分类
-
-首先对变更进行范围分类，决定后续分析深度：
-
-| 范围 | 特征 | 分析深度 | 文档要求 |
-|------|------|----------|----------|
-| **仅内部实现** | 不影响模块接口，仅修改内部逻辑 | 轻量：确认不影响接口即可 | 无需 ADR |
-| **涉及模块接口** | 修改/新增 API 签名、参数、返回值 | 标准：完整影响分析 + 兼容性评估 | 更新 API 文档 |
-| **涉及架构** | 新增模块、改变模块间依赖、数据模型变更 | 完整：全量影响分析 + ADR | 必须 ADR 记录 |
-
-#### 受影响文档自动识别
-
-扫描变更涉及的 F-XXX/AC-XXX，自动列出需同步更新的文档：
-
-1. 从变更来源提取关联的 F-XXX、AC-XXX 编号
-2. 在以下文档中搜索这些编号的引用：
-   - `01-requirements.md`（AC 定义）
-   - `03-test-cases*.md`（测试用例引用）
-   - `04-dev-tasks*.md`（任务引用）
-3. 输出受影响文档清单 + 具体章节位置
-
-```markdown
-### 受影响文档
-
-| 文档 | 受影响章节 | 需更新内容 |
-|------|-----------|-----------|
-| 03-test-cases.md | IT-003 | 接口参数变更，需更新测试输入 |
-| 04-dev-tasks.md | T-05 | 依赖的接口签名已变更 |
-```
-
-```markdown
-## 影响分析：<变更名称>
-
-**变更来源**：F-XXX / INS-XXX / 技术改进
-**变更日期**：YYYY-MM-DD
-
-### 受影响的模块
-
-| 模块 | 影响类型 | 说明 |
-|------|----------|------|
-| UserService | 修改 | 新增方法 `resetPassword()` |
-| AuthModule | 新增 | 新增密码重置模块 |
-| EmailService | 无变化 | 复用现有邮件服务 |
-
-### 受影响的接口
-
-| 接口 | 变更类型 | 向后兼容 | 说明 |
-|------|----------|----------|------|
-| POST /api/auth/reset-password | 新增 | ✅ | 新接口 |
-| GET /api/user/:id | 修改 | ✅ | 返回值新增字段 |
-| POST /api/auth/login | 修改 | ❌ | 参数结构变更 |
-
-### 受影响的数据模型
-
-| 实体 | 变更类型 | 需要迁移 | 说明 |
-|------|----------|----------|------|
-| User | 修改 | ✅ | 新增 `resetToken` 字段 |
-| PasswordResetLog | 新增 | ✅ | 新表 |
-```
-
-#### 变更对比格式
-
-对每个受影响的接口/模块/数据模型，使用统一的变更对比格式：
-
-```markdown
-**变更项**：<接口/模块/数据模型名称>
-**变更前**：<原设计>
-**变更后**：<新设计>
-**原因**：<变更理由>
-**影响范围**：<受影响的文档/任务/测试>
-```
-
-示例：
-
-```markdown
-**变更项**：POST /api/user/:id
-**变更前**：返回 `{ id, name, email }`
-**变更后**：返回 `{ id, name, email, avatar, preferences }`
-**原因**：F-004 用户偏好功能需要返回新字段
-**影响范围**：
-- `03-test-cases.md` IT-003 需更新响应断言
-- `04-dev-tasks.md` T-05 前端需适配新字段
-- `01-requirements.md` AC-016 定义了 preferences 格式
-```
-
-### 兼容性评估
-
-| 变更类型 | 向后兼容判断 | 处理方式 |
-|----------|--------------|----------|
-| 新增接口 | ✅ 兼容 | 直接添加 |
-| 新增字段（可选） | ✅ 兼容 | 直接添加 |
-| 新增字段（必填） | ❌ 不兼容 | 需要迁移计划 |
-| 修改字段类型 | ❌ 不兼容 | 需要迁移计划 |
-| 删除字段/接口 | ❌ 不兼容 | 需要废弃周期 |
-| 修改接口参数 | ⚠️ 视情况 | 评估影响范围 |
-
-**破坏性变更处理**：
-1. 标注废弃（Deprecated）
-2. 设置废弃周期（如 2 个版本）
-3. 提供迁移指南
-4. 在变更记录中说明
-
-### 设计变更记录（ADR 格式）
-
-增量设计完成后，在设计文档末尾追加结构化变更记录：
-
-```markdown
-### ADR-001: <决策标题>
-
-- **状态**：已采纳 | 已废弃 | 已取代
-- **背景**：<为什么需要做这个决策>
-- **决策**：<选择了什么>
-- **替代方案**：<考虑过但未采用>
-- **后果**：<影响>
-- **关联**：F-XXX / INS-XXX
-```
-
-详细 ADR 模板参见 [templates/design-template.md](templates/design-template.md)
-
-### 增量设计检查清单
-
-- [ ] 已识别所有受影响的模块
-- [ ] 已识别所有受影响的接口
-- [ ] 已识别所有受影响的数据模型
-- [ ] 已评估向后兼容性
-- [ ] 破坏性变更已标注处理方式
-- [ ] 已生成变更记录
-- [ ] 新增内容已标注关联需求（F-XXX / INS-XXX）
-- [ ] 已分类变更范围（内部实现/模块接口/架构）
-- [ ] 已自动识别受影响文档并列出更新清单
-- [ ] 每个变更项使用统一的变更对比格式
+> **进入增量设计模式时，必须读取 [incremental-design.md](incremental-design.md) 获取影响分析、兼容性评估、变更对比格式和检查清单。**
 
 ## 输出文件
 

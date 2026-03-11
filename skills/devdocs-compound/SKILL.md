@@ -1,6 +1,6 @@
 ---
 name: devdocs-compound
-description: Extract patterns, lessons learned, and key decisions from completed development cycles. Writes structured pattern docs to docs/devdocs/patterns/ and updates AGENTS.md. Run after devdocs-sync to compound knowledge across sessions. Triggers on "compound", "沉淀", "经验提取", "模式提取", "lessons learned", "知识沉淀".
+description: Extract patterns, lessons learned, and key decisions from completed development cycles. Writes structured pattern docs to docs/devdocs/patterns/ and updates AGENTS.md. Run after devdocs-sync to compound knowledge across sessions. Triggers on "compound", "沉淀", "经验提取", "模式提取", "lessons learned", "知识沉淀", "复盘", "总结经验", "what did we learn". NOT for syncing docs (use devdocs-sync) or onboarding (use devdocs-onboard).
 allowed-tools: Read, Write, Glob, Grep, Edit, AskUserQuestion
 ---
 

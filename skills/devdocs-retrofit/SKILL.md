@@ -1,6 +1,6 @@
 ---
 name: devdocs-retrofit
-description: Retrofit existing projects to DevDocs workflow, or migrate old DevDocs to new standards. Use when users want to adapt existing projects, migrate documentation, standardize documents, or upgrade DevDocs version. Triggers on keywords like "retrofit", "改造", "适配", "迁移", "标准化", "逆向", "升级文档".
+description: Retrofit existing projects to DevDocs workflow, or migrate old DevDocs to new standards. Reverse-engineer code into structured documentation. Use when users want to adapt existing projects, migrate documentation, standardize documents, or upgrade DevDocs version. Triggers on "retrofit", "改造", "适配", "迁移", "标准化", "逆向", "升级文档", "existing project", "已有项目", "从代码生成文档". NOT for initializing new projects (use devdocs-pipeline) or adding features to existing DevDocs (use devdocs-feature).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, EnterPlanMode
 ---
 

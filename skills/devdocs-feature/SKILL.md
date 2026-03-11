@@ -1,6 +1,6 @@
 ---
 name: devdocs-feature
-description: Add new features to existing DevDocs projects. Use when users need to add new features, iterate on existing functionality, or mention keywords like "add feature", "new feature", "新功能", "迭代", "新增功能".
+description: Add new features to existing DevDocs projects. Orchestrates requirements → design → test-cases → dev-tasks for incremental functionality. Use when users need to add, extend, or iterate on features. Triggers on "add feature", "new feature", "新功能", "迭代", "新增功能", "追加需求", "扩展功能", "feature request", "增量功能". NOT for pipeline init (use devdocs-pipeline) or bug fixes (use devdocs-bugfix).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 ---
 

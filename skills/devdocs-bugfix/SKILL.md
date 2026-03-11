@@ -1,6 +1,6 @@
 ---
 name: devdocs-bugfix
-description: Test-first bug fixing workflow. Guide users through reproducing bugs, writing failing tests, fixing code, and committing. Use when users report bugs, need to fix issues, or mention keywords like "bug", "fix", "issue", "崩溃", "报错", "修复".
+description: Test-first bug fixing workflow. Guide users through reproducing bugs, writing failing tests, fixing code, and committing with regression protection. Use when users report bugs or issues. Triggers on "bug", "fix", "issue", "崩溃", "报错", "修复", "出错了", "不工作", "broken", "regression", "error", "异常". NOT for new features (use devdocs-feature) or insight-driven improvements (use devdocs-insights).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 ---
 

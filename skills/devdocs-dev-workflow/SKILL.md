@@ -1,6 +1,6 @@
 ---
 name: devdocs-dev-workflow
-description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and --headless unattended mode (无人值守). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "--review", "--headless", "无人值守".
+description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and --headless unattended mode (无人值守). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "开始写代码", "开始开发", "--review", "--headless", "无人值守". NOT for task breakdown (use devdocs-dev-tasks) or bug fixes (use devdocs-bugfix).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, Task
 ---
 
@@ -317,7 +317,6 @@ dev-workflow 调用以下技能时，**必须通过 Task tool 启动子 Agent**�
 ## 对抗式验证（可选）
 
 > 以不同角色视角审查代码，模拟 "开发 → 审查 → 测试" 的多人协作模式。
-> 核心逻辑任务（🔴）自动触发，其他层级通过 `--review` 手动触发。
 
 ### 触发条件
 
@@ -330,45 +329,11 @@ dev-workflow 调用以下技能时，**必须通过 Task tool 启动子 Agent**�
 | 🟢 UI 层 | 不触发 | `--review` 启用 |
 | ⚪ 基础设施 | 不触发 | `--review` 启用 |
 
-### 验证流程
+### 验证流程概要
 
-```text
-基础完成检查（始终执行）
-        │
-        ├── AC 全部满足 ✅
-        ├── 测试全部通过 ✅
-        ├── 代码标注完整 ✅
-        │
-        ▼ （对抗式验证触发时）
-Phase 1: 代码质量审查 🔍
-        ├── 切换到 /code-quality 视角
-        ├── MTE 原则检查（函数长度/参数/嵌套/职责）
-        ├── 依赖方向检查
-        ├── 安全检查
-        └── 输出: 问题列表（Blocker/Suggestion）
-        │
-        ▼
-Phase 2: 测试完备性审查 🧪
-        ├── 切换到 /testing-guide 视角
-        ├── 断言质量检查（禁止弱断言）
-        ├── 覆盖率检查（行/分支 ≥80%）
-        ├── 需求追溯检查（AC 全覆盖）
-        ├── [可选] 代码分支覆盖分析
-        └── 输出: 问题列表（Blocker/Suggestion）
-        │
-        ▼
-Phase 3: 综合审查报告 📋
-        ├── 汇总所有问题
-        ├── 🚫 Blocker → 必须修复后重新验证
-        └── 💡 Suggestion → 询问用户是否修复
-```
+基础完成检查（AC + 测试 + 标注）→ Phase 1: 代码质量审查（/code-quality 视角）→ Phase 2: 测试完备性审查（/testing-guide 视角）→ Phase 3: 综合报告（Blocker 必须修复 / Suggestion 可跳过）
 
-### 审查结果分级
-
-| 级别 | 标记 | 处理 |
-|------|------|------|
-| 🚫 Blocker | 必须修复 | 阻止提交，修复后重新验证 |
-| 💡 Suggestion | 建议修复 | 询问用户，可选择忽略（`--headless` 下自动跳过，`--fix-suggestions` 时尝试修复） |
+> **执行对抗式验证时，必须读取 [verification-flow.md](verification-flow.md) 获取 AC↔diff 交叉验证规则、发现数量下限、发现分类标准和 --headless 下 Blocker/Suggestion 处理细则。**
 
 ### 对抗式验证约束
 
@@ -377,10 +342,6 @@ Phase 3: 综合审查报告 📋
 - [ ] **审查结果必须分级（Blocker/Suggestion）**
 - [ ] 核心逻辑任务（🔴）默认触发
 - [ ] 修复 Blocker 后必须重新运行验证
-
-> 详见 [verification-flow.md](verification-flow.md)
-
-> **强化内容**：声称 vs 实际验证（AC↔git diff 交叉验证）、最低 3 发现门槛、三种解决路径分类（🔧自动修复/📋行动项/💬详细解释）。
 
 ### 依赖解析约束
 

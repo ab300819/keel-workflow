@@ -1,6 +1,6 @@
 ---
 name: devdocs-insights
-description: Collect improvement insights from UI/UX reviews, document research, or external references, convert confirmed items into development requirements. Use when users have optimization suggestions, research findings, or want to improve based on external references. Triggers on keywords like "insights", "improvements", "optimize", "review findings", "research", "借鉴", "优化建议", "审查结果", "调研".
+description: Collect improvement insights from UI/UX reviews, document research, or external references, convert confirmed items into development requirements. Use when users have optimization suggestions, research findings, competitor analysis, or want to improve based on external references. Triggers on "insights", "improvements", "optimize", "review findings", "research", "借鉴", "优化建议", "审查结果", "调研", "竞品", "可以借鉴". NOT for bug fixes (use devdocs-bugfix) or adding new features directly (use devdocs-feature).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 ---
 
@@ -168,84 +168,14 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 
 ## 来源类型处理
 
-### 🎨 UI/UX 审查
+| 来源 | 输入 | 关注点 |
+|------|------|--------|
+| 🎨 UI/UX 审查 | 截图/原型/审查结果 | 可用性、视觉一致性、无障碍性 |
+| 📄 文档调研 | 技术文档/设计方案 | 架构模式、实现方案、性能优化 |
+| 🔍 外部参考 | 竞品/开源项目/行业报告 | 竞品优势、行业模式、用户期望 |
+| 💡 内部反馈 | 用户反馈/团队建议/监控数据 | 用户痛点、团队共识、性能瓶颈 |
 
-```markdown
-**输入**：
-- 用户提供截图/原型
-- 用户描述交互问题
-- 运行 /ui-orchestrator 审查结果
-
-**关注点**：
-- 可用性问题
-- 视觉一致性
-- 无障碍性
-- 响应式适配
-- 交互流畅度
-
-**示例建议**：
-- INS-001: 按钮对比度不足，影响可读性
-- INS-002: 表单缺少加载状态反馈
-- INS-003: 移动端导航菜单难以点击
-```
-
-### 📄 文档调研
-
-```markdown
-**输入**：
-- 技术文档链接
-- 设计方案文档
-- 最佳实践指南
-
-**关注点**：
-- 可借鉴的架构模式
-- 更优的实现方案
-- 性能优化技术
-- 安全加固措施
-
-**示例建议**：
-- INS-004: 采用 React Query 替代手动状态管理
-- INS-005: 引入乐观更新提升用户体验
-- INS-006: 使用 Zod 进行运行时类型校验
-```
-
-### 🔍 外部参考
-
-```markdown
-**输入**：
-- 竞品链接/截图
-- 开源项目参考
-- 行业报告
-
-**关注点**：
-- 竞品优势功能
-- 行业通用模式
-- 用户期望对齐
-
-**示例建议**：
-- INS-007: 参考 Notion 的拖拽排序交互
-- INS-008: 借鉴 Linear 的快捷键系统
-- INS-009: 采用类似 Figma 的实时协作模式
-```
-
-### 💡 内部反馈
-
-```markdown
-**输入**：
-- 用户反馈记录
-- 团队讨论结果
-- 性能监控数据
-
-**关注点**：
-- 高频用户痛点
-- 团队共识问题
-- 性能瓶颈
-
-**示例建议**：
-- INS-010: 列表加载慢，需要分页或虚拟滚动
-- INS-011: 搜索功能缺少高级筛选
-- INS-012: 导出功能需要支持更多格式
-```
+> **收集建议时，必须读取 [source-types.md](source-types.md) 获取各来源类型的输入方式、关注点和示例。**
 
 ## 用户确认流程
 
@@ -363,58 +293,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 
 ## 使用示例
 
-### 示例一：UI/UX 审查后
-
-```
-用户: 我刚审查了登录页面，发现几个问题想优化
-
-Agent: 好的，让我帮你收集这些优化建议。请描述发现的问题：
-
-用户:
-1. 密码输入框没有显示/隐藏切换
-2. 忘记密码链接不够明显
-3. 第三方登录按钮风格不统一
-
-Agent: 已整理以下建议：
-
-| 编号 | 标题 | 优先级 | 状态 |
-|------|------|--------|------|
-| INS-001 | 添加密码可见性切换 | P1 | ⏳ |
-| INS-002 | 突出忘记密码链接 | P2 | ⏳ |
-| INS-003 | 统一第三方登录按钮风格 | P2 | ⏳ |
-
-请确认要转化为需求的建议（输入编号，如 1,2,3 或 "全部"）：
-
-用户: 1,3
-
-Agent:
-✅ 已确认 INS-001, INS-003
-已追加到 01-requirements.md：
-- F-015: 密码可见性切换 [优化] (来源: INS-001)
-- F-016: 统一第三方登录按钮 [优化] (来源: INS-003)
-
-是否继续运行 /devdocs-dev-tasks 拆分开发任务？
-```
-
-### 示例二：文档调研后
-
-```
-用户: 我看了这篇文章 https://example.com/react-patterns，想借鉴一些模式
-
-Agent: 让我分析这篇文章并提取可借鉴的点...
-
-[WebFetch 获取内容]
-
-基于文章内容，整理以下借鉴建议：
-
-| 编号 | 标题 | 参考章节 | 优先级 |
-|------|------|----------|--------|
-| INS-001 | 采用 Compound Components 模式 | 第3节 | P1 |
-| INS-002 | 使用 Render Props 替代 HOC | 第5节 | P2 |
-| INS-003 | 引入 Custom Hooks 复用逻辑 | 第7节 | P1 |
-
-请确认要采纳的建议：
-```
+> 详见 [examples.md](examples.md)
 
 ## 子 Agent 摘要格式
 

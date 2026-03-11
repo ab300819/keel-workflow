@@ -1,6 +1,6 @@
 ---
 name: devdocs-pipeline
-description: Top-level orchestrator for DevDocs workflow. Provides 5 entry points (init/feature/bugfix/verify/close) that route to appropriate skills automatically. Use when users are unsure which skill to use, or want guided workflow. Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个".
+description: Top-level orchestrator for DevDocs workflow. Provides 5 entry points (init/feature/bugfix/verify/close) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Task
 user-invocable: true
 ---
