@@ -2,114 +2,40 @@
 
 # AI Agent Skills
 
-## Project Overview
+## 技术栈
 
-This is an **AI Agent Skills template collection** — a set of reusable SKILL.md files that extend AI coding agents' capabilities for software development workflows. This is NOT a traditional codebase - it's a specification library of Markdown + YAML skill definitions. There are **no build, test, or lint commands** to run.
+- 规格库：Markdown + YAML skill 定义（非传统代码库）
+- 无 build/test/lint 命令
+- 24 个 skill，核心为 DevDocs 工作流
 
-## Language Rules
+## 架构决策
 
-- Accept questions in both Chinese and English
-- Always respond in Chinese
-- Generate all documents in Chinese
+- 每个 skill 独立目录 `skills/<name>/SKILL.md`，通过 description 字段自动发现
+- 详细模板放 `templates/` 子目录，SKILL.md 控制在 500 行以内
+- DevDocs 编排层（pipeline/feature/bugfix）通过 Task tool 调度原子 skill 作为子代理
 
-## Numbering System
+## 领域术语
 
-DevDocs workflow uses a unified numbering system for traceability:
+| 术语 | 含义 |
+|------|------|
+| Skill | 可复用的 SKILL.md 定义文件，扩展 AI agent 能力 |
+| DevDocs | 文档驱动开发工作流（需求→设计→测试→任务→开发→验证→同步） |
+| 编号体系 | F/US/AC/UT/IT/E2E/INS/BUG/T/BCA，链路：F→US→AC→测试 |
+| 质量锚 | 批量生成时首批输出作为后续批次的质量基准 |
 
-| Type | Prefix | Example | Description |
-|------|--------|---------|-------------|
-| Feature | F | F-001 | User-perceivable function |
-| User Story | US | US-001 | User scenario |
-| Acceptance Criteria | AC | AC-001 | Measurable completion condition |
-| Unit Test | UT | UT-001 | Verify internal logic |
-| Integration Test | IT | IT-001 | Verify component collaboration |
-| E2E Test | E2E | E2E-001 | Verify user scenario |
-| Insight | INS | INS-001 | Improvement suggestion from review/research |
-| Bug | BUG | BUG-001 | Bug fix record |
-| Task | T | T-01 | Development task (2-digit exception) |
-| Branch Coverage Test | BCA | BCA-001 | Code branch coverage supplement test |
+## 命令
 
-**Traceability**: `F -> US -> AC -> (UT/IT/E2E)` and `INS -> F` and `BCA` (branch coverage supplement)
+- 无 build/test/lint 命令
+- 发现 skill：读取 `skills/*/SKILL.md` 的 description 字段
 
-## Skill Structure
+## 约定
 
-Each skill lives in `skills/<skill-name>/` with a `SKILL.md` file:
+- 提交：Conventional Commits — `feat/fix/refactor/docs(scope): description`
+- 语言：接受中英文提问，统一中文回复，文档用中文
+- SKILL.md 不超过 500 行
 
-```yaml
----
-name: skill-name
-description: What the skill does (used by agents for auto-discovery)
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
-user-invocable: true  # (optional, defaults to true)
----
+## 详细文档
 
-# Skill instructions in Markdown...
-```
-
-**Discovery**: Read `skills/*/SKILL.md` description fields to find available skills.
-
-**Templates**: Each skill's output document format is defined by templates in its `templates/` subdirectory.
-
-## Context Management Pattern
-
-Skills that generate repetitive structured content across multiple batches are prone to attention decay — later batches may have less detail or completeness than earlier ones. These skills MUST implement three elements:
-
-1. **Batch Unit** — Natural boundary for splitting work (e.g., feature point F-XXX, test layer UT/IT/E2E)
-2. **Quality Anchor** — First batch output serves as the quality reference; for data-driven skills, use completeness verification instead (reported count == actual count)
-3. **Consistency Self-Check** — After each batch, compare against the anchor on key dimensions specific to that skill
-
-## DevDocs Skill Architecture
-
-### Orchestration Layer (user-facing entry points)
-
-| Skill | Command | Purpose |
-|-------|---------|---------|
-| devdocs-pipeline | `/devdocs-pipeline` | Top-level orchestrator — 5 entry points (init/feature/bugfix/verify/close) |
-| devdocs-feature | `/devdocs-feature` | Add new features — routes to atomic skills, auto-chains to dev-workflow |
-| devdocs-bugfix | `/devdocs-bugfix` | Test-first bug fixing |
-
-### Atomic Skills (called by orchestrators or directly)
-
-| Skill | Command | Purpose |
-|-------|---------|---------|
-| devdocs-requirements | `/devdocs-requirements` | Expand requirements into F/US/AC |
-| devdocs-system-design | `/devdocs-system-design` | Create/update system design (searches patterns/) |
-| devdocs-test-cases | `/devdocs-test-cases` | Design test cases (UT/IT/E2E) |
-| devdocs-dev-tasks | `/devdocs-dev-tasks` | Break down into executable tasks |
-| devdocs-dev-workflow | `/devdocs-dev-workflow` | Execute development (skeleton-first + layered TDD) |
-| devdocs-verify | `/devdocs-verify` | Unified verification: --docs / --impl / --ui / --readiness |
-| devdocs-sync | `/devdocs-sync` | Sync docs with implementation (trace+audit auto-serial) |
-| devdocs-insights | `/devdocs-insights` | Collect improvement insights → requirements |
-| devdocs-test-run | `/devdocs-test-run` | Execute test suites |
-| devdocs-onboard | `/devdocs-onboard` | Generate project context for handover |
-| devdocs-compound | `/devdocs-compound` | Extract experience patterns (recommended after sync) |
-| devdocs-retrofit | `/devdocs-retrofit` | Migrate existing projects to DevDocs |
-
-### Key Collaboration Chains
-
-- **Init**: pipeline → requirements → system-design → test-cases → dev-tasks → verify --readiness → dev-workflow → verify → sync
-- **Feature**: pipeline → feature(→requirements→design→tests→tasks→readiness→dev-workflow) → verify → sync
-- **Bugfix**: pipeline → bugfix(→dev-tasks→dev-workflow) → verify → sync
-- **Close**: pipeline → sync → compound → onboard --update
-
-### Sub-Agent Architecture
-
-- Pipeline/Feature/Bugfix orchestrate via Task tool — each stage skill runs as independent sub-agent
-- Sub-agents return structured YAML summaries (new IDs, status, blockers, output paths)
-- Cross-stage data passes through filesystem (devdocs docs = source of truth)
-- Main agent retains only: pipeline definition + stage summaries (~10K tokens)
-
-## Pattern Library
-
-DevDocs 工作流通过 `/devdocs-compound` 沉淀的经验模式存放在 `docs/devdocs/patterns/` 目录下。
-
-- 每个模式文档遵循统一结构（问题背景、解决方式、适用条件、禁忌条件）
-- 模式文档由 `/devdocs-compound` 在开发周期结束后自动生成
-- Agent 在设计和开发阶段应检索此目录，复用已有经验
-- 模式模板：`skills/devdocs-compound/templates/pattern.md`
-
-## Conventions
-
-- Commit format: Conventional Commits — `feat/fix/refactor/docs(scope): description`
-- Keep SKILL.md under 500 lines — use `templates/` for detailed reference material
-- Description field is critical for agent auto-discovery — must be accurate
+- Skill 结构规范：各 `skills/<name>/SKILL.md`
+- DevDocs 完整架构：`skills/devdocs-pipeline/SKILL.md`
+- 经验模式库：`docs/devdocs/patterns/`（由 `/devdocs-compound` 生成）
