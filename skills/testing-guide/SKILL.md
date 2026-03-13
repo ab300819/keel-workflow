@@ -31,6 +31,8 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 测试依据来自需求，不是来自代码。
 ```
 
+> **⚠️ TDD 红阶段原则**：断言必须来自 03-test-\*.md 中对应 AC 的测试用例，禁止从实现代码反推测试。BCA（分支覆盖分析）仅用于防御性逻辑补充，不替代需求驱动测试。
+
 ### 测试质量金字塔
 
 ```
@@ -267,6 +269,7 @@ test('createUser 应该抛出错误当 email 为 null', () => {
 - [ ] **补充测试使用 BCA-XXX 编号**（不占用 UT/IT/E2E 编号空间）
 - [ ] **补充测试同样遵循断言质量约束**（禁止弱断言）
 - [ ] 分支分析不改变需求驱动测试的优先级
+- [ ] **业务逻辑分支应回溯为 AC 对应的正式测试（UT/IT/E2E），不保留为 BCA 编号**
 
 > 详细分析流程和示例见 [templates/branch-coverage-analysis.md](templates/branch-coverage-analysis.md)
 

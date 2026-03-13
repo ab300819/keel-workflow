@@ -11,7 +11,7 @@
 | S1 | 读取任务定义 | `task_loaded` |
 | S2 | 生成接口骨架 | `skeleton_interface` |
 | S3 | 生成测试骨架 | `skeleton_test` |
-| S4 | 红：编写测试断言 | `red_assertions` |
+| S4 | 红：编写测试断言（来自 AC） | `red_assertions` |
 | S5 | 绿：实现代码 | `green_impl` |
 | S6 | 重构优化 | `refactored` |
 | S7 | 验证 AC 满足度 | `ac_verified` |
@@ -100,11 +100,12 @@
    │
    ▼
 3. 生成测试骨架（Step 2）                           ← ■/■/■/□
-   ├── 测试结构 + @verifies/@testcase 标注
+   ├── 测试结构和预期行为来自 03-test-*.md
+   ├── @verifies/@testcase 标注
    └── 测试体: test.skip() 或 test.todo()
    │
    ▼
-4. 编写测试断言（移除 skip）                        ← ■/□/□/○
+4. 编写测试断言（移除 skip，断言来自 AC 对应的测试用例） ← ■/□/□/○
    │
    ▼
 5. 运行测试 → 确认失败（红）                        ← ■/□/○/○
