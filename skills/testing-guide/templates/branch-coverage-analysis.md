@@ -23,6 +23,8 @@ AC 驱动测试   → 验证"系统应该做什么"（业务正确性）
 
 三者互补，不是替代关系。
 
+> **⚠️ 回溯规则**：BCA 分析发现的**业务逻辑分支**应回溯到对应 AC，转为正式测试（UT/IT/E2E 编号）；仅**防御性逻辑**（null 检查、类型保护、异常兜底等）保留 BCA 编号。断言必须来自 03-test-\*.md 中对应 AC 的测试用例，禁止从实现代码反推测试。业务分支回溯时，应先在需求/测试文档中补齐 AC 和测试编号，再编写正式测试。
+
 ---
 
 ## 分支类型清单
@@ -123,8 +125,8 @@ async function processOrder(order: Order): Promise<OrderResult> {
 | B1 | order 为 null/undefined | 早返回 | ❌ | ✅ |
 | B2 | order.items 为空 | 早返回 | ❌ | ✅ |
 | B3 | total > 1000（高价值） | 条件 | ✅ AC-003 | ❌ |
-| B4 | 500 < total ≤ 1000（中价值） | 条件 | ❌ | ✅ |
-| B5 | total ≤ 500（无折扣，隐式） | 隐式 | ❌ | ✅ |
+| B4 | 500 < total ≤ 1000（中价值） | 条件 | ❌ | → 回溯 AC（业务逻辑，应归入 AC） |
+| B5 | total ≤ 500（无折扣，隐式） | 隐式 | ❌ | → 回溯 AC（业务逻辑，应归入 AC） |
 | B6 | saveOrder 成功 | 正常路径 | ✅ AC-001 | ❌ |
 | B7 | saveOrder 抛 DatabaseError | 异常 | ❌ | ✅ |
 | B8 | saveOrder 抛其他 Error | 异常 | ❌ | ✅ |
@@ -136,8 +138,8 @@ async function processOrder(order: Order): Promise<OrderResult> {
  * @covers-branch processOrder:null-order-guard
  * @testcase BCA-001
  */
-test('processOrder 应该抛出错误当 order 为 null', () => {
-  expect(() => processOrder(null)).rejects.toThrow('Order is required');
+test('processOrder 应该抛出错误当 order 为 null', async () => {
+  await expect(processOrder(null)).rejects.toThrow('Order is required');
 });
 
 /**
@@ -151,9 +153,12 @@ test('processOrder 应该返回 empty 状态当订单无商品', async () => {
   expect(result.total).toBe(0);
 });
 
+// ⚠️ 以下 AC-???/UT-??? 为占位符，不可直接落盘；须先在 03-test-*.md 分配正式编号后替换
+
 /**
- * @covers-branch processOrder:medium-value-discount
- * @testcase BCA-003
+ * ↓ BCA 发现业务逻辑分支：需先在 03-test-*.md 补齐 AC 和测试编号，再写正式测试
+ * @verifies AC-??? - 中价值订单折扣（待需求/测试文档补齐）
+ * @testcase UT-???
  */
 test('processOrder 应该应用 5% 折扣当总额在 500-1000 之间', async () => {
   const order = { items: [{ price: 600, quantity: 1 }], cancelled: false };
@@ -162,8 +167,9 @@ test('processOrder 应该应用 5% 折扣当总额在 500-1000 之间', async ()
 });
 
 /**
- * @covers-branch processOrder:no-discount-path
- * @testcase BCA-004
+ * ↓ BCA 发现业务逻辑分支：需先在 03-test-*.md 补齐 AC 和测试编号，再写正式测试
+ * @verifies AC-??? - 无折扣路径（待需求/测试文档补齐）
+ * @testcase UT-???
  */
 test('processOrder 应该无折扣当总额 ≤ 500', async () => {
   const order = { items: [{ price: 100, quantity: 1 }], cancelled: false };
@@ -173,7 +179,7 @@ test('processOrder 应该无折扣当总额 ≤ 500', async () => {
 
 /**
  * @covers-branch processOrder:database-error-handling
- * @testcase BCA-005
+ * @testcase BCA-003
  */
 test('processOrder 应该抛出 OrderProcessingError 当数据库错误', async () => {
   mockSaveOrder.mockRejectedValue(new DatabaseError('connection failed'));
@@ -183,7 +189,7 @@ test('processOrder 应该抛出 OrderProcessingError 当数据库错误', async 
 
 /**
  * @covers-branch processOrder:unknown-error-rethrow
- * @testcase BCA-006
+ * @testcase BCA-004
  */
 test('processOrder 应该重抛未知错误', async () => {
   const unknownError = new Error('unknown');
@@ -210,15 +216,17 @@ test('processOrder 应该重抛未知错误', async () => {
   需补充:        6 (75%)
   补充后覆盖率:   100%
 
-未覆盖分支:
+未覆盖分支（防御性逻辑 → BCA）:
   #B1 null-order-guard        → BCA-001
   #B2 empty-items-guard       → BCA-002
-  #B4 medium-value-discount   → BCA-003
-  #B5 no-discount-path        → BCA-004
-  #B7 database-error-handling → BCA-005
-  #B8 unknown-error-rethrow   → BCA-006
+  #B7 database-error-handling → BCA-003
+  #B8 unknown-error-rethrow   → BCA-004
 
-生成补充测试: 6 个
+回溯到 AC（业务逻辑 → 先补齐需求文档再写正式测试）:
+  #B4 medium-value-discount   → 待补齐 AC/UT（需更新 03-test-*.md）
+  #B5 no-discount-path        → 待补齐 AC/UT（需更新 03-test-*.md）
+
+生成补充测试: 4 个 BCA + 2 个待回溯（需补齐 AC）
 ```
 
 ---
