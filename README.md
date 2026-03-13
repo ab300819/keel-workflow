@@ -375,8 +375,8 @@ DevDocs 流程中各 Skill 的协作关系：
 
 ```yaml
 name: devdocs-requirements
-description: Expand user requirements into detailed DevDocs documents
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
+description: Expand user requirements into detailed DevDocs documents with features (F-XXX), user stories (US-XXX), and acceptance criteria (AC-XXX). Supports initial, incremental, and context (--context) modes.
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 ```
 
 ## 触发条件
@@ -392,17 +392,21 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 |------|----------|------|
 | **初始模式** | 无 `01-requirements.md` | 从零创建需求文档 |
 | **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加需求 |
+| **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
 
 ```bash
 /devdocs-requirements              # 自动检测模式
 /devdocs-requirements --incremental # 强制增量模式
+/devdocs-requirements --context     # 背景信息模式
 ```
 
 ## 工作流程
 
-**初始模式**：理解需求 → 探索代码库 → 起草需求 → 用户确认
+**初始模式**：理解需求 → 探索代码库 → Plan 模式审批 → 起草需求 → 用户确认
 
 **增量模式**：扫描编号 → 理解新需求 → 追加 F/US/AC → 更新矩阵 → 返回新增编号
+
+**背景信息模式**：读取现有文档 → 收集背景信息（引导/文件/URL）→ 整合到"背景与目标"章节
 
 ## 输出文件
 
@@ -467,7 +471,11 @@ docs/devdocs/
 
 ## 下一步
 
-完成后建议运行 `/devdocs-system-design`
+| 完成模式 | 建议下一步 |
+|----------|------------|
+| 初始模式 | `/devdocs-system-design` 进入系统设计 |
+| 增量模式 | `/devdocs-system-design` 增量设计或 `/devdocs-test-cases` 补充测试 |
+| 背景信息模式 | 继续 `/devdocs-requirements` 定义功能点，或 `/devdocs-system-design` 设计 |
 
 ---
 
@@ -479,8 +487,8 @@ docs/devdocs/
 
 ```yaml
 name: devdocs-system-design
-description: Create or update system design documents (supports incremental design)
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
+description: Create or update system design documents. Supports initial design and incremental design (impact analysis + compatibility assessment) modes.
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 ```
 
 ## 设计模式
@@ -1692,7 +1700,7 @@ docs/devdocs/
 
 ```yaml
 name: devdocs-insights
-description: Collect improvement insights from UI/UX reviews, document research, or external references
+description: Collect improvement insights from UI/UX reviews, document research, or external references, convert confirmed items into development requirements.
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 ```
 
@@ -1795,8 +1803,8 @@ docs/devdocs/
 
 ```yaml
 name: devdocs-dev-workflow
-description: Execute development tasks with skeleton-first approach and layered TDD
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
+description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution, dependency resolution, breakpoint resume, and --headless unattended mode.
+allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, Task
 ```
 
 ## 触发条件
@@ -1904,12 +1912,19 @@ allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 │   ├── devdocs-dev-workflow/
 │   ├── devdocs-feature/
 │   ├── devdocs-insights/
+│   │   ├── SKILL.md
+│   │   ├── source-types.md                # 来源类型处理详情
+│   │   └── examples.md                    # 使用示例
 │   ├── devdocs-onboard/
-│   ├── devdocs-pipeline/                  # 新增：顶层编排器
+│   ├── devdocs-pipeline/                  # 顶层编排器
 │   ├── devdocs-requirements/
+│   │   ├── SKILL.md
+│   │   └── context-mode.md                # 背景信息模式详情
 │   ├── devdocs-retrofit/
 │   ├── devdocs-sync/
 │   ├── devdocs-system-design/
+│   │   ├── SKILL.md
+│   │   └── incremental-design.md          # 增量设计详情
 │   ├── devdocs-test-cases/
 │   ├── devdocs-test-run/
 │   ├── devdocs-verify/                    # 新增：统一验证（替代 review + alignment + ui-alignment）
