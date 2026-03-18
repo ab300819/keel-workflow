@@ -68,13 +68,13 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 4. 用户审批 Plan → 确认拆解方向或调整
    │
    ▼
-5. 退出 Plan 模式 → 识别功能点 (F-XXX)
+5. 退出 Plan 模式 → 生成需求文档：识别功能点 (F-XXX)
    │
    ▼
-6. 编写用户故事 (US-XXX)
+6. 文档编写：用户故事 (US-XXX)
    │
    ▼
-7. 定义验收标准 (AC-XXX)
+7. 文档编写：验收标准 (AC-XXX)
    │
    ▼
 8. 生成追溯矩阵
@@ -311,6 +311,12 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 > **进入 --context 模式时，必须读取 [context-mode.md](context-mode.md) 获取信息收集引导、输入方式和文档结构模板。**
 
 ## 约束
+
+### 阶段边界约束（最高优先级）
+- [ ] **本 Skill 仅产出文档，严禁编写或生成任何实现代码（源代码、脚本、配置变更）**
+- [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
+- [ ] 退出 Plan 模式后，执行文档编写（非代码实现）
+- [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
 
 ### 功能点约束
 - [ ] 每个功能点必须有唯一编号 (F-XXX)

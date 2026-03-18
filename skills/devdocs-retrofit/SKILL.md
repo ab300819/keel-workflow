@@ -42,12 +42,12 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, EnterPlanMode
 4. 用户审批 Plan → 确认策略或调整
    │
    ▼
-5. 退出 Plan 模式 → 执行改造
+5. 退出 Plan 模式 → 生成/更新 docs/devdocs/ 改造文档
    │
    ├── 版本迁移流程          新项目改造流程
    │   ├── 规范检查            ├── 自动识别文档
    │   ├── 生成差异清单        ├── 代码逆向推导（可选）
-   │   └── 执行迁移            └── 生成 DevDocs 文档
+   │   └── 更新迁移文档        └── 生成 DevDocs 文档
    │
    ▼
 6. 生成改造报告
@@ -57,7 +57,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, EnterPlanMode
 
 ## Plan 模式规范
 
-扫描项目结构和检测状态后，**必须使用 EnterPlanMode 呈现改造策略**，等用户审批后再执行。
+扫描项目结构和检测状态后，**必须使用 EnterPlanMode 呈现改造策略**，等用户审批后再生成/更新文档。
 
 ### Plan 必须包含
 
@@ -173,14 +173,14 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, EnterPlanMode
 
 ### 迁移选项
 
-1. **完整迁移**（推荐）- 自动执行所有迁移动作
-2. **选择性迁移** - 选择要执行的迁移项
-3. **仅生成报告** - 不执行迁移，仅输出差异报告
+1. **完整迁移**（推荐）- 自动完成所有文档迁移
+2. **选择性迁移** - 选择要迁移的文档项
+3. **仅生成报告** - 不迁移文档，仅输出差异报告
 
 请选择迁移方式。
 ```
 
-### Step M4: 执行迁移
+### Step M4: 迁移文档
 
 #### 编号迁移
 
@@ -368,11 +368,16 @@ docs/devdocs/
 
 ## 约束
 
+### 阶段边界约束（最高优先级）
+- [ ] **本 Skill 仅产出/更新 DevDocs 文档，严禁编写或生成任何实现代码**
+- [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
+- [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
+
 ### Plan 模式约束
 
 - [ ] **扫描项目 + 检测状态后，必须进入 Plan 模式**
 - [ ] **Plan 必须包含改造策略和预估产出（新项目）或迁移动作清单（版本迁移）**
-- [ ] **用户审批 Plan 后才能开始改造执行**
+- [ ] **用户审批 Plan 后才能开始文档改造**
 - [ ] 用户要求调整时，更新 Plan 后重新审批
 
 ### 检测约束

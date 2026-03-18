@@ -99,6 +99,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 
 ### 轻量模式约束
 
+- **Step 1-4 为文档阶段，仅产出 `docs/devdocs/` 下的 Markdown 文档，不编写实现代码；需要编码时必须通过 Step 6 衔接 `/devdocs-dev-workflow`**
 - 不新建 F-XXX（功能点），仅追加 AC 到现有功能
 - 不更新 02-system-design（无架构变更）
 - 不更新 03-test-cases（追加任务中直接内联测试用例编号和验收标准；
@@ -333,7 +334,7 @@ docs/devdocs/
 
 **默认行为**：是（继续执行）。用户选择"否"时，输出任务编号范围供后续手动调用。
 
-> 轻量模式同样支持 Step 6，直接衔接 1-3 个任务的开发。
+> 轻量模式同样支持 Step 6，通过委托 `/devdocs-dev-workflow` 衔接 1-3 个任务的开发。轻量模式自身不编写实现代码。
 
 ## 编排规范（子 Agent 调度）
 
@@ -355,7 +356,7 @@ docs/devdocs/
 3. **异常回退**：子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项询问用户
 4. **不自行排障**：编排层不读取子技能的完整输出文档来尝试修复
 
-> 轻量模式因任务简单（1-3 个任务），直接在 feature 上下文内执行，不启动子 Agent。
+> 轻量模式因任务简单（1-3 个任务），**文档步骤**（Step 1-4）直接在 feature 上下文内执行，不启动子 Agent。Step 6 开发衔接仍需委托 `/devdocs-dev-workflow`。
 
 ## Skill 协作
 
@@ -397,6 +398,8 @@ docs/devdocs/
 - [ ] 步骤间传递的信息仅限：新增编号列表
 - [ ] **完整模式 Step 1-4、Step 4.5、Step 6 必须通过 Task tool 启动子 Agent**
 - [ ] **步骤间只传递 YAML 摘要 + 编号列表，不传递文档全文**
+- [ ] **Step 0-5 为文档阶段，严禁产出实现代码**
+- [ ] **编码仅在 Step 6（dev-workflow 委托）中发生**
 
 ### 轻量模式约束
 
@@ -404,6 +407,9 @@ docs/devdocs/
 - [ ] **不新建 F-XXX，仅追加 AC 到现有功能**
 - [ ] 任务数量限制 1-3 个
 - [ ] 检测到架构影响时必须提示用户
+- [ ] **轻量模式 Step 1-4 为文档阶段，严禁编写实现代码**
+- [ ] Write 操作仅限 `docs/devdocs/` 下的 Markdown 文档
+- [ ] 需要编码时必须衔接 `/devdocs-dev-workflow`
 
 ### 影响分析约束
 

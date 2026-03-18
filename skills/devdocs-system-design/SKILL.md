@@ -89,7 +89,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 5. 用户审批 Plan → 确认方向或调整
       │
       ▼
-6. 退出 Plan 模式 → 生成系统设计文档
+6. 退出 Plan 模式 → 生成 docs/devdocs/02-system-design.md 文档
       │
       ▼
 7. 验证覆盖 → 检查所有 F-XXX 都有对应模块/接口
@@ -128,10 +128,10 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 6. 用户审批 Plan → 确认方案或调整
       │
       ▼
-7. 退出 Plan 模式 → 执行设计变更
-      ├── 新增模块/接口/数据模型
-      ├── 修改现有设计
-      └── 标注变更版本
+7. 退出 Plan 模式 → 更新 docs/devdocs/02-system-design*.md 文档
+      ├── 文档中新增模块/接口/数据模型章节
+      ├── 更新现有设计文档内容
+      └── 在文档中标注变更版本
       │
       ▼
 8. 生成变更记录 → 追加到设计文档
@@ -246,7 +246,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 
 ## 增量设计
 
-增量设计遵循三步流程：**变更范围分类 → 影响分析 → 兼容性评估**，然后执行变更并生成 ADR 记录。
+增量设计遵循三步流程：**变更范围分类 → 影响分析 → 兼容性评估**，然后更新设计文档并生成 ADR 记录。
 
 - 变更范围分为三级：仅内部实现（轻量分析）、涉及模块接口（标准分析）、涉及架构（完整分析 + ADR）
 - 影响分析需覆盖受影响的模块、接口、数据模型，并自动扫描关联文档
@@ -337,6 +337,13 @@ docs/devdocs/
 - **日志设计**：级别、关键日志点、格式、追溯 ID → [templates/log-design-guide.md](templates/log-design-guide.md)
 
 ## 约束
+
+### 阶段边界约束（最高优先级）
+- [ ] **本 Skill 仅产出文档，严禁编写或生成任何实现代码（源代码、脚本、配置变更）**
+- [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
+- [ ] "核心接口"章节仅定义签名，严禁包含实现逻辑
+- [ ] 退出 Plan 模式后，更新设计文档（非代码实现）
+- [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
 
 ### 基础约束
 

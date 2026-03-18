@@ -255,6 +255,24 @@ pipeline（编排层）
 
 ## 约束
 
+### 阶段边界约束（全局规则）
+
+DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
+
+| 阶段 | 技能 | 产出类型 | 允许编码 |
+|------|------|----------|----------|
+| 需求 | devdocs-requirements | 文档 | ❌ |
+| 设计 | devdocs-system-design | 文档 | ❌ |
+| 测试设计 | devdocs-test-cases | 文档 | ❌ |
+| 任务拆分 | devdocs-dev-tasks | 文档 | ❌ |
+| 项目改造 | devdocs-retrofit | 文档 | ❌ |
+| **开发执行** | **devdocs-dev-workflow** | **代码** | **✅** |
+| **Bug 修复** | **devdocs-bugfix** | **代码** | **✅** |
+
+- [ ] **文档阶段的技能严禁产出实现代码，仅写入 `docs/devdocs/` 下的 Markdown 文档**
+- [ ] **编码仅在 devdocs-dev-workflow 和 devdocs-bugfix 阶段发生**
+- [ ] 编排器不得在文档阶段启动编码操作
+
 ### 编排约束
 
 - [ ] **pipeline 仅负责路由和衔接，不复制任何原子 skill 的逻辑**
