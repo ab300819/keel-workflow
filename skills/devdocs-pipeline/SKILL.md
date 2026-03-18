@@ -338,4 +338,5 @@ pipeline 完成后，所有产出文档均已生成/更新。用户可：
 
 - 继续下一轮 feature/bugfix
 - 运行 `/devdocs-onboard --read` 传递上下文给新 AI
-- 直接进入编码（已有 dev-tasks 和 dev-workflow 的产出）
+
+> ⚠️ 新增功能开发时，不得跳过 test-cases、dev-tasks、verify --readiness 直接进入 dev-workflow。Bug 修复按 `/devdocs-pipeline bugfix` 路径处理。

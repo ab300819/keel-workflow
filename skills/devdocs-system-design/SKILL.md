@@ -142,7 +142,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
 
 ## Plan 模式规范
 
-在分析完成、写入文档前，**必须使用 EnterPlanMode 呈现设计方案草案**，等用户审批后再执行。
+在分析完成、写入文档前，**必须使用 EnterPlanMode 呈现设计方案草案**，等用户审批后再生成文档。
 
 ### 初始设计 Plan 内容
 
@@ -449,7 +449,7 @@ output_files:
 ### 增量设计后
 
 1. 如有新增功能点 → 运行 `/devdocs-test-cases` 补充测试用例
-2. 如有数据模型变更 → 准备数据库迁移脚本
-3. 如有破坏性变更 → 通知相关依赖方
+2. 如有数据模型变更 → 在设计文档中记录迁移方案，实际脚本由 `/devdocs-dev-workflow` 执行
+3. 如有破坏性变更 → 在设计文档中标注影响范围和迁移策略
 
 > **提示**：文档变更较大时，建议运行 `/agent-memory` 同步记忆文件。
