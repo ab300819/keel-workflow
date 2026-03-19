@@ -2,6 +2,10 @@
 name: devdocs-verify
 description: Unified verification skill combining document alignment, implementation correctness, UI design alignment, and development readiness checks. Supports --docs, --impl, --ui, --readiness flags; auto-detects dimensions when called without flags. Triggers on "verify", "review", "alignment", "验证", "审查", "对齐检查", "需求验证", "设计一致性", "UI 对齐", "就绪检查", "质量关卡", "readiness". NOT for syncing docs with progress (use devdocs-sync).
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion  # 可选: Playwright MCP, Chrome DevTools MCP, Pencil MCP
+metadata:
+  patterns: [reviewer]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 统一验证
@@ -262,26 +266,7 @@ devdocs-verify --readiness ：开发就绪条件是否满足（pipeline 关卡�
 | **P2** | 应修复 | 建议修复，建议转入 devdocs-insights |
 | **P3** | 可优化 | 可选修复，记录备忘 |
 
-### P1 判定标准
-
-- **--docs**：原始需求遗漏（层 1）、AC 无设计支撑（层 2）、AC 无对应测试（层 3）
-- **--impl**：AC 未满足（❌）、接口签名与设计不符、模块职责严重偏离、核心 AC 无 @satisfies 标注
-- **--ui**：布局结构与设计稿不符、关键交互状态未实现、AC 描述的 UI 行为在设计稿中缺失
-- **--readiness**：AC 无对应测试用例（D1）、任务存在循环依赖（D3）、孤立任务无需求关联（D4）
-
-### P2 判定标准
-
-- **--docs**：原始需求偏移（层 1）、AC 缺异常路径测试（层 3）
-- **--impl**：AC 部分满足（⚠️）、数据流轻微偏离、@satisfies 覆盖率 < 80%
-- **--ui**：间距/颜色/字体的显著偏差、响应式断点差异
-- **--readiness**：任务文件路径不够具体（D2）、设计↔任务文件路径不一致（D4）
-
-### P3 判定标准
-
-- **--docs**：过度扩展（层 1）、设计孤立项（层 2）
-- **--impl**：非核心代码缺少标注、非关键路径微偏离
-- **--ui**：间距/颜色/字体的轻微偏差
-- **--readiness**：任务描述过于简略但路径具体
+P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-severity-rubric.md)，执行时按需加载。
 
 ## 输出文件
 
@@ -374,34 +359,37 @@ devdocs-verify --readiness ：开发就绪条件是否满足（pipeline 关卡�
 
 ```yaml
 skill: devdocs-verify
-dimensions: [docs, impl, ui, readiness]  # 实际执行的维度
+status: success | failed | partial
 summary:
-  total_p1: 0
-  total_p2: 0
-  total_p3: 0
-  status: pass | fail | partial
-  docs:
-    layer1: pass | fail | skipped
-    layer2: pass | fail | skipped
-    layer3: pass | fail | skipped
-  impl:
-    ac_satisfaction: "X/Y satisfied"
-    design_conformance: pass | fail
-    traceability: "X% coverage"
-    test_report_used: true | false
-  ui:
-    stage1: pass | fail | skipped
-    stage2: pass | fail | skipped
-  readiness:
-    ac_test_coverage: "X/Y covered"
-    path_specificity: pass | fail
-    dependency_cycle: false
-    design_task_consistency: pass | fail
+  headline: "--impl 审查完成，1 个 P1 阻塞"
+  details:
+    dimensions: [docs, impl, ui, readiness]
+    total_p1: 0
+    total_p2: 0
+    total_p3: 0
+    docs:
+      layer1: pass | fail | skipped
+      layer2: pass | fail | skipped
+      layer3: pass | fail | skipped
+    impl:
+      ac_satisfaction: "X/Y satisfied"
+      design_conformance: pass | fail
+      traceability: "X% coverage"
+      test_report_used: true | false
+    ui:
+      stage1: pass | fail | skipped
+      stage2: pass | fail | skipped
+    readiness:
+      ac_test_coverage: "X/Y covered"
+      path_specificity: pass | fail
+      dependency_cycle: false
+      design_task_consistency: pass | fail
 blockers:
   - "P1: AC-003 未满足（--impl）"
 output_files:
-  verify: docs/devdocs/verify-report.md      # --docs / --impl / --ui
-  readiness: docs/devdocs/readiness-report.md # --readiness
+  - docs/devdocs/verify-report.md
+  - docs/devdocs/readiness-report.md
+new_ids: {}
 ```
 
 ## 下一步

@@ -2,6 +2,10 @@
 name: devdocs-sync
 description: Sync documentation with implementation progress. Update traceability matrices, task statuses, and detect doc-code drift. Use when users need to update docs after development, verify doc-code consistency, or track progress. Triggers on "sync docs", "update progress", "doc consistency", "同步文档", "更新进度", "trace", "audit", "文档对齐", "进度更新", "追溯矩阵". NOT for verification/review (use devdocs-verify) or requirements editing (use devdocs-requirements).
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
+metadata:
+  patterns: [reviewer]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 文档同步
@@ -267,21 +271,27 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 
 ```yaml
 skill: devdocs-sync
-mode: default | check | absorb | archive
-trace_results:
-  satisfies_found: X
-  verifies_found: X
-  coverage: "XX%"
-audit_results:
-  orphan_ids: []
-  missing_tests: []
-  health_score: "XX%"
-deviations:
-  total: X
-  auto_absorbed: X  # absorb 模式
-  needs_confirm: X
-status: synced | deviations_found
-output_file: docs/devdocs/00-progress-report.md
+status: success | partial
+summary:
+  headline: "同步完成，健康度 85%，2 个偏差已修复"
+  details:
+    mode: default | check | absorb | archive
+    trace_results:
+      satisfies_found: X
+      verifies_found: X
+      coverage: "XX%"
+    audit_results:
+      orphan_ids: []
+      missing_tests: []
+      health_score: "XX%"
+    deviations:
+      total: X
+      auto_absorbed: X
+      needs_confirm: X
+blockers: []
+output_files:
+  - docs/devdocs/00-progress-report.md
+new_ids: {}
 ```
 
 ## 下一步

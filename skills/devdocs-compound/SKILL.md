@@ -2,6 +2,10 @@
 name: devdocs-compound
 description: Extract patterns, lessons learned, and key decisions from completed development cycles. Writes structured pattern docs to docs/devdocs/patterns/ and updates AGENTS.md. Run after devdocs-sync to compound knowledge across sessions. Triggers on "compound", "沉淀", "经验提取", "模式提取", "lessons learned", "知识沉淀", "复盘", "总结经验", "what did we learn". NOT for syncing docs (use devdocs-sync) or onboarding (use devdocs-onboard).
 allowed-tools: Read, Write, Glob, Grep, Edit, AskUserQuestion
+metadata:
+  patterns: [generator]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 知识复利沉淀
@@ -186,17 +190,22 @@ devdocs-compound：提取经验、沉淀模式          → 知识层面的复�
 
 ```yaml
 skill: devdocs-compound
-patterns_extracted: 2
-patterns_updated: 1
-patterns_skipped: 0  # 已存在的相似模式
-system_learning:
-  rules_gap: false
-  template_gap: true
-  checker_gap: false
-status: completed
+status: success | partial
+summary:
+  headline: "提取 2 个新模式，1 个模板缺口"
+  details:
+    patterns_extracted: 2
+    patterns_updated: 1
+    patterns_skipped: 0
+    system_learning:
+      rules_gap: false
+      template_gap: true
+      checker_gap: false
+blockers: []
 output_files:
   - docs/devdocs/patterns/strategy-payment-channels.md
   - docs/devdocs/patterns/sqlite-wal-concurrency.md
+new_ids: {}
 ```
 
 ## 下一步

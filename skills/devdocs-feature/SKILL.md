@@ -2,6 +2,10 @@
 name: devdocs-feature
 description: Add new features to existing DevDocs projects. Orchestrates requirements → design → test-cases → dev-tasks for incremental functionality. Use when users need to add, extend, or iterate on features. Triggers on "add feature", "new feature", "新功能", "迭代", "新增功能", "追加需求", "扩展功能", "feature request", "增量功能". NOT for pipeline init (use devdocs-pipeline) or bug fixes (use devdocs-bugfix).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
+metadata:
+  patterns: [pipeline, inversion]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 新功能
@@ -398,7 +402,7 @@ docs/devdocs/
 - [ ] 步骤间传递的信息仅限：新增编号列表
 - [ ] **完整模式 Step 1-4、Step 4.5、Step 6 必须通过 Task tool 启动子 Agent**
 - [ ] **步骤间只传递 YAML 摘要 + 编号列表，不传递文档全文**
-- [ ] **Step 0-5 为文档阶段，严禁产出实现代码**
+- [ ] **⛔ 禁止继续：文档阶段（Step 0-5）不得产出实现代码**（恢复方式：将代码产出移至 Step 6 dev-workflow 委托）
 - [ ] **编码仅在 Step 6（dev-workflow 委托）中发生**
 
 ### 轻量模式约束
@@ -407,7 +411,7 @@ docs/devdocs/
 - [ ] **不新建 F-XXX，仅追加 AC 到现有功能**
 - [ ] 任务数量限制 1-3 个
 - [ ] 检测到架构影响时必须提示用户
-- [ ] **轻量模式 Step 1-4 为文档阶段，严禁编写实现代码**
+- [ ] **⛔ 禁止继续：轻量模式 Step 1-4 为文档阶段，不得编写实现代码**（恢复方式：衔接 /devdocs-dev-workflow）
 - [ ] Write 操作仅限 `docs/devdocs/` 下的 Markdown 文档
 - [ ] 需要编码时必须衔接 `/devdocs-dev-workflow`
 
@@ -466,25 +470,28 @@ docs/devdocs/
 
 ```yaml
 skill: devdocs-feature
-mode: lite | full
+status: success | failed | interrupted | partial
+summary:
+  headline: "完整模式 Step 4 完成，新增 F-004"
+  details:
+    mode: lite | full
+    step_reached: 1~6
+    dev_workflow_triggered: true | false
+blockers: []
+output_files:
+  - docs/devdocs/01-requirements.md
+  - docs/devdocs/00-feature-log.md
 new_ids:
   features: [F-004]
   stories: [US-009, US-010]
   acceptance: [AC-016~AC-020]
   tests: [UT-013~UT-015, IT-004]
   tasks: [T-11~T-13]
-status: completed | interrupted
-step_reached: 1~6
-dev_workflow_triggered: true | false
-output_files:
-  - docs/devdocs/01-requirements.md
-  - docs/devdocs/00-feature-log.md
+next_recommended:
+  skill: devdocs-dev-workflow
+  args: "T-11~T-13"
 ```
 
 ## 输出
 
-- 更新 `01-requirements.md`（追加）
-- 更新 `02-system-design*.md`（追加/修改）
-- 更新 `03-test-*.md`（追加）
-- 更新 `04-dev-tasks*.md`（追加）
-- 更新/创建 `00-feature-log.md`（追加）
+更新 `01-requirements.md`、`02-system-design*.md`、`03-test-*.md`、`04-dev-tasks*.md`、`00-feature-log.md`。

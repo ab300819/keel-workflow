@@ -2,6 +2,10 @@
 name: devdocs-onboard
 description: Generate project context summary for AI tool handover. Supports --read (view only) and --update (rescan) modes. Use when switching AI tools, starting new sessions, or onboarding team members. Triggers on "project context", "handover", "onboard", "项目上下文", "交接", "接手项目", "新会话", "new session", "项目概览". NOT for retrofitting projects (use devdocs-retrofit) or requirements definition (use devdocs-requirements).
 allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
+metadata:
+  patterns: [generator]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 项目上下文
@@ -365,15 +369,19 @@ Agent: [展示现有文档内容]
 
 ```yaml
 skill: devdocs-onboard
-mode: read | update | auto
+status: success | partial
 summary:
-  project_name: "<项目名>"
-  progress: "X/Y tasks completed (XX%)"
-  next_task: T-XX
-  blockers: []
-context_age: "<N hours/days since last update>"
-status: completed
-output_file: docs/devdocs/00-context.md
+  headline: "项目上下文已更新，进度 67%"
+  details:
+    mode: read | update | auto
+    project_name: "<项目名>"
+    progress: "X/Y tasks completed (XX%)"
+    next_task: T-XX
+    context_age: "<N hours/days since last update>"
+blockers: []
+output_files:
+  - docs/devdocs/00-context.md
+new_ids: {}
 ```
 
 ## 下一步

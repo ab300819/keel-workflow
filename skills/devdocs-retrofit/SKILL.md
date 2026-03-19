@@ -2,6 +2,10 @@
 name: devdocs-retrofit
 description: Retrofit existing projects to DevDocs workflow, or migrate old DevDocs to new standards. Reverse-engineer code into structured documentation. Use when users want to adapt existing projects, migrate documentation, standardize documents, or upgrade DevDocs version. Triggers on "retrofit", "改造", "适配", "迁移", "标准化", "逆向", "升级文档", "existing project", "已有项目", "从代码生成文档". NOT for initializing new projects (use devdocs-pipeline) or adding features to existing DevDocs (use devdocs-feature).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, EnterPlanMode
+metadata:
+  patterns: [inversion, generator]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 项目改造
@@ -369,7 +373,7 @@ docs/devdocs/
 ## 约束
 
 ### 阶段边界约束（最高优先级）
-- [ ] **本 Skill 仅产出/更新 DevDocs 文档，严禁编写或生成任何实现代码**
+- [ ] **⛔ 禁止继续：文档阶段不得产出实现代码**（恢复方式：使用 /devdocs-dev-workflow 执行编码）
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
 
@@ -454,17 +458,29 @@ docs/devdocs/
 
 ```yaml
 skill: devdocs-retrofit
-docs_generated:
-  - docs/devdocs/01-requirements.md
-  - docs/devdocs/02-system-design.md
-features_extracted: X
-apis_extracted: X
-coverage:
-  requirements: "XX%"
-  design: "XX%"
-  tests: "XX%"
-status: completed
-output_file: docs/devdocs/00-retrofit-report.md
+status: success | failed | partial
+summary:
+  headline: "项目改造完成，逆向提取 3 功能点"
+  details:
+    docs_generated:
+      - docs/devdocs/01-requirements.md
+      - docs/devdocs/02-system-design.md
+    features_extracted: X
+    apis_extracted: X
+    coverage:
+      requirements: "XX%"
+      design: "XX%"
+      tests: "XX%"
+blockers: []
+output_files:
+  - docs/devdocs/00-retrofit-report.md
+new_ids:
+  features: [F-001~F-003]
+  stories: [US-001~US-006]
+  acceptance: [AC-001~AC-012]
+next_recommended:
+  skill: devdocs-requirements
+  args: "--context"
 ```
 
 ## 输出文件

@@ -1,13 +1,17 @@
 ---
 name: devdocs-pipeline
-description: Top-level orchestrator for DevDocs workflow. Provides 5 entry points (init/feature/bugfix/verify/close) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
+description: Top-level orchestrator for DevDocs workflow. Provides 6 entry points (init/feature/bugfix/verify/close/insights) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start", "insights", "洞察", "调研", "借鉴", "竞品". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
+metadata:
+  patterns: [pipeline]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Task
 user-invocable: true
 ---
 
 # DevDocs 工作流编排器
 
-顶层编排器，提供 5 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
+顶层编排器，提供 6 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
 
 ## 语言规则
 
@@ -33,6 +37,7 @@ user-invocable: true
 /devdocs-pipeline bugfix         → Bug 修复
 /devdocs-pipeline verify         → 质量检查
 /devdocs-pipeline close          → 周期收尾
+/devdocs-pipeline insights       → 外部洞察吸收
 ```
 
 ## 提问式调度（智能引导）
@@ -56,7 +61,8 @@ user-invocable: true
           ├── 有 01~04 + 有 readiness-report → "就绪检查已通过，建议运行 /devdocs-dev-workflow"
           ├── 有 01~04 + 无 readiness-report → "任务已拆分，建议运行 /devdocs-verify --readiness"
           ├── 有代码提交 + 任务进行中 → "开发进行中，建议继续 /devdocs-dev-workflow"
-          └── 有 verify-report → "验证已完成，建议运行 /devdocs-sync 或 /devdocs-compound"
+          ├── 有 verify-report → "验证已完成，建议运行 /devdocs-sync 或 /devdocs-compound"
+          └── 有 05-insights.md + 含 ⏳ 待确认条目 → "有未转化洞察，建议运行 /devdocs-feature 或 /devdocs-dev-tasks"
 ```
 
 ### 轻量分轨提示
@@ -84,6 +90,7 @@ Q1: "项目已有 DevDocs 文档吗？"
               ├── 新功能  → feature
               ├── 修 Bug  → bugfix
               ├── 检查质量 → verify
+              ├── 吸收外部参考 → insights
               └── 收尾/沉淀 → close
 
 Q3（feature/bugfix 追加，可选）:
@@ -269,7 +276,7 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | **开发执行** | **devdocs-dev-workflow** | **代码** | **✅** |
 | **Bug 修复** | **devdocs-bugfix** | **代码** | **✅** |
 
-- [ ] **文档阶段的技能严禁产出实现代码，仅写入 `docs/devdocs/` 下的 Markdown 文档**
+- [ ] **⛔ 禁止继续：文档阶段不得产出实现代码，仅写入 `docs/devdocs/` 下的 Markdown 文档**（恢复方式：将代码产出移至 dev-workflow/bugfix 阶段）
 - [ ] **编码仅在 devdocs-dev-workflow 和 devdocs-bugfix 阶段发生**
 - [ ] 编排器不得在文档阶段启动编码操作
 
@@ -309,6 +316,7 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | feature | feature(含 readiness + dev-workflow) → verify → sync |
 | bugfix | bugfix / (dev-tasks → dev-workflow) → verify → sync |
 | verify | verify --docs/--impl/--ui |
+| insights | insights → feature 或 dev-tasks → dev-workflow → verify → sync |
 | close | sync → compound → onboard --update |
 
 ## 子 Agent 摘要格式
@@ -317,19 +325,26 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 
 ```yaml
 skill: devdocs-pipeline
-entry: init | feature | bugfix | verify | close
-stages_completed:
-  - { skill: devdocs-requirements, status: success }
-  - { skill: devdocs-system-design, status: success }
-stages_remaining:
-  - devdocs-test-cases
+status: success | failed | interrupted | partial
 summary:
-  new_ids: [F-001, F-002, AC-001~AC-012]
-  status: completed | interrupted | failed
-  interrupt_reason: "用户选择退出"  # 仅中断时
+  headline: "init 流程完成 2/5 阶段"
+  details:
+    entry: init | feature | bugfix | verify | close | insights
+    stages_completed:
+      - { skill: devdocs-requirements, status: success }
+      - { skill: devdocs-system-design, status: success }
+    stages_remaining:
+      - devdocs-test-cases
+    interrupt_reason: "用户选择退出"  # 仅中断时
+blockers: []
 output_files:
   - docs/devdocs/01-requirements.md
   - docs/devdocs/02-system-design.md
+new_ids:
+  features: [F-001, F-002]
+  acceptance: [AC-001~AC-012]
+next_recommended:
+  skill: devdocs-test-cases
 ```
 
 ## 下一步

@@ -2,6 +2,10 @@
 name: devdocs-system-design
 description: Create or update system design documents. Supports initial design and incremental design (impact analysis + compatibility assessment) modes. Use when users need technical architecture, API design, data models, module design, or design changes. Triggers on "system design", "architecture", "technical design", "API design", "design change", "impact analysis", "模块设计", "技术方案", "接口设计", "设计变更", "影响分析". NOT for UI/UX design (use ui-orchestrator) or requirements definition (use devdocs-requirements).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
+metadata:
+  patterns: [inversion, generator]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 系统设计
@@ -339,7 +343,7 @@ docs/devdocs/
 ## 约束
 
 ### 阶段边界约束（最高优先级）
-- [ ] **本 Skill 仅产出文档，严禁编写或生成任何实现代码（源代码、脚本、配置变更）**
+- [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /devdocs-dev-workflow 执行编码）
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] "核心接口"章节仅定义签名，严禁包含实现逻辑
 - [ ] 退出 Plan 模式后，更新设计文档（非代码实现）
@@ -358,11 +362,11 @@ docs/devdocs/
 
 ### MTE 原则约束
 
+MTE 评审标准详见 [references/mte-rubric.md](references/mte-rubric.md)，执行时按需加载。
+
 - [ ] **每个模块职责单一，不超过一个变化原因**
 - [ ] **核心业务逻辑必须可单元测试**（无外部依赖或依赖可 Mock，详见 `/testing-guide`）
 - [ ] **预留合理扩展点，但不为假设需求设计**
-- [ ] 依赖方向：外层依赖内层，内层不依赖外层
-- [ ] 接口优于实现：依赖抽象，不依赖具体实现
 
 ### 设计模式约束
 
@@ -430,15 +434,22 @@ docs/devdocs/
 
 ```yaml
 skill: devdocs-system-design
-mode: initial | incremental
-modules_added: [AuthModule, UserModule]
-interfaces_added: ["POST /api/register", "POST /api/login"]
-data_models_added: [User, Session]
-breaking_changes: false
-patterns_referenced: []  # 从 docs/devdocs/patterns/ 匹配的模式
-status: completed
+status: success | failed | partial
+summary:
+  headline: "初始设计完成，2 模块 2 接口"
+  details:
+    mode: initial | incremental
+    modules_added: [AuthModule, UserModule]
+    interfaces_added: ["POST /api/register", "POST /api/login"]
+    data_models_added: [User, Session]
+    breaking_changes: false
+    patterns_referenced: []
+blockers: []
 output_files:
   - docs/devdocs/02-system-design.md
+new_ids: {}
+next_recommended:
+  skill: devdocs-test-cases
 ```
 
 ## 下一步

@@ -2,6 +2,10 @@
 name: devdocs-dev-tasks
 description: Break down system design into executable, trackable development tasks with dependency resolution and layer classification (🔴🟡🟢⚪). Use when users need task breakdown, sprint planning, or implementation planning. Triggers on "dev tasks", "task breakdown", "sprint planning", "implementation tasks", "拆分任务", "任务列表", "implementation plan", "开发任务拆分". NOT for executing tasks (use devdocs-dev-workflow) or defining features (use devdocs-feature).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
+metadata:
+  patterns: [generator]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 开发任务
@@ -128,7 +132,7 @@ docs/devdocs/
 ## 约束
 
 ### 阶段边界约束（最高优先级）
-- [ ] **本 Skill 仅产出文档，严禁编写或生成任何实现代码（源代码、脚本、配置变更）**
+- [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /devdocs-dev-workflow 执行编码）
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] Bash 工具仅用于只读操作（如查看目录结构），不得执行代码修改
 - [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
@@ -154,12 +158,22 @@ docs/devdocs/
 
 ### TAR 原则约束
 
+TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](references/tar-rubric.md)，执行时按需加载。
+
 - [ ] **每个任务必须包含测试方法**（如何验证）
 - [ ] **每个任务必须包含验收标准**（可量化的完成标准）
 - [ ] **每个任务必须包含 Review 要点**（代码审查关注点）
-- [ ] 测试方法必须可执行（不能是模糊描述）
-- [ ] 验收标准必须可量化
-- [ ] Review 要点必须针对任务类型
+
+### Generator 自检（用户确认前自动执行）
+
+在呈现给用户确认前，加载 [references/tar-rubric.md](references/tar-rubric.md) 并自动验证：
+
+- [ ] TAR 三字段完整（测试方法 + 验收标准 + Review 要点）
+- [ ] 文件路径具体到文件名
+- [ ] 预估 ≤ 4h
+- [ ] 依赖无环（拓扑排序验证）
+
+自检不通过项自动修复后再呈现用户，不增加用户交互步骤。
 
 ### 分层约束
 
@@ -217,16 +231,25 @@ docs/devdocs/
 
 ```yaml
 skill: devdocs-dev-tasks
-tasks_created: X
-task_range: "T-01~T-10"
-layers:
-  core: X      # 🔴
-  api: X       # 🟡
-  ui: X        # 🟢
-  infra: X     # ⚪
-status: completed
+status: success | failed | partial
+summary:
+  headline: "任务拆分完成，10 个任务（4🔴 3🟡 2🟢 1⚪）"
+  details:
+    tasks_created: X
+    task_range: "T-01~T-10"
+    layers:
+      core: X      # 🔴
+      api: X       # 🟡
+      ui: X        # 🟢
+      infra: X     # ⚪
+blockers: []
 output_files:
   - docs/devdocs/04-dev-tasks.md
+new_ids:
+  tasks: [T-01~T-10]
+next_recommended:
+  skill: devdocs-verify
+  args: "--readiness"
 ```
 
 ## 下一步

@@ -2,6 +2,10 @@
 name: devdocs-test-cases
 description: Design test cases (UT/IT/E2E) based on requirements, establishing traceability from acceptance criteria to test cases. Use when users need test case design, testing strategy, test coverage planning, or QA planning. Triggers on "test cases", "test design", "unit test", "integration test", "e2e test", "测试用例", "测试设计", "测试策略", "测试覆盖", "QA". NOT for running tests (use devdocs-test-run) or development workflow (use devdocs-dev-workflow).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
+metadata:
+  patterns: [generator]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 测试用例设计
@@ -267,7 +271,7 @@ docs/devdocs/
 ## 约束
 
 ### 阶段边界约束（最高优先级）
-- [ ] **本 Skill 仅产出文档，严禁编写或生成任何实现代码或测试代码文件**
+- [ ] **⛔ 禁止继续：文档阶段不得产出实现代码或测试代码文件**（恢复方式：使用 /devdocs-dev-workflow 执行编码）
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] 测试用例以文档形式（表格/文字）描述，不生成 `.test.ts`/`.spec.ts` 等代码文件
 - [ ] 编码和测试编写由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
@@ -285,9 +289,22 @@ docs/devdocs/
 - [ ] 每个功能点完成后执行一致性自检
 
 ### 覆盖约束
+
+AC 质量评估标准详见 [../devdocs-requirements/references/ac-quality-rubric.md](../devdocs-requirements/references/ac-quality-rubric.md)，验证 AC→测试覆盖时参照。
+
 - [ ] P0 验收标准必须 100% 测试覆盖
 - [ ] P0 用户故事必须有 E2E 测试
 - [ ] 单元测试行覆盖率目标 ≥ 80%
+
+### Generator 自检（用户确认前自动执行）
+
+在呈现给用户确认前，加载 [../devdocs-requirements/references/ac-quality-rubric.md](../devdocs-requirements/references/ac-quality-rubric.md) 并自动验证：
+
+- [ ] 每条 AC 至少有 1 个测试用例覆盖
+- [ ] 测试用例的输入/输出有具体值（非"正常输入"等模糊描述）
+- [ ] P0 AC 覆盖率 100%
+
+自检不通过项自动修复后再呈现用户，不增加用户交互步骤。
 
 ### 质量约束（参考 `/testing-guide`）
 - [ ] 测试名称必须描述预期行为
@@ -312,15 +329,21 @@ docs/devdocs/
 
 ```yaml
 skill: devdocs-test-cases
-mode: initial | incremental
+status: success | failed | partial
+summary:
+  headline: "测试设计完成，12 UT + 3 IT + 2 E2E"
+  details:
+    mode: initial | incremental
+    traceability_matrix_updated: true
+blockers: []
+output_files:
+  - docs/devdocs/03-test-cases.md
 new_ids:
   unit_tests: [UT-001~UT-012]
   integration_tests: [IT-001~IT-003]
   e2e_tests: [E2E-001~E2E-002]
-traceability_matrix_updated: true
-status: completed
-output_files:
-  - docs/devdocs/03-test-cases.md
+next_recommended:
+  skill: devdocs-dev-tasks
 ```
 
 ## 下一步

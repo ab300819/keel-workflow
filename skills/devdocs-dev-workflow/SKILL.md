@@ -2,6 +2,10 @@
 name: devdocs-dev-workflow
 description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and --headless unattended mode (无人值守). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "开始写代码", "开始开发", "--review", "--headless", "无人值守". NOT for task breakdown (use devdocs-dev-tasks) or bug fixes (use devdocs-bugfix).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, Task
+metadata:
+  patterns: [pipeline, reviewer]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 开发工作流
@@ -245,7 +249,7 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
     └───────────────────────────┘
 ```
 
-> **⚠️ 红阶段核心原则**：断言必须来自 03-test-\*.md 中对应 AC 的测试用例，禁止从实现代码反推测试。
+> **⛔ 禁止继续：断言必须来自 03-test-\*.md 中对应 AC 的测试用例，不得从实现代码反推测试**（恢复方式：回到 03-test-\*.md 查找对应 AC 的测试用例作为断言来源）。
 
 > 详见 [execution-flow.md](execution-flow.md) 统一任务执行流程 + 强制程度矩阵
 
@@ -456,19 +460,26 @@ dev-workflow 调用以下技能时，**必须通过 Task tool 启动子 Agent**�
 
 ```yaml
 skill: devdocs-dev-workflow
-task: T-XX
-status: success | failed | skipped
-commits:
-  code: "abc1234"      # Commit 1 hash
-  docs: "def5678"      # Commit 2 hash
-test_summary:
-  passed: X
-  failed: 0
-  coverage: "XX%"
-blockers_resolved: 0
-suggestions_skipped: 0
-ac_verified: [AC-001, AC-002]
-next_task: T-YY | null
+status: success | failed
+summary:
+  headline: "T-03 开发完成，测试全部通过"
+  details:
+    task: T-XX
+    commits:
+      code: "abc1234"
+      docs: "def5678"
+    test_summary:
+      passed: X
+      failed: 0
+      coverage: "XX%"
+    blockers_resolved: 0
+    suggestions_skipped: 0
+    ac_verified: [AC-001, AC-002]
+blockers: []
+output_files: []
+new_ids: {}
+next_recommended:
+  skill: devdocs-sync
 ```
 
 ## 参考资料

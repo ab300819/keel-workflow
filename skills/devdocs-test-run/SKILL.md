@@ -2,6 +2,10 @@
 name: devdocs-test-run
 description: Execute test suites and generate test reports. Supports full test run, selective run by type (UT/IT/E2E), and traceability validation. Use when users need to run tests, verify test coverage, generate test reports, or validate before release. Triggers on "run tests", "test run", "execute tests", "执行测试", "跑测试", "全量测试", "回归测试", "test report", "测试报告", "覆盖率". NOT for designing test cases (use devdocs-test-cases) or fixing bugs (use devdocs-bugfix).
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
+metadata:
+  patterns: [tool-wrapper]
+  interaction: single-turn
+  handoff: yaml-summary-v1
 ---
 
 # 测试执行
@@ -248,14 +252,20 @@ UT（单元测试）→ IT（集成测试）→ E2E（端到端测试）
 
 ```yaml
 skill: devdocs-test-run
-tests_run:
-  unit: { passed: X, failed: 0, total: X }
-  integration: { passed: X, failed: 0, total: X }
-  e2e: { passed: X, failed: 0, total: X }
-coverage: "XX%"
-trace_verified: true
-status: pass | fail
-output_file: docs/devdocs/05-test-report.md
+status: success | failed
+summary:
+  headline: "全量测试通过，覆盖率 85%"
+  details:
+    tests_run:
+      unit: { passed: X, failed: 0, total: X }
+      integration: { passed: X, failed: 0, total: X }
+      e2e: { passed: X, failed: 0, total: X }
+    coverage: "XX%"
+    trace_verified: true
+blockers: []
+output_files:
+  - docs/devdocs/05-test-report.md
+new_ids: {}
 ```
 
 ## 参考资料

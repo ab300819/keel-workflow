@@ -2,6 +2,10 @@
 name: devdocs-requirements
 description: Expand user requirements into detailed DevDocs documents with features (F-XXX), user stories (US-XXX), and acceptance criteria (AC-XXX). Supports initial, incremental, and context (--context) modes. Use when users provide feature requirements, want to clarify scope, or add project background. Triggers on "requirements", "PRD", "feature request", "user story", "需求", "功能点", "验收标准", "项目背景", "补充信息". NOT for system/technical design (use devdocs-system-design) or test case design (use devdocs-test-cases).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
+metadata:
+  patterns: [inversion, generator]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 需求扩写
@@ -313,7 +317,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 ## 约束
 
 ### 阶段边界约束（最高优先级）
-- [ ] **本 Skill 仅产出文档，严禁编写或生成任何实现代码（源代码、脚本、配置变更）**
+- [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /devdocs-dev-workflow 执行编码）
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] 退出 Plan 模式后，执行文档编写（非代码实现）
 - [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
@@ -328,31 +332,14 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 - [ ] 必须遵循"作为...我希望...以便..."格式
 - [ ] 每个功能点至少有 1 个用户故事
 
-### 用户故事质量检查 (INVEST)
+### 用户故事质量检查 (INVEST) + 验收标准约束
 
-生成时自动验证，无需额外用户交互：
-
-- [ ] **I**ndependent：可独立交付
-- [ ] **N**egotiable：可协商细节
-- [ ] **V**aluable：对用户有价值
-- [ ] **E**stimable：可估算工作量
-- [ ] **S**mall：一次迭代可完成
-- [ ] **T**estable：可通过测试验证
-
-### 验收标准约束
+INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](references/ac-quality-rubric.md)，执行时按需加载。
 
 - [ ] 每个验收标准必须有唯一编号 (AC-XXX)
 - [ ] 每个用户故事至少有 2 条验收标准
 - [ ] 验收标准必须可量化、可验证
 - [ ] 必须描述验证方式
-
-**格式选项**：
-
-- 表格格式（默认）：适合简单条件
-- Given-When-Then：适合复杂行为场景
-  - **Given** \<前置条件\>
-  - **When** \<操作\>
-  - **Then** \<预期结果\>
 
 ### 追溯约束
 - [ ] 必须提供追溯矩阵
@@ -388,6 +375,17 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 - [ ] 用户要求调整时，更新 Plan 后重新审批
 - [ ] 增量模式和背景信息模式不使用 Plan 模式
 
+### Generator 自检（用户确认前自动执行）
+
+在呈现给用户确认前，加载 [references/ac-quality-rubric.md](references/ac-quality-rubric.md) 并自动验证：
+
+- [ ] 每条 AC 可量化可验证（非模糊描述）
+- [ ] 每个 US 有 ≥ 2 条 AC
+- [ ] GWT 格式完整（使用 GWT 时 Given/When/Then 三要素均存在）
+- [ ] INVEST 六项检查通过
+
+自检不通过项自动修复后再呈现用户，不增加用户交互步骤。
+
 ### 确认约束
 - [ ] 必须与用户确认功能点是否完整
 - [ ] 不得添加用户未提及且未确认的功能
@@ -414,14 +412,20 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 
 ```yaml
 skill: devdocs-requirements
-mode: initial | incremental
+status: success | failed | partial
+summary:
+  headline: "初始需求完成，3 功能点 15 验收标准"
+  details:
+    mode: initial | incremental
+blockers: []
+output_files:
+  - docs/devdocs/01-requirements.md
 new_ids:
   features: [F-001~F-003]
   stories: [US-001~US-008]
   acceptance: [AC-001~AC-015]
-status: completed
-output_files:
-  - docs/devdocs/01-requirements.md
+next_recommended:
+  skill: devdocs-system-design
 ```
 
 ## 下一步

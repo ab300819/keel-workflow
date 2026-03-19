@@ -2,6 +2,10 @@
 name: devdocs-insights
 description: Collect improvement insights from UI/UX reviews, document research, or external references, convert confirmed items into development requirements. Use when users have optimization suggestions, research findings, competitor analysis, or want to improve based on external references. Triggers on "insights", "improvements", "optimize", "review findings", "research", "借鉴", "优化建议", "审查结果", "调研", "竞品", "可以借鉴". NOT for bug fixes (use devdocs-bugfix) or adding new features directly (use devdocs-feature).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
+metadata:
+  patterns: [inversion, generator]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # 洞察收集
@@ -301,17 +305,24 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 
 ```yaml
 skill: devdocs-insights
-source_type: ui_review | doc_research | external_ref | internal_feedback
-insights_collected: 3
-insights_confirmed: 2
-insights_rejected: 1
-new_ids:
-  features: [F-015, F-016]
-  acceptance: [AC-030~AC-033]
-status: completed
+status: success | failed | partial
+summary:
+  headline: "收集 3 条洞察，2 条已转化为需求"
+  details:
+    source_type: ui_review | doc_research | external_ref | internal_feedback
+    insights_collected: 3
+    insights_confirmed: 2
+    insights_rejected: 1
+blockers: []
 output_files:
   - docs/devdocs/01-requirements.md
   - docs/devdocs/05-insights.md
+new_ids:
+  features: [F-015, F-016]
+  acceptance: [AC-030~AC-033]
+  insights: [INS-001~INS-003]
+next_recommended:
+  skill: devdocs-feature
 ```
 
 ## 命令选项

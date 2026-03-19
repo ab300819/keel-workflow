@@ -12,7 +12,38 @@
 
 - 每个 skill 独立目录 `skills/<name>/SKILL.md`，通过 description 字段自动发现
 - 详细模板放 `templates/` 子目录，SKILL.md 控制在 500 行以内
+- `templates/` 子目录存放输出模板，`references/` 子目录存放评估标准/rubric/规则
 - DevDocs 编排层（pipeline/feature/bugfix）通过 Task tool 调度原子 skill 作为子代理
+
+## 子 Agent 摘要契约（yaml-summary-v1）
+
+所有 DevDocs skill 作为子 Agent 运行时，返回统一信封格式：
+
+```yaml
+skill: <skill-name>
+status: success | failed | interrupted | partial
+summary:
+  headline: "一句话总结"
+  details: {}           # skill 私有字段放这里
+blockers: []             # 通用：阻塞项列表
+output_files: []         # 通用：产出/修改的文件
+new_ids: {}              # 通用：生成的编号 (F/US/AC/UT/IT/T/BUG/INS)
+next_recommended:
+  skill: <next-skill>    # 可选
+  args: ""               # 可选
+```
+
+**规则**：`status`/`blockers`/`output_files`/`new_ids`/`next_recommended` 为保留字段，skill 私有数据统一放 `summary.details`。各 skill 在摘要示例中列出自身适用的 `status` 值子集（完整值域见上方契约定义）。
+
+## 门控标记规范
+
+| 标记 | 语义 | 适用场景 |
+|------|------|---------|
+| `⛔ 禁止继续` | 硬阻塞，必须修复后才能继续 | 阶段边界、P1 阻塞、安全不变式 |
+| `⚠️ 必须确认` | 需用户确认才可继续 | Inversion 问询、Plan 模式审批 |
+| `ℹ️ 建议` | 推荐但可跳过 | P2/P3 建议、可选验证步骤 |
+
+每个 `⛔` 门控必须附带**恢复方式**（如何解除阻塞）。
 
 ## 领域术语
 

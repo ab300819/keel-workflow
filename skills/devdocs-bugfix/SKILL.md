@@ -2,6 +2,10 @@
 name: devdocs-bugfix
 description: Test-first bug fixing workflow. Guide users through reproducing bugs, writing failing tests, fixing code, and committing with regression protection. Use when users report bugs or issues. Triggers on "bug", "fix", "issue", "崩溃", "报错", "修复", "出错了", "不工作", "broken", "regression", "error", "异常". NOT for new features (use devdocs-feature) or insight-driven improvements (use devdocs-insights).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
+metadata:
+  patterns: [inversion, pipeline]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
 ---
 
 # Bug 修复
@@ -336,7 +340,7 @@ Fixes #123
 - [ ] **必须先编写失败测试，再修复代码**
 - [ ] **测试必须先失败，证明 Bug 存在**
 - [ ] **修复后测试必须通过**
-- [ ] **不得跳过测试直接提交**
+- [ ] **⛔ 禁止继续：测试未通过时不得提交**（恢复方式：修复测试失败后重新运行）
 - [ ] **复杂 Bug 走 dev-tasks + dev-workflow 时必须通过 Task tool 启动子 Agent**
 - [ ] **简单 Bug 直接在 bugfix 上下文内执行**
 
@@ -374,13 +378,23 @@ Fixes #123
 
 ```yaml
 skill: devdocs-bugfix
-bug_id: BUG-XXX
-complexity: simple | complex
-status: fixed | not_reproduced | in_progress
-related: { feature: F-XXX, ac: AC-XXX }
-test_added: [UT-025]
-commit_hash: "abc1234"
-output_file: docs/devdocs/05-bugfix-log.md
+status: success | failed | partial
+summary:
+  headline: "BUG-003 已修复，新增回归测试 UT-025"
+  details:
+    bug_id: BUG-XXX
+    complexity: simple | complex
+    related: { feature: F-XXX, ac: AC-XXX }
+    test_added: [UT-025]
+    commit_hash: "abc1234"
+blockers: []
+output_files:
+  - docs/devdocs/05-bugfix-log.md
+new_ids:
+  bugs: [BUG-XXX]
+  unit_tests: [UT-025]
+next_recommended:
+  skill: devdocs-sync
 ```
 
 ## 特殊情况
