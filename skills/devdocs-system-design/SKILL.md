@@ -1,7 +1,7 @@
 ---
 name: devdocs-system-design
 description: Create or update system design documents. Supports initial design and incremental design (impact analysis + compatibility assessment) modes. Use when users need technical architecture, API design, data models, module design, or design changes. Triggers on "system design", "architecture", "technical design", "API design", "design change", "impact analysis", "模块设计", "技术方案", "接口设计", "设计变更", "影响分析". NOT for UI/UX design (use ui-orchestrator) or requirements definition (use devdocs-requirements).
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
@@ -60,14 +60,14 @@ metadata:
 
 ```bash
 /devdocs-system-design              → 自动检测模式（初始/增量）
-/devdocs-system-design --fast       → 跳过 Plan 模式，使用合理默认值，仅最终确认
+/devdocs-system-design --fast       → 跳过方案确认，使用合理默认值，仅最终汇总确认
 ```
 
 ### `--fast` 模式
 
-- 跳过 EnterPlanMode 步骤和技术栈偏好询问
+- 跳过方案确认步骤和技术栈偏好询问
 - 使用合理默认值（根据代码库推断技术栈）
-- 仅保留最终写入前的 1 次确认
+- 仅保留最终写入前的 1 次汇总确认
 - 默认行为不变，`--fast` 是 opt-in
 
 ## 工作流程
@@ -87,13 +87,13 @@ metadata:
 3.5 外部研究（按需）→ 详见"设计前外部研究"章节
       │
       ▼
-4. 进入 Plan 模式 → 呈现设计方案草案
+4. 呈现设计方案草案（AskUserQuestion）
       │              （技术选型、架构方向、模块划分）
       ▼
-5. 用户审批 Plan → 确认方向或调整
+5. 用户确认方案 → 确认方向或调整
       │
       ▼
-6. 退出 Plan 模式 → 生成 docs/devdocs/02-system-design.md 文档
+6. 生成 docs/devdocs/02-system-design.md 文档
       │
       ▼
 7. 验证覆盖 → 检查所有 F-XXX 都有对应模块/接口
@@ -126,13 +126,13 @@ metadata:
       └── 是否有破坏性变更？
       │
       ▼
-5. 进入 Plan 模式 → 呈现变更方案
+5. 呈现变更方案（AskUserQuestion）
       │              （影响范围、兼容性结论、变更策略）
       ▼
-6. 用户审批 Plan → 确认方案或调整
+6. 用户确认方案 → 确认方案或调整
       │
       ▼
-7. 退出 Plan 模式 → 更新 docs/devdocs/02-system-design*.md 文档
+7. 更新 docs/devdocs/02-system-design*.md 文档
       ├── 文档中新增模块/接口/数据模型章节
       ├── 更新现有设计文档内容
       └── 在文档中标注变更版本
@@ -144,11 +144,11 @@ metadata:
 9. 用户确认 → 获得批准后更新文档
 ```
 
-## Plan 模式规范
+## 方案确认规范
 
-在分析完成、写入文档前，**必须使用 EnterPlanMode 呈现设计方案草案**，等用户审批后再生成文档。
+在分析完成、写入文档前，**展示设计方案草案并使用 AskUserQuestion 等待用户确认**，确认后再生成文档。
 
-### 初始设计 Plan 内容
+### 初始设计方案确认
 
 ```markdown
 ## 设计方案草案
@@ -172,9 +172,11 @@ metadata:
 
 ### 风险与权衡
 - <取舍点1>: 选择 A 而非 B，因为 ...
+
+> 以上是设计方案，是否可以开始生成文档？如需调整请说明。
 ```
 
-### 增量设计 Plan 内容
+### 增量设计方案确认
 
 ```markdown
 ## 变更方案草案
@@ -192,18 +194,25 @@ metadata:
 
 ### 破坏性变更处理
 - <如有，列出迁移方案>
+
+> 以上是变更方案，是否可以开始更新文档？如需调整请说明。
 ```
 
-### Plan 模式时机
+### 确认时机
 
-| 模式 | 进入时机 | Plan 内容 |
+| 模式 | 确认时机 | 方案内容 |
 |------|----------|-----------|
 | 初始设计 | 读取需求 + 询问偏好 + 探索代码后 | 技术选型、架构方向、模块划分 |
 | 增量设计 | 影响分析 + 兼容性评估后 | 影响范围、变更策略、迁移方案 |
 
+### 约束
+- 用户确认前：只展示方案，不写入任何文件
+- 用户确认后：仅生成 `docs/devdocs/` 下的文档，严禁编写实现代码
+- `--fast` 模式：跳过方案确认，但保留最终汇总确认
+
 ## 设计前外部研究
 
-当需求涉及不熟悉的技术/框架或复杂集成时，应在 Plan 模式之前进行外部研究（依赖可用的外部检索工具）。
+当需求涉及不熟悉的技术/框架或复杂集成时，应在方案确认之前进行外部研究（依赖可用的外部检索工具）。
 
 **触发条件**：项目未使用过的技术、复杂第三方集成、存在多种可行方案需对比。
 
@@ -346,7 +355,7 @@ docs/devdocs/
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /devdocs-dev-workflow 执行编码）
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] "核心接口"章节仅定义签名，严禁包含实现逻辑
-- [ ] 退出 Plan 模式后，更新设计文档（非代码实现）
+- [ ] 用户确认方案后，更新设计文档（非代码实现）
 - [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
 
 ### 基础约束
@@ -391,18 +400,18 @@ MTE 评审标准详见 [references/mte-rubric.md](references/mte-rubric.md)，�
 
 ### 外部研究约束
 
-- [ ] **涉及不熟悉技术且有外部检索工具时，应在 Plan 模式前完成外部研究；无外部工具时，基于现有代码模式扫描和用户输入进行研究**
+- [ ] **涉及不熟悉技术且有外部检索工具时，应在方案确认前完成外部研究；无外部工具时，基于现有代码模式扫描和用户输入进行研究**
 - [ ] **研究结论必须写入设计文档，不仅存在于对话中**
 - [ ] 已有技术栈或简单需求可跳过研究
 - [ ] `--fast` 模式跳过研究步骤
 
-### Plan 模式约束
+### 方案确认约束
 
-- [ ] **初始设计：读取需求 + 询问偏好 + 探索代码（+ 外部研究）后，必须进入 Plan 模式**
-- [ ] **增量设计：影响分析 + 兼容性评估后，必须进入 Plan 模式**
-- [ ] **Plan 必须包含技术选型理由（初始）或影响范围（增量）**
-- [ ] **用户审批 Plan 后才能写入文档**
-- [ ] 用户要求调整时，更新 Plan 后重新审批
+- [ ] **初始设计：读取需求 + 询问偏好 + 探索代码（+ 外部研究）后，必须展示方案并等待用户确认**
+- [ ] **增量设计：影响分析 + 兼容性评估后，必须展示方案并等待用户确认**
+- [ ] **方案必须包含技术选型理由（初始）或影响范围（增量）**
+- [ ] **用户确认方案后才能写入文档**
+- [ ] 用户要求调整时，更新方案后重新确认
 
 ### 增量设计约束
 

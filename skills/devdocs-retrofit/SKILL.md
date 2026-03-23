@@ -1,7 +1,7 @@
 ---
 name: devdocs-retrofit
 description: Retrofit existing projects to DevDocs workflow, or migrate old DevDocs to new standards. Reverse-engineer code into structured documentation. Use when users want to adapt existing projects, migrate documentation, standardize documents, or upgrade DevDocs version. Triggers on "retrofit", "改造", "适配", "迁移", "标准化", "逆向", "升级文档", "existing project", "已有项目", "从代码生成文档". NOT for initializing new projects (use devdocs-pipeline) or adding features to existing DevDocs (use devdocs-feature).
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, EnterPlanMode
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
@@ -40,18 +40,21 @@ metadata:
    └── 有 DevDocs（符合规范）│      │
        → 无需改造            │      │
                              ▼      ▼
-3. 进入 Plan 模式 → 呈现改造策略
-   │              （改造类型、范围、推导方式、预估工作量）
-   ▼
-4. 用户审批 Plan → 确认策略或调整
+3. 分析（按检测结果分支）
+   │
+   ├── 版本迁移：规范检查 + 生成差异清单
+   └── 新项目：自动识别文档 + 结构分析
    │
    ▼
-5. 退出 Plan 模式 → 生成/更新 docs/devdocs/ 改造文档
+4. 呈现分析结果 + 改造策略（AskUserQuestion）
+   │              让用户选择执行分支
+   ▼
+5. 用户确认 → 按分支执行
    │
-   ├── 版本迁移流程          新项目改造流程
-   │   ├── 规范检查            ├── 自动识别文档
-   │   ├── 生成差异清单        ├── 代码逆向推导（可选）
-   │   └── 更新迁移文档        └── 生成 DevDocs 文档
+   ├── 版本迁移：更新迁移文档 → 生成/更新 docs/devdocs/
+   └── 新项目：
+       ├── 确认识别/手动指定 → 生成 DevDocs 文档
+       └── 代码逆向推导 → 展示推导结果 → 用户二次确认 → 生成 DevDocs 文档
    │
    ▼
 6. 生成改造报告
@@ -59,15 +62,43 @@ metadata:
 
 ---
 
-## Plan 模式规范
+## 方案确认规范
 
-扫描项目结构和检测状态后，**必须使用 EnterPlanMode 呈现改造策略**，等用户审批后再生成/更新文档。
+扫描项目结构和检测状态后，**展示改造策略并使用 AskUserQuestion 让用户选择执行分支**，确认后再生成/更新文档。
 
-### Plan 必须包含
+### 版本迁移场景
+
+展示规范检查结果和迁移动作清单后，让用户选择：
+
+> 检测到旧版 DevDocs，建议迁移策略：
+> 1. **完整迁移**（推荐）- 自动完成所有文档迁移
+> 2. **选择性迁移** - 选择要迁移的文档项（选择后需指定具体迁移范围）
+> 3. **仅生成差异报告** - 不迁移文档，仅输出差异报告
+> 请选择迁移方式。
+
+**选择性迁移追加交互**：用户选择选项 2 后，展示差异清单并让用户勾选要迁移的文档/章节，确认范围后再执行。
+
+### 新项目改造场景
+
+展示项目概况（类型、技术栈、规模）和文档识别结果后，让用户选择：
+
+> 项目结构识别结果如下，请确认或调整：
+> 1. **确认识别结果**，开始生成文档
+> 2. **手动指定**模块/路径
+> 3. **代码逆向推导**后再确认（推导完成后会再次展示结果供确认）
+
+### 方案必须包含
 
 **新项目改造**：项目概况（类型、技术栈、规模）→ 文档识别结果 → 改造方式（文档转换/逆向推导/混合）→ 推导范围和粒度 → 预估产出（F/US/AC 数量）→ 风险与注意
 
 **版本迁移**：规范检查结果 → 迁移动作清单（含影响范围和风险）→ 迁移方式（完整/选择性/仅报告）
+
+### 约束
+- **符合当前规范的项目**：直接告知用户无需改造并退出，不进入分支选择
+- 用户选择前：只展示方案，不写入任何文件
+- 用户选择后：按分支生成 `docs/devdocs/` 下的文档
+- **选择性迁移**：必须在用户指定迁移范围后才能执行，不可猜测范围
+- **代码逆向推导**：推导完成后必须再次展示结果供用户确认，确认后才能写入文档
 
 ## 项目状态检测
 
@@ -377,12 +408,12 @@ docs/devdocs/
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
 
-### Plan 模式约束
+### 方案确认约束
 
-- [ ] **扫描项目 + 检测状态后，必须进入 Plan 模式**
-- [ ] **Plan 必须包含改造策略和预估产出（新项目）或迁移动作清单（版本迁移）**
-- [ ] **用户审批 Plan 后才能开始文档改造**
-- [ ] 用户要求调整时，更新 Plan 后重新审批
+- [ ] **扫描项目 + 检测状态后，必须展示方案并等待用户选择执行分支**
+- [ ] **方案必须包含改造策略和预估产出（新项目）或迁移动作清单（版本迁移）**
+- [ ] **用户确认方案后才能开始文档改造**
+- [ ] 用户要求调整时，更新方案后重新确认
 
 ### 检测约束
 

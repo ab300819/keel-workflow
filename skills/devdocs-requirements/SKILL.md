@@ -1,7 +1,7 @@
 ---
 name: devdocs-requirements
 description: Expand user requirements into detailed DevDocs documents with features (F-XXX), user stories (US-XXX), and acceptance criteria (AC-XXX). Supports initial, incremental, and context (--context) modes. Use when users provide feature requirements, want to clarify scope, or add project background. Triggers on "requirements", "PRD", "feature request", "user story", "需求", "功能点", "验收标准", "项目背景", "补充信息". NOT for system/technical design (use devdocs-system-design) or test case design (use devdocs-test-cases).
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
@@ -33,7 +33,7 @@ metadata:
 /devdocs-requirements              → 自动检测模式
 /devdocs-requirements --incremental → 强制增量模式（追加功能点）
 /devdocs-requirements --context     → 背景信息模式（追加/更新背景）
-/devdocs-requirements --fast        → 跳过 Plan 模式，直接生成，仅最终确认
+/devdocs-requirements --fast        → 跳过方案确认，直接生成，仅最终汇总确认
 ```
 
 | 模式 | 触发条件 | 说明 |
@@ -46,9 +46,9 @@ metadata:
 
 `--fast` 可与任意模式组合，行为变更：
 
-- 跳过 EnterPlanMode 步骤（初始模式）
+- 跳过方案确认步骤（初始模式）
 - 使用合理默认值（不询问技术栈偏好等）
-- 仅保留最终写入前的 1 次确认
+- 仅保留最终写入前的 1 次汇总确认
 - 默认行为不变，`--fast` 是 opt-in
 
 ## 工作流程
@@ -66,13 +66,13 @@ metadata:
 2. 理解需求 + 探索代码库（如适用）
    │
    ▼
-3. 进入 Plan 模式 → 呈现需求拆解方案
+3. 呈现需求拆解方案（AskUserQuestion）
    │              （功能点划分、边界范围、优先级）
    ▼
-4. 用户审批 Plan → 确认拆解方向或调整
+4. 用户确认方案 → 确认拆解方向或调整
    │
    ▼
-5. 退出 Plan 模式 → 生成需求文档：识别功能点 (F-XXX)
+5. 生成需求文档：识别功能点 (F-XXX)
    │
    ▼
 6. 文档编写：用户故事 (US-XXX)
@@ -169,13 +169,13 @@ metadata:
 - [ ] AC 是否可量化可验证（非"系统应正常工作"等模糊描述）
 - [ ] 每个 US 是否有 2-3 条 AC（覆盖密度一致）
 
-## Plan 模式规范
+## 方案确认规范
 
-**仅初始模式**使用 Plan 模式。增量模式和背景信息模式方向明确，无需 Plan。
+**仅初始模式**需要方案确认。增量模式和背景信息模式方向明确，无需确认。
 
-### 初始模式 Plan 内容
+### 初始模式方案确认
 
-在理解需求和探索代码后，**必须使用 EnterPlanMode 呈现需求拆解方案**：
+在理解需求和探索代码后，**展示需求拆解方案并使用 AskUserQuestion 等待用户确认**：
 
 ```markdown
 ## 需求拆解方案
@@ -197,15 +197,22 @@ metadata:
 - 功能点数量：X 个
 - 用户故事数量：约 Y 个
 - 验收标准数量：约 Z 个
+
+> 以上是需求拆解方案，是否可以开始生成文档？如需调整请说明。
 ```
 
-### Plan 模式时机
+### 确认时机
 
-| 模式 | 是否使用 Plan | 理由 |
+| 模式 | 是否需要确认 | 理由 |
 |------|-------------|------|
 | 初始模式 | **是** | F 编号一旦确立，下游全部引用，改动成本高 |
 | 增量模式 | 否 | 追加方向明确，编号延续现有体系 |
 | 背景信息模式 | 否 | 信息整合，无架构决策 |
+
+### 约束
+- 用户确认前：只展示方案，不写入任何文件
+- 用户确认后：仅生成 `docs/devdocs/` 下的文档，严禁编写实现代码
+- `--fast` 模式：跳过方案确认，但保留最终汇总确认
 
 ## 编号规范
 
@@ -319,7 +326,7 @@ metadata:
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /devdocs-dev-workflow 执行编码）
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
-- [ ] 退出 Plan 模式后，执行文档编写（非代码实现）
+- [ ] 用户确认方案后，执行文档编写（非代码实现）
 - [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
 
 ### 功能点约束
@@ -368,12 +375,12 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 - [ ] 敏感信息（密钥、密码、内部 URL）不得写入文档
 - [ ] 参考资料必须注明用途和关联性
 
-### Plan 模式约束
-- [ ] **初始模式：理解需求 + 探索代码后，必须进入 Plan 模式**
-- [ ] **Plan 必须包含功能点划分和范围边界**
-- [ ] **用户审批 Plan 后才能开始编号分配和文档写入**
-- [ ] 用户要求调整时，更新 Plan 后重新审批
-- [ ] 增量模式和背景信息模式不使用 Plan 模式
+### 方案确认约束
+- [ ] **初始模式：理解需求 + 探索代码后，必须展示方案并等待用户确认**
+- [ ] **方案必须包含功能点划分和范围边界**
+- [ ] **用户确认方案后才能开始编号分配和文档写入**
+- [ ] 用户要求调整时，更新方案后重新确认
+- [ ] 增量模式和背景信息模式无需方案确认
 
 ### Generator 自检（用户确认前自动执行）
 

@@ -376,7 +376,7 @@ DevDocs 流程中各 Skill 的协作关系：
 ```yaml
 name: devdocs-requirements
 description: Expand user requirements into detailed DevDocs documents with features (F-XXX), user stories (US-XXX), and acceptance criteria (AC-XXX). Supports initial, incremental, and context (--context) modes.
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 ```
 
 ## 触发条件
@@ -402,7 +402,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch, EnterPlanMode
 
 ## 工作流程
 
-**初始模式**：理解需求 → 探索代码库 → Plan 模式审批 → 起草需求 → 用户确认
+**初始模式**：理解需求 → 探索代码库 → 方案确认 → 起草需求 → 用户确认
 
 **增量模式**：扫描编号 → 理解新需求 → 追加 F/US/AC → 更新矩阵 → 返回新增编号
 
@@ -488,7 +488,7 @@ docs/devdocs/
 ```yaml
 name: devdocs-system-design
 description: Create or update system design documents. Supports initial design and incremental design (impact analysis + compatibility assessment) modes.
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, EnterPlanMode
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 ```
 
 ## 设计模式
