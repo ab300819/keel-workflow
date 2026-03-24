@@ -211,14 +211,15 @@ Step 5: 工作区决策
 docs(T-XX): 更新任务状态并同步 trace
 ```
 
-### 单任务模式兼容
+### 单任务模式编排
 
-单任务模式（`/devdocs-dev-workflow T-03`）行为不变：
+单任务模式（`/devdocs-dev-workflow T-03`）复用同一编排器-执行器架构：
 
 - 跳过批量解析，直接进入依赖解析
 - 依赖解析仍然执行（自动补充前置依赖）
-- 断点检测仍然执行
-- 提交行为不变（延续现有流程，用户可选择是否采用双提交）
+- **依赖扩展后 >1 任务时，自动升级为批量编排**（逐任务子 Agent + 拓扑排序）
+- 仅 1 任务时，启动单个子 Agent 执行完整流程（复用下方子 Agent 协议）
+- 断点检测由编排器执行，子 Agent 从编排器指定的续做起点开始
 
 ### 批量模式中断处理
 
@@ -276,7 +277,7 @@ docs(T-XX): 更新任务状态并同步 trace
 
 ### 子 Agent 协议
 
-批量模式统一使用编排器-执行器架构，每个任务由独立子 Agent 执行（Task tool）。
+所有模式（含单任务）统一使用编排器-执行器架构，每个任务由独立子 Agent 执行（Task tool）。
 
 **输入**（编排器 → 子 Agent）：
 
@@ -287,6 +288,7 @@ docs(T-XX): 更新任务状态并同步 trace
 | 关联编号 | F-XXX, AC-XXX, UT-XXX |
 | 涉及文件 | src/xxx.ts, tests/xxx.test.ts |
 | 决策模式 | `交互`（子 Agent 内 AskUserQuestion）或 `--headless`（策略自动决策） |
+| 续做起点 | 编排器断点检测结果：`null`（全新）或续做信号（如 `red_assertions`/`green_impl` 等，见续做模式信号表） |
 | max_retries | N（默认 3，仅 headless 生效） |
 
 **输出**（子 Agent → 编排器）：
