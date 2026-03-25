@@ -339,7 +339,7 @@ docs/devdocs/
 2. **架构概览** - 高层架构图（**Mermaid**）
 3. **技术选型** - 技术选择及理由
 4. **模块设计** - 模块职责与依赖，**标注关联功能点 (F-XXX)**
-5. **核心接口** - **面向接口 (仅签名)**: 关键接口和方法签名（**严禁包含具体实现逻辑**），标注关联 F-XXX
+5. **核心接口** - **面向接口 (签名 + 行为契约)**: 方法签名 + 前置条件/后置条件/错误契约（**严禁包含具体实现逻辑**），标注关联 F-XXX
 6. **设计模式** - 应用的模式及理由
 7. **代码结构** - 目录结构设计
 8. **数据模型** - 实体定义与关系
@@ -352,7 +352,7 @@ docs/devdocs/
 
 ## 详细参考
 
-- **核心接口设计**：只定义签名不写实现，标注关联 F-XXX → [templates/design-template.md](templates/design-template.md)
+- **核心接口设计**：签名 + 行为契约（前置/后置/错误），标注关联 F-XXX → [templates/design-template.md](templates/design-template.md)
 - **代码结构设计**：按分层架构组织目录结构 → [templates/design-template.md](templates/design-template.md)
 - **日志设计**：级别、关键日志点、格式、追溯 ID → [templates/log-design-guide.md](templates/log-design-guide.md)
 
@@ -361,7 +361,7 @@ docs/devdocs/
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /devdocs-dev-workflow 执行编码）
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
-- [ ] "核心接口"章节仅定义签名，严禁包含实现逻辑
+- [ ] "核心接口"章节仅定义签名和行为契约，严禁包含实现逻辑
 - [ ] 用户确认方案后，更新设计文档（非代码实现）
 - [ ] 编码实现由 `/devdocs-dev-workflow` 负责，本 Skill 不涉及
 
@@ -382,6 +382,7 @@ MTE 评审标准详见 [references/mte-rubric.md](references/mte-rubric.md)，�
 
 - [ ] **每个模块职责单一，不超过一个变化原因**
 - [ ] **核心业务逻辑必须可单元测试**（无外部依赖或依赖可 Mock，详见 `/testing-guide`）
+- [ ] **核心接口必须包含行为契约**（前置条件/后置条件/错误契约），使测试可独立于实现编写
 - [ ] **预留合理扩展点，但不为假设需求设计**
 
 ### 设计模式约束

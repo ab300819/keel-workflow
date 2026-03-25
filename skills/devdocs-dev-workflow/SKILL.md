@@ -202,28 +202,34 @@ test('createUser 应该拒绝无效邮箱格式', () => {
 
 > 先定义骨架，后填充细节。确保追溯链在代码生成时就建立。
 
-### 开发流程
+### 开发流程（双 Agent 模型）
 
 ```text
-Step 1: 生成接口骨架
-        ├── 方法签名（来自 02-system-design.md）
-        ├── 添加 @requirement/@satisfies 标注
-        └── 方法体: throw new Error('Not implemented')
+Step 1: Test Agent（独立子 Agent）
+        ├── 输入：系统设计（接口+行为契约）+ 测试用例 + 需求
+        ├── 生成接口骨架（签名 + @requirement/@satisfies + throw Error）
+        ├── 生成测试代码（@verifies/@testcase + 完整断言）
+        └── 产出：骨架文件 + 测试文件
                 │
                 ▼
-Step 2: 生成测试骨架
-        ├── 测试结构（来自 03-test-*.md）
-        ├── 添加 @verifies/@testcase 标注
-        └── 测试体: test.skip() 或 test.todo()
+Step 2: 红色验证（编排器执行）
+        ├── 运行测试 → 确认新增测试全部失败 + 已有测试无基线外新增失败
+        └── 若新测试意外通过 → ⛔ 检查测试有效性
                 │
                 ▼
-Step 3: 实现接口细节（遵循 /code-quality）
+Step 3: Impl Agent（独立子 Agent）
+        ├── 输入：系统设计（接口+行为契约）+ 测试文件 + 骨架文件
+        ├── 实现代码使测试通过（遵循 /code-quality）
+        ├── 重构优化（保持测试通过）
+        └── 退出条件：所有测试通过
                 │
                 ▼
-Step 4: 完善测试（断言来自 03-test-*.md 中 AC 对应的测试用例，遵循 /testing-guide）
-                │
-                ▼
-Step 5: 运行 /devdocs-sync 更新追溯矩阵
+Step 4: 完成检查 + 提交（编排器）
+        ├── 测试文件不可变校验（diff 检查）
+        ├── AC 满足度验证
+        ├── 对抗式验证（按层级）
+        ├── /code-self-describe --update
+        └── Commit 1
 ```
 
 ### 骨架生成约束
@@ -247,19 +253,19 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
 | **UI 层** (Component/View) | 🟢 | 骨架/实现/绿/AC/自描述/提交 | 测试断言/验证 | 红/重构 |
 | **基础设施** (DB/Config) | ⚪ | 骨架/实现/绿/AC/自描述/提交 | 测试骨架 | 测试断言/红/重构/验证 |
 
-### TDD 循环（统一流程核心）
+### TDD 循环（双 Agent 模型）
 
 ```text
-┌─────┐    ┌─────┐    ┌─────┐
-│ 红  │ → │ 绿  │ → │重构 │ ──┐
-│写测试│    │写实现│    │优化 │   │
-│(失败)│    │(通过)│    │代码 │   │
-└─────┘    └─────┘    └─────┘   │
-    ↑                           │
-    └───────────────────────────┘
+┌──────────┐     ┌──────────┐     ┌──────────┐
+│ Test Agent│ →  │ 红色验证  │ →  │ Impl Agent│
+│ 写骨架+  │     │ 编排器确认│     │ 写实现+  │
+│ 写测试   │     │ 测试失败  │     │ 重构     │
+└──────────┘     └──────────┘     └──────────┘
 ```
 
-> **⛔ 禁止继续：断言必须来自 03-test-\*.md 中对应 AC 的测试用例，不得从实现代码反推测试**（恢复方式：回到 03-test-\*.md 查找对应 AC 的测试用例作为断言来源）。
+> **⛔ 信息屏障：Test Agent 不得看到实现代码；Impl Agent 不得看到 03-test-\*.md（只看测试代码文件）**（恢复方式：检查子 Agent prompt 中的文件访问列表）。
+
+> **⛔ 测试不可变：Impl Agent 严禁修改 Test Agent 产出的测试代码。测试失败只能修改实现。疑似测试缺陷须 AskUserQuestion 确认后回退 Test Agent 修复。**
 
 > 详见 [execution-flow.md](execution-flow.md) 统一任务执行流程 + 强制程度矩阵
 
@@ -269,7 +275,9 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
 
 | 阶段 | 被调度内容 | 调度方式 |
 |------|-----------|----------|
-| **任务执行** | 开发流程（步骤 1→5 + Commit 1） | Task tool 子 Agent |
+| **测试编写** | Test Agent：骨架 + 测试代码 | Task tool 子 Agent |
+| **红色验证** | 运行测试确认失败 | 编排器轻量执行 |
+| **实现编写** | Impl Agent：实现 + 重构 | Task tool 子 Agent |
 | 前置验证 | `/devdocs-verify --impl` | Task tool 子 Agent |
 | UI 对齐 | `/devdocs-verify --ui` | Task tool 子 Agent |
 | 追溯同步 | `/devdocs-sync` | Task tool 子 Agent |
@@ -278,11 +286,10 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
 
 ### 调度原则
 
-1. **上下文隔离**：每个子 Agent 自行读取所需文档，编排器不传递全文
-2. **摘要传递**：只接收子 Agent 返回的 YAML 摘要，据此决定下一步
-3. **异常回退**：子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项询问用户
-4. **不自行排障**：编排层不读取子技能的完整输出文档来尝试修复
-5. **主 Agent 禁止直接执行 TDD**：编排器不写代码、不跑测试、不做开发——这些全在子 Agent 内完成（断点检测的轻量文件扫描除外）
+1. **上下文隔离 + 信息屏障**：子 Agent 自行读取文档；Test Agent 和 Impl Agent 可读范围严格隔离（详见编排隔离约束）
+2. **摘要传递**：只接收 YAML 摘要，`test_defects` 非空时触发用户确认
+3. **测试不可变**：Impl Agent 完成后 diff 测试文件，有变更即为 Blocker
+4. **主 Agent 禁止直接执行 TDD**：编排器不写代码——红色验证和断点检测的轻量文件扫描除外
 
 ## Skill 协作
 
@@ -314,15 +321,16 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
 
 ### 分层 TDD 约束
 
-- [ ] **所有层级遵循统一 11 步执行流程**（层级标记仅决定强制程度）
-- [ ] **核心逻辑任务必须标记 🔴 强制 TDD**（全部 11 步 ■ 必须）
-- [ ] **核心逻辑任务必须先写测试，后写实现**
+- [ ] **所有层级遵循统一 12 步执行流程**（层级标记仅决定强制程度）
+- [ ] **核心逻辑任务必须标记 🔴 强制 TDD**（全部步骤 ■ 必须）
+- [ ] **Test Agent 先写测试，Impl Agent 后写实现**（物理隔离）
 - [ ] **核心逻辑任务禁止在测试通过前提交**
 - [ ] 接口层任务标记 🟡 推荐 TDD
 - [ ] UI 层任务标记 🟢 可选 TDD
 - [ ] 基础设施任务标记 ⚪ 推荐测试骨架
-- [ ] **断言必须来自 03-test-\*.md 中对应 AC 的测试用例，禁止从实现代码反推测试**
-- [ ] TDD 任务必须包含红-绿-重构三步骤
+- [ ] **Test Agent 断言来自行为契约 + 03-test-\*.md，Impl Agent 禁止读取 03-test-\*.md**
+- [ ] **Impl Agent 严禁修改 Test Agent 产出的测试代码**（疑似缺陷须 AskUserQuestion 确认）
+- [ ] TDD 任务必须包含红-绿-重构三步骤（跨越 Test Agent → 编排器 → Impl Agent）
 - [ ] □/○ 步骤跳过时必须在提交信息中记录原因
 
 ### 完成检查约束
@@ -383,7 +391,7 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
 - [ ] **每个任务开始前执行状态检测**（5 步流水线）
 - [ ] **不相关变更必须警告用户**（AskUserQuestion：stash/忽略/终止）
 - [ ] **已完成任务自动跳过**
-- [ ] 进行中任务分析续做起点（11 步精确定位：S1~S11）
+- [ ] 进行中任务分析续做起点（12 步精确定位：S1~S12，含续做 Agent 判定）
 - [ ] 文档状态 + Git 历史 + 工作区三重验证
 
 > 详见 [task-orchestration.md](task-orchestration.md)
@@ -408,9 +416,11 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
 
 ### 编排隔离约束
 
-- [ ] **所有模式（含单任务）必须通过 Task tool 子 Agent 执行开发，主 Agent 不直接执行 TDD**
-- [ ] **主 Agent 只做编排（解析、依赖、断点检测）和决策（摘要处理、用户交互）**
-- [ ] **依赖扩展后 >1 任务时，自动升级为批量编排（逐任务子 Agent + 拓扑排序）**
+- [ ] **每任务双 Agent：Test Agent（骨架+测试）→ 红色验证 → Impl Agent（实现+重构）**
+- [ ] **Test Agent 禁读 src/ 已有实现；Impl Agent 禁读 03-test-\*.md、01-requirements.md**
+- [ ] **编排器在 Impl Agent 完成后 diff 测试文件，有变更即为 ⛔ Blocker**
+- [ ] **主 Agent 只做编排和决策，不直接执行 TDD**
+- [ ] **依赖扩展后 >1 任务时，自动升级为批量编排**
 
 ### 全量测试验证约束
 
@@ -434,28 +444,9 @@ Step 5: 运行 /devdocs-sync 更新追溯矩阵
 
 ## 任务完成流程
 
-所有层级遵循统一完成流程（层级标记决定各步骤强制程度，详见 execution-flow.md）：
+Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）→ AC 验证 → 对抗式验证 → 自描述更新 → 提交决策 → 原子提交（Commit 1 代码 + Commit 2 文档）
 
-1. **确认测试状态**：检查测试是否通过
-2. **确认 TDD 循环**（■🔴 □🟡 ○🟢⚪）：测试从失败到通过的红-绿循环
-3. **检查重构**（■🔴 □🟡 ○🟢⚪）：代码是否经过优化
-4. **验证验收标准**：检查所有 AC 是否满足
-5. **对抗式验证**（■🔴自动 / □🟡🟢--review / ○⚪--review）：
-   - Phase 1: 代码质量审查（/code-quality 视角）
-   - Phase 2: 测试完备性审查（/testing-guide 视角）
-   - Phase 3: 综合报告，处理 Blocker
-6. **更新自描述**：运行 /code-self-describe --update
-7. **提交决策**：
-   - `--headless` 模式：自动提交（安全不变量已在前置步骤保证）
-   - `--auto-commit` 模式：测试通过 + 无 Blocker 时自动提交
-   - 交互模式：AskUserQuestion："任务 T-XX 已完成，是否提交代码？"
-     - 选项："提交" / "继续修改" / "跳过"
-8. **如提交**（原子提交）：
-   - Commit 1: 代码提交 `<type>(T-XX): <名称>`
-   - 更新 04-dev-tasks*.md 状态 + /devdocs-sync
-   - Commit 2: 文档提交 `docs(T-XX): 更新任务状态并同步 trace`
-9. **更新状态**：TodoWrite 标记为已完成
-
+> 详见 [execution-flow.md](execution-flow.md) 完整步骤和强制矩阵
 ## 提交信息格式
 
 遵循 `/commit-convention` 规范，格式如下：

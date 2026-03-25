@@ -63,18 +63,41 @@ graph BT
 
 ## 5. 核心接口 (面向接口设计)
 
-> **原则**：只定义方法签名、参数及返回值，**严禁包含任何实现代码或内部逻辑细节**。
+> **原则**：定义方法签名和行为契约（前置条件/后置条件/错误契约），**严禁包含任何实现代码或内部逻辑细节**。
+> 行为契约使测试可独立于实现编写——Test Agent 仅凭此节即可生成完整测试断言。
+
+### 契约深度标准
+
+| 接口层级 | 前置条件 | 后置条件 | 错误契约 |
+|----------|----------|----------|----------|
+| 服务层 | **必须** | **必须** | **必须** |
+| 数据访问层 | 推荐 | 推荐 | **必须** |
+| 外部服务 | 推荐 | 推荐 | **必须**（网络/超时/格式） |
 
 ### 5.1 服务层接口
 
 #### IUserService
 
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `createUser` | `CreateUserDTO` | `User` | 创建用户 |
-| `getUserById` | `string` | `User \| null` | 根据ID查询 |
-| `updateUser` | `string, UpdateUserDTO` | `User` | 更新用户信息 |
-| `deleteUser` | `string` | `void` | 删除用户 |
+| 方法 | 参数 | 返回值 | 关联 | 说明 |
+|------|------|--------|------|------|
+| `createUser` | `CreateUserDTO` | `User` | F-001, AC-001~003 | 创建用户 |
+| `getUserById` | `string` | `User \| null` | F-001, AC-004 | 根据ID查询 |
+| `updateUser` | `string, UpdateUserDTO` | `User` | F-001, AC-005 | 更新用户信息 |
+| `deleteUser` | `string` | `void` | F-001, AC-006 | 删除用户 |
+
+**行为契约：`createUser(dto: CreateUserDTO): User`**
+
+| 类别 | 条件 | 结果 |
+|------|------|------|
+| 前置条件 | `dto.email` 符合邮箱格式 | — |
+| 前置条件 | `dto.password` 长度>=8 且含大写和数字 | — |
+| 后置条件 | 返回值包含系统生成的 `id` | `User.id` 非空 |
+| 后置条件 | 返回值 `email` 与输入一致 | `User.email === dto.email` |
+| 错误契约 | `dto.email` 格式无效 | `ValidationError(EMAIL_INVALID)` |
+| 错误契约 | `dto.password` 不满足强度要求 | `ValidationError(PASSWORD_WEAK)` |
+| 错误契约 | `dto.email` 已存在 | `ConflictError(EMAIL_DUPLICATE)` |
+
+> 每个方法均需编写行为契约表。错误契约中的异常类型和错误码必须与 Section 11 错误码列表对应。
 
 ### 5.2 数据访问接口
 
@@ -87,6 +110,13 @@ graph BT
 | `findByEmail` | `string` | `User \| null` | 根据邮箱查询 |
 | `delete` | `string` | `void` | 删除用户 |
 
+**行为契约：`save(user: User): User`**
+
+| 类别 | 条件 | 结果 |
+|------|------|------|
+| 错误契约 | 主键冲突 | `DatabaseError(PK_CONFLICT)` |
+| 错误契约 | 唯一约束冲突 | `DatabaseError(UNIQUE_VIOLATION)` |
+
 ### 5.3 外部服务接口
 
 #### IEmailService
@@ -94,6 +124,15 @@ graph BT
 | 方法 | 参数 | 返回值 | 说明 |
 |------|------|--------|------|
 | `send` | `EmailMessage` | `boolean` | 发送邮件 |
+
+**行为契约：`send(msg: EmailMessage): boolean`**
+
+| 类别 | 条件 | 结果 |
+|------|------|------|
+| 后置条件 | 发送成功 | 返回 `true` |
+| 错误契约 | 网络不可达 | `NetworkError(CONNECTION_FAILED)` |
+| 错误契约 | 请求超时 | `NetworkError(TIMEOUT)` |
+| 错误契约 | 邮件地址被拒绝 | `ExternalServiceError(RECIPIENT_REJECTED)` |
 
 ## 6. 设计模式
 
@@ -336,6 +375,7 @@ Order *──* Product
 - [ ] 核心业务逻辑无外部依赖
 - [ ] 外部依赖通过接口注入
 - [ ] 可独立进行单元测试
+- [ ] 核心接口包含完整行为契约（前置/后置/错误），测试可独立于实现编写
 
 ### Extensibility（可扩展性）
 - [ ] 预留了合理的扩展点

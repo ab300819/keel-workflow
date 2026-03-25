@@ -175,6 +175,67 @@ describe('UserService', () => {
 });
 ```
 
+## 行为契约 → Test Agent 断言示例
+
+展示 Test Agent 如何从系统设计的行为契约推导完整测试断言（无需看到任何实现代码）。
+
+### 输入：行为契约（来自 02-system-design.md Section 5）
+
+| 类别 | 条件 | 结果 |
+|------|------|------|
+| 前置条件 | `dto.email` 符合邮箱格式 | — |
+| 前置条件 | `dto.password` 长度>=8 且含大写和数字 | — |
+| 后置条件 | 返回值包含系统生成的 `id` | `User.id` 非空 |
+| 后置条件 | 返回值 `email` 与输入一致 | `User.email === dto.email` |
+| 错误契约 | `dto.email` 格式无效 | `ValidationError(EMAIL_INVALID)` |
+| 错误契约 | `dto.password` 不满足强度要求 | `ValidationError(PASSWORD_WEAK)` |
+| 错误契约 | `dto.email` 已存在 | `ConflictError(EMAIL_DUPLICATE)` |
+
+### 输入：测试用例（来自 03-test-unit.md）
+
+| 编号 | AC | 场景 | 输入 | 预期 | 优先级 |
+|------|-------|------|------|------|--------|
+| UT-001 | AC-001 | 无效邮箱 | `"invalid"` | `ValidationError(EMAIL_INVALID)` | P0 |
+| UT-004 | AC-001 | 有效邮箱创建成功 | `"test@example.com"` | `User.id` 非空 | P0 |
+
+### 输出：Test Agent 产出的测试代码
+
+```typescript
+// tests/user.service.test.ts — Test Agent 产出，Impl Agent 不可修改
+
+describe('UserService.createUser', () => {
+  /**
+   * @verifies AC-001 - 邮箱格式校验
+   * @testcase UT-001
+   */
+  test('应拒绝无效邮箱格式', async () => {
+    // Arrange — 输入来自 UT-001
+    const dto = { email: 'invalid', password: 'Strong1234', username: 'test' };
+
+    // Act & Assert — 断言来自错误契约 EMAIL_INVALID
+    await expect(service.createUser(dto)).rejects.toThrow(ValidationError);
+  });
+
+  /**
+   * @verifies AC-001 - 邮箱格式校验（成功路径）
+   * @testcase UT-004
+   */
+  test('有效邮箱应创建成功并返回 User', async () => {
+    // Arrange — 输入来自 UT-004
+    const dto = { email: 'test@example.com', password: 'Strong1234', username: 'test' };
+
+    // Act
+    const user = await service.createUser(dto);
+
+    // Assert — 断言来自后置条件
+    expect(user.id).toBeTruthy();           // 后置条件：id 非空
+    expect(user.email).toBe(dto.email);     // 后置条件：email 一致
+  });
+});
+```
+
+> **关键**：Test Agent 的断言值和异常类型全部来自行为契约和测试用例文档，不依赖任何实现细节。Impl Agent 拿到这些测试后，只需让实现通过即可。
+
 ## 骨架生成约束
 
 - [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）

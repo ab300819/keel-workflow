@@ -109,13 +109,16 @@ Step 5: 工作区决策
 
 ### 续做模式信号表
 
-| 检测信号 | 已完成步骤 | 续做起点 |
-|----------|-----------|---------|
-| 骨架文件存在 + 测试 skip/todo | 骨架生成 | TDD 红阶段 |
-| 测试有实现但失败 | 红阶段 | 绿阶段（编写实现） |
-| 测试通过 + 未通过完成检查 | TDD 完成 | 完成检查 |
-| 验证报告存在 Blocker 未修 | 验证完成 | 修复 Blocker |
-| 代码提交完成 + 无文档提交 | 代码提交 | 文档同步 |
+| 检测信号 | 已完成步骤 | 续做起点 | 续做 Agent |
+|----------|-----------|---------|-----------|
+| 无骨架、无测试文件 | — | S2 骨架生成 | Test Agent |
+| 骨架文件存在 + 测试 skip/todo | 骨架生成 | S4 编写断言 | Test Agent |
+| 测试有断言且全部失败 + 无实现 | Test Agent 完成 | S5 红色验证 | 编排器 |
+| 测试失败 + 有部分实现 | 红色验证完成 | S6 实现 | Impl Agent |
+| 测试通过 + 未通过完成检查 | Impl Agent 完成 | S8 AC 验证 | 编排器 |
+| 验证 Blocker 未修（实现类） | 验证完成 | 修复 Blocker | Impl Agent |
+| 验证 Blocker 未修（测试类：测试文件被修改/测试缺陷） | 验证完成 | 修复测试 | 编排器→AskUserQuestion→Test Agent |
+| 代码提交完成 + 无文档提交 | 代码提交 | 文档同步 | 编排器 |
 
 ### 续做模式行为
 
@@ -141,24 +144,32 @@ Step 5: 工作区决策
 └──────────────────────────────────────────────┘
           │
           ▼
-┌─ 逐任务循环 ─────────────────────────────────┐
-│  1. 断点检测 → 跳过 / 续做 / 全新            │
-│  2. 启动子 Agent 执行单任务（Task tool）      │
-│     ├── 子 Agent 获得：任务定义+关联编号      │
-│     ├── 子 Agent 执行：骨架→TDD→验证→commit 1│
-│     └── 子 Agent 返回：结果 → 编排器处理      │
-│  3. 编排器处理结果                            │
-│     ├── 成功 → 继续                          │
-│     └── 失败 → 交互：询问用户 / headless：终止│
-│  4. 更新 04-dev-tasks*.md 状态为 已完成       │
-│  5. /devdocs-sync                              │
-│  6. Commit 2: docs(T-XX): 更新任务状态+追踪    │
-│     └── git add [文档文件] && git commit      │
-│  7. 洁净校验 + 写检查点                       │
-│     └── git status --porcelain 非空 → 报错    │
-│  8. TodoWrite 标记任务完成                     │
-│  9. → 下一任务                                │
-└──────────────────────────────────────────────┘
+┌─ 逐任务循环（双 Agent 模型）────────────────────┐
+│  1. 断点检测 → 跳过 / 续做 / 全新              │
+│  2. 启动 Test Agent（Task tool）                │
+│     ├── 输入：系统设计+测试用例+需求            │
+│     └── 产出：接口骨架 + 测试文件               │
+│  3. 红色验证（编排器执行）                      │
+│     ├── 运行测试 → 确认全部失败                 │
+│     └── 意外通过 → ⛔ 检查测试有效性            │
+│  4. 启动 Impl Agent（Task tool）                │
+│     ├── 输入：系统设计+测试文件+骨架            │
+│     ├── 实现代码使测试通过                      │
+│     └── 退出条件：所有测试通过                   │
+│  5. 编排器处理 Impl Agent 结果                  │
+│     ├── 成功 → 继续                            │
+│     ├── 测试缺陷 → AskUserQuestion 确认        │
+│     └── 失败 → 交互：询问 / headless：终止      │
+│  6. 完成检查 + 对抗式验证 + Commit 1            │
+│  7. 更新 04-dev-tasks*.md 状态为 已完成         │
+│  8. /devdocs-sync                                │
+│  9. Commit 2: docs(T-XX): 更新任务状态+追踪      │
+│     └── git add [文档文件] && git commit        │
+│ 10. 洁净校验 + 写检查点                         │
+│     └── git status --porcelain 非空 → 报错      │
+│ 11. TodoWrite 标记任务完成                       │
+│ 12. → 下一任务                                  │
+└──────────────────────────────────────────────────┘
           │
           ▼
 ┌─ 全量测试验证（调用 /devdocs-test-run --trace）──┐
@@ -218,8 +229,8 @@ docs(T-XX): 更新任务状态并同步 trace
 - 跳过批量解析，直接进入依赖解析
 - 依赖解析仍然执行（自动补充前置依赖）
 - **依赖扩展后 >1 任务时，自动升级为批量编排**（逐任务子 Agent + 拓扑排序）
-- 仅 1 任务时，启动单个子 Agent 执行完整流程（复用下方子 Agent 协议）
-- 断点检测由编排器执行，子 Agent 从编排器指定的续做起点开始
+- 仅 1 任务时，同样使用双 Agent 模型（Test Agent → 红色验证 → Impl Agent），复用下方子 Agent 协议
+- 断点检测由编排器执行，根据续做信号表判定从哪个 Agent 的哪个步骤续做
 
 ### 批量模式中断处理
 
@@ -275,33 +286,115 @@ docs(T-XX): 更新任务状态并同步 trace
 > `--headless` 模式下输出交付报告，详见 [auto-mode.md](auto-mode.md)
 > 全量测试报告详见 `docs/devdocs/05-test-report.md`
 
-### 子 Agent 协议
+### 子 Agent 协议（双 Agent 模型）
 
-所有模式（含单任务）统一使用编排器-执行器架构，每个任务由独立子 Agent 执行（Task tool）。
+所有模式（含单任务）统一使用编排器-执行器架构。每个任务产生两个子 Agent 调用，严格按顺序执行：
 
-**输入**（编排器 → 子 Agent）：
+#### Test Agent 协议
+
+**输入**（编排器 → Test Agent）：
 
 | 字段 | 说明 |
 |------|------|
 | 任务编号 | T-XX |
 | 任务定义 | 从 04-dev-tasks*.md 提取的完整任务块 |
 | 关联编号 | F-XXX, AC-XXX, UT-XXX |
-| 涉及文件 | src/xxx.ts, tests/xxx.test.ts |
-| 决策模式 | `交互`（子 Agent 内 AskUserQuestion）或 `--headless`（策略自动决策） |
-| 续做起点 | 编排器断点检测结果：`null`（全新）或续做信号（如 `red_assertions`/`green_impl` 等，见续做模式信号表） |
-| max_retries | N（默认 3，仅 headless 生效） |
+| 系统设计 | 02-system-design*.md（接口签名 + 行为契约） |
+| 测试用例 | 03-test-*.md（对应 AC 的测试用例定义） |
+| 需求文档 | 01-requirements.md |
+| 涉及文件 | src/xxx.ts（骨架目标）, tests/xxx.test.ts |
+| 决策模式 | `交互` 或 `--headless` |
+| 续做起点 | `null` 或 `skeleton_interface`/`skeleton_test`/`red_assertions` |
 
-**输出**（子 Agent → 编排器）：
+> ⛔ 信息屏障：Test Agent 禁止读取任何 src/ 下的已有实现文件（骨架除外）
+
+**输出**（Test Agent → 编排器）：
+
+```yaml
+skill: devdocs-dev-workflow:test-agent
+status: success | failed
+summary:
+  headline: "T-XX 测试代码编写完成，N 个测试用例"
+  details:
+    task: T-XX
+    skeleton_files: [src/services/xxx.ts]
+    test_files: [tests/xxx.test.ts]
+    test_count: 12
+    assertion_sources: [AC-001, AC-002]
+blockers: []
+output_files: [src/services/xxx.ts, tests/xxx.test.ts]
+new_ids: {}
+```
+
+#### 红色验证（编排器执行）
+
+Test Agent 成功后，编排器运行测试验证红色状态：
+
+```
+1. 记录测试基线（Task 开始前运行一次测试，记录已有失败集合）
+2. 运行项目测试命令
+3. 验证 Test Agent 新产出的测试全部失败（骨架抛出 Not implemented）
+4. 新测试全部失败 + 已有测试无新增失败（相比基线）→ 进入 Impl Agent
+5. 新测试意外通过 → ⛔ 异常，测试无效（恢复方式：回到 Test Agent 修复测试）
+6. 已有测试出现基线外的新失败 → ⛔ 骨架破坏已有功能（恢复方式：回到 Test Agent 修复骨架）
+```
+
+#### Impl Agent 协议
+
+**输入**（编排器 → Impl Agent）：
 
 | 字段 | 说明 |
 |------|------|
-| status | success \| failed \| skipped |
-| commit_hash | 成功时的 Commit 1 hash |
-| failure_reason | 失败原因（失败时） |
-| failure_context | 失败位置（失败时） |
-| test_summary | 测试通过情况 + 覆盖率 |
-| blockers_resolved | 已修复 Blocker 数量 |
-| suggestions_skipped | 已跳过 Suggestion 数量 |
+| 任务编号 | T-XX |
+| 任务定义 | 从 04-dev-tasks*.md 提取的完整任务块（不含测试用例细节） |
+| 关联编号 | F-XXX, AC-XXX |
+| 系统设计 | 02-system-design*.md（接口签名 + 行为契约） |
+| 骨架文件 | Test Agent 产出的接口骨架文件路径 |
+| 测试文件 | Test Agent 产出的测试文件路径 |
+| 决策模式 | `交互` 或 `--headless` |
+| 续做起点 | `null` 或 `green_impl`/`refactored` |
+| max_retries | N（默认 3，仅 headless 生效） |
+
+> ⛔ 信息屏障：Impl Agent 禁止读取 03-test-*.md 和 01-requirements.md
+> 允许读取：系统设计文档、Test Agent 产出的代码文件、项目现有源码
+
+**输出**（Impl Agent → 编排器）：
+
+```yaml
+skill: devdocs-dev-workflow:impl-agent
+status: success | failed
+summary:
+  headline: "T-XX 实现完成，N/N 测试通过"
+  details:
+    task: T-XX
+    test_summary:
+      passed: 12
+      failed: 0
+      coverage: "92%"
+    impl_files: [src/services/xxx.ts]
+    refactored: true
+    test_defects: []  # 疑似测试缺陷列表，非空时触发用户确认
+blockers: []
+output_files: [src/services/xxx.ts]
+new_ids: {}
+```
+
+#### 测试代码不可变原则
+
+> ⛔ 禁止继续：Impl Agent 严禁修改 Test Agent 产出的测试代码。测试失败只能通过修改实现代码解决。
+
+**例外 — 疑似测试缺陷**：
+
+若 Impl Agent 判断测试代码存在逻辑错误（断言值与行为契约矛盾、测试 setup 不正确等）：
+
+1. Impl Agent 停止实现，在摘要 `test_defects` 中报告缺陷（含测试编号和问题描述）
+2. 编排器通过 AskUserQuestion 向用户确认：
+   - 选项 A：确认测试有误 → 回退 Test Agent 修复 → 重新红色验证 → 重启 Impl Agent
+   - 选项 B：测试正确 → Impl Agent 继续调整实现
+   - 选项 C：终止当前任务
+3. `--headless` 模式：直接 fail-fast 终止，不自动修改测试
+
+**安全网**：编排器在 Impl Agent 完成后对比测试文件 diff，若测试文件有任何变更 → ⛔ Blocker。
 
 > 交互模式下子 Agent 可通过 AskUserQuestion 与用户交互；headless 模式下由策略自动决策。
 > 架构相同，决策方式不同。
