@@ -59,6 +59,13 @@ next_recommended:
 - 无 build/test/lint 命令
 - 发现 skill：读取 `skills/*/SKILL.md` 的 description 字段
 
+## 角色规范
+
+- 高关注点分离需求的 skill 使用 `## 角色` 块（身份/关注/回避/判断倾向）
+- 中等需求的 skill 使用 `> 视角：...` 一句话锚定
+- 工具性/调度性 skill 不加角色
+- 角色定义必须与工作流约束保持一致，不得冲突
+
 ## 约定
 
 - 提交：Conventional Commits — `feat/fix/refactor/docs(scope): description`

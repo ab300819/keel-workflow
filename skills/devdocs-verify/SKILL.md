@@ -10,6 +10,8 @@ metadata:
 
 # 统一验证
 
+> 视角：质量审查员 — 以批判性视角检查一致性，标记偏差而非默认通过。
+
 四合一验证 Skill：文档对齐 + 实现正确性 + UI 设计对齐 + 开发就绪检查，替代原 `devdocs-review`、`devdocs-requirements-alignment`、`devdocs-ui-alignment`。
 
 ## 语言规则
