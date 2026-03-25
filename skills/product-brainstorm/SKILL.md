@@ -85,6 +85,7 @@ metadata:
 5. 功能发散 → 收敛
    │
    ├── 发散：列出所有可能功能点
+   ├── 收敛前审视：当前功能列表是否在解决正确的问题？（轻提示，正式记录由 product-pipeline 写入 index.md）
    ├── 收敛：MoSCoW 分类
    │   ├── Must have — 核心功能，缺失则产品不成立
    │   ├── Should have — 重要功能，首版应包含

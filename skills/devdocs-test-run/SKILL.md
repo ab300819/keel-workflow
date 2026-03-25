@@ -36,6 +36,8 @@ metadata:
 /devdocs-test-run --e2e        # 仅 E2E 测试
 /devdocs-test-run F-001        # 按功能点关联的测试
 /devdocs-test-run --trace      # 全量执行 + 追溯验证
+/devdocs-test-run --affected   # 仅运行受变更影响的测试
+/devdocs-test-run --affected --ut  # 受影响的单元测试
 ```
 
 ### 模式说明
@@ -48,6 +50,7 @@ metadata:
 | `--e2e` | 仅执行 E2E 测试（E2E-XXX） |
 | `F-XXX` | 通过追溯矩阵查找功能点关联的所有测试并执行 |
 | `--trace` | 全量执行 + 追溯完整性验证 |
+| `--affected` | 基于 git diff 识别变更文件，仅运行关联测试（可与 --ut/--it/--e2e 组合） |
 
 ## 前置条件
 
@@ -61,6 +64,14 @@ metadata:
    ├── 扫描 docs/devdocs/03-test-cases*.md
    ├── 解析测试用例清单（UT/IT/E2E 编号）
    └── 解析追溯矩阵（AC → 测试映射）
+           │
+           ▼
+1.5 [--affected] 变更范围识别
+   ├── 确定比较基线（用户指定 base / 自动检测 merge-base / 不可判定时提示全量）
+   ├── 执行 git diff --name-only <base> 获取变更文件
+   ├── 在 03-test-cases.md 中匹配引用这些文件的测试用例
+   ├── 在 04-dev-tasks.md 中匹配关联文件的任务，反查测试用例
+   └── 无匹配时提示"建议运行全量"
            │
            ▼
 2. 检测测试框架
@@ -210,6 +221,7 @@ UT（单元测试）→ IT（集成测试）→ E2E（端到端测试）
 - 失败详情（文件路径、行号、错误信息、关联 AC）
 - [--trace] 追溯验证结果
 - 建议（未覆盖 AC 的处理建议）
+- [--affected] 覆盖范围（模式、比较基线、变更文件、匹配测试、未覆盖变更）
 
 ## Skill 协作
 

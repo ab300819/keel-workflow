@@ -6,7 +6,7 @@
 # 测试报告
 
 > 生成时间: {{timestamp}}
-> 执行模式: {{mode}} (全量 / --ut / --it / --e2e / F-XXX / --trace)
+> 执行模式: {{mode}} (全量 / --ut / --it / --e2e / F-XXX / --trace / --affected)
 
 ## 执行摘要
 
@@ -89,6 +89,16 @@
 | ⚠️ 标注不一致 | {{inconsistent_count}} | {{details}} |
 | ℹ️ 孤立测试 | {{orphan_count}} | {{details}} |
 
+## 覆盖范围
+
+> 仅 --affected 模式时填写，全量模式可省略。
+
+- 模式：{{run_mode}}
+- 比较基线：{{base_ref}}
+- 变更文件：{{changed_files}}
+- 匹配测试：{{matched_tests}}
+- 未覆盖变更：{{uncovered_files}}
+
 ## 建议
 
 <!-- 根据测试结果自动生成建议 -->
@@ -103,7 +113,7 @@
 ### 占位符
 
 - `{{xxx}}` 格式的占位符由 `/devdocs-test-run` 在生成报告时替换为实际值
-- 章节根据实际执行结果动态增减（无失败则省略失败详情，非 --trace 则省略追溯验证）
+- 章节根据实际执行结果动态增减（无失败则省略失败详情，非 --trace 则省略追溯验证，非 --affected 则省略覆盖范围）
 
 ### 输出规则
 
