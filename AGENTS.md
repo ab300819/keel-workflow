@@ -6,7 +6,7 @@
 
 - 规格库：Markdown + YAML skill 定义（非传统代码库）
 - 无 build/test/lint 命令
-- 24 个 skill，核心为 DevDocs 工作流
+- 27 个 skill：DevDocs 工作流（开发侧）+ Product Pipeline（产品侧）
 
 ## 架构决策
 
@@ -14,10 +14,11 @@
 - 详细模板放 `templates/` 子目录，SKILL.md 控制在 500 行以内
 - `templates/` 子目录存放输出模板，`references/` 子目录存放评估标准/rubric/规则
 - DevDocs 编排层（pipeline/feature/bugfix）通过 Task tool 调度原子 skill 作为子代理
+- Product Pipeline（product-pipeline/brainstorm/prd-parser）独立于 DevDocs，处理模糊想法和大型 PRD，通过 `--from-product` 软集成
 
 ## 子 Agent 摘要契约（yaml-summary-v1）
 
-所有 DevDocs skill 作为子 Agent 运行时，返回统一信封格式：
+所有 DevDocs 和 Product Pipeline skill 作为子 Agent 运行时，返回统一信封格式：
 
 ```yaml
 skill: <skill-name>
@@ -52,6 +53,7 @@ next_recommended:
 | Skill | 可复用的 SKILL.md 定义文件，扩展 AI agent 能力 |
 | DevDocs | 文档驱动开发工作流（需求→设计→测试→任务→开发→验证→同步） |
 | 编号体系 | F/US/AC/UT/IT/E2E/Journey/INS/BUG/T/BCA，链路：F→US→AC→测试 |
+| Product Pipeline | 独立的产品需求处理流程，使用 FR-XX/NFR-XX 编号，通过 `--from-product` 衔接 DevDocs |
 | 质量锚 | 批量生成时首批输出作为后续批次的质量基准 |
 
 ## 命令
@@ -76,4 +78,5 @@ next_recommended:
 
 - Skill 结构规范：各 `skills/<name>/SKILL.md`
 - DevDocs 完整架构：`skills/devdocs-pipeline/SKILL.md`
+- Product Pipeline 架构：`skills/product-pipeline/SKILL.md`
 - 经验模式库：`docs/devdocs/patterns/`（由 `/devdocs-compound` 生成）
