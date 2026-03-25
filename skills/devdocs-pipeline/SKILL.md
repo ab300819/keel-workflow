@@ -52,6 +52,10 @@ user-invocable: true
 扫描 docs/devdocs/ 目录
     │
     ├── 无文件 → 新项目判断（见下方 Q1）
+    │     │
+    │     ├── 用户输入明显模糊/极短（<200字，无结构）→ "建议先运行 /product-pipeline 探索需求"
+    │     ├── 用户提供大文档引用（文件/URL/粘贴长文）→ "建议先运行 /product-pipeline prd 解析文档"
+    │     └── 有 docs/product/requirements/index.md 且 maturity=ready → "产品需求已就绪，建议运行 /devdocs-requirements --from-product"
     │
     └── 有文件 → 分析当前阶段
           │

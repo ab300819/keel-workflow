@@ -41,6 +41,7 @@ metadata:
 /devdocs-requirements --incremental → 强制增量模式（追加功能点）
 /devdocs-requirements --context     → 背景信息模式（追加/更新背景）
 /devdocs-requirements --fast        → 跳过方案确认，直接生成，仅最终汇总确认
+/devdocs-requirements --from-product <index路径> → 消费产品需求包
 ```
 
 | 模式 | 触发条件 | 说明 |
@@ -48,6 +49,32 @@ metadata:
 | **初始模式** | 无 `01-requirements.md` | 从零创建需求文档 |
 | **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加功能点/用户故事/验收标准 |
 | **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
+| **产品导入模式** | `--from-product` + index 路径 | 消费 product-pipeline 输出的结构化需求包 |
+
+### `--from-product` 模式
+
+消费 `/product-pipeline` 产出的结构化需求包，转化为正式 F/US/AC。
+
+**模式定位**：初始模式的变体。产品流程通常在 DevDocs 之前运行，此时 `01-requirements.md` 尚不存在。如果已存在则按增量模式追加。
+
+**与其他模式的关系**：
+- 替代初始模式的"收集原始需求"步骤（需求已由 product-pipeline 准备好）
+- **跳过方案确认环节**（Inversion gate），因为用户已在 product-pipeline 中确认过
+- 保留最终文档确认（仅确认 F/US/AC 生成结果）
+
+**消费流程**：
+1. 读取 `docs/product/requirements/index.md` → 获取所有 FR-XX/NFR-XX 文件列表和成熟度
+2. 逐个读取 `requirements/FR-XX.md` → 提取澄清结论中的功能描述和验收意图
+3. 将 FR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "product-pipeline"）
+4. 按现有流程生成 F-XXX/US-XXX/AC-XXX（跳过方案确认，直接生成）
+5. 在 `docs/product/requirements/index.md` 追加 `## DevDocs 映射` 章节，记录 `FR-XX -> F-XXX` 映射关系
+6. 返回新增编号列表
+
+**最小输入字段**（每个 FR-XX/NFR-XX 文件必须包含）：
+- title（功能名称）
+- type（FR/NFR）
+- 澄清结论中的功能描述
+- 验收意图（至少 1 条）
 
 ### `--fast` 模式
 
@@ -430,7 +457,7 @@ status: success | failed | partial
 summary:
   headline: "初始需求完成，3 功能点 15 验收标准"
   details:
-    mode: initial | incremental
+    mode: initial | incremental | from-product
 blockers: []
 output_files:
   - docs/devdocs/01-requirements.md
