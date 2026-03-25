@@ -27,7 +27,7 @@ summary:
   details: {}           # skill 私有字段放这里
 blockers: []             # 通用：阻塞项列表
 output_files: []         # 通用：产出/修改的文件
-new_ids: {}              # 通用：生成的编号 (F/US/AC/UT/IT/T/BUG/INS)
+new_ids: {}              # 通用：生成的编号 (F/US/AC/UT/IT/E2E/Journey/T/BUG/INS)
 next_recommended:
   skill: <next-skill>    # 可选
   args: ""               # 可选
@@ -51,7 +51,7 @@ next_recommended:
 |------|------|
 | Skill | 可复用的 SKILL.md 定义文件，扩展 AI agent 能力 |
 | DevDocs | 文档驱动开发工作流（需求→设计→测试→任务→开发→验证→同步） |
-| 编号体系 | F/US/AC/UT/IT/E2E/INS/BUG/T/BCA，链路：F→US→AC→测试 |
+| 编号体系 | F/US/AC/UT/IT/E2E/Journey/INS/BUG/T/BCA，链路：F→US→AC→测试 |
 | 质量锚 | 批量生成时首批输出作为后续批次的质量基准 |
 
 ## 命令

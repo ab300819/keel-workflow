@@ -43,11 +43,13 @@ metadata:
             │
             └── 验收标准 (AC-XXX)
                     │
-                    ├── 单元测试 (UT-XXX)  ← 验证内部逻辑
+                    ├── 单元测试 (UT-XXX)      ← 验证内部逻辑
                     │
-                    ├── 集成测试 (IT-XXX)  ← 验证组件协作
+                    ├── 集成测试 (IT-XXX)      ← 验证组件协作
                     │
-                    └── E2E 测试 (E2E-XXX) ← 验证用户场景
+                    ├── E2E 测试 (E2E-XXX)     ← 验证单 US 用户场景
+                    │
+                    └── 用户旅程 (Journey-XXX)  ← 验证跨 US 业务闭环
 ```
 
 **关键原则**：
@@ -62,7 +64,10 @@ metadata:
 | 输入验证规则 | 单元测试 | "邮箱格式校验" → UT |
 | 业务逻辑规则 | 单元测试 + 集成测试 | "密码加密存储" → UT + IT |
 | 用户交互流程 | E2E 测试 | "完成注册流程" → E2E |
+| 跨功能用户流程 | 用户旅程测试 | "新用户从注册到首次使用" → Journey |
 | 组件间协作 | 集成测试 | "发送验证邮件" → IT |
+
+> **E2E 与 Journey 的区别**：E2E-XXX 验证单个用户故事的完整交互；Journey-XXX 串联 >= 2 个用户故事，验证跨功能的业务闭环与步骤间状态传递。
 
 ## 编号规范
 
@@ -71,13 +76,12 @@ metadata:
 | 单元测试 | UT | UT-XXX | UT-001, UT-002 |
 | 集成测试 | IT | IT-XXX | IT-001, IT-002 |
 | E2E 测试 | E2E | E2E-XXX | E2E-001, E2E-002 |
+| 用户旅程 | Journey | Journey-XXX | Journey-001, Journey-002 |
 
 ## 运行模式
 
-```bash
-/devdocs-test-cases              → 标准模式（逐步确认）
-/devdocs-test-cases --fast       → 跳过逐步确认，直接生成，仅最终确认
-```
+- `/devdocs-test-cases` → 标准模式（逐步确认）
+- `/devdocs-test-cases --fast` → 跳过逐步确认，直接生成，仅最终确认
 
 ### `--fast` 模式
 
@@ -106,7 +110,14 @@ metadata:
    │    └── 质量一致性自检（与首批对比详细程度）
    │
    ▼
-5. 生成追溯矩阵
+4.5 汇总用户旅程
+   │  所有功能点的 UT/IT/E2E 完成后：
+   │    ├── 回顾跨功能点的 US 串联关系
+   │    ├── 筛选核心旅程（>= 2 个 US 串联）
+   │    └── 设计 Journey 用例
+   │
+   ▼
+5. 生成追溯矩阵（含 Journey）
    │
    ▼
 6. 用户确认
@@ -181,11 +192,12 @@ docs/devdocs/
 ### 基础格式（设计阶段）
 
 ```markdown
-| 功能点 | 用户故事 | 验收标准 | 单元测试 | 集成测试 | E2E测试 | 状态 |
-|--------|----------|----------|----------|----------|---------|------|
-| F-001 | US-001 | AC-001 | UT-001 | - | E2E-001 | ⏳ |
-| F-001 | US-001 | AC-002 | UT-002 | - | E2E-001 | ⏳ |
+| 功能点 | 用户故事 | 验收标准 | 单元测试 | 集成测试 | E2E/旅程测试 | 状态 |
+|--------|----------|----------|----------|----------|-------------|------|
+| F-001 | US-001 | AC-001 | UT-001 | - | E2E-001, Journey-001 | ⏳ |
+| F-001 | US-001 | AC-002 | UT-002 | - | E2E-001, Journey-001 | ⏳ |
 | F-001 | US-002 | AC-004 | UT-003, UT-004 | IT-001 | - | ⏳ |
+| F-002 | US-003 | AC-006 | - | IT-002 | Journey-001 | ⏳ |
 ```
 
 ### 完整格式（开发阶段，含代码位置）
@@ -262,6 +274,14 @@ docs/devdocs/
 | E2E-001 | US-001 | AC-001~AC-003 | 1. 打开注册页<br>2. 输入邮箱密码<br>3. 点击注册 | 注册成功，收到验证邮件 | P0 |
 ```
 
+### 用户旅程测试用例
+
+```markdown
+| 编号 | 角色 | 串联故事 | 旅程步骤摘要 | 优先级 |
+|------|------|----------|-------------|--------|
+| Journey-001 | 新用户 | US-001→US-003 | 注册→验证→登录→首页 | P0 |
+```
+
 ## 覆盖率要求
 
 | 测试类型 | 覆盖目标 | 覆盖要求 |
@@ -269,6 +289,7 @@ docs/devdocs/
 | 单元测试 | 核心业务逻辑 | 行覆盖率 ≥ 80%，分支覆盖率 ≥ 80% |
 | 集成测试 | 组件协作场景 | 每个功能点至少 1 个 IT |
 | E2E 测试 | 用户故事 | 每个 P0 用户故事至少 1 个 E2E |
+| 用户旅程 | 核心用户路径 | 至少 1 条核心旅程；中大型产品 2-3 条 |
 
 ## 约束
 
@@ -333,7 +354,7 @@ AC 质量评估标准详见 [../devdocs-requirements/references/ac-quality-rubri
 skill: devdocs-test-cases
 status: success | failed | partial
 summary:
-  headline: "测试设计完成，12 UT + 3 IT + 2 E2E"
+  headline: "测试设计完成，12 UT + 3 IT + 2 E2E + 1 Journey"
   details:
     mode: initial | incremental
     traceability_matrix_updated: true
@@ -344,6 +365,7 @@ new_ids:
   unit_tests: [UT-001~UT-012]
   integration_tests: [IT-001~IT-003]
   e2e_tests: [E2E-001~E2E-002]
+  journeys: [Journey-001]
 next_recommended:
   skill: devdocs-dev-tasks
 ```

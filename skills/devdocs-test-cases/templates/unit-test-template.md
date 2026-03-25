@@ -34,26 +34,6 @@
 | UT-002 | AC-002 | 无效格式 | `"invalid"` | `false` | P0 |
 | UT-003 | AC-002 | 空字符串 | `""` | `false` | P1 |
 
-**测试代码**：
-```typescript
-describe('validateEmail', () => {
-  // UT-001: AC-001 - 有效邮箱
-  it('应该返回 true 当邮箱格式有效', () => {
-    expect(validateEmail('test@example.com')).toBe(true);
-  });
-
-  // UT-002: AC-002 - 无效格式
-  it('应该返回 false 当邮箱格式无效', () => {
-    expect(validateEmail('invalid')).toBe(false);
-  });
-
-  // UT-003: AC-002 - 空字符串
-  it('应该返回 false 当邮箱为空', () => {
-    expect(validateEmail('')).toBe(false);
-  });
-});
-```
-
 #### validatePassword()
 
 | 编号 | 验收标准 | 场景 | 输入 | 预期输出 | 优先级 |
@@ -83,55 +63,11 @@ describe('validateEmail', () => {
 | Logger | Spy | 验证日志调用 |
 | Time | Mock | 使用 fake timers |
 
-### Mock 示例
-
-**数据库 Mock**：
-```typescript
-const mockDb = {
-  query: jest.fn().mockResolvedValue([{ id: 1 }]),
-  insert: jest.fn().mockResolvedValue({ insertId: 1 }),
-};
-```
-
-**外部 API Stub**：
-```typescript
-jest.mock('./externalApi', () => ({
-  fetchData: jest.fn().mockResolvedValue({ data: 'mocked' }),
-}));
-```
-
 ---
 
 ## 测试数据
 
-### 工厂函数
-
-```typescript
-const createTestUser = (overrides = {}) => ({
-  id: 'test-id',
-  name: 'Test User',
-  email: 'test@example.com',
-  ...overrides,
-});
-```
-
----
-
-## 执行命令
-
-```bash
-# 运行单元测试
-npm test
-
-# 带覆盖率
-npm test -- --coverage
-
-# 运行特定文件
-npm test -- src/services/user.test.ts
-
-# Watch 模式
-npm test -- --watch
-```
+使用工厂函数集中管理测试数据，支持通过参数覆盖默认值。每个工厂函数返回一个完整的测试对象，避免在用例中重复构造。
 
 ---
 

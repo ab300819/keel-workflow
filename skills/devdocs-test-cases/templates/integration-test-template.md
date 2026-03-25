@@ -23,6 +23,62 @@
 
 ---
 
+## Provider 策略
+
+集成测试通过 **Provider 模式**管理外部依赖，测试代码只依赖接口，不直接创建 Mock。
+
+### 策略总览
+
+| 组件类型 | 接口 | Mock 实现 | 真实实现 | 默认模式 |
+|----------|------|-----------|----------|----------|
+| 数据库 | `IDatabase` | - | 真实测试库 | real |
+| 内部服务 | - | - | 真实调用 | real |
+| 外部 API | `IPaymentProvider` | `MockPaymentProvider` | `RealPaymentProvider` | mock |
+| 邮件服务 | `IEmailProvider` | `MockEmailProvider` | `RealEmailProvider` | mock |
+
+> **核心原则**：内部组件真实调用，外部依赖通过 Provider 接口可切换。
+
+### 切换方式
+
+通过环境变量 `IT_PROVIDER_MODE=mock|real` 控制。工厂函数根据该变量返回对应的 Provider 实现。
+
+> **命名规则**：各测试类型统一使用 `<TEST_TYPE>_PROVIDER_MODE` 格式（IT 用 `IT_PROVIDER_MODE`，E2E 用 `E2E_PROVIDER_MODE`）。
+
+---
+
+## Provider 目录结构
+
+```
+tests/
+├── providers/
+│   ├── index.ts                # Provider 工厂：根据环境变量创建对应实现
+│   ├── email.provider.ts       # IEmailProvider 接口定义
+│   ├── email.mock.ts           # Mock 实现：内存记录调用，不发送真实邮件
+│   ├── email.real.ts           # 真实实现：对接外部邮件服务 API
+│   ├── payment.provider.ts     # IPaymentProvider 接口定义
+│   ├── payment.mock.ts         # Mock 实现：模拟支付回调
+│   └── payment.real.ts         # 真实实现：对接支付网关
+├── integration/
+│   └── auth.integration.test.ts
+└── test.config.ts              # 读取 IT_PROVIDER_MODE 环境变量
+```
+
+### Provider 接口说明
+
+| 接口 | 方法 | 职责 |
+|------|------|------|
+| `IEmailProvider` | `sendVerificationEmail(to, token)` | 发送验证邮件，返回 `{ messageId }` |
+| `IPaymentProvider` | `createCharge(amount, currency)` | 创建支付，返回 `{ chargeId, status }` |
+
+### Mock 与真实实现的行为差异
+
+| Provider | Mock 行为 | 真实行为 |
+|----------|-----------|----------|
+| `EmailProvider` | 内存记录发送参数，提供 `findByRecipient()` 查询 | 调用外部邮件 API |
+| `PaymentProvider` | 立即返回成功/失败（可配置） | 调用支付网关，等待回调 |
+
+---
+
 ## 测试用例
 
 ### F-001: <功能点名称>
@@ -36,24 +92,6 @@
 2. <执行步骤>
 3. <验证步骤>
 
-**测试代码示例**：
-```typescript
-describe('IT-001: <测试场景>', () => {
-  it('应该 <预期行为> 当 <条件>', async () => {
-    // Arrange
-    const user = await createTestUser();
-
-    // Act
-    const result = await userService.register(user);
-
-    // Assert
-    expect(result.id).toBeDefined();
-    const savedUser = await db.users.findById(result.id);
-    expect(savedUser.email).toBe(user.email);
-  });
-});
-```
-
 ---
 
 ### F-002: <功能点名称>
@@ -64,72 +102,15 @@ describe('IT-001: <测试场景>', () => {
 
 ---
 
-## Mock 策略
-
-集成测试中的 Mock 策略：
-
-| 组件类型 | 策略 | 说明 |
-|----------|------|------|
-| 数据库 | 真实连接 | 使用测试数据库 |
-| 内部服务 | 真实调用 | 验证服务间协作 |
-| 外部 API | Mock/Stub | 使用 nock/msw 模拟 |
-| 邮件服务 | Mock | 验证调用参数，不实际发送 |
-
-### 外部服务 Mock 示例
-
-```typescript
-// 使用 msw 模拟外部 API
-import { rest } from 'msw';
-
-const handlers = [
-  rest.post('https://api.email.com/send', (req, res, ctx) => {
-    return res(ctx.json({ messageId: 'mock-id' }));
-  }),
-];
-```
-
----
-
 ## 测试数据管理
 
 ### 数据隔离
 
-```typescript
-beforeEach(async () => {
-  // 清理测试数据
-  await db.users.deleteMany({ email: /@test\.com$/ });
-});
-
-afterAll(async () => {
-  // 关闭连接
-  await db.disconnect();
-});
-```
+每个测试用例运行前清理相关测试数据，运行后关闭连接。使用带时间戳的唯一标识（如 `test-{timestamp}@test.com`）确保用例间数据隔离。
 
 ### 测试数据工厂
 
-```typescript
-const createTestUser = (overrides = {}) => ({
-  email: `test-${Date.now()}@test.com`,
-  password: 'TestPass123!',
-  ...overrides,
-});
-```
-
----
-
-## 执行命令
-
-```bash
-# 运行集成测试
-npm run test:integration
-
-# 运行特定文件
-npm run test:integration -- auth.integration.test.ts
-
-# 带覆盖率
-npm run test:integration -- --coverage
-```
+通过工厂函数集中管理测试数据，支持参数覆盖默认值，避免用例中重复构造数据。
 
 ---
 
@@ -151,8 +132,16 @@ npm run test:integration -- --coverage
 ## 测试范围
 
 - UserService + Database：用户数据持久化
-- AuthService + EmailService：认证邮件发送
+- AuthService + EmailProvider：认证邮件发送
 - TokenService + Database：Token 存储和验证
+
+## Provider 策略
+
+| 组件类型 | 接口 | Mock 实现 | 真实实现 | 默认模式 |
+|----------|------|-----------|----------|----------|
+| 数据库 | `IDatabase` | - | 测试数据库 | real |
+| 邮件服务 | `IEmailProvider` | `MockEmailProvider` | `RealEmailProvider` | mock |
+| Token 存储 | `IDatabase` | - | 测试数据库 | real |
 
 ---
 
@@ -162,34 +151,13 @@ npm run test:integration -- --coverage
 
 | 编号 | 验收标准 | 测试场景 | 涉及组件 | 预期结果 | 优先级 |
 |------|----------|----------|----------|----------|--------|
-| IT-001 | AC-003 | 注册后发送验证邮件 | UserService + EmailService + DB | 用户创建成功，邮件发送调用正确 | P0 |
+| IT-001 | AC-003 | 注册后发送验证邮件 | UserService + EmailProvider + DB | 用户创建成功，邮件发送调用正确 | P0 |
 
-**测试代码**：
-```typescript
-describe('IT-001: 注册后发送验证邮件', () => {
-  const mockEmailService = {
-    sendVerificationEmail: jest.fn().mockResolvedValue({ messageId: 'test' }),
-  };
-
-  it('应该创建用户并发送验证邮件', async () => {
-    // Arrange
-    const userData = createTestUser();
-
-    // Act
-    const user = await userService.register(userData);
-
-    // Assert - 用户已创建
-    const savedUser = await db.users.findById(user.id);
-    expect(savedUser).not.toBeNull();
-    expect(savedUser.email).toBe(userData.email);
-
-    // Assert - 邮件已发送
-    expect(mockEmailService.sendVerificationEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ email: userData.email })
-    );
-  });
-});
-```
+**测试步骤**：
+1. 准备：通过工厂函数创建测试用户数据
+2. 执行：调用 `userService.register(userData)`
+3. 验证用户：查询数据库确认用户已创建，邮箱匹配
+4. 验证邮件：确认 EmailProvider 收到正确的收件人和 token 参数
 
 ---
 
@@ -199,41 +167,14 @@ describe('IT-001: 注册后发送验证邮件', () => {
 |------|----------|----------|----------|----------|--------|
 | IT-002 | AC-006~AC-008 | 完整登录流程 | AuthService + UserService + TokenService | 返回有效 Token，刷新 Token 存储 | P0 |
 
-**测试代码**：
-```typescript
-describe('IT-002: 完整登录流程', () => {
-  it('应该返回有效 Token 当凭证正确', async () => {
-    // Arrange
-    const user = await createAndSaveTestUser();
+**测试步骤**：
+1. 准备：创建并保存测试用户
+2. 执行：调用 `authService.login(email, password)`
+3. 验证 Token：确认返回 accessToken 和 refreshToken
+4. 验证存储：查询数据库确认 refreshToken 已持久化
 
-    // Act
-    const result = await authService.login(user.email, 'TestPass123!');
-
-    // Assert
-    expect(result.accessToken).toBeDefined();
-    expect(result.refreshToken).toBeDefined();
-
-    // 验证 Token 已存储
-    const storedToken = await db.refreshTokens.findOne({ userId: user.id });
-    expect(storedToken).not.toBeNull();
-  });
-
-  it('应该锁定账号当连续失败 5 次', async () => {
-    // Arrange
-    const user = await createAndSaveTestUser();
-
-    // Act - 连续 5 次错误密码
-    for (let i = 0; i < 5; i++) {
-      await authService.login(user.email, 'WrongPassword').catch(() => {});
-    }
-
-    // Assert
-    const lockedUser = await db.users.findById(user.id);
-    expect(lockedUser.lockedUntil).toBeDefined();
-    expect(lockedUser.lockedUntil.getTime()).toBeGreaterThan(Date.now());
-  });
-});
-```
+**异常路径**：
+- 连续 5 次错误密码后，确认账号锁定（`lockedUntil` 字段大于当前时间）
 
 ---
 
@@ -241,7 +182,7 @@ describe('IT-002: 完整登录流程', () => {
 
 | 编号 | 验收标准 | 测试场景 | 涉及组件 | 预期结果 | 优先级 |
 |------|----------|----------|----------|----------|--------|
-| IT-003 | AC-011~AC-013 | 密码重置流程 | AuthService + EmailService + TokenService | Token 生成、邮件发送、密码更新 | P1 |
+| IT-003 | AC-011~AC-013 | 密码重置流程 | AuthService + EmailProvider + TokenService | Token 生成、邮件发送、密码更新 | P1 |
 
 ---
 
