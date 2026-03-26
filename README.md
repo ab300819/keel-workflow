@@ -1,2006 +1,238 @@
-# Skills 模板集合
+# AI Agent Skills
 
-面向**个人开发者**的 AI Agent Skills 模板项目，包含 DevDocs 全流程和通用工具 skills。
+面向**个人开发者**的 AI Agent Skills 模板项目。
+
+包含 19 个 ms- 流程 skill（覆盖 PRD → 需求 → 设计 → 测试 → 开发 → 验证全链路）和 9 个独立工具 skill。
 
 兼容 **Claude Code**、**Codex CLI**、**OpenCode** 等遵循 [Agent Skills](https://agentskills.io) 开放标准的 AI 编码工具。
 
-## 安装方式
+## 安装
 
-### 方式 1：Claude Plugin Marketplace（推荐，自动更新）
+### Claude Plugin Marketplace（推荐）
 
 ```
 /plugin marketplace add ab300819/skills
 ```
 
-安装后 skill 以命名空间形式可用：`/devdocs-skills:code-quality`
-
-### 方式 2：npx skills（跨工具通用）
+### npx（跨工具通用）
 
 ```bash
-# 列出所有 skill
-npx skills add ab300819/skills --list
-
-# 安装单个 skill
-npx skills add ab300819/skills@code-quality
+npx skills add ab300819/skills --list      # 列出所有 skill
+npx skills add ab300819/skills@code-quality # 安装单个
 ```
 
-### 方式 3：本地部署（Claude Code + Codex + OpenCode）
+### 本地部署
 
 ```bash
 git clone https://github.com/ab300819/skills.git
 bash skills/scripts/deploy-skills.sh
 ```
 
-部署脚本会为每个 skill 在 `~/.claude/skills/` 和 `~/.agents/skills/` 创建 symlink。
+---
+
+## 快速开始
+
+**不确定用哪个？** 运行 `/ms-pipeline`，2-3 个问题自动路由到合适的流程。
+
+### 常见场景速查
+
+| 你的情况 | 命令 |
+|----------|------|
+| 有个模糊想法，想探索需求 | `/ms-prd` |
+| 有明确需求，全新项目 | `/ms-pipeline init` |
+| 已有项目，加新功能 | `/ms-pipeline feature` |
+| 修 Bug | `/ms-pipeline bugfix` |
+| 写完代码，文档没跟上 | `/ms-sync --absorb` |
+| 接手项目，快速了解 | `/ms-onboard --read` |
+| 已有项目，想规范化 | `/ms-retrofit` |
+| 检查质量 | `/ms-verify` |
+| 周期收尾 | `/ms-pipeline close` |
+
+---
+
+## 两大工作流
+
+### PRD 流程（需求发现）
+
+适用于**模糊想法**或**已有 PRD 文档**，独立于 DevDocs，通过 `--from-prd` 桥接。
+
+```
+你的想法 / PRD 文档
+    │
+    ▼
+/ms-prd（自动检测：短想法 → 头脑风暴，大文档 → 结构化解析）
+    │
+    ├── /ms-prd-brainstorm（发散探索，5W1H → MoSCoW 收敛）
+    │   └── 产出 FR-XX / NFR-XX 需求文件
+    │
+    └── /ms-prd-parser（文档分片 + 指纹追踪）
+        └── 逐块调用 brainstorm 澄清
+    │
+    ▼
+成熟度评估（idea → draft → ready）
+    │
+    ▼
+ready 后：/ms-requirements --from-prd（进入 DevDocs）
+```
+
+### DevDocs 流程（文档驱动开发）
+
+适用于**需求明确**的项目，从需求到代码的完整流程。
+
+```
+/ms-requirements        需求编码（F/US/AC）
+    │
+    ▼
+/ms-system-design       技术架构设计
+    │
+    ▼
+/ms-test-cases          测试用例设计（UT/IT/E2E）
+    │
+    ▼
+/ms-dev-tasks           任务拆分（T-XX，≤4h/任务）
+    │
+    ▼
+/ms-verify --readiness  就绪检查（⛔ P1 阻塞则修复）
+    │
+    ▼
+/ms-dev-workflow        开发执行（骨架优先 + 分层 TDD）
+    │                   批量模式含 /ms-test-run --trace
+    ▼
+/ms-verify --impl       实现验证
+    │
+    ▼
+/ms-sync                文档同步（trace + audit）
+    │
+    ▼
+/ms-compound            知识沉淀（提取经验模式）
+```
+
+---
+
+## 全部 Skill
+
+### 编排层（用户主入口）
+
+| Skill | 命令 | 用途 |
+|-------|------|------|
+| 工作流编排器 | `/ms-pipeline` | 顶层入口，6 个模式（init/feature/bugfix/verify/close/insights） |
+| 产品需求编排 | `/ms-prd` | 模糊想法/大型 PRD → 结构化需求 |
+| 新功能 | `/ms-feature` | 已有项目追加新功能（含 lite/full 模式） |
+| Bug 修复 | `/ms-bugfix` | 测试先行的 Bug 修复 |
+
+### PRD 流程 Skill
+
+| Skill | 命令 | 用途 |
+|-------|------|------|
+| 需求探索 | `/ms-prd-brainstorm` | 5W1H → 用户旅程 → MoSCoW 收敛 |
+| 文档解析 | `/ms-prd-parser` | 大型 PDF/md/截图 → 结构化分片 |
+
+### DevDocs 流程 Skill
+
+| Skill | 命令 | 用途 | 输出 |
+|-------|------|------|------|
+| 需求编码 | `/ms-requirements` | 功能点/用户故事/验收标准 | `01-requirements.md` |
+| 系统设计 | `/ms-system-design` | 技术架构、API、数据模型 | `02-system-design*.md` |
+| 测试设计 | `/ms-test-cases` | UT/IT/E2E/Journey 测试用例 | `03-test-*.md` |
+| 任务拆分 | `/ms-dev-tasks` | 可执行的开发任务 | `04-dev-tasks*.md` |
+| 开发执行 | `/ms-dev-workflow` | 骨架优先 + 分层 TDD + 双 Agent 隔离 | 代码 |
+| 测试执行 | `/ms-test-run` | 运行测试 + 追溯验证 | `05-test-report.md` |
+| 统一验证 | `/ms-verify` | --docs / --impl / --ui / --readiness | 验证报告 |
+| 文档同步 | `/ms-sync` | trace + audit + archive | 更新追溯矩阵 |
+| 洞察收集 | `/ms-insights` | 审查/调研结果 → 需求 | `05-insights.md` |
+| 知识沉淀 | `/ms-compound` | 提取经验模式 | `patterns/*.md` |
+| 项目上下文 | `/ms-onboard` | AI 工具切换时的上下文传递 | `00-context.md` |
+| 项目改造 | `/ms-retrofit` | 已有项目适配 DevDocs | 逆向生成文档 |
+| 代码盘点 | `/ms-codebase-insight` | 只读分析现有代码库 | `codebase-insight.md` |
+
+### 独立工具 Skill
+
+| Skill | 命令 | 用途 |
+|-------|------|------|
+| 代码质量 | `/code-quality` | MTE 原则、重构指导、Review 清单 |
+| 测试指导 | `/testing-guide` | 断言质量、Mock 规范、变异测试 |
+| 重构 | `/refactor` | 系统化重构，测试驱动 |
+| 提交规范 | `/commit-convention` | 提交信息格式化 |
+| Git 安全 | `/git-safety` | 强制 git mv/rm 规范操作 |
+| UI 调度器 | `/ui-orchestrator` | 路由到专业 UI/UX skill |
+| 工作报告 | `/work-report` | 周报/月报/季报/年终总结 |
+| 代码自描述 | `/code-self-describe` | 模块级 CLAUDE.md + 文件头注释 |
+| 记忆管理 | `/agent-memory` | AI agent 记忆文件管理 |
+
+---
+
+## 开发路径选择
+
+| 场景 | 路径 | 说明 |
+|------|------|------|
+| 需求明确 | `/ms-pipeline init` | requirements → design → tests → tasks → dev |
+| 有模糊想法 | `/ms-prd` → `/ms-pipeline init` | 先探索需求，再走标准流程 |
+| 已有项目加功能 | `/ms-pipeline feature` | 增量更新全套文档 |
+| 已有代码无文档 | `/ms-retrofit` | 从代码逆向生成 DevDocs |
+| 探索性原型 | 先写代码 → `/ms-retrofit` | 代码稳定后补文档 |
+| Bug 修复 | `/ms-pipeline bugfix` | 写失败测试 → 修复 → 通过 |
+| 小改动 | 直接提交 | 遵循 `/commit-convention` |
+
+---
+
+## 编号体系
+
+DevDocs 使用统一编号实现需求到代码的全链路追溯：
+
+```
+F-001 (功能点)
+  └── US-001 (用户故事)
+        └── AC-001 (验收标准)
+              ├── UT-001 → @verifies AC-001（代码标注）
+              ├── IT-001
+              └── E2E-001
+                    └── T-01 (开发任务) → @satisfies AC-001（代码标注）
+```
+
+| 前缀 | 含义 | 来源 |
+|------|------|------|
+| FR-XX / NFR-XX | PRD 阶段需求 | `/ms-prd` |
+| F-XXX | 功能点 | `/ms-requirements` |
+| US-XXX | 用户故事 | `/ms-requirements` |
+| AC-XXX | 验收标准 | `/ms-requirements` |
+| UT/IT/E2E/Journey | 测试用例 | `/ms-test-cases` |
+| T-XX | 开发任务 | `/ms-dev-tasks` |
+| INS-XXX | 洞察建议 | `/ms-insights` |
+| BUG-XXX | Bug 记录 | `/ms-bugfix` |
+
+---
+
+## 文件结构
+
+```
+docs/
+├── prd/                          # PRD 流程产出
+│   ├── requirements/index.md     # 需求总纲
+│   ├── requirements/FR-XX-*.md   # 各功能需求
+│   └── chunks/                   # PRD 原文分片
+│
+├── devdocs/                      # DevDocs 流程产出
+│   ├── 00-context.md             # 项目上下文（/ms-onboard）
+│   ├── 01-requirements.md        # 需求文档
+│   ├── 02-system-design*.md      # 系统设计
+│   ├── 03-test-*.md              # 测试用例
+│   ├── 04-dev-tasks*.md          # 开发任务
+│   ├── 05-test-report.md         # 测试报告
+│   ├── 05-insights.md            # 洞察日志
+│   ├── 05-bugfix-log.md          # Bug 修复日志
+│   └── patterns/                 # 经验模式库（/ms-compound）
+│
+└── codebase-insight.md           # 代码盘点（/ms-codebase-insight）
+```
 
 ---
 
 ## 语言规则
 
-所有 skill 统一遵循：
 - 支持中英文提问
 - 统一中文回复
 - 使用中文生成文档
 
----
+## 详细文档
 
-## 编号规范
-
-DevDocs 流程使用统一的编号体系实现需求到测试的追溯：
-
-| 类型 | 前缀 | 格式 | 说明 |
-|------|------|------|------|
-| 功能点 | F | F-XXX | 用户可感知的独立功能 |
-| 用户故事 | US | US-XXX | 用户使用场景 |
-| 验收标准 | AC | AC-XXX | 可量化的完成条件 |
-| 单元测试 | UT | UT-XXX | 验证内部逻辑 |
-| 集成测试 | IT | IT-XXX | 验证组件协作 |
-| E2E 测试 | E2E | E2E-XXX | 验证用户场景 |
-| 洞察建议 | INS | INS-XXX | 审查/调研的改进建议 |
-| Bug 记录 | BUG | BUG-XXX | Bug 修复记录 |
-| 开发任务 | T | T-XX | 开发任务（2 位编号例外） |
-
-**追溯关系**：
-```
-F-001 (功能点)
-  └── US-001 (用户故事)
-        └── AC-001 (验收标准)
-              ├── UT-001 (单元测试)
-              ├── IT-001 (集成测试)
-              └── E2E-001 (E2E 测试)
-
-INS-001 (洞察建议) → F-XXX (转化为功能点)
-```
-
----
-
-## 文档拆分规范
-
-当文档过大时，按以下规则拆分：
-
-| 文档类型 | 拆分阈值 | 拆分方式 |
-|----------|----------|----------|
-| 需求文档 | 300 行 或 5+ 功能点 | 主文档 + 用户故事 + NFR |
-| 系统设计 | 300 行 或 10+ API | 主文档 + API 设计 + 数据模型 |
-| 测试用例 | 300 行 或 30+ 用例 | 概览 + UT + IT + E2E |
-| 开发任务 | 300 行 或 20+ 任务 | 概览 + 按层级拆分 |
-
-**拆分后文件结构**：
-
-```
-docs/devdocs/
-├── 01-requirements.md           # 需求主文档
-├── 01-requirements-stories.md   # 用户故事详情（可选）
-├── 01-requirements-nfr.md       # 非功能性需求（可选）
-├── 02-system-design.md          # 设计主文档
-├── 02-system-design-api.md      # API 设计详情（可选）
-├── 02-system-design-data.md     # 数据模型详情（可选）
-├── 03-test-cases.md             # 测试用例概览 + 追溯矩阵
-├── 03-test-unit.md              # 单元测试详情（可选）
-├── 03-test-integration.md       # 集成测试详情（可选）
-├── 03-test-e2e.md               # E2E 测试详情（可选）
-├── 04-dev-tasks.md              # 任务主文档
-├── 04-dev-tasks-infra.md        # 基础设施任务（可选）
-├── 04-dev-tasks-core.md         # 核心逻辑任务（可选）
-├── 04-dev-tasks-api.md          # 接口层任务（可选）
-└── 04-dev-tasks-test.md         # 测试任务（可选）
-```
-
-**小型项目**：如内容较少，可保持单一文件，无需拆分。
-
----
-
-## Skills 概览
-
-### 编排层（用户主入口）
-
-| Skill | 命令 | 用途 | 输出文件 |
-|-------|------|------|----------|
-| **工作流编排器** | `/devdocs-pipeline` | 顶层编排器，5 个入口（init/feature/bugfix/verify/close） | - |
-| [新功能](#14-devdocs-feature-新功能) | `/devdocs-feature` | 在已有项目中追加新功能（自动衔接开发） | `docs/devdocs/00-feature-log.md` |
-| [Bug 修复](#13-devdocs-bugfix-bug-修复) | `/devdocs-bugfix` | 测试先行的 Bug 修复流程 | `docs/devdocs/05-bugfix-log.md` |
-
-### 原子 Skill（由编排层调用或直接使用）
-
-| Skill | 命令 | 用途 | 输出文件 |
-|-------|------|------|----------|
-| [需求扩写](#1-devdocs-requirements-需求扩写) | `/devdocs-requirements` | 功能点、用户故事、验收标准 | `docs/devdocs/01-requirements.md` |
-| [系统设计](#2-devdocs-system-design-系统设计) | `/devdocs-system-design` | 技术架构和 API 设计（支持增量，检索 patterns/） | `docs/devdocs/02-system-design*.md` |
-| [测试用例](#3-devdocs-test-cases-测试用例) | `/devdocs-test-cases` | 单元/集成/E2E 测试用例 | `docs/devdocs/03-test-*.md` |
-| [开发任务](#4-devdocs-dev-tasks-开发任务) | `/devdocs-dev-tasks` | 可执行的开发任务拆分 | `docs/devdocs/04-dev-tasks*.md` |
-| [开发工作流](#18-devdocs-dev-workflow-开发工作流) | `/devdocs-dev-workflow` | 执行开发任务（骨架优先 + 分层 TDD） | - |
-| **统一验证** | `/devdocs-verify` | 四合一验证：--docs / --impl / --ui / --readiness | `docs/devdocs/verify-report.md`, `readiness-report.md` |
-| [文档同步](#15-devdocs-sync-文档同步) | `/devdocs-sync` | 同步文档与实现（trace+audit 自动串行） | `docs/devdocs/00-progress-report.md` |
-| [洞察收集](#17-devdocs-insights-洞察收集) | `/devdocs-insights` | 收集改进建议转化为需求 | `docs/devdocs/05-insights.md` |
-| [测试执行](#devdocs-test-run) | `/devdocs-test-run` | 执行测试套件并生成报告 | `docs/devdocs/05-test-report.md` |
-| [项目上下文](#16-devdocs-onboard-项目上下文) | `/devdocs-onboard` | AI 工具切换时的上下文传递 | `docs/devdocs/00-context.md` |
-| [知识沉淀](#devdocs-compound) | `/devdocs-compound` | 提取经验模式（sync 后推荐执行） | `docs/devdocs/patterns/*.md` |
-| [项目改造](#5-devdocs-retrofit-项目改造) | `/devdocs-retrofit` | 已有项目适配 DevDocs 流程 | `docs/devdocs/00-retrofit-report.md` |
-
-### 通用工具 Skill
-
-| Skill | 命令 | 用途 | 输出文件 |
-|-------|------|------|----------|
-| [代码质量](#6-code-quality-代码质量) | `/code-quality` | MTE 原则、重构指导、Review 清单 | - |
-| [测试指导](#12-testing-guide-测试指导) | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） | - |
-| [重构](#10-refactor-重构) | `/refactor` | 系统化重构，测试驱动，安全可追溯 | `docs/devdocs/05-refactor-*.md` |
-| [提交规范](#7-commit-convention-提交规范) | - | 提交信息格式化与历史风格同步 | - |
-| [Git 安全](#11-git-safety-git-安全) | - | 强制使用 git mv/rm 规范操作 | - |
-| [UI 调度器](#9-ui-orchestrator-ui-调度器) | `/ui-orchestrator` | 路由到专业的外部 UI/UX Skill | - |
-| [工作报告](#8-work-report-工作报告) | `/work-report` | 生成周报、月报、季报、年终总结 | `*.md` |
-
-## DevDocs 工作流
-
-### 入口决策树
-
-不确定用哪个工具？直接运行 `/devdocs-pipeline`，通过 2-3 个问题自动路由。
-
-或按以下优先级判断：
-
-```
-项目是否有 DevDocs 文档？
-│
-├── 没有
-│     ├── 全新项目 ─────────────────► /devdocs-pipeline init
-│     └── 已有代码 ─────────────────► /devdocs-retrofit（初次改造）
-│
-└── 有 DevDocs
-        │
-        ├── 需要了解项目 ──────────────► /devdocs-onboard --read
-        │
-        └── 需要开发
-                │
-                ├── 新功能 ─────────────► /devdocs-pipeline feature
-                ├── 修 Bug ─────────────► /devdocs-pipeline bugfix
-                ├── 检查质量 ────────────► /devdocs-pipeline verify
-                └── 周期收尾 ────────────► /devdocs-pipeline close
-```
-
-**快速参考**：
-
-| 你的情况 | 使用命令 |
-|----------|----------|
-| 不确定用哪个 | `/devdocs-pipeline`（提问式自动路由） |
-| 全新项目 | `/devdocs-pipeline init` |
-| 新功能（涉及接口/数据） | `/devdocs-pipeline feature` 或 `/devdocs-feature` |
-| 小功能（配置、UI 微调） | `/devdocs-feature --lite` |
-| 修复 Bug | `/devdocs-pipeline bugfix` 或 `/devdocs-bugfix` |
-| 检查质量 | `/devdocs-pipeline verify` 或 `/devdocs-verify` |
-| 写完代码，文档没跟上 | `/devdocs-sync --absorb` |
-| 接手项目，想快速了解 | `/devdocs-onboard --read` |
-| 完成开发，周期收尾 | `/devdocs-pipeline close` |
-| 项目没有文档，想规范化 | `/devdocs-retrofit` |
-
----
-
-### 路径选择
-
-根据项目状态选择合适的开发路径：
-
-| 场景 | 推荐路径 | 说明 |
-|------|----------|------|
-| 新功能开发（需求明确） | **路径 A：正向开发** | 从需求开始，逐步细化 |
-| 新功能 / 功能迭代 | **`/devdocs-feature`** | 延续编号，追加文档 |
-| 探索性开发 / 原型验证 | **路径 B：探索后补** | 先写代码，后补文档 |
-| 已有项目规范化 | **`/devdocs-retrofit`** | 从代码逆向生成文档 |
-| Bug 修复 | **`/devdocs-bugfix`** | 测试先行，编写失败测试后修复 |
-| 小型配置变更 | **直接提交** | 无需流程，遵循 commit 规范 |
-
----
-
-### 路径 A：正向开发（需求驱动）
-
-适用于需求明确的新功能开发：
-
-```
-/devdocs-requirements → /devdocs-system-design → /devdocs-test-cases → /devdocs-dev-tasks
-       │                        │                        │                    │
-       ▼                        ▼                        ▼                    ▼
-  需求文档                  系统设计                  测试用例              开发任务
-  (F/US/AC)                                         (UT/IT/E2E)
-                                                                              │
-                                                                              ▼
-                                                                           开发实现
-                                                                    ┌────────┼────────┐
-                                                                    ▼        ▼        ▼
-                                                              /code-quality /testing-guide /ui-orchestrator
-                                                              (代码质量)    (测试质量)      (UI 约束)
-                                                                              │
-                                                                              ▼
-                                                                     前置验证（可选）
-                                                              ┌────────┼────────────┐
-                                                              ▼        ▼            ▼
-                                                     /devdocs-verify --impl    --ui
-                                                     (实现正确性)     (UI 对齐，仅 UI 任务)
-                                                                              │
-                                                                              ▼
-                                                                        对抗式验证
-                                                                              │
-                                                                              ▼
-                                                                        /devdocs-sync
-                                                                        (trace+audit)
-                                                                              │
-                                                                              ▼
-                                                                     /devdocs-compound
-                                                                     (知识沉淀，推荐)
-```
-
----
-
-### 路径 B：探索后补（代码驱动）
-
-适用于探索性开发或已有项目规范化：
-
-```
-1. 编写核心代码/原型
-       │
-       ▼
-2. /devdocs-retrofit（逆向生成文档）
-       │
-       ├── 从代码提取：功能清单、API、数据模型
-       ├── 从测试提取：用户故事、验收标准
-       └── 生成标准化 DevDocs 文档
-       │
-       ▼
-3. 审核补充文档
-       │
-       ▼
-4. 补充测试用例（参考 /testing-guide）
-```
-
-**优势**：
-- 避免过早设计导致的返工
-- 文档基于实际代码，更准确
-- 适合快速验证想法
-
-**注意**：
-- 逆向生成的文档需要人工审核
-- 标记为 `[从代码推导]` 的内容需确认
-- 建议在代码稳定后尽早补充文档
-
----
-
-### 已有项目改造
-
-```
-/devdocs-retrofit
-       │
-       ├── 自动识别已有文档
-       ├── 用户确认/手动指定
-       ├── 代码逆向推导（无文档时）
-       ├── 分析覆盖情况
-       └── 生成标准化 DevDocs 文档
-```
-
-### 代码重构
-
-```
-/refactor
-       │
-       ├── 1. 确定范围（用户指定或系统审查）
-       │
-       ├── 2. 评估测试状态
-       │       ├── 覆盖率 ≥80% → 直接重构
-       │       ├── 覆盖率 <80% → 补充测试
-       │       └── 不可测试 → 重写流程
-       │
-       ├── 3. 执行重构
-       │       ├── 普通代码 → /code-quality
-       │       └── UI 代码 → /ui-orchestrator
-       │
-       └── 4. 重写流程（如需要）
-               └── /devdocs-retrofit → 逆向分析 → 重新实现
-```
-
----
-
-## Skill 协作关系
-
-DevDocs 流程中各 Skill 的协作关系：
-
-| 阶段 | 主 Skill | 协作 Skill | 说明 |
-|------|----------|-----------|------|
-| 编排入口 | `/devdocs-pipeline` | 全部 DevDocs Skill | 顶层路由 |
-| 需求分析 | `/devdocs-requirements` | - | 定义 F/US/AC 编号 |
-| 洞察收集 | `/devdocs-insights` | `/ui-orchestrator` | 审查/调研结果转需求 |
-| 系统设计 | `/devdocs-system-design` | `/code-quality` | MTE 原则指导设计，检索 patterns/ |
-| 测试用例 | `/devdocs-test-cases` | `/testing-guide` | 测试质量约束 |
-| 开发任务 | `/devdocs-dev-tasks` | 多个 | 见下表 |
-| 文档同步 | `/devdocs-sync` | - | trace+audit 自动串行 |
-| 统一验证 | `/devdocs-verify` | `/code-quality`, `/testing-guide` | --docs/--impl/--ui/--readiness 四合一 |
-| 知识沉淀 | `/devdocs-compound` | `/devdocs-verify` | sync 后推荐执行 |
-| 代码重构 | `/refactor` | `/code-quality`, `/testing-guide` | 测试先行 |
-
-### 开发阶段 Skill 协作
-
-```
-/devdocs-dev-tasks 任务编排（规划层）
-         │
-         └── 执行任务 ─────────── /devdocs-dev-workflow（执行层）
-                  │
-                  ├── 编码实现 ────────── /code-quality (MTE 原则)
-                  │
-                  ├── UI 实现 ─────────── /ui-orchestrator (无障碍、动画约束)
-                  │
-                  ├── 测试编写 ────────── /testing-guide (断言质量、变异测试)
-                  │
-                  ├── 统一验证 ────────── /devdocs-verify --impl (AC + 设计一致性)
-                  │                       /devdocs-verify --ui (仅 UI 任务)
-                  │
-                  ├── 代码提交 ────────── /git-safety + /commit-convention
-                  │
-                  ├── 进度同步 ────────── /devdocs-sync (trace+audit 自动串行)
-                  │
-                  └── 知识沉淀 ────────── /devdocs-compound (推荐，批量模式默认)
-```
-
-### 约束执行时机
-
-| Skill | 何时执行 | 检查内容 |
-|-------|---------|----------|
-| `/code-quality` | 编写/重构代码时 | 函数长度、参数数量、依赖注入 |
-| `/testing-guide` | 编写测试时 | 断言质量、覆盖率、变异得分 |
-| `/ui-orchestrator` | 实现 UI 时 | 无障碍、动画性能、布局规范 |
-| `/git-safety` | 文件操作时 | 使用 git mv/rm |
-| `/commit-convention` | 提交代码时 | 提交信息格式 |
-| `/devdocs-sync` | 任务完成后/Sprint 结束 | 文档与实现一致性 |
-
----
-
-# 1. devdocs-requirements (需求扩写)
-
-将用户简短需求扩展为详细的产品需求文档。
-
-## 元数据
-
-```yaml
-name: devdocs-requirements
-description: Expand user requirements into detailed DevDocs documents with features (F-XXX), user stories (US-XXX), and acceptance criteria (AC-XXX). Supports initial, incremental, and context (--context) modes.
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
-```
-
-## 触发条件
-
-- 用户提供功能需求或想法
-- 用户要求创建/编写 PRD
-- 用户想要澄清或记录需求
-- 来自 `/devdocs-feature` 的增量需求委托
-
-## 运行模式
-
-| 模式 | 触发条件 | 说明 |
-|------|----------|------|
-| **初始模式** | 无 `01-requirements.md` | 从零创建需求文档 |
-| **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加需求 |
-| **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
-
-```bash
-/devdocs-requirements              # 自动检测模式
-/devdocs-requirements --incremental # 强制增量模式
-/devdocs-requirements --context     # 背景信息模式
-```
-
-## 工作流程
-
-**初始模式**：理解需求 → 探索代码库 → 方案确认 → 起草需求 → 用户确认
-
-**增量模式**：扫描编号 → 理解新需求 → 追加 F/US/AC → 更新矩阵 → 返回新增编号
-
-**背景信息模式**：读取现有文档 → 收集背景信息（引导/文件/URL）→ 整合到"背景与目标"章节
-
-## 输出文件
-
-```
-docs/devdocs/
-├── 01-requirements.md           # 主文档
-├── 01-requirements-stories.md   # 用户故事（如超长）
-└── 01-requirements-nfr.md       # 非功能性需求（如超长）
-```
-
-## 文档模板
-
-```markdown
-# 需求文档：<功能名称>
-
-## 1. 需求背景
-<为什么需要这个功能，解决什么问题>
-
-## 2. 目标用户
-<谁会使用这个功能，用户画像>
-
-## 3. 核心功能点
-- [ ] 功能点 1：<描述>
-- [ ] 功能点 2：<描述>
-
-## 4. 用户故事
-
-| 编号 | 角色 | 期望 | 目的 |
-|------|------|------|------|
-| US-001 | 作为<角色> | 我希望<功能> | 以便于<价值> |
-
-## 5. 验收标准
-- [ ] AC-001：<可量化的标准>
-- [ ] AC-002：<可量化的标准>
-- [ ] AC-003：<可量化的标准>
-
-## 6. 非功能性需求
-- **性能**：<要求>
-- **安全**：<要求>
-- **兼容性**：<要求>
-
-## 7. 范围边界
-
-### 本次包含
-- <内容>
-
-### 本次不包含
-- <内容>
-
-## 8. 假设与依赖
-- <前提条件>
-```
-
-## 约束
-
-- [ ] 必须与用户确认核心功能点是否完整
-- [ ] 必须定义至少 3 条验收标准
-- [ ] 必须列出范围边界，避免需求蔓延
-- [ ] 不得添加用户未提及且未确认的大功能
-- [ ] 用户故事必须遵循 "作为...我希望...以便于..." 格式
-- [ ] 验收标准必须可量化、可验证
-
-## 下一步
-
-| 完成模式 | 建议下一步 |
-|----------|------------|
-| 初始模式 | `/devdocs-system-design` 进入系统设计 |
-| 增量模式 | `/devdocs-system-design` 增量设计或 `/devdocs-test-cases` 补充测试 |
-| 背景信息模式 | 继续 `/devdocs-requirements` 定义功能点，或 `/devdocs-system-design` 设计 |
-
----
-
-# 2. devdocs-system-design (系统设计)
-
-围绕需求设计详细技术方案，支持初始设计和增量设计两种模式。
-
-## 元数据
-
-```yaml
-name: devdocs-system-design
-description: Create or update system design documents. Supports initial design and incremental design (impact analysis + compatibility assessment) modes.
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
-```
-
-## 设计模式
-
-| 模式 | 触发条件 | 说明 |
-|------|----------|------|
-| **初始设计** | 无 `02-system-design.md` | 从零创建系统设计 |
-| **增量设计** | 已有设计 + 新需求/优化 | 影响分析 + 设计变更 |
-
-## 前置条件
-
-- 需求文档：`docs/devdocs/01-requirements.md`
-- 如不存在，建议先运行 `/devdocs-requirements`
-
-## 设计前必问（初始设计）
-
-**必须使用 AskUserQuestion 询问用户**：
-
-1. **技术栈偏好** - 指定技术栈 / 无偏好
-2. **目标平台** - Web / Mobile / Desktop / Server / 跨平台
-3. **部署环境** - 云服务 / 私有化 / 混合
-
-如用户无偏好，则根据需求设计最优方案。
-
-## MTE 设计原则
-
-| 原则 | 说明 | 检查点 |
-|------|------|--------|
-| **Maintainability** | 可维护性 | 模块职责单一、依赖清晰 |
-| **Testability** | 可测试性 | 核心逻辑可单元测试、依赖可 Mock |
-| **Extensibility** | 可扩展性 | 预留扩展点、接口抽象 |
-
-## 设计模式选择
-
-根据场景选择合适的设计模式，**只在必要时使用**：
-
-| 场景 | 推荐模式 | 适用情况 |
-|------|----------|----------|
-| 对象创建 | Factory / Builder | 复杂对象构建 |
-| 行为扩展 | Strategy / Template | 算法可替换 |
-| 结构组织 | Facade / Adapter | 简化接口、适配第三方 |
-| 数据访问 | Repository / DAO | 数据层抽象 |
-
-## 分层架构
-
-```
-┌─────────────────────────────────────┐
-│           Interface Layer           │  ← API/Controller（薄层）
-├─────────────────────────────────────┤
-│           Service Layer             │  ← 业务逻辑（核心，可测试）
-├─────────────────────────────────────┤
-│           Domain Layer              │  ← 领域模型
-├─────────────────────────────────────┤
-│         Infrastructure Layer        │  ← 数据访问、外部服务（可替换）
-└─────────────────────────────────────┘
-```
-
-## 输出文件
-
-```
-docs/devdocs/
-├── 02-system-design.md          # 架构、技术选型、模块、接口、模式
-├── 02-system-design-api.md      # API 设计（如超长）
-└── 02-system-design-data.md     # 数据模型（如超长）
-```
-
-## 文档结构
-
-1. **运行平台** - 平台、版本要求、部署环境
-2. **架构概览** - 高层架构图（ASCII）
-3. **技术选型** - 技术选择及理由
-4. **模块划分** - 模块职责和依赖
-5. **核心接口** - 关键接口和方法签名（只定义，不实现）
-6. **设计模式** - 使用的模式及解决的问题
-7. **代码结构** - 目录结构设计
-8. **数据模型** - 实体定义和关系
-9. **API 设计** - 接口定义含请求/响应示例
-10. **状态流转** - 关键业务状态机
-11. **异常处理** - 错误码和处理策略
-12. **扩展性设计** - 扩展点和不做的设计
-
-## 核心接口示例
-
-> 只定义签名，不写实现代码
-
-```markdown
-#### IUserService
-
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `createUser` | `CreateUserDTO` | `User` | 创建用户 |
-| `getUserById` | `string` | `User \| null` | 根据ID查询 |
-```
-
-## 约束
-
-### 基础约束
-- [ ] **必须先询问用户技术栈偏好和目标平台**
-- [ ] 技术选型必须说明理由
-- [ ] API 设计必须包含请求/响应示例
-- [ ] 数据模型必须考虑索引和查询场景
-
-### MTE 原则约束
-- [ ] **每个模块职责单一**
-- [ ] **核心业务逻辑必须可单元测试**
-- [ ] **预留合理扩展点，但不为假设需求设计**
-- [ ] 依赖方向：外层依赖内层
-
-### 避免过度设计
-- [ ] **不为"未来可能"的需求设计**
-- [ ] 不创建只有一个实现的接口（除非为可测试性）
-- [ ] 不过早抽象，等到有 3 个以上相似场景再抽象
-
-### 增量设计约束
-- [ ] **增量设计前必须进行影响分析**
-- [ ] **必须评估向后兼容性**
-- [ ] **破坏性变更必须标注处理方式**
-- [ ] **必须生成设计变更记录**
-
-## 增量设计流程
-
-```
-1. 读取现有设计
-   │
-   ▼
-2. 识别变更来源（F-XXX / INS-XXX / 技术改进）
-   │
-   ▼
-3. 影响分析（模块、接口、数据模型）
-   │
-   ▼
-4. 兼容性评估
-   │
-   ▼
-5. 设计变更 + 生成变更记录
-   │
-   ▼
-6. 用户确认
-```
-
-## 下一步
-
-完成后建议运行 `/devdocs-test-cases`
-
----
-
-# 3. devdocs-test-cases (测试用例)
-
-基于需求文档设计测试用例，建立验收标准与测试用例的追溯关系。
-
-## 元数据
-
-```yaml
-name: devdocs-test-cases
-description: Design test cases based on requirements
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
-```
-
-## 前置条件
-
-- 需求文档：`docs/devdocs/01-requirements.md`
-- 系统设计：`docs/devdocs/02-system-design.md`（设计 UT/IT 时需要了解接口签名和模块划分）
-- 如不存在，建议先运行前置阶段
-
-## 核心理念
-
-测试用例从需求推导，不是从代码推导：
-
-```
-验收标准 (AC-XXX)
-    │
-    ├── 单元测试 (UT-XXX)  ← 验证内部逻辑
-    │
-    ├── 集成测试 (IT-XXX)  ← 验证组件协作
-    │
-    └── E2E 测试 (E2E-XXX) ← 验证用户场景
-```
-
-## 测试类型选择
-
-| 验收标准类型 | 推荐测试类型 | 示例 |
-|--------------|--------------|------|
-| 输入验证规则 | 单元测试 | "邮箱格式校验" → UT |
-| 业务逻辑规则 | 单元测试 + 集成测试 | "密码加密存储" → UT + IT |
-| 用户交互流程 | E2E 测试 | "完成注册流程" → E2E |
-| 组件间协作 | 集成测试 | "发送验证邮件" → IT |
-
-## 输出文件
-
-```
-docs/devdocs/
-├── 03-test-cases.md           # 测试用例概览 + 追溯矩阵
-├── 03-test-unit.md            # 单元测试用例
-├── 03-test-integration.md     # 集成测试用例
-└── 03-test-e2e.md             # E2E 测试用例
-```
-
-## 追溯矩阵
-
-| 功能点 | 用户故事 | 验收标准 | 单元测试 | 集成测试 | E2E测试 | 状态 |
-|--------|----------|----------|----------|----------|---------|------|
-| F-001 | US-001 | AC-001 | UT-001 | - | E2E-001 | ✅ |
-| F-001 | US-001 | AC-002 | UT-002 | - | E2E-001 | ✅ |
-| F-001 | US-002 | AC-004 | UT-003, UT-004 | IT-001 | - | ✅ |
-
-## 覆盖率要求
-
-| 测试类型 | 覆盖目标 | 覆盖要求 |
-|----------|----------|----------|
-| 单元测试 | 核心业务逻辑 | 行覆盖率 ≥ 80%，分支覆盖率 ≥ 80% |
-| 集成测试 | 组件协作场景 | 每个功能点至少 1 个 IT |
-| E2E 测试 | 用户故事 | 每个 P0 用户故事至少 1 个 E2E |
-
-## 约束
-
-- [ ] **每个验收标准至少有 1 个测试用例覆盖**
-- [ ] **必须生成追溯矩阵**
-- [ ] 测试用例必须关联验收标准编号
-- [ ] P0 验收标准必须 100% 测试覆盖
-- [ ] 测试名称必须描述预期行为
-- [ ] 禁止弱断言（toBeDefined, toBeTruthy 不能作为唯一断言）
-
-## 下一步
-
-完成后建议运行 `/devdocs-dev-tasks`
-
----
-
-# 4. devdocs-dev-tasks (开发任务)
-
-将系统设计拆解为可执行的开发任务。
-
-## 元数据
-
-```yaml
-name: devdocs-dev-tasks
-description: Break down system design into executable development tasks
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
-```
-
-## 前置条件
-
-- 需求文档：`docs/devdocs/01-requirements.md`
-- 系统设计：`docs/devdocs/02-system-design.md`
-- 测试用例：`docs/devdocs/03-test-cases.md`（及 `03-test-unit.md`, `03-test-integration.md`, `03-test-e2e.md`）
-
-## TAR 原则
-
-每个任务必须满足：
-
-| 原则 | 说明 | 必填内容 |
-|------|------|----------|
-| **Testable** | 可测试 | 测试方法和预期结果 |
-| **Acceptable** | 可验收 | 可量化的完成标准 |
-| **Reviewable** | 可审查 | Review 检查要点 |
-
-## 输出文件
-
-```
-docs/devdocs/
-├── 04-dev-tasks.md              # 概览和依赖图
-├── 04-dev-tasks-infra.md        # 基础设施任务（如超长）
-├── 04-dev-tasks-core.md         # 核心逻辑任务（如超长）
-├── 04-dev-tasks-api.md          # 接口层任务（如超长）
-└── 04-dev-tasks-test.md         # 测试任务（如超长）
-```
-
-## 文档模板
-
-```markdown
-# 开发任务：<功能名称>
-
-## 任务概览
-
-- **总任务数**：X 个
-- **执行顺序**：按依赖关系
-
-## 任务设计原则
-
-每个任务必须满足 **TAR 原则**：
-- **可测试 (Testable)**：有明确的测试方法
-- **可验收 (Acceptable)**：有可量化的完成标准
-- **可审查 (Reviewable)**：有独立的代码审查点
-
-## 依赖关系图
-
-T-01 ─┬─> T-03 ─> T-05
-T-02 ─┘           │
-                  ▼
-            T-06 ─> T-07
-
-## 任务列表
-
-### T-01: <任务名称>
-
-| 属性 | 内容 |
-|------|------|
-| **描述** | <任务描述> |
-| **依赖** | 无 |
-| **优先级** | P0 |
-| **关联需求** | F-001, AC-001 |
-| **涉及文件** | `src/db/schema.ts` |
-
-**编码约束**（参考 `/code-quality`）：
-- [ ] 遵循 MTE 原则
-
-**测试用例**（来自 `03-test-*.md`）：
-- [ ] UT-001: AC-001 - <测试场景>
-
-**验收标准**：
-- [ ] 迁移脚本执行无错误
-- [ ] 数据库表结构与设计文档一致
-
-**Review 要点**：
-- [ ] 字段类型是否正确
-- [ ] 索引设计是否合理
-- [ ] 是否有安全隐患
-
----
-
-## 执行检查清单
-
-| 任务 | 测试 | 验收 | Review | 提交 |
-|------|------|------|--------|------|
-| T-01 | [ ] | [ ] | [ ] | [ ] |
-| T-02 | [ ] | [ ] | [ ] | [ ] |
-
-## 风险项
-
-| 任务 | 风险 | 缓解措施 |
-|------|------|----------|
-| T-XX | <风险> | <措施> |
-```
-
-## 任务执行流程
-
-```
-1. 开始任务
-   │
-   ▼
-2. 编写代码（遵循 /code-quality, /ui-orchestrator 约束）
-   │
-   ▼
-3. 编写测试（遵循 /testing-guide 约束）
-   │
-   ▼
-4. 执行测试用例（UT/IT/E2E-XXX）
-   ├── 通过 ──────────────────┐
-   └── 失败 → 修复 → 重新测试 │
-                              ▼
-5. 检查验收标准（AC-XXX）
-   ├── 全部满足 ─────────────┐
-   └── 未满足 → 补充 → 重检  │
-                             ▼
-6. 自查 Review 要点
-   │
-   ▼
-7. 询问用户：是否提交代码？
-   ├── 是 → 提交（遵循 /git-safety, /commit-convention）
-   └── 否 → 继续修改
-```
-
-## Commit 格式
-
-遵循 `/commit-convention` 规范：
-
-```
-<type>(T-XX): <任务名称>
-
-- <完成内容1>
-- <完成内容2>
-
-关联: F-XXX, AC-XXX
-测试: UT-XXX, IT-XXX 通过
-```
-
-**type 类型**：feat | fix | refactor | test | docs | chore
-
-## 约束
-
-- [ ] **单个任务必须在 4 小时内可完成**
-- [ ] **必须标注任务依赖关系**
-- [ ] **必须按依赖顺序排列，无循环依赖**
-- [ ] **文件路径必须具体，不得写"相关文件"**
-- [ ] **必须提供依赖关系图**
-- [ ] 优先级：P0（阻塞）、P1（重要）、P2（一般）
-- [ ] 任务 ID 格式：T-XX（顺序编号）
-- [ ] **每个任务必须包含测试方法**
-- [ ] **每个任务必须包含验收标准**
-- [ ] **每个任务必须包含 Review 要点**
-- [ ] 测试方法必须可执行
-- [ ] 验收标准必须可量化
-- [ ] Review 要点必须针对任务类型
-- [ ] **任务执行必须使用 `/devdocs-dev-workflow`**（跳过会导致追溯失效）
-
----
-
-# 5. devdocs-retrofit (项目改造)
-
-将已有工程改造为 DevDocs 流程，或将旧版 DevDocs 迁移到新规范。
-
-## 元数据
-
-```yaml
-name: devdocs-retrofit
-description: Retrofit existing projects or migrate old DevDocs to new standards
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
-```
-
-## 触发条件
-
-- 用户希望将现有项目适配 DevDocs 流程
-- 用户需要标准化项目文档
-- 用户要迁移或升级已有 DevDocs 文档
-- 项目缺少文档，需要从代码逆向生成
-
-## 工作流程
-
-```
-1. 扫描项目结构
-   │
-   ▼
-2. 检测项目状态
-   │
-   ├── 无 DevDocs → 新项目改造流程
-   │
-   ├── 有 DevDocs（旧版）→ 版本迁移流程
-   │
-   └── 有 DevDocs（符合规范）→ 无需改造
-```
-
-## 版本迁移流程
-
-当检测到旧版 DevDocs 文档时：
-
-```
-1. 规范符合性检查
-   │
-   ▼
-2. 生成迁移差异清单
-   │
-   ▼
-3. 用户确认迁移计划
-   │
-   ▼
-4. 执行迁移（编号、重命名、追溯矩阵）
-```
-
-### 规范检查清单
-
-| 检查项 | 规范要求 |
-|--------|----------|
-| 编号体系 | F-XXX, US-XXX, AC-XXX |
-| 测试编号 | UT-XXX, IT-XXX, E2E-XXX |
-| 追溯矩阵 | F → US → AC → 测试 |
-| 文件命名 | 03-test-cases.md（非 test-plan） |
-
-## 新项目改造流程
-
-当项目没有 DevDocs 文档时：
-
-```
-1. 自动识别已有文档
-   │
-   ▼
-2. 用户确认/手动指定/代码逆向推导
-   │
-   ▼
-3. 生成 DevDocs 文档（含编号）
-   │
-   ▼
-4. 生成改造报告
-```
-
-## 输出文件
-
-```
-docs/devdocs/
-├── 00-retrofit-report.md    # 改造报告
-├── 01-requirements.md       # 需求文档（含 F/US/AC 编号）
-├── 02-system-design.md      # 系统设计
-├── 03-test-cases.md         # 测试用例概览 + 追溯矩阵
-├── 03-test-unit.md          # 单元测试（含 UT-XXX）
-├── 03-test-integration.md   # 集成测试（含 IT-XXX）
-├── 03-test-e2e.md           # E2E 测试（含 E2E-XXX）
-└── 04-dev-tasks.md          # 开发任务（含 T-XX）
-```
-
-## 约束
-
-- [ ] **必须先检测项目状态（无 DevDocs / 旧版 / 符合规范）**
-- [ ] **迁移前必须生成差异清单并用户确认**
-- [ ] **必须为所有内容分配编号（F/US/AC/UT/IT/E2E）**
-- [ ] 文件重命名必须使用 `git mv`
-- [ ] 不得删除原有文档的有效内容
-- [ ] 必须生成改造报告
-
-详见 [devdocs-retrofit/SKILL.md](skills/devdocs-retrofit/SKILL.md)。
-
----
-
-# 6. code-quality (代码质量)
-
-编码和重构时的质量约束，确保代码可维护、可测试、适度扩展。
-
-## 元数据
-
-```yaml
-name: code-quality
-description: Opinionated constraints for writing maintainable, testable code
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
-```
-
-## 触发条件
-
-- 用户正在编写新代码
-- 用户需要重构现有代码
-- 用户需要 Code Review 检查清单
-- 用户提到 MTE 原则、代码质量、避免过度设计
-
-## 核心原则：MTE
-
-| 原则 | 说明 | 检查点 |
-|------|------|--------|
-| **Maintainability** | 可维护性 | 职责单一、依赖清晰、易于理解 |
-| **Testability** | 可测试性 | 核心逻辑可单元测试、依赖可 Mock |
-| **Extensibility** | 可扩展性 | 预留合理扩展点、接口抽象 |
-
-## 应用场景
-
-### 编码约束
-
-- 函数不超过 50 行
-- 参数不超过 5 个
-- 嵌套不超过 3 层
-- 依赖通过注入
-- 核心逻辑可测试
-
-### 重构指导
-
-- 重构前必须有测试
-- 每步重构后运行测试
-- 不在重构中添加功能
-- 识别 Code Smells 并修复
-
-### Code Review 清单
-
-- MTE 原则检查
-- 代码规范检查
-- 错误处理检查
-- 安全检查
-
-## 约束
-
-- [ ] **函数不超过 50 行**
-- [ ] **参数不超过 5 个**
-- [ ] **嵌套不超过 3 层**
-- [ ] **每个模块职责单一**
-- [ ] **不为假设需求设计**
-- [ ] **重构前必须有测试**
-
----
-
-# 7. commit-convention (提交规范)
-
-提供提交信息的格式化标准。优先学习并沿用项目已有的提交历史风格，若无明显风格或为新项目，则遵循 Conventional Commits 规范。
-
-## 元数据
-
-```yaml
-name: commit-convention
-description: Git 提交信息规范。优先学习并沿用项目已有的提交历史风格。
-user-invocable: false
-```
-
-## 核心策略
-
-1. **风格学习**：生成信息前先执行 `git log -n 5 --oneline` 观察习惯。
-2. **规范回退**：无规律时遵循 Conventional Commits (`type(scope): subject`)。
-3. **决策指导**：该 Skill 不执行 `git commit`，仅为 Agent 提供信息生成的建议。
-
-## 约束
-
-- [ ] 必须先观察 `git log`
-- [ ] 优先匹配历史记录的语言和前缀风格
-- [ ] 仅提供建议，不直接执行提交命令
-
----
-
-# 8. work-report (工作报告)
-
-生成周报、月报、季度报和年终总结。
-
-## 元数据
-
-```yaml
-name: work-report
-description: 生成周报、月报、季度报和年终总结
-allowed-tools: Read, Bash, Write, Glob, Grep, AskUserQuestion
-```
-
-## 触发条件
-
-- 用户提到"周报"、"月报"、"季报"、"年终总结"
-- 用户需要生成工作报告
-
-## 报告类型
-
-| 类型 | 时间范围 | 输入来源 | 主要内容 |
-|------|---------|---------|---------|
-| 周报 | 本周 | 每日工作记录/口述 | 本周工作、下周计划 |
-| 月报 | 当月 | 周报汇总 | 主要工作、进度跟踪 |
-| 季报 | 当季 | 周报汇总 | 季度总结、阶段成果 |
-| 年终总结 | 全年 | 周报汇总 | 业绩达成、个人成长、成长计划 |
-
-## 工作流程
-
-```
-1. 确定报告类型和时间范围
-   │
-   ▼
-2. 收集必要信息（周报文件、规划文档等）
-   │
-   ▼
-3. 读取并解析文件
-   │
-   ▼
-4. 分析周报内容，提取关键工作
-   │
-   ▼
-5. 根据报告类型生成内容
-   │
-   ▼
-6. 输出 Markdown 文件
-```
-
-## 输出模板
-
-- **周报**：固定格式，包含本周重点工作和下周计划
-- **月报/季报**：灵活格式，突出重点工作和进度
-- **年终总结**：固定格式，包含业绩达成（1500-3000字）、个人成长（400-700字）、成长计划（400-700字）
-
-## 约束
-
-- [ ] 必须确认报告类型和时间范围
-- [ ] 必须向用户确认信息来源
-- [ ] 客观呈现，用事实和数据说话
-- [ ] 根据用户指引调整重点和弱化内容
-
----
-
-# 9. ui-orchestrator (UI 调度器)
-
-UI/UX 技能调度器，根据项目需求路由到专业的外部 Skill。
-
-## 元数据
-
-```yaml
-name: ui-orchestrator
-description: UI/UX skill dispatcher that routes to specialized external skills
-allowed-tools: Read, Glob, Bash, AskUserQuestion
-```
-
-## 触发条件
-
-- DevDocs 开发阶段涉及 UI 实现
-- 用户要求优化 UI/UX
-- 用户要求构建新界面
-- SwiftUI 开发任务
-
-## 外部 Skill 路由
-
-| Skill | 定位 | 适用场景 | 安装命令 |
-|-------|------|----------|----------|
-| `baseline-ui` | 代码审查 & 质量守护 | 企业内部系统、代码审查 | `npx skills add ibelick/ui-orchestrator` |
-| `ui-ux-pro-max` | 设计系统生成 | 行业垂直产品、新项目设计 | `npm install -g uipro-cli` |
-| `frontend-design` | 创意美学 & 视觉冲击 | 营销着陆页、品牌官网 | `npx skills add anthropics/skills` |
-| `swiftui-expert-skill` | SwiftUI 专家指导 | iOS/macOS 开发 | `npx skills add avdlee/swiftui-agent-skill` |
-
-## 设计哲学光谱
-
-```
-保守/安全                    中性/平衡                    大胆/创意
-    │                          │                          │
-    ▼                          ▼                          ▼
-baseline-ui              ui-ux-pro-max              frontend-design
-
-"不出错"                   "符合行业"                  "令人难忘"
-```
-
-## 约束
-
-- [ ] **必须先检测目标 Skill 是否存在**
-- [ ] **不存在时必须提示安装命令**
-- [ ] **禁止复制外部 Skill 的具体规则**
-- [ ] SwiftUI 项目 → 必须路由到 `swiftui-expert-skill`
-
-详见 [ui-orchestrator/SKILL.md](skills/ui-orchestrator/SKILL.md)。
-
----
-
-# 10. refactor (重构)
-
-系统化重构 skill，确保重构过程安全、可追溯、符合质量标准。
-
-## 元数据
-
-```yaml
-name: refactor
-description: Systematic refactoring with test coverage requirements
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
-```
-
-## 触发条件
-
-- 用户需要重构现有代码
-- 用户要求优化代码质量
-- 用户提到技术债、代码改造
-
-## 核心流程
-
-```
-1. 确定范围 → 2. 评估测试 → 3. 补充测试 → 4. 执行重构 → 5. 验证报告
-                   │
-                   └── 不可测试 → /devdocs-retrofit → 重写
-```
-
-## 重构原则
-
-- **测试先行**：覆盖率 ≥80% 才能开始重构
-- **小步迭代**：每步重构后运行测试
-- **不加功能**：重构过程中不添加新功能
-- **可追溯**：生成重构报告
-
-## 与其他 Skills 协作
-
-| 场景 | 协作 Skill |
-|------|------------|
-| 代码不可测试 | `/devdocs-retrofit` |
-| UI 重构 | `/ui-orchestrator` |
-| 代码质量检查 | `/code-quality` |
-
-## 输出文件
-
-```
-docs/devdocs/
-├── 05-refactor-audit.md     # 代码审查报告
-├── 05-refactor-plan.md      # 重构计划
-└── 05-refactor-report.md    # 重构报告
-```
-
-## 约束
-
-- [ ] **重构前测试覆盖率必须 ≥80%**
-- [ ] **每步重构后运行测试**
-- [ ] **重构后所有测试必须通过**
-- [ ] **不得在重构中添加新功能**
-- [ ] UI 重构必须应用 `/ui-orchestrator`
-- [ ] 代码重构必须应用 `/code-quality`
-
-详见 [refactor/SKILL.md](skills/refactor/SKILL.md)。
-
----
-
-# 11. git-safety (Git 安全)
-
-强制要求在 Git 仓库中使用原生命令进行文件操作，确保历史完整性。
-
-## 元数据
-
-```yaml
-name: git-safety
-description: 强制使用 git mv/rm 规范操作。
-```
-
-## 核心准则
-
-1. **移动/重命名**：必须使用 `git mv`。
-2. **删除**：必须使用 `git rm`。
-3. **自检**：操作前通过 `git ls-files` 确认文件是否受控。
-
----
-
-# 12. testing-guide (测试指导)
-
-编写高质量测试的约束规范，确保测试真正验证行为而非仅仅覆盖代码。
-
-## 元数据
-
-```yaml
-name: testing-guide
-description: Opinionated constraints for writing effective tests
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
-```
-
-## 触发条件
-
-- 用户正在编写测试代码
-- 用户需要测试策略指导
-- 用户提到测试覆盖率、断言、变异测试
-- Code Review 中涉及测试代码
-
-## 核心理念
-
-### 测试质量金字塔
-
-```
-Level 3: 测试有效性（最高标准）
-  - 变异得分 ≥ 80%
-  - 需求-测试追溯 100%
-
-Level 2: 断言质量（核心要求）
-  - 禁止弱断言
-  - 测试名称描述预期行为
-
-Level 1: 代码覆盖（基础门槛）
-  - 行/分支覆盖率 ≥ 80%
-  - ⚠️ 必要但不充分
-```
-
-### 关键约束
-
-| 约束 | 说明 |
-|------|------|
-| **测试依据来自需求** | 从需求推导测试，不是从代码推导 |
-| **禁止弱断言** | `toBeDefined()`, `toBeTruthy()` 不能作为唯一断言 |
-| **测试命名规范** | `[方法] 应该 [行为] 当 [条件]` |
-| **Mock 只用于外部依赖** | 不 Mock 内部实现 |
-| **变异测试验证** | 推荐使用 Stryker/mutmut 验证测试有效性 |
-
-## 与其他 Skills 的关系
-
-```
-/devdocs-test-cases →  设计测试用例文档（what to test）
-/testing-guide      →  指导如何写测试（how to test）
-/code-quality       →  确保代码可测试性（testability）
-/refactor           →  重构前验证测试覆盖
-```
-
-## 输出文件
-
-```
-testing-guide/
-├── SKILL.md                              # 主文件（核心规范）
-└── templates/
-    ├── mutation-testing.md               # 变异测试配置（JS/TS/Python/Java/Go/C#/Rust）
-    └── traceability-matrix.md            # 需求追溯矩阵模板
-```
-
-详见 [testing-guide/SKILL.md](skills/testing-guide/SKILL.md)。
-
----
-
-# 13. devdocs-bugfix (Bug 修复)
-
-测试先行的 Bug 修复流程，确保每个修复都有回归测试保护。
-
-## 元数据
-
-```yaml
-name: devdocs-bugfix
-description: Test-first bug fixing workflow
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
-```
-
-## 触发条件
-
-- 用户报告 Bug 或问题
-- 用户提到"修复"、"bug"、"崩溃"、"报错"
-- 用户提供 Issue 编号
-
-## 核心流程
-
-```
-1. 理解 Bug + 评估复杂度
-   │
-   ├── 复杂 Bug → **必须** /devdocs-dev-tasks 拆分任务
-   │              （用户明确选择时才可跳过）
-   └── 简单 Bug → 继续
-   │
-   ▼
-2. 定位代码
-   │
-   ▼
-3. 编写失败测试（证明 Bug 存在）
-   │
-   ├── 测试通过 → ⚠️ Bug 未复现
-   └── 测试失败 → ✅ 继续
-   │
-   ▼
-4. 修复代码
-   │
-   ▼
-5. 运行测试（测试通过 = 修复完成）
-   │
-   ▼
-6. 执行 /devdocs-sync（更新追溯矩阵）
-   │
-   ▼
-7. 提交 fix(<scope>): <description>
-```
-
-## 核心原则
-
-```
-先证明 Bug 存在（失败测试），再修复代码，最后证明 Bug 已修复（测试通过）。
-```
-
-## 约束
-
-- [ ] **必须先编写失败测试，再修复代码**
-- [ ] **复杂 Bug 必须走 `/devdocs-dev-tasks` 拆分任务**
-- [ ] **修复完成后必须执行 `/devdocs-sync`**
-- [ ] 测试名称描述 Bug 场景
-- [ ] 提交信息使用 `fix(<scope>):` 前缀
-- [ ] 关联 Issue 编号（如有）
-
-## 与其他 Skills 协作
-
-| 场景 | 协作 Skill |
-|------|-----------|
-| 复杂 Bug 拆分 | `/devdocs-dev-tasks` |
-| 追溯同步 | `/devdocs-sync` |
-| 测试编写 | `/testing-guide` |
-| 代码修改 | `/code-quality` |
-| 提交信息 | `/commit-convention` |
-
-详见 [devdocs-bugfix/SKILL.md](skills/devdocs-bugfix/SKILL.md)。
-
----
-
-# 14. devdocs-feature (新功能)
-
-在已有 DevDocs 项目中追加新功能，确保编号延续、文档一致。支持轻量模式和完整模式。
-
-## 元数据
-
-```yaml
-name: devdocs-feature
-description: Add new features to existing DevDocs projects
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
-```
-
-## 触发条件
-
-- 用户要在已有项目中添加新功能
-- 用户提到"新功能"、"迭代"、"新增功能"
-- 用户要求扩展现有功能
-
-## 运行模式
-
-```bash
-/devdocs-feature "功能描述"        # 自动检测模式
-/devdocs-feature --lite "功能描述" # 强制轻量模式
-```
-
-| 模式 | 适用场景 | 更新文档 | 流程 |
-|------|----------|----------|------|
-| **轻量模式** | 配置修改、UI 微调、简单字段 | 01 + 04 | 一次完成 |
-| **完整模式** | 新模块、新接口、架构变更 | 01 + 02 + 03 + 04 | 分步确认 |
-
-### 自动模式检测
-
-分析需求描述，检测是否涉及架构变更（新接口、数据模型、组件依赖、第三方服务）：
-- **均无** → 轻量模式
-- **任一命中** → 完整模式（分步执行，每步确认）
-
-## 完整模式流程（分步编排）
-
-```
-Step 0: 扫描编号
-           ↓
-Step 1: 委托 /devdocs-requirements → ✅ 确认
-           ↓
-Step 2: 委托 /devdocs-system-design → ✅ 确认
-           ↓
-Step 3: 委托 /devdocs-test-cases → ✅ 确认
-           ↓
-Step 4: 委托 /devdocs-dev-tasks → ✅ 确认
-           ↓
-Step 5: 生成功能日志
-```
-
-> **编排器边界**：`devdocs-feature` 是纯编排器，负责步骤编排、确认流程、功能日志。
-> 具体的需求、设计、测试、任务内容全部由对应的专项 Skill 负责。
-
-## 核心原则
-
-```
-新功能开发 = 延续编号 + 追加文档 + 影响分析 + 回归保护
-```
-
-## 约束
-
-- [ ] **必须延续现有编号，不得重复**
-- [ ] **追加内容必须标注增量版本和日期**
-- [ ] **不得删除或覆盖现有内容**
-- [ ] **完整模式每步必须等待用户确认**
-- [ ] **轻量模式仅更新 01 + 04**
-- [ ] 修改现有接口必须说明向后兼容性
-
-## 输出文件
-
-- 更新 `01-requirements.md`（追加）
-- 更新 `02-system-design*.md`（完整模式，追加/修改）
-- 更新 `03-test-*.md`（完整模式，追加）
-- 更新 `04-dev-tasks*.md`（追加）
-- 更新/创建 `00-feature-log.md`（功能日志）
-
-详见 [devdocs-feature/SKILL.md](skills/devdocs-feature/SKILL.md)。
-
----
-
-# 15. devdocs-sync (文档同步)
-
-保持 DevDocs 文档与实际实现进度一致，检测偏差并更新状态。支持吸收模式自动补齐文档，具备调度器功能指派修复 Skill。
-
-## 元数据
-
-```yaml
-name: devdocs-sync
-description: Sync documentation with implementation progress
-allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
-```
-
-## 触发条件
-
-- 用户完成一个或多个开发任务后
-- 用户要求检查文档与代码一致性
-- 用户需要更新文档进度
-- Sprint 结束时定期同步
-
-## 运行模式
-
-```bash
-/devdocs-sync           # 完整同步（检查 + 确认 + 更新）
-/devdocs-sync --check   # 仅检查，不更新文档
-/devdocs-sync --absorb  # 吸收模式（自动 + 智能补齐）
-/devdocs-sync --archive # 强制归档已完成任务
-```
-
-| 模式 | 检查 | 自动更新 | 智能补齐 | 用户确认 |
-|------|------|----------|----------|----------|
-| check | ✅ | ❌ | ❌ | ❌ |
-| sync（默认） | ✅ | ✅ | ❌ | ✅ 全部 |
-| **absorb** | ✅ | ✅ | ✅ | ✅ 仅高风险 |
-
-## 吸收模式 (--absorb)
-
-从"检查员"进化为"记录员"，支持"代码优先"开发路径。
-
-### 低风险（自动吸收）
-
-- 任务状态更新（文件存在 + 测试通过 → ✅）
-- 测试结果字段更新
-- 追溯矩阵状态更新
-- 执行检查清单自动勾选
-
-### 高风险（需确认）
-
-- 发现未记录的新接口 → 建议追加到 02
-- 发现未记录的新测试 → 建议追加到 03
-- 发现未记录的新文件 → 建议补充文档
-- 实现与设计不一致 → 提示处理
-
-## 偏差类型与修复路由（调度器功能）
-
-| 偏差类型 | 说明 | 修复 Skill |
-|----------|------|-----------|
-| 设计缺失/漂移 | 代码有新接口但文档未记录 | `/devdocs-system-design` |
-| AC 缺测试 | 验收标准无对应测试用例 | `/devdocs-test-cases` |
-| F 缺任务闭环 | 功能点无关联开发任务 | `/devdocs-dev-tasks` |
-| 代码已实现文档落后 | 状态未更新、新内容未登记 | `/devdocs-sync --absorb` |
-| 追溯矩阵代码位置缺失 | 代码标注未扫描到矩阵 | `/devdocs-sync` |
-
-> 调度器原则：偏差报告不只列出问题，必须给出明确的修复路由。
-
-## 输出文件
-
-```
-docs/devdocs/
-└── 00-progress-report.md    # 进度报告（含吸收报告）
-```
-
-## 任务归档
-
-同步时自动检测：
-- 已完成任务超过 15 个 → 建议归档
-- 归档按功能点 (F-XXX) 分组
-- 主文档保留最近完成的 5 个任务
-
-## 约束
-
-- [ ] **必须读取所有 DevDocs 文档后再进行检查**
-- [ ] **必须生成偏差报告**
-- [ ] **更新文档前必须询问用户确认**（吸收模式低风险除外）
-- [ ] **吸收模式低风险仅限状态字段更新**
-- [ ] **吸收模式高风险必须用户确认**
-- [ ] 不自动删除文档内容，只标记状态
-- [ ] 不自动修改代码，只更新文档
-
-## 与其他 Skills 协作
-
-| 场景 | 协作 Skill |
-|------|-----------|
-| 任务完成后 | `/devdocs-dev-tasks` |
-| 需求变更 | `/devdocs-feature` |
-| Bug 修复 | `/devdocs-bugfix` |
-| 项目改造 | `/devdocs-retrofit` |
-| 轻量新增 | `/devdocs-feature --lite` |
-
-详见 [devdocs-sync/SKILL.md](skills/devdocs-sync/SKILL.md)。
-
----
-
-# 16. devdocs-onboard (项目上下文)
-
-生成项目上下文摘要，帮助 AI 工具或团队成员快速了解项目并接手工作。
-
-## 元数据
-
-```yaml
-name: devdocs-onboard
-description: Generate project context summary for AI tool handover
-allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
-```
-
-## 触发条件
-
-- 用户切换 AI 工具，需要传递上下文
-- 用户开始新的对话会话
-- 团队成员需要了解项目
-- 用户要求生成项目简报
-
-## 核心流程
-
-```
-1. 扫描 DevDocs 文档
-   │
-   ▼
-2. 提取关键信息
-   ├── 项目概述
-   ├── 技术架构
-   ├── 当前进度
-   └── 待办任务
-   │
-   ▼
-3. 扫描代码库结构
-   │
-   ▼
-4. 生成上下文摘要
-```
-
-## 输出文件
-
-```
-docs/devdocs/
-└── 00-context.md    # 项目上下文（可直接传递给新 AI）
-```
-
-## 上下文内容
-
-| 章节 | 内容 | 来源 |
-|------|------|------|
-| 项目概述 | 目标、核心功能、技术栈 | `01-requirements.md`, `02-system-design.md` |
-| 系统架构 | 架构图、核心模块、关键接口 | `02-system-design.md` |
-| 代码结构 | 目录结构、关键文件 | 代码库扫描 |
-| 当前进度 | 完成率、进行中任务、未提交变更 | `04-dev-tasks.md`, `git status` |
-| 待办任务 | 下一步任务、阻塞项 | `04-dev-tasks.md` |
-| 快速开始 | 环境准备、运行命令 | `package.json`, `Makefile` |
-
-## 运行模式
-
-```bash
-# 智能检测：根据文档存在状态询问用户
-/devdocs-onboard
-
-# 只读模式：读取并展示现有文档，不修改（新 AI 接手时使用）
-/devdocs-onboard --read
-
-# 更新模式：重新扫描项目并更新文档（完成工作后使用）
-/devdocs-onboard --update
-```
-
-## 约束
-
-- [ ] **必须扫描所有 DevDocs 文档**
-- [ ] **必须检查当前代码库状态**
-- [ ] **输出文件必须自包含**（新 AI 读取后能立即工作）
-- [ ] 敏感信息不得包含
-- [ ] 必须列出下一步可执行的任务
-
-## 与其他 Skills 协作
-
-| 场景 | 协作 Skill |
-|------|-----------|
-| DevDocs 不存在 | `/devdocs-retrofit` |
-| 进度信息过时 | `/devdocs-sync` |
-
-详见 [devdocs-onboard/SKILL.md](skills/devdocs-onboard/SKILL.md)。
-
----
-
-# 17. devdocs-insights (洞察收集)
-
-收集来自 UI/UX 审查、文档调研、外部参考等来源的改进建议，经用户确认后转化为开发需求。
-
-## 元数据
-
-```yaml
-name: devdocs-insights
-description: Collect improvement insights from UI/UX reviews, document research, or external references, convert confirmed items into development requirements.
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
-```
-
-## 触发条件
-
-- 用户完成 UI/UX 审查，有优化建议
-- 用户调研了文档/方案，发现可借鉴点
-- 用户发现外部参考（竞品、最佳实践）可借鉴
-- 用户有改进想法需要转化为需求
-
-## 洞察来源
-
-| 来源 | 说明 | 示例 |
-|------|------|------|
-| 🎨 UI/UX 审查 | 界面问题、交互优化 | 按钮对比度不足、缺少加载状态 |
-| 📄 文档调研 | 技术方案、设计模式 | 采用 React Query、引入乐观更新 |
-| 🔍 外部参考 | 竞品分析、最佳实践 | 参考 Notion 的拖拽交互 |
-| 💡 内部反馈 | 用户反馈、团队建议 | 列表加载慢需要虚拟滚动 |
-
-## 核心流程
-
-```
-1. 识别洞察来源
-   │
-   ▼
-2. 收集/整理建议（INS-XXX）
-   │
-   ▼
-3. 用户确认（AskUserQuestion）
-   │
-   ▼
-4. 转化为需求（追加到 01-requirements.md）
-   │
-   ▼
-5. 建议后续流程
-```
-
-## 建议格式
-
-```markdown
-### INS-001: <建议标题>
-
-| 属性 | 内容 |
-|------|------|
-| **来源** | 🎨 UI/UX 审查 |
-| **参考** | <来源链接或描述> |
-| **现状** | <当前问题> |
-| **建议** | <改进建议> |
-| **优先级** | P1 |
-| **状态** | ⏳ 待确认 |
-```
-
-## 输出文件
-
-```
-docs/devdocs/
-├── 05-insights.md       # 洞察记录（可选）
-└── 01-requirements.md   # 确认后追加需求
-```
-
-## 使用示例
-
-```bash
-# 标准模式：交互式收集和确认
-/devdocs-insights
-
-# 从 URL 提取建议
-/devdocs-insights --url <url>
-
-# 快速模式：直接输入建议列表
-/devdocs-insights --quick
-```
-
-## 约束
-
-- [ ] **所有建议必须经过用户确认才能转化**
-- [ ] **必须标明建议来源**
-- [ ] **转化后的需求必须可追溯到原始建议**
-- [ ] 拒绝的建议必须记录原因
-- [ ] 单次收集建议不超过 10 条
-
-## 与其他 Skills 协作
-
-| 场景 | 协作 Skill |
-|------|-----------|
-| UI/UX 审查来源 | `/ui-orchestrator` |
-| 确认后设计 | `/devdocs-system-design` |
-| 确认后开发 | `/devdocs-dev-tasks` |
-| Bug 类建议 | `/devdocs-bugfix` |
-
-详见 [devdocs-insights/SKILL.md](skills/devdocs-insights/SKILL.md)。
-
----
-
-# 18. devdocs-dev-workflow (开发工作流)
-
-执行单个开发任务的工作流指导，采用自顶向下开发模式和分层 TDD。
-
-## 元数据
-
-```yaml
-name: devdocs-dev-workflow
-description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution, dependency resolution, breakpoint resume, and --headless unattended mode.
-allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, Task
-```
-
-## 触发条件
-
-- 用户开始执行某个任务（如 T-01）
-- 用户需要开发指导
-- 用户从 devdocs-dev-tasks 进入开发阶段
-
-## 与 devdocs-dev-tasks 的关系
-
-```
-devdocs-dev-tasks（规划层）     devdocs-dev-workflow（执行层）
-        │                              │
-        ├── 任务拆分                   ├── 单任务执行流程
-        ├── TAR 原则                   ├── 自顶向下开发
-        ├── 依赖管理                   ├── 分层 TDD
-        └── 任务归档                   └── 代码追溯标注
-```
-
-## 核心流程
-
-```
-1. 读取任务定义（从 04-dev-tasks.md）
-   │
-   ▼
-2. 生成骨架代码
-   ├── 接口骨架 + @requirement/@satisfies 标注
-   └── 测试骨架 + @verifies/@testcase 标注
-   │
-   ▼
-3. 执行开发（分层 TDD）
-   ├── 核心逻辑 🔴：测试先行
-   ├── 接口层 🟡：推荐测试先行
-   ├── UI 层 🟢：可实现后补测试
-   └── 基础设施 ⚪：集成测试验证
-   │
-   ▼
-4. 完成检查 → 提交代码 → 更新追溯
-```
-
-## 约束
-
-- [ ] **接口骨架必须添加追溯标注**
-- [ ] **测试骨架必须使用 skip/todo 标记**
-- [ ] **核心逻辑任务必须先写测试，后写实现**
-- [ ] **验收标准 (AC-XXX) 全部满足才能完成**
-
-## 与其他 Skills 协作
-
-| 阶段 | 协作 Skill |
-|------|-----------|
-| 写业务代码 | `/code-quality` |
-| 写测试代码 | `/testing-guide` |
-| UI 实现 | `/ui-orchestrator` |
-| 代码提交 | `/git-safety`, `/commit-convention` |
-
-详见 [devdocs-dev-workflow/SKILL.md](skills/devdocs-dev-workflow/SKILL.md)。
-
----
-
-# 19. devdocs-verify (统一验证)
-
-四合一验证 Skill，替代原 devdocs-review、devdocs-requirements-alignment、devdocs-ui-alignment。
-
-## 元数据
-
-```yaml
-name: devdocs-verify
-description: Unified verification — --docs / --impl / --ui / --readiness
-allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
-```
-
-## 验证维度
-
-| 维度 | 检查内容 | 原 Skill |
-|------|----------|----------|
-| `--docs` | 三层文档对齐（原始需求→文档→设计→测试） | devdocs-requirements-alignment |
-| `--impl` | AC 满足度 + 设计一致性 + 追溯完整性 | devdocs-review |
-| `--ui` | 设计稿↔需求↔实现三方对齐 | devdocs-ui-alignment |
-| `--readiness` | 开发就绪四维检查（AC 覆盖/路径具体性/依赖无环/设计-任务一致性） | 新增 |
-
-## 触发时机
-
-- `--docs`：各层文档产出后
-- `--impl`：开发完成后、对抗式验证之前
-- `--ui`：UI 任务完成后（需设计稿输入）
-- `--readiness`：dev-tasks 完成后、进入 dev-workflow 前
-- 无参数：自动检测项目状态选择维度
-
-详见 [devdocs-verify/SKILL.md](skills/devdocs-verify/SKILL.md)。
-
----
-
-# 项目结构
-
-```
-.                                           # Git 仓库根目录
-├── .claude-plugin/
-│   └── plugin.json                         # Claude Plugin 清单
-├── skills/                                 # 所有 skill
-│   ├── code-quality/
-│   ├── commit-convention/
-│   ├── devdocs-bugfix/
-│   ├── devdocs-dev-tasks/
-│   ├── devdocs-dev-workflow/
-│   ├── devdocs-feature/
-│   ├── devdocs-insights/
-│   │   ├── SKILL.md
-│   │   ├── source-types.md                # 来源类型处理详情
-│   │   └── examples.md                    # 使用示例
-│   ├── devdocs-onboard/
-│   ├── devdocs-pipeline/                  # 顶层编排器
-│   ├── devdocs-requirements/
-│   │   ├── SKILL.md
-│   │   └── context-mode.md                # 背景信息模式详情
-│   ├── devdocs-retrofit/
-│   ├── devdocs-sync/
-│   ├── devdocs-system-design/
-│   │   ├── SKILL.md
-│   │   └── incremental-design.md          # 增量设计详情
-│   ├── devdocs-test-cases/
-│   ├── devdocs-test-run/
-│   ├── devdocs-verify/                    # 新增：统一验证（替代 review + alignment + ui-alignment）
-│   ├── devdocs-compound/
-│   ├── git-safety/
-│   ├── refactor/
-│   ├── testing-guide/
-│   ├── ui-orchestrator/
-│   └── work-report/
-├── scripts/
-│   └── deploy-skills.sh                    # 本地部署脚本
-├── CLAUDE.md                               # Claude Code 项目指令
-├── AGENTS.md                               # Codex / OpenCode 项目指令
-├── README.md                               # 本文档
-├── claude-skill-spec.md                    # Claude Skill 规范参考
-└── codex-skill-spec.md                     # Codex Skill 规范参考
-```
-
----
-
-# 使用方式
-
-## 安装
-
-详见文档顶部 [安装方式](#安装方式)。
-
-## 调用
-
-直接输入命令或使用触发词：
-
-```
-/devdocs-pipeline                  # 推荐入口：自动路由
-/devdocs-pipeline init             # 新项目全流程
-/devdocs-pipeline feature          # 新功能开发
-/devdocs-pipeline bugfix           # Bug 修复
-/devdocs-pipeline verify           # 质量检查
-/devdocs-pipeline close            # 周期收尾
-/devdocs-requirements 我需要一个用户登录功能
-/devdocs-system-design
-/devdocs-test-cases
-/devdocs-dev-tasks
-/devdocs-retrofit
-/devdocs-feature
-/devdocs-sync
-/devdocs-onboard
-/devdocs-insights
-/devdocs-bugfix
-/devdocs-verify
-/devdocs-verify --docs
-/devdocs-verify --impl
-/devdocs-verify --ui
-/code-quality
-/testing-guide
-/refactor
-/ui-orchestrator
-/work-report
-```
-
-或自然语言触发：
-
-```
-帮我写一个用户注册的需求文档
-设计一下系统架构
-写测试用例
-拆分开发任务
-把这个项目按 DevDocs 流程改造一下
-添加一个新功能
-同步一下文档进度
-检查文档和代码是否一致
-生成项目上下文
-帮我了解这个项目
-我审查了界面，有一些优化建议
-这篇文章有些可以借鉴的地方
-帮我重构这段代码
-重构 UserService
-Review 一下这个 PR
-提交代码
-帮我生成本周的周报
-```
+每个 skill 的完整规范见 `skills/<dir>/SKILL.md`。架构决策和约定见 `AGENTS.md`。
