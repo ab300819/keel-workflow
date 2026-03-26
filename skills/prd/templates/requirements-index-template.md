@@ -9,6 +9,14 @@
 | 生成日期 | YYYY-MM-DD |
 | 最近更新 | YYYY-MM-DD |
 
+## 已有系统盘点
+
+> 由 Step 0 上下文感知自动生成。绿地项目无此章节。
+
+引用：[docs/codebase-insight.md](../../codebase-insight.md)
+
+已有系统摘要：{{从 codebase-insight.md 提取的关键模块和接口概要}}
+
 ### ready 门槛检查
 
 - [ ] 至少 1 个主要用户角色已明确
@@ -116,8 +124,8 @@
 
 ## DevDocs 映射
 
-> 进入 DevDocs 后由 `/devdocs-requirements --from-product` 填写。
+> 进入 DevDocs 后由 `/ms-requirements --from-prd` 填写。同一 product_id 以表中最后一条记录为准。
 
-| Product ID | DevDocs ID | 映射日期 |
-|-----------|-----------|----------|
-| FR-01 | F-001 | YYYY-MM-DD |
+| product_id | devdocs_id | mapping_status | mapped_at | remapped_at |
+|-----------|-----------|----------------|-----------|-------------|
+| FR-01 | F-001 | active | YYYY-MM-DD | |

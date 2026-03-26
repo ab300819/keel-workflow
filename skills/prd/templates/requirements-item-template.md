@@ -6,6 +6,8 @@ source_chunk: FR-XX         # 对应 chunks/ 中的文件 ID
 moscow: Must                # Must | Should | Could | Won't
 maturity: draft             # idea | draft | ready
 status: clarified           # clarified（brainstorm 产出即为已澄清）→ outdated
+relation: new               # new | extend | modify（与已有系统的关系）
+related_module: ""          # extend/modify 时标注关联的已有模块名
 ---
 
 ## 来源追溯
@@ -26,7 +28,7 @@ status: clarified           # clarified（brainstorm 产出即为已澄清）→
 
 ## 验收意图
 
-> 非正式验收标准，供 devdocs-requirements 转化为正式 AC。
+> 非正式验收标准，供 ms-requirements 转化为正式 AC。
 
 1. {{当...时，应该...}}
 2. {{当...时，应该...}}

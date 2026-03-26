@@ -1,6 +1,6 @@
 ---
-name: product-brainstorm
-description: Brainstorm and clarify product requirements through structured exploration. Two modes - full brainstorm (idea to requirements via 5W1H/journey/MoSCoW) and chunk-clarify (adaptive depth clarification of PRD segments). Outputs structured requirement files (FR-XX/NFR-XX). Triggers on "brainstorm", "头脑风暴", "需求探索", "澄清需求", "clarify requirements". NOT for PRD parsing (use product-prd-parser) or pipeline orchestration (use product-pipeline).
+name: ms-prd-brainstorm
+description: Brainstorm and clarify product requirements through structured exploration. Two modes - full brainstorm (idea to requirements via 5W1H/journey/MoSCoW) and chunk-clarify (adaptive depth clarification of PRD segments). Outputs structured requirement files (FR-XX/NFR-XX). Triggers on "brainstorm", "头脑风暴", "需求探索", "澄清需求", "clarify requirements". NOT for PRD parsing (use ms-prd-parser) or pipeline orchestration (use ms-prd).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [inversion, generator]
@@ -29,14 +29,14 @@ metadata:
 
 - 用户提供一句话模糊想法，需要头脑风暴
 - 用户想要探索和澄清需求
-- 来自 `product-pipeline` 的块澄清委托
-- 来自 `product-prd-parser` 的分段需要深入探索
+- 来自 `ms-prd` 的块澄清委托
+- 来自 `ms-prd-parser` 的分段需要深入探索
 
 ## 运行模式
 
 ```bash
-/product-brainstorm                → 完整头脑风暴模式（一句话想法）
-/product-brainstorm --chunk <path> → 块澄清模式（PRD 分段逐块澄清）
+/ms-prd-brainstorm                → 完整头脑风暴模式（一句话想法）
+/ms-prd-brainstorm --chunk <path> → 块澄清模式（PRD 分段逐块澄清）
 ```
 
 | 模式 | 触发条件 | 说明 |
@@ -85,7 +85,7 @@ metadata:
 5. 功能发散 → 收敛
    │
    ├── 发散：列出所有可能功能点
-   ├── 收敛前审视：当前功能列表是否在解决正确的问题？（轻提示，正式记录由 product-pipeline 写入 index.md）
+   ├── 收敛前审视：当前功能列表是否在解决正确的问题？（轻提示，正式记录由 ms-prd 写入 index.md）
    ├── 收敛：MoSCoW 分类
    │   ├── Must have — 核心功能，缺失则产品不成立
    │   ├── Should have — 重要功能，首版应包含
@@ -98,7 +98,7 @@ metadata:
    │
    ├── 按 FR（功能需求）/ NFR（非功能需求）分类
    ├── 为每项分配 FR-XX 或 NFR-XX 编号
-   ├── 生成需求文件到 docs/product/requirements/
+   ├── 生成需求文件到 docs/prd/requirements/
    └── 使用 AskUserQuestion 最终确认
 ```
 
@@ -201,7 +201,7 @@ brainstorm 对每个需求项执行分类终判，复核 parser 的 FR/NFR 初�
 
 ## 输出文件
 
-**输出目录**：`docs/product/requirements/`
+**输出目录**：`docs/prd/requirements/`
 
 每个需求项生成一个独立文件：
 
@@ -221,7 +221,7 @@ open_questions: 1
 
 ## 来源追溯
 
-- 原始 chunk: `docs/product/chunks/FR-01-用户认证.md`
+- 原始 chunk: `docs/prd/chunks/FR-01-用户认证.md`
 - 初判分类: FR
 - 终判分类: FR
 
@@ -272,7 +272,7 @@ open_questions: 1
 
 ### 阶段边界约束（最高优先级）
 - [ ] **禁止继续：不得产出实现代码、架构设计或技术方案**（恢复方式：使用对应 DevDocs skill 执行后续阶段）
-- [ ] Write 工具仅用于写入 `docs/product/requirements/` 和 `docs/product/chunks/` 下的 Markdown 文档
+- [ ] Write 工具仅用于写入 `docs/prd/requirements/` 和 `docs/prd/chunks/` 下的 Markdown 文档
 - [ ] 对 chunks/ 文件：仅修改 YAML 头（添加 `reclassified_to` 字段），**不得改动原文内容**
 - [ ] 对 requirements/ 文件：写入完整的结构化需求文档
 
@@ -313,16 +313,16 @@ open_questions: 1
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| PRD 拆分后逐块澄清 | `product-prd-parser` | 上游：parser 拆分后由 pipeline 委派 |
-| 编排调度 | `product-pipeline` | 上游：pipeline 调用本 skill |
-| 需求进入 DevDocs | `devdocs-requirements` | 下游：ready 后通过 `--from-product` 消费 |
+| PRD 拆分后逐块澄清 | `ms-prd-parser` | 上游：parser 拆分后由 pipeline 委派 |
+| 编排调度 | `ms-prd` | 上游：pipeline 调用本 skill |
+| 需求进入 DevDocs | `ms-requirements` | 下游：ready 后通过 `--from-prd` 消费 |
 
 ## 子 Agent 摘要格式
 
 当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
 
 ```yaml
-skill: product-brainstorm
+skill: ms-prd-brainstorm
 status: success | partial | failed
 summary:
   headline: "识别 5 个功能领域，2 个非功能需求"
@@ -337,11 +337,11 @@ summary:
     reclassified: false           # 是否发生分类调整
 blockers: []
 output_files:
-  - docs/product/requirements/FR-01-用户认证.md
+  - docs/prd/requirements/FR-01-用户认证.md
 new_ids:
   requirements: [FR-01~FR-03, NFR-01~NFR-02]
 next_recommended:
-  skill: product-pipeline
+  skill: ms-prd
 ```
 
 **status 值域**：
@@ -353,6 +353,6 @@ next_recommended:
 
 | 完成模式 | 建议下一步 |
 |----------|------------|
-| 完整模式 | 返回 `product-pipeline` 生成 index.md |
-| 块澄清模式 | 返回 `product-pipeline` 继续下一块或生成 index.md |
-| 整体 ready | `devdocs-requirements --from-product` 进入 DevDocs |
+| 完整模式 | 返回 `ms-prd` 生成 index.md |
+| 块澄清模式 | 返回 `ms-prd` 继续下一块或生成 index.md |
+| 整体 ready | `ms-requirements --from-prd` 进入 DevDocs |

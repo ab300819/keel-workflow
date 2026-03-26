@@ -1,6 +1,6 @@
 ---
-name: product-pipeline
-description: Product requirements orchestrator. Routes ideas and PRDs through brainstorm and parsing workflows, producing structured requirements for DevDocs consumption. Use for fuzzy ideas, large PRD documents, or when users say "产品需求", "PRD", "需求探索", "头脑风暴", "brainstorm", "产品流程". NOT for already-structured DevDocs requirements or direct skill invocation.
+name: ms-prd
+description: Product requirements orchestrator. Routes ideas and PRDs through brainstorm and parsing workflows, producing structured requirements for DevDocs consumption. Use for fuzzy ideas, large PRD documents, or when users say "产品需求", "PRD", "需求探索", "头脑风暴", "brainstorm", "产品流程". NOT for already-structured requirements (use ms-requirements) or direct skill invocation.
 metadata:
   patterns: [pipeline]
   interaction: multi-turn
@@ -21,10 +21,10 @@ user-invocable: true
 ## 定位
 
 ```
-用户 → /product-pipeline → 自动检测输入类型 → 路由到对应流程
+用户 → /ms-prd → 自动检测输入类型 → 路由到对应流程
                          ↓
-              product-brainstorm（想法澄清）
-              product-prd-parser（文档拆分）
+              ms-prd-brainstorm（想法澄清）
+              ms-prd-parser（文档拆分）
                          ↓
               结构化需求包 → DevDocs 衔接
 ```
@@ -34,9 +34,10 @@ user-invocable: true
 ## 运行模式
 
 ```bash
-/product-pipeline              → 自动检测输入类型
-/product-pipeline brainstorm   → 强制头脑风暴模式
-/product-pipeline prd          → 强制 PRD 解析模式
+/ms-prd              → 自动检测输入类型（默认感知已有系统）
+/ms-prd brainstorm   → 强制头脑风暴模式
+/ms-prd prd          → 强制 PRD 解析模式
+/ms-prd --revise FR-03  → 单个 FR 重新 brainstorm
 ```
 
 ## 自动检测逻辑
@@ -60,6 +61,81 @@ user-invocable: true
 - "引用大文件"指用户提供文件路径且文件 > 2000 字，或为 PDF/图片等二进制格式
 - 模糊区间时询问：「输入内容介于想法和文档之间，请确认：(1) 作为想法进行头脑风暴 (2) 作为文档进行结构化解析」
 
+## Step 0: 上下文感知（自动，所有场景前置）
+
+启动时自动检测是否存在已有系统，无需用户指定：
+
+```text
+/ms-prd 启动
+    |
+    v
+Step 0: 上下文感知
+    |
+    +-- 检测项目是否有代码（检查 git ls-files 是否有非文档文件，或检测常见代码文件模式）
+    |   ├── 有代码 → 委托 ms-codebase-insight（由其缓存机制决定是否重扫）
+    |   │            读取返回的 docs/codebase-insight.md 作为已有上下文
+    |   └── 无代码 → 绿地模式，跳过
+    |
+    +-- 检测 docs/devdocs/01-requirements.md
+    |   ├── 存在 → 提取已有 F/US 列表作为补充上下文
+    |   └── 不存在 → 跳过
+    |
+    v
+Step 1+: 正常编排流程（brainstorm / prd-parse）
+```
+
+携带已有上下文后，brainstorm 探索时标注每个 FR-XX 与已有系统的关系：
+- FR-XX YAML 增加 `relation` 字段：`new`（全新功能）| `extend`（扩展已有）| `modify`（修改已有）
+- `extend` / `modify` 时增加 `related_module` 字段标注关联的已有模块
+
+## --revise 模式
+
+允许用户对单个 FR 重新进入 brainstorm 澄清，无需重新提交整个 PRD：
+
+```text
+/ms-prd --revise FR-03
+    |
+    v
+1. 定位 FR-03 文件：先查 docs/prd/requirements/FR-03-*.md，再查 docs/product/requirements/FR-03-*.md
+   记录实际路径（source_fr_path），后续回写使用同一路径
+    |
+    v
+2. 提取 FR-03 的功能描述和验收意图，作为 brainstorm 上下文
+    |
+    v
+3. Task: ms-prd-brainstorm（完整模式）
+    |  传入上下文：FR-03 现有功能描述 + 验收意图 + 用户修正说明
+    |  约束：brainstorm 产出必须保持 FR-03 的 id 和编号不变
+    |  输出：更新后的 FR-03 内容（不分配新编号）
+    |
+    v
+4. 用 brainstorm 产出**原地覆盖** source_fr_path（保持 id: FR-03）+ 更新同目录下的 index.md
+    |
+    v
+5. 如果 FR-03 已有 DevDocs 映射 → 将 mapping_status 置为 outdated
+    |  提示：「FR-03 已映射为 F-XXX，建议重新运行 /ms-requirements --from-prd 更新」
+```
+
+### mapping_status 规范
+
+映射表唯一存储位置：`index.md` 的"DevDocs 映射"章节。
+
+| 列 | 说明 |
+|----|------|
+| `product_id` | FR-XX / NFR-XX |
+| `devdocs_id` | F-XXX |
+| `mapping_status` | `active` / `outdated` / `remapped` / `removed` |
+| `mapped_at` | 首次映射时间 |
+| `remapped_at` | 重新映射时间（仅 remapped 时有值）|
+
+**状态枚举**：
+- `active`：FR 与 F 内容一致（由 ms-requirements --from-prd 在导入成功时写入）
+- `outdated`：FR 已修改但 F 未更新（由 ms-prd --revise 在修改 FR 内容时写入）
+- `remapped`：FR 重新导入后 F 已更新（由 ms-requirements --from-prd 在重新导入时写入）
+- `removed`：对应 F-XXX 已从 DevDocs 移除（由 ms-sync --back-propagate-prd 在检测到废弃时写入）
+
+**authoritative row**：同一 `product_id` 存在多条映射历史时，以表中最后一条记录为准。旧行仅作审计历史，不删除。
+
 ## 编排流程
 
 ### 场景 1：头脑风暴（idea → requirements）
@@ -68,7 +144,7 @@ user-invocable: true
 用户输入（一句话/简短想法）
     |
     v
-Task: product-brainstorm（完整模式）
+Task: ms-prd-brainstorm（完整模式）
     |  ← 5W1H → 用户旅程 → MoSCoW 收敛
     v
 生成 requirements/ 小文档 + index.md
@@ -83,13 +159,13 @@ Task: product-brainstorm（完整模式）
 用户提供 PRD 文档
     |
     v
-Step 1: Task: product-prd-parser
+Step 1: Task: ms-prd-parser
     |  ← 转换 + 拆分 → chunks/FR-XX.md + NFR-XX.md
     v
-Step 2: 逐块 Task: product-brainstorm --chunk <chunk文件路径>
+Step 2: 逐块 Task: ms-prd-brainstorm --chunk <chunk文件路径>
     |  ← 自适应深度：成熟块快速确认，模糊块深入探索
     |  ← 终判分类：复核 parser 的 FR/NFR 初判
-    |  ← 入参示例：/product-brainstorm --chunk docs/product/chunks/FR-01-用户认证.md
+    |  ← 入参示例：/ms-prd-brainstorm --chunk docs/prd/chunks/FR-01-用户认证.md
     v
 Step 3: 跨块合成
     |  ← 全局术语、共享假设、横切 NFR、冲突/重复解决
@@ -106,7 +182,7 @@ Step 5: 成熟度评估 → DevDocs 衔接建议
 用户提供更新后的 PRD
     |
     v
-Step 1: Task: product-prd-parser（重新拆分）
+Step 1: Task: ms-prd-parser（重新拆分）
     |  ← 计算新 document_fingerprint
     v
 Step 2: 指纹对比
@@ -119,7 +195,7 @@ Step 2: 指纹对比
     +-- 删除 → 标记 removed，对应 requirement 标记失效
     |
     v
-Step 3: 仅对 outdated/pending 块调用 product-brainstorm
+Step 3: 仅对 outdated/pending 块调用 ms-prd-brainstorm
     |
     v
 Step 4: 更新 index.md + 成熟度重评估
@@ -189,8 +265,10 @@ PRD 场景中，所有块澄清完成后执行跨块合成：
 
 ```
 需求包已就绪（maturity: ready），建议运行：
-/devdocs-requirements --from-product docs/product/requirements/index.md
+/ms-requirements --from-prd <实际 index.md 路径>
 ```
+
+> 路径使用当前 pipeline 实际写入的 index.md 路径（docs/prd/ 或 docs/product/）。
 
 maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响后续质量。
 
@@ -198,7 +276,7 @@ maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响�
 
 - 需求文件**不分配 F/US/AC 编号**，编号权属于 DevDocs
 - FR-XX/NFR-XX 为 product 阶段唯一标识，进入 DevDocs 后映射为 F-XXX
-- 需求文件存放于 `docs/product/`，不写入 `docs/devdocs/`
+- 需求文件存放于 `docs/prd/`（兼容读取 `docs/product/`），不写入 `docs/devdocs/`
 - 以小文档形式传入 DevDocs：index.md 提供全局视图，各 FR-XX 对应独立功能领域
 
 ## 编排规范（子 Agent 调度）
@@ -208,10 +286,10 @@ maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响�
 pipeline 调用其他技能时，**必须通过 Task tool 启动子 Agent**：
 
 ```text
-product-pipeline（编排层）
+ms-prd（编排层）
     |
-    +-- Task: product-prd-parser → YAML 摘要
-    +-- Task: product-brainstorm（逐块）→ YAML 摘要
+    +-- Task: ms-prd-parser → YAML 摘要
+    +-- Task: ms-prd-brainstorm（逐块）→ YAML 摘要
     +-- 跨块合成（pipeline 自身执行）
     +-- 生成 index.md（pipeline 自身执行）
 ```
@@ -229,12 +307,12 @@ product-pipeline（编排层）
 
 ### 上下文隔离
 
-每个子 Agent 自行读取所需的前置文件（从 `docs/product/` 文件系统），不依赖编排 Agent 传递全文。
+每个子 Agent 自行读取所需的前置文件（从 `docs/prd/` 文件系统），不依赖编排 Agent 传递全文。
 
 ## 文件产出路径
 
 ```
-docs/product/
+docs/prd/
 +-- chunks/                     <- PRD 原文完整文本化副本
 |   +-- FR-01-<topic>.md
 |   +-- NFR-01-<topic>.md
@@ -282,23 +360,23 @@ docs/product/
 ### 编号约束
 
 - [ ] **FR-XX/NFR-XX 为 product 阶段唯一 ID，不分配 F/US/AC 编号**
-- [ ] **编号权属于 DevDocs，product-pipeline 不越界**
+- [ ] **编号权属于 DevDocs，ms-prd 不越界**
 
 ## Skill 协作
 
 | 场景 | 编排的 Skill 链 |
 |------|----------------|
-| 头脑风暴 | product-brainstorm → index 生成 → ready 检查 |
-| PRD 解析 | product-prd-parser → 逐块 product-brainstorm → 跨块合成 → index 生成 → ready 检查 |
-| PRD 更新 | product-prd-parser（重拆）→ 指纹对比 → 仅 outdated 块 brainstorm → index 更新 |
-| DevDocs 衔接 | ready 时推荐 devdocs-requirements --from-product |
+| 头脑风暴 | ms-prd-brainstorm → index 生成 → ready 检查 |
+| PRD 解析 | ms-prd-parser → 逐块 ms-prd-brainstorm → 跨块合成 → index 生成 → ready 检查 |
+| PRD 更新 | ms-prd-parser（重拆）→ 指纹对比 → 仅 outdated 块 brainstorm → index 更新 |
+| DevDocs 衔接 | ready 时推荐 ms-requirements --from-prd |
 
 ## 子 Agent 摘要格式
 
 当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
 
 ```yaml
-skill: product-pipeline
+skill: ms-prd
 status: success | partial | failed
 summary:
   headline: "需求处理完成，成熟度 ready，含 6 个功能 + 2 个非功能"
@@ -309,17 +387,17 @@ summary:
     nonfunctional_count: 2
     clarified_count: 8
     open_questions: 2
-    ready_checks_passed: 5
-    ready_checks_total: 5
+    ready_checks_passed: 6
+    ready_checks_total: 6
 blockers: []
 output_files:
-  - docs/product/requirements/index.md
-  - docs/product/requirements/FR-01-用户认证.md
+  - docs/prd/requirements/index.md
+  - docs/prd/requirements/FR-01-用户认证.md
 new_ids:
   requirements: [FR-01~FR-06, NFR-01~NFR-02]
 next_recommended:
-  skill: devdocs-requirements
-  args: "--from-product docs/product/requirements/index.md"
+  skill: ms-requirements
+  args: "--from-prd <实际 index.md 路径>"
 ```
 
 **status 值域**：
@@ -331,6 +409,6 @@ next_recommended:
 
 pipeline 完成后，根据成熟度给出建议：
 
-- `ready` → 推荐 `/devdocs-requirements --from-product docs/product/requirements/index.md`
+- `ready` → 推荐 `/ms-requirements --from-prd <实际 index.md 路径>`
 - `draft` → 提示开放问题清单，建议补充后再衔接，或用户选择直接进入 DevDocs
-- `idea` → 建议继续 `/product-pipeline brainstorm` 深化探索
+- `idea` → 建议继续 `/ms-prd brainstorm` 深化探索

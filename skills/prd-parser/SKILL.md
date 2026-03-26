@@ -1,6 +1,6 @@
 ---
-name: product-prd-parser
-description: Parse and split large PRD documents (md/PDF/screenshots) into structured chunks with FR/NFR classification, fingerprint-based change tracking, and full text preservation. Use when users provide large product requirement documents that need segmentation before clarification. Triggers on "PRD", "产品需求文档", "大文档拆分", "解析PRD", "parse prd". NOT for requirement clarification (use product-brainstorm) or pipeline orchestration (use product-pipeline).
+name: ms-prd-parser
+description: Parse and split large PRD documents (md/PDF/screenshots) into structured chunks with FR/NFR classification, fingerprint-based change tracking, and full text preservation. Use when users provide large product requirement documents that need segmentation before clarification. Triggers on "PRD", "产品需求文档", "大文档拆分", "解析PRD", "parse prd". NOT for requirement clarification (use ms-prd-brainstorm) or pipeline orchestration (use ms-prd).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 metadata:
   patterns: [generator]
@@ -28,7 +28,7 @@ metadata:
 ## 触发条件
 
 - 用户提供大型 PRD 文档（md/PDF/截图）
-- 来自 `/product-pipeline` 的 PRD 解析委托
+- 来自 `/ms-prd` 的 PRD 解析委托
 - 用户需要对已有 PRD 进行变更检测和增量更新
 
 ## 输入支持
@@ -56,7 +56,7 @@ metadata:
    v
 2. 记录原始文件来源
    |
-   +-- 文本文件（md）→ 复制到 docs/product/source/
+   +-- 文本文件（md）→ 复制到 docs/prd/source/
    +-- 二进制文件（PDF/图片/docx）→ 记录原始路径到 source/manifest.md，提示用户手动复制
    +-- 计算 document_fingerprint（对转换后的全文计算 sha256）
    |
@@ -82,7 +82,7 @@ metadata:
    v
 6. 输出 chunk 文件
    |
-   +-- 写入 docs/product/chunks/，含 YAML 头 + 完整原文
+   +-- 写入 docs/prd/chunks/，含 YAML 头 + 完整原文
    +-- 每个文件包含双指纹 + parser_version + chunk_key
    |
    v
@@ -170,7 +170,7 @@ metadata:
 
 ### Chunk 文件
 
-文件路径：`docs/product/chunks/<编号>-<主题>.md`
+文件路径：`docs/prd/chunks/<编号>-<主题>.md`
 
 ```markdown
 ---
@@ -215,7 +215,7 @@ status: pending
 
 ### 原始文件保存
 
-- 路径：`docs/product/source/`
+- 路径：`docs/prd/source/`
 - 此目录在 `.gitignore` 中排除，不提交仓库
 - 避免二进制膨胀和敏感信息入库
 
@@ -269,8 +269,8 @@ pending ──(PRD 更新，章节删除)──> removed
 
 ### 阶段边界约束（最高优先级）
 
-- [ ] **禁止继续：不得解读、改写、删减原文内容**（恢复方式：原文完整保留到 chunk，需求解读由 product-brainstorm 负责）
-- [ ] Write 工具仅用于写入 `docs/product/chunks/` 和 `docs/product/source/` 下的文件
+- [ ] **禁止继续：不得解读、改写、删减原文内容**（恢复方式：原文完整保留到 chunk，需求解读由 ms-prd-brainstorm 负责）
+- [ ] Write 工具仅用于写入 `docs/prd/chunks/` 和 `docs/prd/source/` 下的文件
 - [ ] 不分配 F/US/AC 编号（编号权属于 DevDocs 阶段）
 
 ### 忠实性约束
@@ -303,16 +303,16 @@ pending ──(PRD 更新，章节删除)──> removed
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 编排调度 | `/product-pipeline` | 被调用：pipeline 委托 PRD 解析 |
-| 块澄清 | `/product-brainstorm` | 后续：chunks 传入 brainstorm 逐块澄清 |
-| 分类终判 | `/product-brainstorm` | 后续：brainstorm 可复判 FR/NFR 分类 |
+| 编排调度 | `/ms-prd` | 被调用：pipeline 委托 PRD 解析 |
+| 块澄清 | `/ms-prd-brainstorm` | 后续：chunks 传入 brainstorm 逐块澄清 |
+| 分类终判 | `/ms-prd-brainstorm` | 后续：brainstorm 可复判 FR/NFR 分类 |
 
 ## 子 Agent 摘要格式
 
 当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
 
 ```yaml
-skill: product-prd-parser
+skill: ms-prd-parser
 status: success | partial | failed
 summary:
   headline: "PRD 拆分为 6 个功能块 + 2 个非功能块"
@@ -325,21 +325,21 @@ summary:
     outdated_count: 0
 blockers: []
 output_files:
-  - docs/product/chunks/FR-01-用户认证.md
-  - docs/product/chunks/NFR-01-性能要求.md
-  - docs/product/source/manifest.md
+  - docs/prd/chunks/FR-01-用户认证.md
+  - docs/prd/chunks/NFR-01-性能要求.md
+  - docs/prd/source/manifest.md
 new_ids:
   chunks: [FR-01~FR-06, NFR-01~NFR-02]
 next_recommended:
-  skill: product-pipeline
+  skill: ms-prd
 ```
 
 ## 下一步
 
 | 完成场景 | 建议下一步 |
 |----------|------------|
-| 首次解析完成 | 返回 `/product-pipeline`，由 pipeline 逐块调用 brainstorm |
-| 变更检测完成 | 返回 `/product-pipeline`，仅对 outdated/pending 块调用 brainstorm |
-| 独立运行 | `/product-brainstorm` 逐块澄清 |
+| 首次解析完成 | 返回 `/ms-prd`，由 pipeline 逐块调用 brainstorm |
+| 变更检测完成 | 返回 `/ms-prd`，仅对 outdated/pending 块调用 brainstorm |
+| 独立运行 | `/ms-prd-brainstorm` 逐块澄清 |
 
-> **提示**：本 skill 仅负责拆分和保留原文，需求解读和澄清由 `/product-brainstorm` 负责。
+> **提示**：本 skill 仅负责拆分和保留原文，需求解读和澄清由 `/ms-prd-brainstorm` 负责。
