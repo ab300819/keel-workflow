@@ -1,0 +1,367 @@
+---
+name: ms-pipeline
+description: Top-level orchestrator for DevDocs workflow. Provides 6 entry points (init/feature/bugfix/verify/close/insights) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start", "insights", "洞察", "调研", "借鉴", "竞品". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
+metadata:
+  patterns: [pipeline]
+  interaction: multi-turn
+  handoff: yaml-summary-v1
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Task
+user-invocable: true
+---
+
+# DevDocs 工作流编排器
+
+顶层编排器，提供 6 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
+
+## 语言规则
+
+- 支持中英文提问
+- 统一中文回复
+
+## 定位
+
+```
+用户 → /ms-pipeline → 自动路由到合适的 skill 组合
+                         ↓
+              取代手动选择 13 个原子 skill
+```
+
+**核心价值**：用户只需说"我要做什么"，pipeline 负责"用哪些 skill、按什么顺序"。
+
+## 运行模式
+
+```bash
+/ms-pipeline                → 提问式调度（自动判断）
+/ms-pipeline init           → 新项目全流程
+/ms-pipeline feature        → 新功能开发
+/ms-pipeline bugfix         → Bug 修复
+/ms-pipeline verify         → 质量检查
+/ms-pipeline close          → 周期收尾
+/ms-pipeline insights       → 外部洞察吸收
+```
+
+## 提问式调度（智能引导）
+
+无参数调用时，通过阶段感知 + 智能引导收敛到合适的入口：
+
+### 阶段检测
+
+首先扫描 `docs/devdocs/` 已有文件，判断当前阶段：
+
+```text
+扫描 docs/devdocs/ 目录
+    │
+    ├── 无文件 → 先检测项目状态，再路由
+    │     │
+    │     ├── 有 docs/prd/requirements/index.md（兼容 docs/product/） 且 maturity=ready → "产品需求已就绪，建议运行 /ms-requirements --from-prd <实际检测到的 index.md 路径>"
+    │     ├── 有 docs/prd/requirements/index.md（兼容 docs/product/） 且 maturity=idea/draft → "产品需求包未就绪（maturity: <当前值>），建议继续运行 /ms-prd 完善需求"
+    │     ├── 项目已有代码（src/、lib/、app/ 等）但无 DevDocs → Q1a：新项目还是已有项目？
+    │     │     ├── 已有项目 → "建议先运行 /ms-retrofit 逆向生成文档"
+    │     │     └── 新项目（代码是脚手架/模板）→ 继续按输入类型路由
+    │     ├── 用户输入明显模糊/极短（<200字，无结构）→ "建议先运行 /ms-prd 探索需求"
+    │     └── 用户提供大文档引用（文件/URL/粘贴长文）→ "建议先运行 /ms-prd prd 解析文档"
+    │
+    └── 有文件 → 分析当前阶段（基于文件存在性，首个命中即路由）
+          │
+          ├── 有 verify-report（--impl/全部，通过）→ "验证已完成，建议运行 /ms-sync 或 /ms-compound"
+          ├── 有代码提交 + 任务进行中 → "开发进行中，建议继续 /ms-dev-workflow"
+          ├── 有 01~04 + readiness-report（通过）→ "就绪检查已通过，建议运行 /ms-dev-workflow"
+          ├── 有 01~04 + readiness 未通过或缺失 → "建议运行 /ms-verify --readiness"
+          ├── 有 01~03 → "测试设计已完成，建议运行 /ms-dev-tasks"
+          ├── 有 01 + 02 → "设计已完成，建议运行 /ms-test-cases"
+          ├── 仅 01-requirements.md → "需求已完成，建议运行 /ms-system-design"
+          └── 有 05-insights.md + 含 ⏳ 待确认条目 → "有未转化洞察，建议运行 /ms-feature 或 /ms-dev-tasks"
+          │
+          > 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
+```
+
+### 轻量分轨提示
+
+根据用户描述的变更规模，给出路径建议：
+
+| 变更规模 | 特征 | 建议路径 |
+|----------|------|----------|
+| 小改动 | bugfix、单文件修复、配置变更 | `/ms-pipeline bugfix` |
+| 标准功能 | 新功能、需求变更、多文件改动 | `/ms-pipeline feature` |
+| 大功能 | 跨模块、新架构、全新项目 | `/ms-pipeline init` 完整路径 |
+
+### 兜底问答
+
+阶段检测无法判断时，通过 2-3 个问题收敛：
+
+```text
+Q1: "项目已有 DevDocs 文档吗？"
+    │
+    ├── 没有 → Q1a: "已有代码还是全新项目？"
+    │           ├── 全新项目 → init
+    │           └── 已有代码 → /ms-retrofit（非 pipeline 管辖）
+    │
+    └── 有 → Q2: "你要做什么？"
+              ├── 新功能  → feature
+              ├── 修 Bug  → bugfix
+              ├── 检查质量 → verify
+              ├── 吸收外部参考 → insights
+              └── 收尾/沉淀 → close
+
+Q3（feature/bugfix 追加，可选）:
+    "这次改动涉及 UI 吗？"
+    ├── 是 → verify 阶段包含 --ui 维度
+    └── 否 → verify 阶段仅 --docs/--impl
+```
+
+## 入口详解
+
+### init — 新项目全流程
+
+适用于全新项目，从需求到开发的完整流程。
+
+```text
+/ms-requirements
+    │
+    ▼
+/ms-system-design
+    │
+    ▼
+/ms-test-cases
+    │
+    ▼
+/ms-dev-tasks
+    │
+    ▼
+/ms-verify --readiness   ← 就绪关卡（P1 阻塞则修复后重试）
+    │
+    ▼
+/ms-dev-workflow（批量模式）
+    │  ← 批量模式内部已含逐任务 sync + compound
+    ▼
+/ms-verify --docs --impl  ← 全量验证（显式指定维度，覆盖文档对齐 + 实现正确性）
+    │
+    ▼
+/ms-sync          ← 全量补充同步（幂等，捕获跨任务遗漏）
+```
+
+> **就绪关卡**：dev-tasks 完成后自动调用 `verify --readiness`。检查项包括：AC↔测试用例对齐、任务文件路径具体性、依赖无环、设计↔任务一致性。P1 问题阻塞进入 dev-workflow，显示问题清单并建议修复后重试。
+>
+> **粒度说明**：dev-workflow 批量模式内部已执行逐任务 sync 和 compound。pipeline 此处的 verify → sync 是**全量验证+补充同步**，覆盖跨任务的整体一致性。sync 是幂等的，多次执行不会产生错误结果。不再额外执行 compound——dev-workflow 批量模式已默认执行。
+
+**上下文传递**：pipeline 启动时优先检查 `docs/devdocs/00-context.md`，如存在则读取作为参考上下文。但 pipeline 始终以 `docs/devdocs/` 目录下的实际文件进行阶段检测（而非依赖 00-context.md 中的进度数据），确保路由基于最新文档状态。
+
+### feature — 新功能开发
+
+适用于已有项目追加新功能。
+
+```text
+/ms-feature（含 requirements/design/tests/tasks + readiness 关卡 + 自动衔接 dev-workflow）
+    │  ← feature 内置 Step 4.5 verify --readiness，P1 阻塞则修复后重试
+    │  ← dev-workflow 内部已含逐任务 sync
+    ▼
+/ms-verify --docs --impl  ← 全量验证（显式指定维度，与 init 流程一致）
+    │
+    ▼
+/ms-sync          ← 全量补充同步（幂等，捕获跨任务遗漏）
+```
+
+> `/ms-feature` 已内置 Step 4.5 readiness 关卡和 Step 6 自动衔接 dev-workflow，pipeline 只需在 feature 完成后补充 verify 和 sync。verify 是全量验证，覆盖 dev-workflow 逐任务验证可能遗漏的跨任务一致性；sync 是幂等的全量补充同步，不是重复执行。
+
+### bugfix — Bug 修复
+
+适用于已有项目修复 Bug。
+
+```text
+评估复杂度
+    │
+    ├── 简单 Bug → /ms-bugfix（直接修复）
+    │                  │
+    │                  ▼
+    │              /ms-verify --impl
+    │                  │
+    │                  ▼
+    │              /ms-sync
+    │
+    └── 复杂 Bug → /ms-dev-tasks（拆分任务）
+                       │
+                       ▼
+                   /ms-dev-workflow
+                       │
+                       ▼
+                   /ms-verify --impl
+                       │
+                       ▼
+                   /ms-sync
+```
+
+### verify — 质量检查
+
+适用于任意阶段的质量检查。
+
+```text
+自动判断维度
+    │
+    ├── 有代码变更 → /ms-verify --impl
+    ├── 有文档变更 → /ms-verify --docs
+    ├── 有 UI 设计稿 → /ms-verify --ui
+    └── 不确定 → 询问用户
+    │
+    ▼
+生成修复建议
+    │
+    ▼
+路由到对应 skill 执行修复
+```
+
+### close — 周期收尾
+
+适用于开发周期结束后的收尾工作。
+
+```text
+/ms-sync（trace + audit）
+    │
+    ▼
+/ms-compound（知识沉淀）
+    │
+    ▼
+/ms-onboard --update（更新上下文摘要）
+```
+
+## 阶段间衔接
+
+pipeline 在每个阶段完成后：
+
+1. **状态检查**：确认阶段产出文件存在
+2. **简要摘要**：向用户展示本阶段结果概要
+3. **衔接提示**：询问用户是否继续下一阶段（默认是）
+
+```
+✅ 需求文档已完成（F-001~F-003, AC-001~AC-012）
+是否继续进入系统设计阶段？[是(默认)/否]
+```
+
+## 编排规范（子 Agent 调度）
+
+### 调度原则
+
+pipeline 调用其他技能时，**必须通过 Task tool 启动子 Agent**：
+
+```text
+pipeline（编排层）
+    │
+    ├── Task: /ms-requirements → YAML 摘要
+    ├── Task: /ms-system-design → YAML 摘要
+    ├── Task: /ms-test-cases → YAML 摘要
+    ├── Task: /ms-dev-tasks → YAML 摘要
+    ├── Task: /ms-verify --readiness → YAML 摘要
+    ├── Task: /ms-dev-workflow → YAML 摘要
+    ├── Task: /ms-verify → YAML 摘要
+    └── Task: /ms-sync → YAML 摘要
+```
+
+### 摘要传递
+
+阶段间只传递 YAML 摘要 + 文件路径。编排 Agent **不读取**子技能的完整输出文档。
+
+### 异常回退
+
+子 Agent 返回 `status: failed` + `blockers` 时：
+1. 展示阻塞项给用户
+2. 询问用户处理方式（修复/跳过/终止）
+3. **不自行读取文档排障**
+
+### 上下文隔离
+
+每个子 Agent 自行读取所需的前置文档（从 `docs/devdocs/` 文件系统），不依赖编排 Agent 传递全文。
+
+## 约束
+
+### 阶段边界约束（全局规则）
+
+DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
+
+| 阶段 | 技能 | 产出类型 | 允许编码 |
+|------|------|----------|----------|
+| 需求 | ms-requirements | 文档 | ❌ |
+| 设计 | ms-system-design | 文档 | ❌ |
+| 测试设计 | ms-test-cases | 文档 | ❌ |
+| 任务拆分 | ms-dev-tasks | 文档 | ❌ |
+| 项目改造 | ms-retrofit | 文档 | ❌ |
+| **开发执行** | **ms-dev-workflow** | **代码** | **✅** |
+| **Bug 修复** | **ms-bugfix** | **代码** | **✅** |
+
+- [ ] **⛔ 禁止继续：文档阶段不得产出实现代码，仅写入 `docs/devdocs/` 下的 Markdown 文档**（恢复方式：将代码产出移至 dev-workflow/bugfix 阶段）
+- [ ] **编码仅在 ms-dev-workflow 和 ms-bugfix 阶段发生**
+- [ ] 编排器不得在文档阶段启动编码操作
+
+### 编排约束
+
+- [ ] **pipeline 仅负责路由和衔接，不复制任何原子 skill 的逻辑**
+- [ ] **每个阶段必须委托给对应的原子 skill 执行**
+- [ ] **阶段间传递的信息仅限：新增编号列表、状态摘要、文件路径**
+- [ ] 用户可在任意阶段退出 pipeline
+
+### 提问式调度约束
+
+- [ ] **优先使用阶段检测自动判断，无法判断时才提问**
+- [ ] **兜底问答最多 3 个问题收敛到入口**
+- [ ] **问题必须有明确的选项（不开放式提问）**
+- [ ] 识别到 retrofit 场景时，路由到 `/ms-retrofit` 并退出 pipeline
+- [ ] **分轨提示基于变更规模，不引入额外术语**
+
+### 上下文约束
+
+- [ ] **优先读取 00-context.md 作为快速上下文（如存在且 < 24h）**
+- [ ] pipeline 编排层不读取大量源代码（委托给子 skill）
+- [ ] 每个阶段完成后展示简要摘要（< 10 行）
+
+### 编排约束（子 Agent）
+
+- [ ] **调用其他技能时必须通过 Task tool 启动子 Agent**
+- [ ] **阶段间只传递 YAML 摘要 + 文件路径**
+- [ ] **子 Agent 失败时展示阻塞项询问用户，不自行排障**
+- [ ] **每个子 Agent 自行读取前置文档，编排层不传递全文**
+
+## Skill 协作
+
+| 入口 | 编排的 Skill 链 |
+|------|----------------|
+| init | requirements → system-design → test-cases → dev-tasks → **verify --readiness** → dev-workflow → verify → sync |
+| feature | feature(含 readiness + dev-workflow) → verify → sync |
+| bugfix | bugfix / (dev-tasks → dev-workflow) → verify → sync |
+| verify | verify --docs/--impl/--ui |
+| insights | insights → feature 或 dev-tasks → dev-workflow → verify → sync |
+| close | sync → compound → onboard --update |
+
+## 子 Agent 摘要格式
+
+当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+```yaml
+skill: ms-pipeline
+status: success | failed | interrupted | partial
+summary:
+  headline: "init 流程完成 2/5 阶段"
+  details:
+    entry: init | feature | bugfix | verify | close | insights
+    stages_completed:
+      - { skill: ms-requirements, status: success }
+      - { skill: ms-system-design, status: success }
+    stages_remaining:
+      - ms-test-cases
+    interrupt_reason: "用户选择退出"  # 仅中断时
+blockers: []
+output_files:
+  - docs/devdocs/01-requirements.md
+  - docs/devdocs/02-system-design.md
+new_ids:
+  features: [F-001, F-002]
+  acceptance: [AC-001~AC-012]
+next_recommended:
+  skill: ms-test-cases
+```
+
+## 下一步
+
+pipeline 完成后，所有产出文档均已生成/更新。用户可：
+
+- 继续下一轮 feature/bugfix
+- 运行 `/ms-onboard --read` 传递上下文给新 AI
+
+> ⚠️ 新增功能开发时，不得跳过 test-cases、dev-tasks、verify --readiness 直接进入 dev-workflow。Bug 修复按 `/ms-pipeline bugfix` 路径处理。

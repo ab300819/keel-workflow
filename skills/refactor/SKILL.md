@@ -51,7 +51,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 
 | 场景 | 协作 Skill | 说明 |
 |------|------------|------|
-| 代码无法测试 | `/devdocs-retrofit` | 逆向分析后重写 |
+| 代码无法测试 | `/ms-retrofit` | 逆向分析后重写 |
 | UI 重构 | `/ui-orchestrator` | 应用 UI 约束规范 |
 | 代码质量检查 | `/code-quality` | 应用 MTE 原则 |
 | 需要文档化 | DevDocs 流程 | 生成规范文档 |
@@ -90,7 +90,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
    ▼
 5. 重写流程（如需要）
    │
-   └── 调用 /devdocs-retrofit 逆向 → 生成文档 → 重新实现
+   └── 调用 /ms-retrofit 逆向 → 生成文档 → 重新实现
    │
    ▼
 6. 验证与报告
@@ -357,7 +357,7 @@ UI 重构检查点：
 ### 5.2 重写流程
 
 ```
-1. 调用 /devdocs-retrofit
+1. 调用 /ms-retrofit
    │
    ├── 模式：代码逆向推导
    ├── 输出：需求文档、系统设计
@@ -528,7 +528,7 @@ docs/devdocs/
 
 - [ ] UI 重构必须应用 `/ui-orchestrator` 约束
 - [ ] 代码重构必须应用 `/code-quality` MTE 原则
-- [ ] 重写时必须使用 `/devdocs-retrofit` 生成文档
+- [ ] 重写时必须使用 `/ms-retrofit` 生成文档
 
 ### 文档约束
 
@@ -583,7 +583,7 @@ docs/devdocs/
 - [ ] 全局状态依赖
 
 建议进入重写流程:
-1. 使用 /devdocs-retrofit 逆向分析代码
+1. 使用 /ms-retrofit 逆向分析代码
 2. 生成需求和设计文档
 3. 按照可测试的设计重新实现
 
@@ -600,7 +600,7 @@ docs/devdocs/
 DevDocs 工作流（含重构）:
 
 新项目:
-/devdocs-requirements → /devdocs-system-design → /devdocs-test-cases → /devdocs-dev-tasks
+/ms-requirements → /ms-system-design → /ms-test-cases → /ms-dev-tasks
                                                                               │
                                                                               ▼
                                                                            开发实现
@@ -609,7 +609,7 @@ DevDocs 工作流（含重构）:
                                                               /code-quality /ui-orchestrator /refactor
                                                                                         │
 已有项目:                                                                               │
-/devdocs-retrofit ←─────────────────────────────────────────────────────────────────────┘
+/ms-retrofit ←─────────────────────────────────────────────────────────────────────┘
        │                                                              (不可测试时)
        ▼
   标准化文档 → 重新实现
@@ -624,13 +624,13 @@ DevDocs 工作流（含重构）:
     │
     ├── UI 重构 → /ui-orchestrator (UI 约束)
     │
-    ├── 不可测试 → /devdocs-retrofit (逆向分析)
+    ├── 不可测试 → /ms-retrofit (逆向分析)
     │                    │
-    │                    ├── /devdocs-requirements
-    │                    ├── /devdocs-system-design
-    │                    └── /devdocs-test-cases
+    │                    ├── /ms-requirements
+    │                    ├── /ms-system-design
+    │                    └── /ms-test-cases
     │
-    ├── 测试编写 → /devdocs-test-cases (测试策略参考)
+    ├── 测试编写 → /ms-test-cases (测试策略参考)
     │
     └── 重构完成 → /code-self-describe --update (更新模块自描述)
 ```

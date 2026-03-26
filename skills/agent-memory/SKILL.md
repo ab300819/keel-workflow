@@ -214,9 +214,9 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
 | 首次创建 | `/agent-memory` 自行完成 | 从项目源扫描创建；若 `/init` 已创建则增量更新 |
-| 阶段性文档变更 | `/devdocs-onboard` | onboard 完成后建议运行 /agent-memory |
-| 任务完成轻量更新 | `/devdocs-dev-workflow` | dev-workflow 步骤 6.5 内联更新"当前状态" |
-| 上下文摘要 | `/devdocs-onboard` | onboard 生成 00-context.md，不涉及记忆文件 |
+| 阶段性文档变更 | `/ms-onboard` | onboard 完成后建议运行 /agent-memory |
+| 任务完成轻量更新 | `/ms-dev-workflow` | dev-workflow 步骤 6.5 内联更新"当前状态" |
+| 上下文摘要 | `/ms-onboard` | onboard 生成 00-context.md，不涉及记忆文件 |
 
 ## 模板引用
 

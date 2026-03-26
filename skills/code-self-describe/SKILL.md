@@ -272,10 +272,10 @@ AI 搜索到第五层文件时，已自动加载前四层 CLAUDE.md，对整个�
 
 | 阶段 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 开发完成后 | `/devdocs-dev-workflow` | 被调用：完成检查步骤中触发 --update |
+| 开发完成后 | `/ms-dev-workflow` | 被调用：完成检查步骤中触发 --update |
 | 重构后 | `/refactor` | 被调用：重构完成后更新描述 |
-| 项目上下文 | `/devdocs-onboard` | 互补：CLAUDE.md 提供模块级上下文 |
-| 代码追溯 | `/devdocs-sync` | 互补：不同维度的代码标注 |
+| 项目上下文 | `/ms-onboard` | 互补：CLAUDE.md 提供模块级上下文 |
+| 代码追溯 | `/ms-sync` | 互补：不同维度的代码标注 |
 | 文件操作 | `/git-safety` | 配合：模块移动/重命名时同步更新 CLAUDE.md |
 
 ## 参考资料

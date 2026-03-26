@@ -102,7 +102,7 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 ### 标注规范
 
-测试代码必须包含追溯标注，用于 `/devdocs-sync` 扫描：
+测试代码必须包含追溯标注，用于 `/ms-sync` 扫描：
 
 ```typescript
 /**
@@ -188,10 +188,10 @@ describe('UserService', () => {
 
 | 阶段 | Skill | 输入 | 输出 |
 |------|-------|------|------|
-| 测试设计 | `/devdocs-test-cases` | 需求文档 | 测试用例矩阵 |
-| 骨架生成 | `/devdocs-dev-tasks` | 测试用例 | 测试骨架代码 |
+| 测试设计 | `/ms-test-cases` | 需求文档 | 测试用例矩阵 |
+| 骨架生成 | `/ms-dev-tasks` | 测试用例 | 测试骨架代码 |
 | 测试实现 | `/testing-guide` | 骨架代码 | 完整测试 |
-| 追溯同步 | `/devdocs-sync` | 代码标注 | 更新矩阵 |
+| 追溯同步 | `/ms-sync` | 代码标注 | 更新矩阵 |
 
 ---
 
@@ -358,7 +358,7 @@ mvn pitest:mutationCoverage    # Java
 
 | 场景 | Skill |
 |------|-------|
-| 测试用例设计 | `/devdocs-test-cases` |
+| 测试用例设计 | `/ms-test-cases` |
 | 代码可测试性 | `/code-quality` |
 | 重构前测试 | `/refactor` |
-| 分支覆盖分析 | `/devdocs-dev-workflow` — 完成检查阶段可选调用 |
+| 分支覆盖分析 | `/ms-dev-workflow` — 完成检查阶段可选调用 |
