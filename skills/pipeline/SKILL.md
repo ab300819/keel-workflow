@@ -70,7 +70,7 @@ user-invocable: true
           ├── 有 01~03 → "测试设计已完成，建议运行 /ms-dev-tasks"
           ├── 有 01 + 02 → "设计已完成，建议运行 /ms-test-cases"
           ├── 仅 01-requirements.md → "需求已完成，建议运行 /ms-system-design"
-          └── 有 05-insights.md + 含 ⏳ 待确认条目 → "有未转化洞察，建议运行 /ms-feature 或 /ms-dev-tasks"
+          └── 有 05-insights.md + 含 ⏳ 待确认条目 → "有未转化洞察，建议运行 /ms-insights 确认后进入 system-design 或 dev-tasks"
           │
           > 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
 ```
@@ -326,8 +326,26 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | feature | feature(含 readiness + dev-workflow) → verify → sync |
 | bugfix | bugfix / (dev-tasks → dev-workflow) → verify → sync |
 | verify | verify --docs/--impl/--ui |
-| insights | insights → feature 或 dev-tasks → dev-workflow → verify → sync |
+| insights | 见下方 insights 流程图 |
 | close | sync → compound → onboard --update |
+
+> **补充说明**：dev-workflow 批量模式内部会调用 `/ms-test-run --trace` 执行全量测试 + 追溯验证，详见 `skills/dev-workflow/SKILL.md`。
+
+### insights 入口流程
+
+```text
+/ms-insights（收集 + 用户确认 + 追加 01-requirements.md）
+    │
+    ▼
+评估是否涉及架构变更
+    │
+    ├── 有架构变更（新 API / 数据模型 / 新模块）
+    │   └── /ms-system-design → /ms-test-cases → /ms-dev-tasks
+    │       → **verify --readiness** → /ms-dev-workflow → /ms-verify → /ms-sync
+    │
+    └── 简单改进（纯配置 / 样式调整）
+        └── /ms-dev-tasks → /ms-dev-workflow → /ms-verify → /ms-sync
+```
 
 ## 子 Agent 摘要格式
 

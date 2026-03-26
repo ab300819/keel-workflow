@@ -291,7 +291,7 @@ metadata:
 | 设计变更 | `/ms-system-design` | 触发：复杂改进需要设计调整 |
 | 测试补充 | `/ms-test-cases` | 触发：改进建议需要测试覆盖 |
 | 简单改进 | `/ms-dev-tasks` | 无架构变更，直接拆分任务 |
-| 复杂改进 | `/ms-feature` | 有架构变更，走完整流程 |
+| 复杂改进 | `/ms-system-design` | 有架构变更，insights 已追加 requirements，直接进入设计 |
 | Bug 类建议 | `/ms-bugfix` | 走 Bug 修复流程 |
 | 需求更新 | `/ms-sync` | 同步文档状态 |
 
@@ -321,8 +321,8 @@ new_ids:
   features: [F-015, F-016]
   acceptance: [AC-030~AC-033]
   insights: [INS-001~INS-003]
-next_recommended:
-  skill: ms-feature
+next_recommended:                # 动态：有架构变更 → ms-system-design；简单改进 → ms-dev-tasks
+  skill: ms-system-design       # 示例值，实际按架构变更判断
 ```
 
 ## 命令选项
@@ -359,8 +359,8 @@ next_recommended:
       │
       └── 有架构变更（复杂改进）
           ├── 新接口、数据模型变更、新模块
-          └── → /ms-feature 完整流程
-                  └── system-design → test-cases → dev-tasks
+          └── → /ms-system-design（insights 已追加 requirements，直接进入设计）
+                  └── test-cases → dev-tasks → dev-workflow
 ```
 
 ### 架构变更判断
@@ -369,10 +369,10 @@ next_recommended:
 |------|-------------|----------|
 | 仅 UI/样式调整 | 否 | `/ms-dev-tasks` |
 | 仅配置项修改 | 否 | `/ms-dev-tasks` |
-| 新增 API 接口 | **是** | `/ms-feature` |
-| 数据模型变更 | **是** | `/ms-feature` |
-| 新增独立模块 | **是** | `/ms-feature` |
-| 第三方服务集成 | **是** | `/ms-feature` |
+| 新增 API 接口 | **是** | `/ms-system-design` |
+| 数据模型变更 | **是** | `/ms-system-design` |
+| 新增独立模块 | **是** | `/ms-system-design` |
+| 第三方服务集成 | **是** | `/ms-system-design` |
 
 ### 使用 AskUserQuestion 确认
 
@@ -385,7 +385,7 @@ next_recommended:
 
 建议路径：
 - INS-001 → /ms-dev-tasks（直接拆分任务）
-- INS-003 → /ms-feature（完整流程）
+- INS-003 → /ms-system-design（有架构变更，进入设计）
 
 是否按建议执行？[是/调整]
 ```

@@ -6,11 +6,11 @@
 
 - 规格库：Markdown + YAML skill 定义（非传统代码库）
 - 无 build/test/lint 命令
-- 20 个 ms- 流程 skill + N 个独立工具 skill
+- 19 个 ms- 流程 skill + 9 个独立工具 skill
 
 ## 架构决策
 
-- 每个 skill 独立目录 `skills/<name>/SKILL.md`，通过 `name` 字段匹配调用
+- 每个 skill 独立目录 `skills/<dir>/SKILL.md`，通过 SKILL.md 的 `name` 字段匹配调用；ms- 流程 skill 目录使用去前缀短名（如 `skills/bugfix/` ↔ `name: ms-bugfix`）
 - 流程 skill 的 name 字段统一使用 `ms-` 前缀（如 `ms-prd`、`ms-requirements`）
 - 详细模板放 `templates/` 子目录，SKILL.md 控制在 500 行以内
 - `templates/` 子目录存放输出模板，`references/` 子目录存放评估标准/rubric/规则
@@ -91,7 +91,7 @@ next_recommended:
 
 ## 详细文档
 
-- Skill 结构规范：各 `skills/<name>/SKILL.md`
+- Skill 结构规范：各 `skills/<dir>/SKILL.md`（目录短名，name 字段为调用名）
 - 编排层架构：`skills/pipeline/SKILL.md`
 - PRD 流程架构：`skills/prd/SKILL.md`
 - 代码盘点：`skills/codebase-insight/SKILL.md`
