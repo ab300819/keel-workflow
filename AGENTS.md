@@ -69,6 +69,9 @@ next_recommended:
 | FR-XX/NFR-XX | PRD 阶段需求编号，通过 `--from-prd` 衔接 DevDocs |
 | 质量锚 | 批量生成时首批输出作为后续批次的质量基准 |
 | codebase-insight | 只读代码盘点，输出 docs/codebase-insight.md，供多个 skill 消费 |
+| Sprint Contract | 开发前 Test Agent 与编排器协商的可执行验收契约（函数签名、边界条件） |
+| 验证盲区 | ms-verify 未检出但后续发现的问题，沉淀于 docs/devdocs/patterns/verify-blindspots.md |
+| Harness 深度 | Lite/Standard/Deep 三档自适应流程深度，基于变更影响面选择 |
 
 ## 命令
 

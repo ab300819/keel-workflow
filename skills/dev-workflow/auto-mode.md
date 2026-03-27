@@ -175,6 +175,28 @@ if not all_passed:
 - Suggestion 已跳过: 5
 - 总耗时: 由编排器记录
 
+## 决策日志
+
+> 记录关键决策点，便于 /ms-compound 消费和执行 Trace 分析。
+
+```yaml
+decision_log:
+  - task: T-01
+    events:
+      - step: S1.5_contract
+        action: "Contract 审核通过，裁剪 1 个过度断言"
+      - step: S5_red
+        action: "红色验证通过，3 个新测试全部失败"
+      - step: S9_review
+        action: "对抗式验证：1 Blocker 已修复（缺失边界检查）"
+  - task: T-02
+    events:
+      - step: S4_red_assertions
+        action: "Test Agent 重试 1 次（首次断言不完整）"
+      - step: S6_green
+        action: "Impl Agent 一次通过"
+```
+
 ## 全量测试结果
 
 > 由 /ms-test-run --trace 生成
@@ -210,6 +232,21 @@ if not all_passed:
 ## 失败详情
 - 失败原因: tests/user.test.ts:45 断言失败
 - 已重试: 3 次
+
+## 决策日志
+
+```yaml
+decision_log:
+  - task: T-01
+    events:
+      - step: S6_green
+        action: "Impl Agent 一次通过"
+  - task: T-03
+    events:
+      - step: S6_green
+        action: "测试失败，重试 3/3 后终止"
+        failure: "tests/user.test.ts:45 断言失败"
+```
 
 ## 全量测试结果: ⚠️ 未执行（批量中断）
 

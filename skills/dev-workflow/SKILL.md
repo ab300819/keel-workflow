@@ -60,6 +60,7 @@ metadata:
 | 全部 | `--all` | 所有 `状态≠已完成` 的任务 |
 | 无人值守 | `--headless` | 批量模式 + 全自动决策（fail-fast） |
 | 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停（与 `--headless` 互斥） |
+| 上下文重置 | `--context-reset N` | 每 N 个任务后编排器重置上下文（默认 3，仅批量模式） |
 
 ### 模式对比
 
@@ -103,9 +104,18 @@ metadata:
    └── 确认关联的测试用例 UT/IT/E2E-XXX
            │
            ▼
+1.5 Sprint Contract（验收契约协商）
+   ├── Test Agent 基于 AC + 当前代码上下文，生成可执行的验收契约
+   │   └── 具体到：函数签名、返回值类型、边界条件、异常场景
+   ├── 编排器审核契约合理性（过度 vs 不足）
+   │   ├── 过度：契约超出 AC 范围 → 裁剪
+   │   └── 不足：契约未覆盖 AC 关键行为 → 补充
+   └── 契约确认后作为 Test Agent 写测试的输入约束
+           │
+           ▼
 2. 生成骨架代码（自顶向下）
    ├── 接口骨架 + @requirement/@satisfies 标注
-   └── 测试骨架 + @verifies/@testcase 标注
+   └── 测试骨架 + @verifies/@testcase 标注（基于 Sprint Contract）
            │
            ▼
 3. 执行开发（统一流程，分级强制）
@@ -168,28 +178,6 @@ metadata:
 | `@verifies AC-XXX` | 验证的验收标准 | 测试用例 |
 | `@testcase UT/IT/E2E-XXX` | 测试编号 | 测试用例 |
 
-### 标注示例
-
-```typescript
-/**
- * 创建用户
- * @requirement F-001 - 用户注册
- * @satisfies AC-001 - 邮箱格式校验
- * @satisfies AC-002 - 密码强度校验
- */
-export async function createUser(dto: CreateUserDTO): Promise<User> {
-  // 实现代码
-}
-
-/**
- * @verifies AC-001 - 邮箱格式校验
- * @testcase UT-001
- */
-test('createUser 应该拒绝无效邮箱格式', () => {
-  // 测试代码
-});
-```
-
 ### 标注规则
 
 | 层级 | 标注位置 | 强制性 |
@@ -205,10 +193,16 @@ test('createUser 应该拒绝无效邮箱格式', () => {
 ### 开发流程（双 Agent 模型）
 
 ```text
+Step 0.5: Sprint Contract（Test Agent 生成，编排器审核）
+        ├── 输入：AC 列表 + 当前代码上下文 + 系统设计
+        ├── 产出：验收契约（函数签名、返回值、边界条件、异常场景）
+        └── 编排器审核：过度→裁剪，不足→补充
+                │
+                ▼
 Step 1: Test Agent（独立子 Agent）
-        ├── 输入：系统设计（接口+行为契约）+ 测试用例 + 需求
+        ├── 输入：系统设计（接口+行为契约）+ 测试用例 + 需求 + Sprint Contract
         ├── 生成接口骨架（签名 + @requirement/@satisfies + throw Error）
-        ├── 生成测试代码（@verifies/@testcase + 完整断言）
+        ├── 生成测试代码（@verifies/@testcase + 完整断言，约束于 Contract）
         └── 产出：骨架文件 + 测试文件
                 │
                 ▼
@@ -275,7 +269,8 @@ Step 4: 完成检查 + 提交（编排器）
 
 | 阶段 | 被调度内容 | 调度方式 |
 |------|-----------|----------|
-| **测试编写** | Test Agent：骨架 + 测试代码 | Task tool 子 Agent |
+| **验收契约** | Test Agent：Sprint Contract 生成 → 编排器审核 | Test Agent 产出 + 编排器轻量审核 |
+| **测试编写** | Test Agent：骨架 + 测试代码（约束于 Contract） | Task tool 子 Agent |
 | **红色验证** | 运行测试确认失败 | 编排器轻量执行 |
 | **实现编写** | Impl Agent：实现 + 重构 | Task tool 子 Agent |
 | 前置验证 | `/ms-verify --impl` | Task tool 子 Agent |
@@ -311,17 +306,9 @@ Step 4: 完成检查 + 提交（编排器）
 
 ## 约束
 
-### 骨架生成约束
-
-- [ ] **接口骨架必须包含完整签名**
-- [ ] **接口骨架必须添加追溯标注**
-- [ ] **未实现方法必须抛出 Error**
-- [ ] **测试骨架必须使用 skip/todo 标记**
-- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**
-
 ### 分层 TDD 约束
 
-- [ ] **所有层级遵循统一 12 步执行流程**（层级标记仅决定强制程度）
+- [ ] **所有层级遵循统一执行流程（S1~S12 + S1.5 Contract）**（层级标记仅决定强制程度）
 - [ ] **核心逻辑任务必须标记 🔴 强制 TDD**（全部步骤 ■ 必须）
 - [ ] **Test Agent 先写测试，Impl Agent 后写实现**（物理隔离）
 - [ ] **核心逻辑任务禁止在测试通过前提交**
@@ -391,7 +378,7 @@ Step 4: 完成检查 + 提交（编排器）
 - [ ] **每个任务开始前执行状态检测**（5 步流水线）
 - [ ] **不相关变更必须警告用户**（AskUserQuestion：stash/忽略/终止）
 - [ ] **已完成任务自动跳过**
-- [ ] 进行中任务分析续做起点（12 步精确定位：S1~S12，含续做 Agent 判定）
+- [ ] 进行中任务分析续做起点（精确定位：S1~S12 + S1.5，含续做 Agent 判定）
 - [ ] 文档状态 + Git 历史 + 工作区三重验证
 
 > 详见 [task-orchestration.md](task-orchestration.md)
@@ -484,6 +471,7 @@ summary:
     blockers_resolved: 0
     suggestions_skipped: 0
     ac_verified: [AC-001, AC-002]
+    decision_log: []  # 关键决策事件（Contract 审核、重试、Blocker 修复等）
 blockers: []
 output_files: []
 new_ids: {}

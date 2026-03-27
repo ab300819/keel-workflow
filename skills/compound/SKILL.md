@@ -56,7 +56,8 @@ ms-compound：提取经验、沉淀模式          → 知识层面的复利
    ├── 有效的解决方案（正面模式）
    ├── 踩过的坑和修复方式（陷阱）
    ├── 关键技术决策及其理由（决策记录）
-   └── 可复用的代码模式或架构模式
+   ├── 可复用的代码模式或架构模式
+   └── 验证盲区（ms-verify 未捕捉但后续发现的问题）
    │
    ▼
 3. 去重检查
@@ -95,6 +96,7 @@ ms-compound：提取经验、沉淀模式          → 知识层面的复利
 | 陷阱 | 踩坑后修复，且可能再次遇到 | "SQLite 在并发写入时需要 WAL 模式" |
 | 决策 | 有明确取舍，且理由非显而易见 | "选择 SSR 而非 SPA 因为 SEO 需求" |
 | 工作流 | 发现了更高效的开发流程 | "先写集成测试再拆单元测试更高效" |
+| 验证盲区 | ms-verify 未检出但后续暴露的缺陷 | "verify --impl 未发现跨模块副作用" |
 
 ### 什么不值得提取
 
@@ -108,6 +110,35 @@ ms-compound：提取经验、沉淀模式          → 知识层面的复利
 每个模式文档遵循统一结构，详见 [templates/pattern.md](templates/pattern.md)。
 
 **文件命名**：`docs/devdocs/patterns/<kebab-case-pattern-name>.md`
+
+## 验证盲区提取
+
+每次执行 `/ms-compound` 时，额外检查验证流程的有效性——形成 **verify → 使用 → 发现遗漏 → compound 沉淀 → verify 改进** 的闭环。
+
+### 盲区信号
+
+| 信号 | 示例 |
+|------|------|
+| verify --impl 通过但后续发现 Bug | AC-003 标记满足但实际边界条件未覆盖 |
+| verify --docs 通过但实现偏离 | 设计文档对齐但实际实现走了不同路径 |
+| 对抗式验证未检出的代码质量问题 | 隐式依赖耦合、跨模块副作用 |
+| readiness 通过但开发中发现任务定义不足 | 文件路径具体但缺少关键的中间步骤 |
+
+### 盲区输出
+
+发现验证盲区时，追加到 `docs/devdocs/patterns/verify-blindspots.md`：
+
+```markdown
+## [日期] 盲区描述
+
+- **维度**: --impl / --docs / --readiness / 对抗式验证
+- **遗漏内容**: 具体描述 verify 未检出的问题
+- **根因**: 为什么当前检查规则无法检出
+- **建议检查项**: 未来 verify 应新增的检查逻辑
+- **来源**: 本次开发中如何发现的（Bug 报告/上线后反馈/code review）
+```
+
+> 此文件由 ms-verify 启动时读取，作为额外检查项补充。形成持续改进的评估者调优闭环（[参考](https://www.anthropic.com/engineering/harness-design-long-running-apps)：评估提示需要多轮迭代调优）。
 
 ## 系统学习检查
 
@@ -127,6 +158,10 @@ ms-compound：提取经验、沉淀模式          → 知识层面的复利
    - 若是 → 标记目标 Skill 的约束章节
    - 若否 → 理由？
 
+4. **验证盲区检查**：本次是否发现了 ms-verify 未能检出的问题？
+   - 若是 → 追加到 `docs/devdocs/patterns/verify-blindspots.md`
+   - 若否 → 记录"未发现新盲区"
+
 ### 检查输出格式
 
 ```markdown
@@ -137,6 +172,7 @@ ms-compound：提取经验、沉淀模式          → 知识层面的复利
 | 规则 | ✅/❌ | <文件路径> | <说明> |
 | 模板 | ✅/❌ | <文件路径> | <说明> |
 | 检查器 | ✅/❌ | <文件路径> | <说明> |
+| 验证盲区 | ✅/❌ | docs/devdocs/patterns/verify-blindspots.md | <说明> |
 
 **未沉淀原因**：<若有未沉淀项，说明原因>
 ```
@@ -166,8 +202,9 @@ ms-compound：提取经验、沉淀模式          → 知识层面的复利
 ### 系统学习约束
 
 - [ ] **每次执行必须完成系统学习检查**
-- [ ] **检查结论必须回答三个维度（规则/模板/检查器）**
+- [ ] **检查结论必须回答四个维度（规则/模板/检查器/验证盲区）**
 - [ ] 未沉淀项必须说明原因
+- [ ] 验证盲区发现时必须追加到 `docs/devdocs/patterns/verify-blindspots.md`
 
 ### 安全约束
 
@@ -201,10 +238,12 @@ summary:
       rules_gap: false
       template_gap: true
       checker_gap: false
+      verify_blindspots: 0
 blockers: []
 output_files:
   - docs/devdocs/patterns/strategy-payment-channels.md
   - docs/devdocs/patterns/sqlite-wal-concurrency.md
+  # - docs/devdocs/patterns/verify-blindspots.md  # 当 verify_blindspots > 0 时包含
 new_ids: {}
 ```
 

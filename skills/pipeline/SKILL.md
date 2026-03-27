@@ -33,7 +33,8 @@ user-invocable: true
 ```bash
 /ms-pipeline                → 提问式调度（自动判断）
 /ms-pipeline init           → 新项目全流程
-/ms-pipeline feature        → 新功能开发
+/ms-pipeline feature        → 新功能开发（自动检测 Harness 深度）
+/ms-pipeline feature --deep → 强制深度模式（透传给 /ms-feature --deep）
 /ms-pipeline bugfix         → Bug 修复
 /ms-pipeline verify         → 质量检查
 /ms-pipeline close          → 周期收尾
@@ -75,15 +76,25 @@ user-invocable: true
           > 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
 ```
 
-### 轻量分轨提示
+### 自适应 Harness 深度
 
-根据用户描述的变更规模，给出路径建议：
+根据变更影响面自动推荐流程深度，避免轻量任务被重流程拖累，同时确保高风险变更不遗漏验证。
 
-| 变更规模 | 特征 | 建议路径 |
-|----------|------|----------|
-| 小改动 | bugfix、单文件修复、配置变更 | `/ms-pipeline bugfix` |
-| 标准功能 | 新功能、需求变更、多文件改动 | `/ms-pipeline feature` |
-| 大功能 | 跨模块、新架构、全新项目 | `/ms-pipeline init` 完整路径 |
+| 档位 | 特征 | 流程深度 | 路由 |
+|------|------|----------|------|
+| **Lite** | 单文件改动、无新接口、配置变更、UI 微调 | requirements(增量) → dev-tasks → dev-workflow | `/ms-feature --lite` 或 `/ms-pipeline bugfix` |
+| **Standard** | 多文件改动、新接口、新模块 | 全流程（requirements → design → tests → tasks → dev） | `/ms-pipeline feature` |
+| **Deep** | 跨模块架构变更、安全相关、核心数据模型变更 | 全流程 + 强制 `--review` + 强制 `ms-verify --docs` | `/ms-pipeline feature --deep` |
+
+**自动检测信号**：
+
+| 信号 | 检测方式 | 推荐档位 |
+|------|----------|---------|
+| 涉及文件 ≤2 且无新增接口 | 用户描述分析 | Lite |
+| 新增 API/数据模型/模块 | 用户描述 + 已有 02-system-design 对比 | Standard |
+| 跨模块依赖变更 / 安全相关 / 核心表结构变更 | 用户描述 + 架构摘要 | Deep |
+
+> 原则：**最小可行 Harness**（[参考](https://www.anthropic.com/engineering/harness-design-long-running-apps)）——每个流程环节都是对模型局限性的假设编码，随模型能力提升应定期评估是否仍有必要。
 
 ### 兜底问答
 
@@ -148,7 +159,7 @@ Q3（feature/bugfix 追加，可选）:
 
 ### feature — 新功能开发
 
-适用于已有项目追加新功能。
+适用于已有项目追加新功能。根据自适应 Harness 深度选择流程档位。
 
 ```text
 /ms-feature（含 requirements/design/tests/tasks + readiness 关卡 + 自动衔接 dev-workflow）
@@ -160,6 +171,11 @@ Q3（feature/bugfix 追加，可选）:
     ▼
 /ms-sync          ← 全量补充同步（幂等，捕获跨任务遗漏）
 ```
+
+**--deep 模式**（跨模块/架构/安全变更时自动推荐或手动指定）：
+- dev-workflow 所有任务强制 `--review`（对抗式验证）
+- feature 完成后额外执行 `ms-verify --docs`（确保文档层间对齐）
+- pipeline 展示 Deep 档位建议时附带影响面摘要
 
 > `/ms-feature` 已内置 Step 4.5 readiness 关卡和 Step 6 自动衔接 dev-workflow，pipeline 只需在 feature 完成后补充 verify 和 sync。verify 是全量验证，覆盖 dev-workflow 逐任务验证可能遗漏的跨任务一致性；sync 是幂等的全量补充同步，不是重复执行。
 
@@ -323,7 +339,7 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | 入口 | 编排的 Skill 链 |
 |------|----------------|
 | init | requirements → system-design → test-cases → dev-tasks → **verify --readiness** → dev-workflow → verify → sync |
-| feature | feature(含 readiness + dev-workflow) → verify → sync |
+| feature | feature(含 readiness + dev-workflow) → verify → sync（--deep 时 dev-workflow 强制 --review + verify 含 --docs） |
 | bugfix | bugfix / (dev-tasks → dev-workflow) → verify → sync |
 | verify | verify --docs/--impl/--ui |
 | insights | 见下方 insights 流程图 |

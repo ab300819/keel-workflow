@@ -4,14 +4,15 @@
 
 ## 步骤状态追踪
 
-12 步执行流程中，每步完成后记录状态标记，用于断点恢复时精确定位：
+执行流程中，每步完成后记录状态标记（含 S1.5 Sprint Contract），用于断点恢复时精确定位：
 
 | 步骤 | 对应流程 | 执行者 | 状态标记 |
 |------|----------|--------|----------|
 | S1 | 读取任务定义 | 编排器 | `task_loaded` |
+| S1.5 | Sprint Contract 协商 | Test Agent + 编排器审核 | `contract_agreed` |
 | S2 | 生成接口骨架 | Test Agent | `skeleton_interface` |
 | S3 | 生成测试骨架 | Test Agent | `skeleton_test` |
-| S4 | 编写测试断言（来自行为契约+AC） | Test Agent | `red_assertions` |
+| S4 | 编写测试断言（约束于 Contract） | Test Agent | `red_assertions` |
 | S5 | 红色验证（确认测试全部失败） | 编排器 | `red_verified` |
 | S6 | 实现代码 | Impl Agent | `green_impl` |
 | S7 | 重构优化 | Impl Agent | `refactored` |
@@ -78,6 +79,7 @@
 
 | 步骤 | 执行者 | 🔴 核心逻辑 | 🟡 接口层 | 🟢 UI 层 | ⚪ 基础设施 |
 |------|--------|------------|----------|---------|-----------|
+| 0.5 Sprint Contract | Test Agent + 编排器 | ■ | ■ | □ | ○ |
 | 1. 生成骨架（接口/组件） | Test Agent | ■ | ■ | ■ | ■ |
 | 2. 生成测试骨架 | Test Agent | ■ | ■ | ■ | □ |
 | 3. 编写测试断言 | Test Agent | ■ | □ | □ | ○ |
@@ -96,6 +98,12 @@
 ┌─ Test Agent（独立子 Agent）─────────────────────────────┐
 │                                                        │
 │  1. 开始任务                                            │
+│     │                                                  │
+│     ▼                                                  │
+│  1.5 Sprint Contract（S1.5）          ← ■/■/□/○        │
+│     ├── 基于 AC + 代码上下文生成验收契约                │
+│     ├── 具体到：函数签名、返回值、边界条件、异常场景    │
+│     └── 编排器审核（过度→裁剪，不足→补充）后确认        │
 │     │                                                  │
 │     ▼                                                  │
 │  2. 生成骨架（S2）                    ← ■ 全层级必须    │

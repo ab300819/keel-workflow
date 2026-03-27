@@ -52,6 +52,7 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 /ms-verify --impl --ac        → 仅 AC 满足度
 /ms-verify --impl --design    → 仅设计符合度
 /ms-verify --impl --trace     → 仅追溯完整性
+/ms-verify --impl --live      → 实现正确性 + 实际交互验证（启动应用 + 浏览器自动化）
 /ms-verify --ui               → 仅 UI 设计对齐（两阶段）
 /ms-verify --ui --design      → 仅设计稿 ↔ 需求
 /ms-verify --ui --impl        → 仅设计稿 ↔ 实现
@@ -80,7 +81,14 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
    ├── 01-requirements.md（AC 列表、原始需求）
    ├── 02-system-design.md（设计规范）
    ├── 03-test-cases.md（测试用例、追溯矩阵）
-   └── 05-test-report.md（如存在，辅助 --impl 判断）
+   ├── 05-test-report.md（如存在，辅助 --impl 判断）
+   └── docs/devdocs/patterns/verify-blindspots.md（如存在，作为额外检查项）
+   │
+   ▼
+2.5 加载验证盲区（评估者调优）
+   ├── 读取 docs/devdocs/patterns/verify-blindspots.md（如存在）
+   ├── 将历史盲区转化为本次检查的额外关注点
+   └── 在对应维度检查时优先覆盖已知盲区
    │
    ▼
 3. 按维度执行检查
@@ -160,6 +168,41 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 ### B3：追溯完整性审查
 
 检查 `@satisfies`/`@verifies` 覆盖率。**复用 ms-sync --check 的追溯扫描能力**（只读模式，不修改文档）。
+
+### B4：实际交互验证（--live，可选）
+
+通过浏览器自动化实际操作运行中的应用，验证 AC 描述的用户行为是否正确。
+
+**前提条件**：
+- 环境中有 Playwright MCP 或 Chrome DevTools MCP 可用
+- 应用可本地启动（有启动命令）
+
+**执行流程**：
+
+```text
+1. 从 DevDocs 或 package.json 获取启动命令
+2. 启动应用（dev server）
+3. 逐条读取 AC 中描述的用户操作
+4. 使用浏览器 MCP 执行操作（导航、点击、填表、验证）
+5. 对比实际行为与 AC 预期
+6. 停止应用
+```
+
+**适用范围**：
+
+| 任务类型 | 是否执行 --live |
+|----------|----------------|
+| UI/前端 任务（🟢） | ✅ 推荐 |
+| API 接口任务（🟡） | ✅ 可选（curl/API 调用验证） |
+| 核心逻辑（🔴） | ⏭️ 跳过（单元测试已覆盖） |
+| 基础设施（⚪） | ⏭️ 跳过 |
+
+**降级策略**：
+- 无浏览器 MCP → 跳过 --live，输出 `ℹ️ 建议：环境中无浏览器 MCP，--live 验证已跳过`
+- 应用启动失败 → 记录为 P2 Warning，继续静态验证
+- --live 与静态验证互补，不替代 B1/B2/B3
+
+> 灵感来源：[Harness Design](https://www.anthropic.com/engineering/harness-design-long-running-apps) 中 Evaluator 使用 Playwright 与运行中的应用交互验证，比纯静态代码审查更有效。
 
 ---
 
@@ -308,6 +351,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 ### 检查约束
 
 - [ ] **必须读取所有相关 DevDocs 文档后再检查**
+- [ ] **如存在 `docs/devdocs/patterns/verify-blindspots.md`，必须加载并作为额外检查项**（评估者调优闭环）
 - [ ] **--docs 层 1 依赖"原始需求"章节——新文档必须存在，历史文档若不存在则输出"前置缺失"并跳过**
 - [ ] **--impl AC 满足度必须语义判断，不仅检查标注存在性**
 - [ ] **--impl 设计符合度必须对照设计文档原文，不凭记忆**
@@ -322,6 +366,13 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 - [ ] P1 必须列出修复建议
 - [ ] 不将 P2/P3 升级为 P1（除非用户要求严格模式）
 - [ ] **--impl 必须回答 CE 三个审查问题**
+
+### --live 约束
+
+- [ ] **--live 为可选模式，无浏览器 MCP 时自动降级为静态验证**
+- [ ] **--live 必须在 B1/B2/B3 静态验证之后执行**
+- [ ] **应用启动失败不阻塞验证流程**（记录 P2 Warning）
+- [ ] 仅对 UI/API 类任务执行，核心逻辑和基础设施任务跳过
 
 ### 安全约束
 
@@ -353,6 +404,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | 代码质量 | `/code-quality` | 互补：code-quality 关注代码质量约束 |
 | UI 开发 | `/ui-orchestrator` | 互补：路由开发 vs 验证对齐 |
 | 知识沉淀 | `/ms-compound` | 前置：读取验证报告提取改进模式 |
+| 验证盲区 | `/ms-compound` | 闭环：compound 沉淀盲区 → verify 加载为额外检查项 |
 | 开发就绪 | `/ms-pipeline` | 被调用：dev-tasks 完成后、dev-workflow 前的质量关卡 |
 
 ## 子 Agent 摘要格式
@@ -378,6 +430,7 @@ summary:
       design_conformance: pass | fail
       traceability: "X% coverage"
       test_report_used: true | false
+      live_verification: pass | fail | skipped  # --live 模式结果
     ui:
       stage1: pass | fail | skipped
       stage2: pass | fail | skipped

@@ -227,6 +227,32 @@ docs/
 
 ---
 
+## 大型需求最佳实践
+
+基于 [Harness Design for Long-Running Apps](https://www.anthropic.com/engineering/harness-design-long-running-apps) 的 Generator-Evaluator 分离、Sprint Contract、最小可行 Harness 等设计模式，结合 ms- 流程的推荐使用方式：
+
+### 1. 需求阶段拉长，开发阶段提速
+
+用 `/ms-prd` 充分探索需求（对应文章的 Planner Agent 角色），需求清晰后一次性走完 requirements → system-design → test-cases → dev-tasks，开发用 `--headless` 或 `--auto-commit` 批量执行。
+
+### 2. 善用 --readiness 门控
+
+不要跳过 `/ms-verify --readiness`，它相当于文章中的 Sprint Contract 验证——在编码前确认交付规格可测试、依赖无环、路径具体。P1 问题一定修复后再开工，返工成本远大于修复成本。
+
+### 3. 批量执行 + 断点续做
+
+大需求拆成 10-20 个任务后，按依赖顺序用 `F-001` 或范围（`T-01~T-10`）批量执行。中断后直接续做，检查点机制会精确恢复到中断的 Agent 和步骤。每完成一个 Feature 的所有任务后运行 `/ms-sync` + `/ms-verify --impl`。
+
+### 4. 迭代而非一步到位
+
+文章核心经验：**多轮 QA 比一次完美实现更有效**。第一轮 dev-workflow 完成后，运行 `/ms-verify --impl` 找差距，将差距转为 bugfix 或 insight 再次进入开发循环，最后运行 `/ms-compound` 沉淀经验。
+
+### 5. 对抗式验证不要跳过
+
+`--review` 对抗验证对应文章中的独立 Evaluator——外部视角发现自己看不到的问题。文章指出 LLM 对自身输出有正面偏见，分离评估是最有效的质量保障手段。
+
+---
+
 ## 语言规则
 
 - 支持中英文提问
