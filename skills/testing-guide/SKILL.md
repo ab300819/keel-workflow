@@ -1,6 +1,6 @@
 ---
 name: testing-guide
-description: Opinionated constraints for writing effective tests. Guide unit tests, integration tests, and E2E tests with quality metrics beyond coverage. Includes AI-driven branch coverage analysis. Use when users write tests, review test code, or need testing strategy. Triggers on keywords like "test", "testing", "单元测试", "集成测试", "E2E", "测试质量", "coverage", "断言", "分支分析", "branch analysis", "未测试路径".
+description: Opinionated constraints for writing effective tests. Guide unit tests, integration tests, and E2E tests with quality metrics beyond coverage. Includes AI-driven branch coverage analysis. Use when users write tests, review test code, or need testing strategy. Triggers on keywords like "test", "testing", "单元测试", "集成测试", "E2E", "测试质量", "coverage", "断言", "分支分析", "branch analysis", "未测试路径". NOT for test case design as documentation (use ms-test-cases).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 

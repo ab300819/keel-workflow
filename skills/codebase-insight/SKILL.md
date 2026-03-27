@@ -1,6 +1,6 @@
 ---
 name: ms-codebase-insight
-description: 只读分析现有代码库，输出系统边界、核心模块、公开接口、关键数据对象和技术约束。供 prd 和 dev/test 流程委托调用，了解已有系统现状。触发词：代码分析、系统现状、codebase analysis、existing system、代码盘点。NOT for 需求推导（use ms-retrofit）、项目上下文（use ms-onboard）、代码审查（use code-review-expert）。
+description: 只读分析现有代码库，输出系统边界、核心模块、公开接口、关键数据对象和技术约束。供 prd 和 dev/test 流程委托调用，了解已有系统现状。触发词：代码分析、系统现状、codebase analysis、existing system、代码盘点。NOT for 需求推导（use ms-retrofit）、项目上下文（use ms-onboard）。
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion, Write
 metadata:
   patterns: [generator]
@@ -180,6 +180,9 @@ summary:
 blockers: []
 output_files: []            # 缓存命中时未创建/修改任何文件
 new_ids: {}
+next_recommended:
+  skill: ""
+  args: ""
 ```
 
 ## 语言规则

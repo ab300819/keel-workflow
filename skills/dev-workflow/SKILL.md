@@ -88,7 +88,7 @@ metadata:
 
 **任务子 Agent 职责**：执行开发流程（步骤 1→5），包括 TDD 循环、对抗式验证、Blocker 修复闭环、code-self-describe、Commit 1（代码提交）。Commit 2（文档同步）由编排器调度 /ms-sync 子 Agent 完成。
 
-> 详见 [task-orchestration.md](task-orchestration.md)
+> 详见 [task-orchestration.md](references/task-orchestration.md)
 
 ## 前置条件
 
@@ -121,7 +121,7 @@ metadata:
 3. 执行开发（统一流程，分级强制）
    ├── 所有层级遵循统一 11 步流程
    ├── 层级标记（🔴🟡🟢⚪）决定各步骤强制程度
-   └── 详见 execution-flow.md 强制程度矩阵
+   └── 详见 [execution-flow.md](references/execution-flow.md) 强制程度矩阵
            │
            ▼
 4. 完成检查
@@ -163,7 +163,7 @@ metadata:
 
 11 步执行流程中，每步完成后记录状态标记（S1~S11），用于断点恢复时精确定位。比原有 5 步检查点更精确，减少重复工作。
 
-> 详见 [execution-flow.md](execution-flow.md) 步骤状态追踪表
+> 详见 [execution-flow.md](references/execution-flow.md) 步骤状态追踪表
 
 ## 代码追溯标注规范
 
@@ -234,7 +234,7 @@ Step 4: 完成检查 + 提交（编排器）
 - [ ] **测试骨架必须使用 skip/todo 标记**
 - [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**
 
-详见 [skeleton-examples.md](skeleton-examples.md)
+详见 [skeleton-examples.md](references/skeleton-examples.md)
 
 ## 分层 TDD 模式
 
@@ -261,7 +261,7 @@ Step 4: 完成检查 + 提交（编排器）
 
 > **⛔ 测试不可变：Impl Agent 严禁修改 Test Agent 产出的测试代码。测试失败只能修改实现。疑似测试缺陷须 AskUserQuestion 确认后回退 Test Agent 修复。**
 
-> 详见 [execution-flow.md](execution-flow.md) 统一任务执行流程 + 强制程度矩阵
+> 详见 [execution-flow.md](references/execution-flow.md) 统一任务执行流程 + 强制程度矩阵
 
 ## 编排规范（子 Agent 调度）
 
@@ -347,7 +347,7 @@ Step 4: 完成检查 + 提交（编排器）
 
 基础完成检查（AC + 测试 + 标注）→ Phase 1: 代码质量审查（/code-quality 视角）→ Phase 2: 测试完备性审查（/testing-guide 视角）→ Phase 3: 综合报告（Blocker 必须修复 / Suggestion 可跳过）
 
-> **执行对抗式验证时，必须读取 [verification-flow.md](verification-flow.md) 获取 AC↔diff 交叉验证规则、发现数量下限、发现分类标准和 --headless 下 Blocker/Suggestion 处理细则。**
+> **执行对抗式验证时，必须读取 [verification-flow.md](references/verification-flow.md) 获取 AC↔diff 交叉验证规则、发现数量下限、发现分类标准和 --headless 下 Blocker/Suggestion 处理细则。**
 
 ### 对抗式验证约束
 
@@ -381,7 +381,7 @@ Step 4: 完成检查 + 提交（编排器）
 - [ ] 进行中任务分析续做起点（精确定位：S1~S12 + S1.5，含续做 Agent 判定）
 - [ ] 文档状态 + Git 历史 + 工作区三重验证
 
-> 详见 [task-orchestration.md](task-orchestration.md)
+> 详见 [task-orchestration.md](references/task-orchestration.md)
 
 ### `--auto-commit` 约束
 
@@ -427,13 +427,13 @@ Step 4: 完成检查 + 提交（编排器）
 - [ ] **Suggestion 自动跳过**（除非 `--fix-suggestions`）
 - [ ] **绝不推送远程**
 
-> 详见 [auto-mode.md](auto-mode.md)
+> 详见 [auto-mode.md](references/auto-mode.md)
 
 ## 任务完成流程
 
 Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）→ AC 验证 → 对抗式验证 → 自描述更新 → 提交决策 → 原子提交（Commit 1 代码 + Commit 2 文档）
 
-> 详见 [execution-flow.md](execution-flow.md) 完整步骤和强制矩阵
+> 详见 [execution-flow.md](references/execution-flow.md) 完整步骤和强制矩阵
 ## 提交信息格式
 
 遵循 `/commit-convention` 规范，格式如下：
@@ -481,8 +481,8 @@ next_recommended:
 
 ## 参考资料
 
-- [skeleton-examples.md](skeleton-examples.md) - 接口/测试骨架示例
-- [execution-flow.md](execution-flow.md) - 任务执行流程详解
-- [verification-flow.md](verification-flow.md) - 对抗式验证流程详解
-- [task-orchestration.md](task-orchestration.md) - 多任务编排（批量/依赖/断点续做）
-- [auto-mode.md](auto-mode.md) - 无人值守模式详解
+- [skeleton-examples.md](references/skeleton-examples.md) - 接口/测试骨架示例
+- [execution-flow.md](references/execution-flow.md) - 任务执行流程详解
+- [verification-flow.md](references/verification-flow.md) - 对抗式验证流程详解
+- [task-orchestration.md](references/task-orchestration.md) - 多任务编排（批量/依赖/断点续做）
+- [auto-mode.md](references/auto-mode.md) - 无人值守模式详解

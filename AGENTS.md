@@ -17,6 +17,7 @@
 - 编排层（ms-pipeline/ms-feature/ms-bugfix）通过 Task tool 调度原子 skill 作为子代理
 - PRD 流程（ms-prd/ms-prd-brainstorm/ms-prd-parser）独立于 DevDocs，处理模糊想法和大型 PRD，通过 `--from-prd` 软集成
 - ms-codebase-insight 为共享代码盘点 skill，ms-prd 和 ms-onboard 均消费其输出
+- ms- 流程 skill 的 frontmatter 使用项目扩展字段 `metadata`（含 `patterns`、`interaction`、`handoff` 子键），用于标注 skill 的设计模式、交互方式和摘要契约类型；该字段不属于 Claude Code / Codex 官方 spec，由项目自行定义
 
 ## 流程分组
 

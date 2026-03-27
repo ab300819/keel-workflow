@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Systematic refactoring skill with test coverage requirements. Supports scope analysis, test-first refactoring, and integration with DevDocs workflow. Use when users need to refactor code, improve code quality, or restructure existing implementations. Triggers on keywords like "refactor", "重构", "优化代码", "代码改造", "tech debt", "技术债".
+description: Systematic refactoring skill with test coverage requirements. Supports scope analysis, test-first refactoring, and integration with DevDocs workflow. Use when users need to refactor code, improve code quality, or restructure existing implementations. Triggers on keywords like "refactor", "重构", "优化代码", "代码改造", "tech debt", "技术债". NOT for code quality principles and review checklists (use code-quality).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 ---
 
@@ -343,58 +343,7 @@ UI 重构检查点：
 
 ## Step 5: 重写流程
 
-当代码被判定为"不可测试"时，进入重写流程。
-
-### 5.1 触发条件
-
-```
-进入重写流程的条件：
-- 代码被评估为"不可测试"
-- 重构后测试仍无法达到 80% 覆盖率
-- 用户明确要求重写
-```
-
-### 5.2 重写流程
-
-```
-1. 调用 /ms-retrofit
-   │
-   ├── 模式：代码逆向推导
-   ├── 输出：需求文档、系统设计
-   │
-   ▼
-2. 基于 DevDocs 文档重新实现
-   │
-   ├── 遵循 /code-quality MTE 原则
-   ├── UI 部分遵循 /ui-orchestrator
-   │
-   ▼
-3. 编写测试（测试先行）
-   │
-   ├── 覆盖率 ≥ 80%
-   │
-   ▼
-4. 实现新代码
-   │
-   ▼
-5. 迁移验证
-   │
-   ├── 功能对比测试
-   ├── 性能对比（如适用）
-   └── 回归测试
-```
-
-### 5.3 重写文档
-
-重写时生成的文档：
-
-```
-docs/devdocs/
-├── 01-requirements.md       # 从代码逆向的需求
-├── 02-system-design.md      # 新设计（可测试）
-├── 03-test-cases.md          # 测试方案
-└── 05-refactor-rewrite.md   # 重写报告
-```
+当代码被判定为"不可测试"时，进入重写流程。详见 [references/rewrite-flow.md](references/rewrite-flow.md)。
 
 ---
 
@@ -410,75 +359,7 @@ docs/devdocs/
 
 ### 6.2 重构报告模板
 
-```markdown
-# 重构报告
-
-## 概览
-
-- **重构范围**: <scope>
-- **重构时间**: <timestamp>
-- **重构类型**: 普通重构 / 重写
-
-## 重构前状态
-
-| 指标 | 值 |
-|------|-----|
-| 文件数 | 5 |
-| 代码行数 | 1,200 |
-| 测试覆盖率（行） | 45% |
-| 测试覆盖率（分支） | 38% |
-| 主要问题 | 上帝类、过长函数 |
-
-## 重构后状态
-
-| 指标 | 值 | 变化 |
-|------|-----|------|
-| 文件数 | 8 | +3 |
-| 代码行数 | 980 | -220 |
-| 测试覆盖率（行） | 85% | +40% |
-| 测试覆盖率（分支） | 82% | +44% |
-
-## 重构内容
-
-### 已完成
-
-1. [x] UserService 拆分为 UserQueryService + UserCommandService
-2. [x] 提取 validateUser、formatUser 函数
-3. [x] 消除 processData 重复代码
-4. [x] 补充单元测试 23 个
-
-### 变更文件
-
-| 文件 | 操作 | 说明 |
-|------|------|------|
-| `src/services/user.ts` | 修改 | 拆分职责 |
-| `src/services/user-query.ts` | 新增 | 查询服务 |
-| `src/services/user-command.ts` | 新增 | 命令服务 |
-| `src/utils/user-utils.ts` | 新增 | 提取的工具函数 |
-| `tests/services/user.test.ts` | 修改 | 补充测试 |
-
-## 测试报告
-
-```
-Test Suites: 12 passed, 12 total
-Tests:       89 passed, 89 total
-Coverage:
-  Lines:     85.2%
-  Branches:  82.1%
-  Functions: 88.5%
-```
-
-## 风险与注意事项
-
-- `UserQueryService` 和 `UserCommandService` 需要分别注入
-- 原 `UserService` 保留为门面类，后续可逐步迁移调用方
-
-## 下一步建议
-
-1. 更新调用方代码，逐步使用新的服务类
-2. 监控生产环境，确保行为一致
-3. 考虑删除原 UserService 门面类
-```
+详见 [references/report-template.md](references/report-template.md)
 
 ---
 
@@ -540,97 +421,10 @@ docs/devdocs/
 
 ## Error Handling
 
-### 测试失败
-
-```
-重构后测试失败。
-
-失败的测试:
-- UserService.test.ts: validateUser should return false for invalid email
-
-操作选项:
-1. 回滚此次重构步骤
-2. 查看失败详情并修复
-3. 跳过此测试（不推荐）
-
-建议：回滚到上一个通过的状态，重新分析重构方案。
-```
-
-### 覆盖率不足
-
-```
-当前测试覆盖率不满足重构要求。
-
-目标范围: src/services/user.ts
-当前覆盖率:
-  - 行覆盖: 45% (要求 ≥80%)
-  - 分支覆盖: 38% (要求 ≥80%)
-
-操作选项:
-1. **补充测试**（推荐）- 为未覆盖代码编写测试
-2. 降低要求 - 以当前覆盖率开始重构（风险较高）
-3. 标记为不可测试 - 进入重写流程
-```
-
-### 代码不可测试
-
-```
-目标代码被评估为"不可测试"。
-
-原因:
-- [x] 硬编码数据库连接
-- [x] 业务逻辑与 IO 混合
-- [ ] 全局状态依赖
-
-建议进入重写流程:
-1. 使用 /ms-retrofit 逆向分析代码
-2. 生成需求和设计文档
-3. 按照可测试的设计重新实现
-
-是否进入重写流程？
-```
+详见 [references/error-handling.md](references/error-handling.md)（测试失败、覆盖率不足、代码不可测试）
 
 ---
 
 ## Integration with DevDocs
 
-### 在 DevDocs 流程中的位置
-
-```
-DevDocs 工作流（含重构）:
-
-新项目:
-/ms-requirements → /ms-system-design → /ms-test-cases → /ms-dev-tasks
-                                                                              │
-                                                                              ▼
-                                                                           开发实现
-                                                                    ┌────────┼────────┐
-                                                                    ▼        ▼        ▼
-                                                              /code-quality /ui-orchestrator /refactor
-                                                                                        │
-已有项目:                                                                               │
-/ms-retrofit ←─────────────────────────────────────────────────────────────────────┘
-       │                                                              (不可测试时)
-       ▼
-  标准化文档 → 重新实现
-```
-
-### 与其他 Skills 的调用关系
-
-```
-/refactor
-    │
-    ├── 代码审查 → /code-quality (MTE 原则)
-    │
-    ├── UI 重构 → /ui-orchestrator (UI 约束)
-    │
-    ├── 不可测试 → /ms-retrofit (逆向分析)
-    │                    │
-    │                    ├── /ms-requirements
-    │                    ├── /ms-system-design
-    │                    └── /ms-test-cases
-    │
-    ├── 测试编写 → /ms-test-cases (测试策略参考)
-    │
-    └── 重构完成 → /code-self-describe --update (更新模块自描述)
-```
+详见 [references/devdocs-integration.md](references/devdocs-integration.md)（流程位置图、调用关系图）

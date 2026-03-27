@@ -1,6 +1,6 @@
 ---
 name: ms-compound
-description: Extract patterns, lessons learned, and key decisions from completed development cycles. Writes structured pattern docs to docs/devdocs/patterns/ and updates AGENTS.md. Run after ms-sync to compound knowledge across sessions. Triggers on "compound", "沉淀", "经验提取", "模式提取", "lessons learned", "知识沉淀", "复盘", "总结经验", "what did we learn". NOT for syncing docs (use ms-sync) or onboarding (use ms-onboard).
+description: Extract patterns, lessons learned, and key decisions from completed development cycles. Writes structured pattern docs to docs/devdocs/patterns/ and recommends running /agent-memory to update AGENTS.md. Run after ms-sync to compound knowledge across sessions. Triggers on "compound", "沉淀", "经验提取", "模式提取", "lessons learned", "知识沉淀", "复盘", "总结经验", "what did we learn". NOT for syncing docs (use ms-sync) or onboarding (use ms-onboard).
 allowed-tools: Read, Write, Glob, Grep, Edit, AskUserQuestion
 metadata:
   patterns: [generator]
@@ -245,6 +245,9 @@ output_files:
   - docs/devdocs/patterns/sqlite-wal-concurrency.md
   # - docs/devdocs/patterns/verify-blindspots.md  # 当 verify_blindspots > 0 时包含
 new_ids: {}
+next_recommended:
+  skill: ms-onboard
+  args: "--update"
 ```
 
 ## 下一步

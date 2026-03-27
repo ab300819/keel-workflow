@@ -396,6 +396,9 @@ output_files:                   # --update 模式
   - docs/devdocs/00-context.md
   # --read 模式：output_files: []（不写入文件）
 new_ids: {}
+next_recommended:
+  skill: ""
+  args: ""
 ```
 
 **output_files 规则**：

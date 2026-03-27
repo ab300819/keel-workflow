@@ -325,6 +325,9 @@ blockers: []
 output_files:
   - docs/devdocs/00-progress-report.md  # --check 模式不生成此文件，output_files 为空
 new_ids: {}
+next_recommended:
+  skill: ms-compound
+  args: ""
 ```
 
 ## 下一步
