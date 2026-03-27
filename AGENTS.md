@@ -6,7 +6,7 @@
 
 - 规格库：Markdown + YAML skill 定义（非传统代码库）
 - 无 build/test/lint 命令
-- 19 个 ms- 流程 skill + 9 个独立工具 skill
+- 19 个 ms- 流程 skill + 10 个独立工具 skill
 
 ## 架构决策
 
