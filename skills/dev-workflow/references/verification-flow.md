@@ -142,6 +142,19 @@
 
 ---
 
+## Phase 2-UI: UI 质量自查（仅 🟢 UI 层）
+
+> 在 Phase 2 完成后、Phase 3 综合报告之前执行。仅 🟢 UI 层任务触发。
+> 详细审查清单见 [ui-quality-checklist.md](ui-quality-checklist.md)。
+
+**审查输入**：S3 阶段 Test Agent 产出的 UI 验收清单
+**审查角色**：UI 审查员（基于 ui-quality-checklist 静态代理指标）
+**输出格式**：与 Phase 1/2 一致，Blocker / Suggestion 分级
+
+Phase 3 综合报告汇总 Phase 1 + Phase 2 + Phase 2-UI（如有）的全部结果。
+
+---
+
 ## Phase 3: 综合审查报告
 
 ### 报告模板
@@ -161,6 +174,7 @@
 |-------|---------|------------|------|
 | 代码质量 | 0 | 2 | ✅ |
 | 测试完备 | 1 | 1 | ❌ |
+| UI 质量（仅 🟢） | 0 | 0 | ⏭️ 非 UI 任务跳过 |
 
 ## 总体结论
 

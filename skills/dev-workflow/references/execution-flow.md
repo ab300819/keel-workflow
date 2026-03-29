@@ -92,6 +92,37 @@
 | 10. 更新自描述 | 编排器 | ■ | ■ | ■ | ■ |
 | 11. 提交决策+原子提交 | 编排器 | ■ | ■ | ■ | ■ |
 
+### 🟢 UI 层旁路补充
+
+🟢 UI 层的核心差异不是"少做步骤"，而是"补充 UI 维度"。
+
+**S3 旁路产物**（与测试骨架并行，非替代）：
+🟢 任务的 Test Agent 在 S3 结束时**必须**产出 UI 验收清单，无论后续是否执行 S4。
+S4 执行时，在清单基础上补全可运行断言。S4 跳过时，清单仍作为 S9 Phase 2-UI 的输入。
+
+清单生成优先级链：
+1. AC 中显式描述的视觉/交互要求 → 直接提取
+2. 项目设计 token / 设计系统约束 → 引用已有规范
+3. 以上均无 → 色值/字体/资源项标记 N/A，仅保留交互状态和结构类检查
+
+清单内容：
+- 视觉验收点：布局结构、色值（引用 token）、字体、图标资源
+- 交互验收点：状态覆盖（hover/active/disabled/error/loading）、表单反馈、空状态
+- 该清单不影响 S5/S6 的红/绿闭环
+
+**S9 扩展（Phase 2-UI，仅 🟢）**：
+🟢 UI 任务触发 S9 时，在 Phase 2 之后、Phase 3（综合报告）之前增加：
+- Phase 2-UI: UI 质量自查（基于 S3 产出的 UI 验收清单）
+  - 设计还原度：布局结构与 AC 一致(Blocker)、间距/色值/字体使用 token(Suggestion)
+  - 交互完整性：状态覆盖完整(Blocker)、定义动画时长/缓动参数(Suggestion)、空状态处理(Blocker)
+  - 基础质量：语义 HTML/组件层级(Suggestion)、触摸目标尺寸(Suggestion)、响应式约束(Suggestion)
+- 分级规则：与 Phase 1/2 一致，使用 Blocker / Suggestion
+- Phase 3 综合报告汇总 Phase 1 + Phase 2 + Phase 2-UI 的结果
+- 所有检查项为静态可判定的代理指标；运行态/感知类判断归 `/ms-verify --ui` 或 `--live`
+- 详细审查清单见 [ui-quality-checklist.md](ui-quality-checklist.md)
+
+平台特定检查（SwiftUI 安全区、Android 导航栏等）不在此列，引用对应外部 skill。
+
 ### 执行流程图
 
 ```
@@ -157,6 +188,7 @@
 │  9. 对抗式验证（S9）                                    │
 │     ├── Phase 1: 代码质量审查（/code-quality）          │
 │     ├── Phase 2: 测试完备性审查（/testing-guide）       │
+│     ├── Phase 2-UI: UI 质量自查（仅 🟢，ui-quality-checklist）│
 │     ├── Phase 3: 综合报告                              │
 │     ├── Blocker → 修复 → 重新验证                      │
 │     └── 通过 ────────────────┐                         │
@@ -189,6 +221,7 @@
 5. **对抗式验证**（■🔴自动 / □🟡🟢--review / ○⚪--review）：
    - Phase 1: 代码质量审查（/code-quality 视角）
    - Phase 2: 测试完备性审查（/testing-guide 视角）
+   - Phase 2-UI: UI 质量自查（仅 🟢，ui-quality-checklist）
    - Phase 3: 综合报告，处理 Blocker
 6. **更新自描述**：运行 /code-self-describe --update
 7. **提交决策**：

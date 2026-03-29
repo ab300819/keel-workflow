@@ -31,7 +31,8 @@ DevDocs 技能链的编码执行阶段，承接 `ms-dev-tasks` 输出的任务�
 | `SKILL.md` | 主入口：触发条件、运行模式、任务层级、TDD 流程、完成检查、约束清单、参考资料索引 |
 | `references/execution-flow.md` | 各层级任务的详细执行流程图（核心逻辑/接口/UI/基础设施）、提交信息格式、TodoWrite 集成 |
 | `references/task-orchestration.md` | 多任务编排：批量指定符解析、依赖拓扑排序、断点续做状态机、主循环流程、子 Agent 协议、检查点文件 |
-| `references/verification-flow.md` | 对抗式验证：Phase 1 代码质量审查 + Phase 2 测试完备性审查 + Phase 3 综合报告、Blocker 判定标准、修复安全网 |
+| `references/verification-flow.md` | 对抗式验证：Phase 1 代码质量审查 + Phase 2 测试完备性审查 + Phase 2-UI UI 质量自查（仅 🟢）+ Phase 3 综合报告、Blocker 判定标准、修复安全网 |
+| `references/ui-quality-checklist.md` | 🟢 UI 层 Phase 2-UI 审查清单：静态代理指标、与 ms-verify --ui 边界、UI 验收清单生成规则 |
 | `references/auto-mode.md` | 无人值守模式（`--headless`）：决策策略表、安全不变量、重试规范、工作区洁净协议、交付报告模板、续做豁免机制 |
 | `references/skeleton-examples.md` | 骨架代码示例：接口骨架（带标注的方法签名）和测试骨架（带标注的 test.skip） |
 <!-- end auto-generated -->
