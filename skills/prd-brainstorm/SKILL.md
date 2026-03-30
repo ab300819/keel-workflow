@@ -97,8 +97,8 @@ metadata:
 6. 分类与输出
    │
    ├── 按 FR（功能需求）/ NFR（非功能需求）分类
-   ├── 为每项分配 FR-XX 或 NFR-XX 编号
-   ├── 生成需求文件到 docs/prd/requirements/
+   ├── 为每项分配 FR-XX 或 NFR-XX 编号（multi-PRD: 从全局注册表续编；legacy: 从 01 起始）
+   ├── 生成需求文件到 docs/prd/<prd_id>/requirements/（legacy: docs/prd/requirements/）
    └── 使用 AskUserQuestion 最终确认
 ```
 
@@ -193,35 +193,37 @@ brainstorm 对每个需求项执行分类终判，复核 parser 的 FR/NFR 初�
 | 非功能需求 | NFR | NFR-XX | NFR-01, NFR-02 |
 
 **编号规则**：
-- FR-XX / NFR-XX 为产品阶段唯一标识（不使用 D-XXX）
-- 编号从 01 开始，两位数字，顺序递增
-- 编号一旦分配不可复用
-- 完整模式：brainstorm 过程中分配编号
+- FR-XX / NFR-XX 为产品阶段全局唯一标识（不使用 D-XXX）
+- 编号两位数字，顺序递增，一旦分配不可复用
+- **multi-PRD 模式**：编号起始值由 ms-prd 编排层通过全局注册表确定并传给 parser/brainstorm，不从 01 起始
+- **legacy 模式**：编号从 01 开始
+- 完整模式：brainstorm 过程中从上游传入的起始值分配编号
 - 块澄清模式：沿用 chunk 编号（终判调整类型前缀时重新分配）
 
 ## 输出文件
 
-**输出目录**：`docs/prd/requirements/`
+**输出目录**：`docs/prd/<prd_id>/requirements/`（legacy: `docs/prd/requirements/`）
 
 每个需求项生成一个独立文件：
 
 ```markdown
 ---
-id: FR-01
+id: FR-09
 title: 用户认证
 type: FR
-source_chunk: FR-01                      # chunk ID，仅块澄清模式
+source_prd: 20260330-用户认证            # 所属 PRD（multi-PRD 必填，legacy 省略）
+source_chunk: FR-09                      # chunk ID，仅块澄清模式
 moscow: Must
 maturity: draft
 status: clarified
 open_questions: 1
 ---
 
-# FR-01: 用户认证
+# FR-09: 用户认证
 
 ## 来源追溯
 
-- 原始 chunk: `docs/prd/chunks/FR-01-用户认证.md`
+- 原始 chunk: `docs/prd/20260330-用户认证/chunks/FR-09-用户认证.md`
 - 初判分类: FR
 - 终判分类: FR
 
@@ -272,7 +274,7 @@ open_questions: 1
 
 ### 阶段边界约束（最高优先级）
 - [ ] **禁止继续：不得产出实现代码、架构设计或技术方案**（恢复方式：使用对应 DevDocs skill 执行后续阶段）
-- [ ] Write 工具仅用于写入 `docs/prd/requirements/` 和 `docs/prd/chunks/` 下的 Markdown 文档
+- [ ] Write 工具仅用于写入 `docs/prd/<prd_id>/requirements/` 和 `docs/prd/<prd_id>/chunks/` 下的 Markdown 文档（legacy: `docs/prd/requirements/` 和 `docs/prd/chunks/`）
 - [ ] 对 chunks/ 文件：仅修改 YAML 头（添加 `reclassified_to` 字段），**不得改动原文内容**
 - [ ] 对 requirements/ 文件：写入完整的结构化需求文档
 
@@ -327,8 +329,11 @@ status: success | partial | failed
 summary:
   headline: "识别 5 个功能领域，2 个非功能需求"
   details:
+    prd_id: 20260330-用户认证
+    prd_status: active
+    index_path: docs/prd/20260330-用户认证/requirements/index.md
     mode: full | chunk-clarify
-    chunk_id: FR-01               # 仅 chunk-clarify 模式
+    chunk_id: FR-09               # 仅 chunk-clarify 模式
     functional_count: 5
     nonfunctional_count: 2
     open_questions: 1
@@ -337,9 +342,9 @@ summary:
     reclassified: false           # 是否发生分类调整
 blockers: []
 output_files:
-  - docs/prd/requirements/FR-01-用户认证.md
+  - docs/prd/20260330-用户认证/requirements/FR-09-用户认证.md
 new_ids:
-  requirements: [FR-01~FR-03, NFR-01~NFR-02]
+  requirements: [FR-09~FR-13, NFR-04~NFR-05]
 next_recommended:
   skill: ms-prd
 ```

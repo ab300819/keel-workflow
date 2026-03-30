@@ -38,7 +38,26 @@ user-invocable: true
 /ms-prd brainstorm   → 强制头脑风暴模式
 /ms-prd prd          → 强制 PRD 解析模式
 /ms-prd --revise FR-03  → 单个 FR 重新 brainstorm
+/ms-prd list         → 列出所有 PRD 及状态
+/ms-prd archive <prd_id> → 归档指定 PRD
+/ms-prd status <prd_id>  → 查看单个 PRD 状态详情
 ```
+
+## 多 PRD 模式判定
+
+启动时自动检测目录结构，确定运行模式：
+
+**三级判定**（优先级从高到低）：
+1. 存在 `docs/prd/index.md` 且含 PRD 清单表 → **multi-PRD 模式**
+2. 仅存在顶层 `docs/prd/chunks/` 或 `docs/prd/requirements/` 且无全局 index → **legacy 单 PRD 模式**，回退扁平行为
+3. 两者同时存在 → **⚠️ 必须确认**，提示用户执行 `/ms-prd migrate` 或手动清理
+
+**路径解析**：统一使用 `prd_id → 路径` 间接定位：
+- 先查 `docs/prd/<prd_id>/`，再查 `docs/prd/_archived/<prd_id>/`（仅限只读操作）
+
+**新建 PRD**：生成 `YYYYMMDD-<slug>` 目录名（同日冲突追加 `-2`、`-3`），读取全局 index 编号注册表获取 FR/NFR 最大编号，将起始值（`fr_start`, `nfr_start`）作为参数传给 parser。
+
+**编号分配职责**：ms-prd 编排层从全局注册表获取起始编号 → 传给 ms-prd-parser → parser 从该值续编 → brainstorm 块澄清沿用 chunk 编号。
 
 ## 自动检测逻辑
 
@@ -96,7 +115,10 @@ Step 1+: 正常编排流程（brainstorm / prd-parse）
 /ms-prd --revise FR-03
     |
     v
-1. 定位 FR-03 文件：先查 docs/prd/requirements/FR-03-*.md，再查 docs/product/requirements/FR-03-*.md
+1. 定位 FR-03 文件：
+   multi-PRD 模式：glob docs/prd/*/requirements/FR-03-*.md 定位所属 PRD
+   legacy 模式：先查 docs/prd/requirements/FR-03-*.md，再查 docs/product/requirements/FR-03-*.md
+   ⛔ 若文件位于 _archived/ 下 → 禁止 revise（提示：已归档 PRD 不可修改，需创建新版 PRD）
    记录实际路径（source_fr_path），后续回写使用同一路径
     |
     v
@@ -165,7 +187,7 @@ Step 1: Task: ms-prd-parser
 Step 2: 逐块 Task: ms-prd-brainstorm --chunk <chunk文件路径>
     |  ← 自适应深度：成熟块快速确认，模糊块深入探索
     |  ← 终判分类：复核 parser 的 FR/NFR 初判
-    |  ← 入参示例：/ms-prd-brainstorm --chunk docs/prd/chunks/FR-01-用户认证.md
+    |  ← 入参示例：/ms-prd-brainstorm --chunk docs/prd/<prd_id>/chunks/FR-09-用户认证.md
     v
 Step 3: 跨块合成
     |  ← 全局术语、共享假设、横切 NFR、冲突/重复解决
@@ -268,7 +290,7 @@ PRD 场景中，所有块澄清完成后执行跨块合成：
 /ms-requirements --from-prd <实际 index.md 路径>
 ```
 
-> 路径使用当前 pipeline 实际写入的 index.md 路径（docs/prd/ 或 docs/product/）。
+> 路径使用当前 pipeline 实际写入的 index.md 路径（multi-PRD: `docs/prd/<prd_id>/requirements/index.md`；legacy: `docs/prd/requirements/index.md`）。archived PRD 允许只读 `--from-prd`。
 
 maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响后续质量。
 
@@ -276,7 +298,7 @@ maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响�
 
 - 需求文件**不分配 F/US/AC 编号**，编号权属于 DevDocs
 - FR-XX/NFR-XX 为 product 阶段唯一标识，进入 DevDocs 后映射为 F-XXX
-- 需求文件存放于 `docs/prd/`（兼容读取 `docs/product/`），不写入 `docs/devdocs/`
+- 需求文件存放于 `docs/prd/<prd_id>/`（legacy 兼容 `docs/prd/`），不写入 `docs/devdocs/`
 - 以小文档形式传入 DevDocs：index.md 提供全局视图，各 FR-XX 对应独立功能领域
 
 ## 编排规范（子 Agent 调度）
@@ -311,23 +333,80 @@ ms-prd（编排层）
 
 ## 文件产出路径
 
+### multi-PRD 模式
+
 ```
 docs/prd/
-+-- chunks/                     <- PRD 原文完整文本化副本
-|   +-- FR-01-<topic>.md
-|   +-- NFR-01-<topic>.md
-+-- requirements/               <- brainstorm 澄清后的结构化需求
-|   +-- index.md               <- 总纲
-|   +-- FR-01-<topic>.md
-|   +-- NFR-01-<topic>.md
-+-- source/                     <- 原始文件来源记录（.gitignore 排除）
-    +-- manifest.md              <- 记录原始文件路径、哈希、类型
-    +-- original-prd.md          <- 文本文件自动复制；二进制文件需用户手动复制
++-- index.md                        <- 全局 PRD 索引（source of truth）
++-- <prd_id>/                       <- YYYYMMDD-slug 格式
+|   +-- chunks/                     <- PRD 原文完整文本化副本
+|   |   +-- FR-XX-<topic>.md
+|   |   +-- NFR-XX-<topic>.md
+|   +-- requirements/               <- brainstorm 澄清后的结构化需求
+|   |   +-- index.md               <- 本 PRD 总纲
+|   |   +-- FR-XX-<topic>.md
+|   |   +-- NFR-XX-<topic>.md
+|   +-- source/                     <- 原始文件来源记录（.gitignore 排除）
+|       +-- manifest.md
+|       +-- original-prd.md
++-- synthesis/                      <- 跨 PRD 综合产物
+|   +-- terminology.md
+|   +-- shared-constraints.md
+|   +-- conflict-resolution.md
++-- _archived/                      <- 归档目录（保留完整结构）
+    +-- <prd_id>/
+```
+
+### legacy 单 PRD 模式（向后兼容）
+
+```
+docs/prd/
++-- chunks/
++-- requirements/
++-- source/
 ```
 
 **模板**：
+- 全局索引模板：`templates/global-index-template.md`
 - 总纲模板：`templates/requirements-index-template.md`
 - 需求分文件模板：`templates/requirements-item-template.md`
+
+## 归档流程
+
+```text
+/ms-prd archive <prd_id>
+    |
+    v
+1. 读取全局 index，确认 prd_id 存在且状态为 active 或 superseded
+   ⛔ 已归档 → 报错退出
+    |
+    v
+2. AskUserQuestion 确认归档意图
+    |
+    v
+3. 移动 docs/prd/<prd_id>/ → docs/prd/_archived/<prd_id>/
+4. 更新全局 index：状态→archived，填写归档日期
+5. 更新 per-PRD index：prd_status→archived
+```
+
+**归档后操作边界**：archived PRD 禁止 `--revise`，允许只读 `--from-prd` 和 `status` 查看。
+
+## 权威模型
+
+| 字段 | Source of Truth | 说明 |
+|------|----------------|------|
+| PRD 清单/生命周期状态/编号注册表 | 全局 index | 注册入口，parser 分配前查询 |
+| supersedes / superseded_by | 全局 index | 迭代关系双向维护 |
+| 需求清单 / DevDocs mapping / 假设挑战 | per-PRD index | 本 PRD 范围内 |
+
+**写入顺序**：先写全局 index → 再更新 per-PRD index。全局写入成功即生效。
+
+### supersedes 链不变式
+
+- 禁止自指和环
+- 每个 PRD 最多一个 `supersedes` 目标
+- 写入时同步回填旧 PRD 的 `superseded_by`
+- 仅 `active` 状态的 PRD 允许被 supersede
 
 ## 约束
 
@@ -366,9 +445,10 @@ docs/prd/
 
 | 场景 | 编排的 Skill 链 |
 |------|----------------|
-| 头脑风暴 | ms-prd-brainstorm → index 生成 → ready 检查 |
-| PRD 解析 | ms-prd-parser → 逐块 ms-prd-brainstorm → 跨块合成 → index 生成 → ready 检查 |
+| 头脑风暴 | 查全局注册表取编号起始 → ms-prd-brainstorm → index 生成 → ready 检查 |
+| PRD 解析 | 查全局注册表取编号起始 → ms-prd-parser → 逐块 ms-prd-brainstorm → 跨块合成 → index 生成 → ready 检查 |
 | PRD 更新 | ms-prd-parser（重拆）→ 指纹对比 → 仅 outdated 块 brainstorm → index 更新 |
+| PRD 管理 | list（列出所有 PRD）/ status（查看详情）/ archive（归档） |
 | DevDocs 衔接 | ready 时推荐 ms-requirements --from-prd |
 
 ## 子 Agent 摘要格式
@@ -381,6 +461,9 @@ status: success | partial | failed
 summary:
   headline: "需求处理完成，成熟度 ready，含 6 个功能 + 2 个非功能"
   details:
+    prd_id: 20260330-用户认证
+    prd_status: active
+    index_path: docs/prd/20260330-用户认证/requirements/index.md
     mode: brainstorm | prd-parse
     maturity: idea | draft | ready
     functional_count: 6
@@ -391,13 +474,13 @@ summary:
     ready_checks_total: 6
 blockers: []
 output_files:
-  - docs/prd/requirements/index.md
-  - docs/prd/requirements/FR-01-用户认证.md
+  - docs/prd/20260330-用户认证/requirements/index.md
+  - docs/prd/20260330-用户认证/requirements/FR-09-登录.md
 new_ids:
-  requirements: [FR-01~FR-06, NFR-01~NFR-02]
+  requirements: [FR-09~FR-14, NFR-04~NFR-05]
 next_recommended:
   skill: ms-requirements
-  args: "--from-prd <实际 index.md 路径>"
+  args: "--from-prd docs/prd/20260330-用户认证/requirements/index.md"
 ```
 
 **status 值域**：

@@ -23,7 +23,7 @@
 
 | 分组 | Skill | 说明 |
 |------|-------|------|
-| **PRD（需求发现）** | ms-prd, ms-prd-brainstorm, ms-prd-parser | 模糊想法/大型 PRD → 结构化 FR-XX/NFR-XX |
+| **PRD（需求发现）** | ms-prd, ms-prd-brainstorm, ms-prd-parser | 模糊想法/大型 PRD → 结构化 FR-XX/NFR-XX；支持多 PRD 隔离（`YYYYMMDD-slug` 目录）、状态追踪和归档 |
 | **Dev（开发）** | ms-dev-tasks, ms-dev-workflow | 任务拆分与 TDD 执行（测试仍是开发闭环内阶段） |
 | **Test（测试）** | ms-test-cases, ms-test-run | 测试设计与执行 |
 | **Shared（共享）** | ms-pipeline, ms-requirements, ms-system-design, ms-feature, ms-bugfix, ms-verify, ms-sync, ms-compound, ms-onboard, ms-retrofit, ms-insights, ms-codebase-insight | 编排、编码、设计、验证、同步等 |
@@ -40,7 +40,7 @@ summary:
   details: {}           # skill 私有字段放这里
 blockers: []             # 通用：阻塞项列表
 output_files: []         # 通用：产出/修改的文件
-new_ids: {}              # 通用：生成的编号 (F/US/AC/UT/IT/E2E/Journey/T/BUG/INS)
+new_ids: {}              # 通用：生成的编号，键名按产物类型命名（如 chunks/requirements/F/US/AC/UT/IT/E2E/Journey/T/BUG/INS）
 next_recommended:
   skill: <ms-next-skill>    # 可选
   args: ""               # 可选
@@ -64,10 +64,11 @@ next_recommended:
 |------|------|
 | Skill | 可复用的 SKILL.md 定义文件，扩展 AI agent 能力 |
 | ms- 前缀 | 流程 skill 的命名空间前缀，区分于独立工具 skill |
-| PRD 流程 | 需求发现流程（模糊想法/大型 PRD → 结构化 FR-XX/NFR-XX） |
+| PRD 流程 | 需求发现流程（模糊想法/大型 PRD → 结构化 FR-XX/NFR-XX），支持多 PRD 目录隔离（`docs/prd/<YYYYMMDD-slug>/`）、状态追踪（active/superseded/archived）和归档（`_archived/`） |
+| PRD 全局索引 | `docs/prd/index.md`，PRD 清单 + 编号注册表的 source of truth |
 | DevDocs | 文档驱动开发工作流（需求编码→设计→测试→任务→开发→验证→同步） |
 | 编号体系 | F/US/AC/UT/IT/E2E/Journey/INS/BUG/T/BCA，链路：F→US→AC→测试 |
-| FR-XX/NFR-XX | PRD 阶段需求编号，通过 `--from-prd` 衔接 DevDocs |
+| FR-XX/NFR-XX | PRD 阶段需求编号（全局唯一，由全局索引编号注册表管理），通过 `--from-prd` 衔接 DevDocs |
 | 质量锚 | 批量生成时首批输出作为后续批次的质量基准 |
 | codebase-insight | 只读代码盘点，输出 docs/codebase-insight.md，供多个 skill 消费 |
 | Sprint Contract | 开发前 Test Agent 与编排器协商的可执行验收契约（函数签名、边界条件） |

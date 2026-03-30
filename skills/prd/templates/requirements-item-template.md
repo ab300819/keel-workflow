@@ -2,6 +2,7 @@
 id: FR-XX
 title: {{功能名称}}
 type: FR                    # FR | NFR
+source_prd: ""              # 所属 PRD 的 prd_id（multi-PRD 必填，legacy 省略）
 source_chunk: FR-XX         # 对应 chunks/ 中的文件 ID
 moscow: Must                # Must | Should | Could | Won't
 maturity: draft             # idea | draft | ready

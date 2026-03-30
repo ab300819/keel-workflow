@@ -31,6 +31,14 @@ metadata:
 - 来自 `/ms-prd` 的 PRD 解析委托
 - 用户需要对已有 PRD 进行变更检测和增量更新
 
+## 多 PRD 支持
+
+由 ms-prd 编排层传入以下参数：
+- `prd_id`：当前 PRD 目录名（`YYYYMMDD-<slug>` 格式）
+- `fr_start`、`nfr_start`：FR/NFR 编号起始值（从全局注册表获取）
+
+所有输出路径基于 `docs/prd/<prd_id>/`。变更检测限定在当前 `<prd_id>` 目录内，不跨 PRD 比对。legacy 模式下无 prd_id 参数时，回退到 `docs/prd/` 扁平结构。
+
 ## 输入支持
 
 | 格式 | 支持方式 | 说明 |
@@ -54,10 +62,11 @@ metadata:
    +-- 若为截图 → Read 图片识别，提取文字
    |
    v
-2. 记录原始文件来源
+2. 归集原始文件到 source/
    |
-   +-- 文本文件（md）→ 复制到 docs/prd/source/
-   +-- 二进制文件（PDF/图片/docx）→ 记录原始路径到 source/manifest.md，提示用户手动复制
+   +-- 项目内文件 → 移动到 docs/prd/<prd_id>/source/（git mv 保留历史）
+   +-- 项目外文件 → 复制到 docs/prd/<prd_id>/source/
+   +-- 记录 source/manifest.md（原始路径、归集方式 copy/move、哈希、类型）
    +-- 计算 document_fingerprint（对转换后的全文计算 sha256）
    |
    v
@@ -77,12 +86,12 @@ metadata:
 5. 初判分类
    |
    +-- 每块判定 FR（功能）或 NFR（非功能）
-   +-- 分配编号：FR-XX / NFR-XX
+   +-- 分配编号：FR-XX / NFR-XX（multi-PRD: 从 fr_start/nfr_start 续编；legacy: 从 01 起始）
    |
    v
 6. 输出 chunk 文件
    |
-   +-- 写入 docs/prd/chunks/，含 YAML 头 + 完整原文
+   +-- 写入 docs/prd/<prd_id>/chunks/（legacy: docs/prd/chunks/），含 YAML 头 + 完整原文
    +-- 每个文件包含双指纹 + parser_version + chunk_key
    |
    v
@@ -164,19 +173,20 @@ metadata:
 
 - 同一块中 FR 和 NFR 内容混合时，按**主要内容**分类，在 YAML 头 `mixed_content` 字段标注
 - 分类存疑时标注 `classification_confidence: low`，由 brainstorm 终判
-- 编号从 01 起始，FR 和 NFR 独立计数
+- FR 和 NFR 独立计数（multi-PRD: 从 `fr_start`/`nfr_start` 续编；legacy: 从 01 起始）
 
 ## 输出格式
 
 ### Chunk 文件
 
-文件路径：`docs/prd/chunks/<编号>-<主题>.md`
+文件路径：`docs/prd/<prd_id>/chunks/<编号>-<主题>.md`（legacy: `docs/prd/chunks/<编号>-<主题>.md`）
 
 ```markdown
 ---
-id: FR-01
+id: FR-09
 title: 用户认证
 type: FR
+source_prd: 20260330-用户认证       # 所属 PRD（multi-PRD 模式必填，legacy 省略）
 source_file: /absolute/path/to/original-prd.pdf  # 原始文件路径（二进制文件为原始位置，文本文件为 source/ 副本）
 source_anchor: "2.1 用户认证"
 source_pages: "5-8"
@@ -201,6 +211,7 @@ status: pending
 | `id` | 是 | FR-XX 或 NFR-XX |
 | `title` | 是 | 块主题名称 |
 | `type` | 是 | FR 或 NFR |
+| `source_prd` | multi-PRD 必填 | 所属 PRD 的 prd_id |
 | `source_file` | 是 | 原始文件路径（文本文件指向 source/ 副本，二进制文件指向原始位置，详见 source/manifest.md） |
 | `source_anchor` | 是 | 原文章节标题或位置描述 |
 | `source_pages` | 否 | PDF 页码或行范围 |
@@ -213,11 +224,14 @@ status: pending
 | `classification_confidence` | 否 | 分类信心不足时标注 low |
 | `reclassified_to` | 否 | brainstorm 终判调整分类时由 brainstorm 填入 |
 
-### 原始文件保存
+### 原始文件归集
 
-- 路径：`docs/prd/source/`
-- 此目录在 `.gitignore` 中排除，不提交仓库
-- 避免二进制膨胀和敏感信息入库
+- 路径：`docs/prd/<prd_id>/source/`（legacy: `docs/prd/source/`）
+- **项目内文件**（路径在当前 git 仓库内）→ **移动**到 source/（使用 `git mv` 保留版本历史）
+- **项目外文件**（路径在仓库外或非 git 管理）→ **复制**到 source/
+- 所有格式均自动归集（md/PDF/图片），不再需要用户手动复制
+- `source/manifest.md` 记录每个文件的：原始路径、归集方式（`move` / `copy`）、sha256 哈希、文件类型
+- 此目录在 `.gitignore` 中排除，不提交仓库（避免二进制膨胀和敏感信息入库）
 
 ## 变更追踪机制
 
@@ -270,7 +284,7 @@ pending ──(PRD 更新，章节删除)──> removed
 ### 阶段边界约束（最高优先级）
 
 - [ ] **禁止继续：不得解读、改写、删减原文内容**（恢复方式：原文完整保留到 chunk，需求解读由 ms-prd-brainstorm 负责）
-- [ ] Write 工具仅用于写入 `docs/prd/chunks/` 和 `docs/prd/source/` 下的文件
+- [ ] Write 工具仅用于写入 `docs/prd/<prd_id>/chunks/` 和 `docs/prd/<prd_id>/source/` 下的文件
 - [ ] 不分配 F/US/AC 编号（编号权属于 DevDocs 阶段）
 
 ### 忠实性约束
@@ -283,7 +297,7 @@ pending ──(PRD 更新，章节删除)──> removed
 
 - [ ] 每个块必须有唯一的 chunk_key
 - [ ] 块大小控制在 30-300 行范围内
-- [ ] FR 和 NFR 独立编号，从 01 起始
+- [ ] FR 和 NFR 独立编号（multi-PRD: 从 `fr_start`/`nfr_start` 续编；legacy: 从 01 起始）
 - [ ] 拆分不得丢失原文任何段落
 
 ### 变更追踪约束
@@ -317,6 +331,9 @@ status: success | partial | failed
 summary:
   headline: "PRD 拆分为 6 个功能块 + 2 个非功能块"
   details:
+    prd_id: 20260330-用户认证
+    prd_status: active
+    index_path: docs/prd/20260330-用户认证/requirements/index.md
     functional_count: 6
     nonfunctional_count: 2
     total_lines: 1200
@@ -325,11 +342,11 @@ summary:
     outdated_count: 0
 blockers: []
 output_files:
-  - docs/prd/chunks/FR-01-用户认证.md
-  - docs/prd/chunks/NFR-01-性能要求.md
-  - docs/prd/source/manifest.md
+  - docs/prd/20260330-用户认证/chunks/FR-09-用户认证.md
+  - docs/prd/20260330-用户认证/chunks/NFR-04-性能要求.md
+  - docs/prd/20260330-用户认证/source/manifest.md
 new_ids:
-  chunks: [FR-01~FR-06, NFR-01~NFR-02]
+  chunks: [FR-09~FR-14, NFR-04~NFR-05]
 next_recommended:
   skill: ms-prd
 ```
