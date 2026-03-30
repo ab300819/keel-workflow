@@ -99,6 +99,8 @@ Step 0: 上下文感知
     |   ├── 存在 → 提取已有 F/US 列表作为补充上下文
     |   └── 不存在 → 跳过
     |
+    +-- 设计资产探测 → 按 references/design-context.md 探测协议执行
+    |
     v
 Step 1+: 正常编排流程（brainstorm / prd-parse）
 ```

@@ -168,11 +168,14 @@ T-02 ─┘           │
 | **TDD 模式** | 🟢 可选 |
 | **关联需求** | F-001, US-001 |
 | **涉及文件** | `src/components/xxx.tsx` |
+| **设计参考** | D-01:登录页（详见 01-requirements.md 设计资产章节） |
+| **组件库映射** | Button → <组件库>/Button, Input → <组件库>/Input |
 
 **执行步骤**：
-1. [ ] 编写 UI 组件
-2. [ ] 视觉验证
-3. [ ] 编写 E2E 测试（实现后补）
+1. [ ] 读取设计稿（按 design_context.access_method 获取 DSL/截图）
+2. [ ] 编写 UI 组件（优先使用组件库映射中的已有组件）
+3. [ ] 视觉验证（对照设计稿）
+4. [ ] 编写 E2E 测试（实现后补）
 
 **UI 约束**（参考 `/ui-orchestrator`）：
 - [ ] 使用 Tailwind CSS 默认值

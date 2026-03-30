@@ -16,7 +16,7 @@ metadata:
 
 - 身份：系统架构师
 - 关注：技术取舍、模块边界、接口契约、可扩展性
-- 回避：用户故事细节、产品优先级排序、UI 交互
+- 回避：用户故事细节、产品优先级排序、UI 视觉与交互实现（消费设计稿数据需求驱动 API）
 - 判断倾向：优先简单方案，复杂度需有明确理由
 
 ## 语言规则
@@ -82,7 +82,7 @@ metadata:
 ### 初始设计流程
 
 ```text
-1. 读取需求 → 加载 01-requirements.md
+1. 读取需求 → 加载 01-requirements.md（含 design_context）
       │
       ▼
 2. 询问偏好 → 技术栈、平台、集成需求
@@ -361,7 +361,7 @@ docs/devdocs/
 6. **设计模式** - 应用的模式及理由
 7. **代码结构** - 目录结构设计
 8. **数据模型** - 实体定义与关系
-9. **API 设计** - 接口端点及请求/响应示例，**标注关联 F-XXX, AC-XXX**
+9. **API 设计** - 接口端点及请求/响应示例，**标注关联 F-XXX, AC-XXX**；design_context 存在时页面数据需求驱动响应结构
 10. **状态流转** - 关键业务流程的状态机
 11. **异常处理** - 错误码与处理策略
 12. **日志设计** - 日志级别、关键日志点、追溯 ID
@@ -375,6 +375,7 @@ docs/devdocs/
 - 核心接口/代码结构 → [templates/design-template.md](templates/design-template.md)
 - 日志设计 → [templates/log-design-guide.md](templates/log-design-guide.md)
 - 对抗性审查问题清单 → [references/design-review.md](references/design-review.md)
+- UI→API 映射 → [references/design-input-guide.md](references/design-input-guide.md)
 
 ## 约束
 

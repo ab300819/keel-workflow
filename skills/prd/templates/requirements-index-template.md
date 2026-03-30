@@ -12,6 +12,13 @@
 | 生成日期 | YYYY-MM-DD |
 | 最近更新 | YYYY-MM-DD |
 
+## 设计资产
+
+> 由 Step 0 设计资产探测自动生成。无设计稿时标记 available: false。
+> 格式定义见 [design-context.md](../references/design-context.md)
+
+<!-- design_context YAML block inserted here -->
+
 ## 已有系统盘点
 
 > 由 Step 0 上下文感知自动生成。绿地项目无此章节。

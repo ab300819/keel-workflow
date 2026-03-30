@@ -17,6 +17,21 @@
 | 设计稿 | 不要求 | 必须提供 |
 | 感知类判断 | 不做（改用静态代理指标） | 做（视觉对比） |
 
+## 设计稿读取协议
+
+🟢 UI 任务在 S1（读取任务定义）时，若 `01-requirements.md` 存在 `## 设计资产`（design_context）：
+
+1. 读取 design_context，确认 `design_files.available` 和 `component_library.available`
+2. 根据 access_method 选择获取方式：
+   - `structured_dsl` → 调用 MasterGo `getDsl` MCP 获取设计 DSL
+   - `node_tree` → 调用 Pencil `batch_get` MCP 获取设计节点
+   - `vision` → 读取截图/图片文件，AI 视觉分析
+   - `manual` → 要求用户描述设计规格
+3. 提取的设计信息传入 **Test Agent** 上下文（S3 UI 验收清单生成的输入）
+4. **Impl Agent** 从 `component_library.location` 读取组件源码/类型定义，优先复用已有组件
+
+> design_context schema 定义见 [prd/references/design-context.md](../../prd/references/design-context.md)
+
 ## UI 验收清单生成规则
 
 清单由 Test Agent 在 **S3 结束时**必须产出（🟢 层 S3 为必做■步骤）。

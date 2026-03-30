@@ -67,6 +67,7 @@ metadata:
 **消费流程**：
 1. 读取用户指定的 `<index路径>`（如未指定，依次尝试 `docs/prd/requirements/index.md` → `docs/product/requirements/index.md`）
    - 记录实际读取的路径（`source_index_path`），后续回写映射时使用同一路径
+   - 读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产`
 2. 逐个读取 `requirements/FR-XX-<topic>.md` 和 `requirements/NFR-XX-<topic>.md`（通过 Glob 匹配 `FR-*`/`NFR-*` 模式）→ 提取澄清结论中的功能描述和验收意图
    - FR-XX → 生成功能需求（F-XXX/US-XXX/AC-XXX）
    - NFR-XX → 写入 `01-requirements.md` 的非功能需求章节（性能、安全、兼容性等约束）
@@ -105,6 +106,10 @@ metadata:
    └── 输入 >= 200 字 或有明确功能点 → 继续
    │
    ▼
+0.5 设计资产感知（按 prd/references/design-context.md 探测协议）
+   └── AskUserQuestion 询问设计稿和组件库 → 结果写入 01-requirements.md ## 设计资产
+   │
+   ▼
 1. 收集原始需求
    │
    ├── 记录用户原话或关键表述
@@ -133,6 +138,7 @@ metadata:
    │
    ▼
 7. 文档编写：验收标准 (AC-XXX)
+   │  design_context 存在时：UI 相关 US 自动补充交互状态 AC（hover/disabled/error/loading/empty）
    │
    ▼
 8. 生成追溯矩阵
@@ -148,6 +154,11 @@ metadata:
    │
    ├── 读取 01-requirements.md
    └── 获取 F/US/AC 最大编号
+   │
+   ▼
+1.5 设计资产感知
+   ├── 01-requirements.md 已有 ## 设计资产 → 读取已有 design_context
+   └── 无 → AskUserQuestion 询问（按 design-context.md 探测协议）
    │
    ▼
 2. 收集新增原始需求
@@ -175,6 +186,8 @@ metadata:
 ```
 
 ### 背景信息模式
+
+> 背景信息模式不涉及功能点生成，跳过设计资产探测（步骤 0.5）。
 
 ```text
 1. 读取现有文档
@@ -310,6 +323,7 @@ MVP 范围： / 非目标： / 删减理由：
 # 需求文档：<功能名称>
 
 ## 0. 原始需求
+## 0.5 设计资产（design_context，可选）
 ## 1. 背景与目标
 ## 2. 功能点清单
 ## 3. 用户故事

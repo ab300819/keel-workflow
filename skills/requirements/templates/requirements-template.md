@@ -18,6 +18,14 @@
 
 ---
 
+## 0.5 设计资产
+
+> 可选。由步骤 0.5 设计资产感知自动生成。无设计稿时标记 available: false。
+
+<!-- design_context YAML block inserted here -->
+
+---
+
 ## 1. 背景与目标
 
 ### 1.1 背景

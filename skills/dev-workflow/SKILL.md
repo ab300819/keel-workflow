@@ -248,7 +248,8 @@ Step 4: 完成检查 + 提交（编排器）
 | **基础设施** (DB/Config) | ⚪ | 骨架/实现/绿/AC/自描述/提交 | 测试骨架 | 测试断言/红/重构/验证 |
 
 > **🟢 UI 层补充**：UI 层不是"简化版 🔴"，而是"不同维度的严格"。
-> - S3：Test Agent 在产出测试骨架的同时，必须额外产出 UI 验收清单（生成规则详见 [ui-quality-checklist.md](references/ui-quality-checklist.md)）
+> - S1：design_context 存在时，按 [ui-quality-checklist.md](references/ui-quality-checklist.md) 设计稿读取协议获取设计规格
+> - S3：Test Agent 在产出测试骨架的同时，必须额外产出 UI 验收清单（生成规则详见同文档）
 > - S9：Phase 1/2/3 不变，在 Phase 2 之后新增 Phase 2-UI（UI 质量自查，静态代理指标，详见同文档）
 > - 正式设计稿↔实现对比由 `/ms-verify --ui` 负责，Phase 2-UI 仅做代码级自查
 

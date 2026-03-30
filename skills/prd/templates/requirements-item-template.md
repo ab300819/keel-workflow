@@ -9,6 +9,7 @@ maturity: draft             # idea | draft | ready
 status: clarified           # clarified（brainstorm 产出即为已澄清）→ outdated
 relation: new               # new | extend | modify（与已有系统的关系）
 related_module: ""          # extend/modify 时标注关联的已有模块名
+design_ref: ""              # 关联的设计稿页面/组件 ID（如 D-01:登录页）
 ---
 
 ## 来源追溯

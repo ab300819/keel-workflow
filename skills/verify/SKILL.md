@@ -212,7 +212,16 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 
 ### C1：设计稿 ↔ 需求对齐
 
-支持三种设计稿来源：Pencil .pen 文件、截图/图片、Figma（通过截图或 MCP）。
+**设计稿来源**：优先从 `01-requirements.md` 的 `## 设计资产`（design_context）获取设计稿位置和 access_method，自动选择获取工具：
+
+| access_method | 获取方式 |
+|--------------|---------|
+| `structured_dsl` | MasterGo getDsl MCP |
+| `node_tree` | Pencil batch_get MCP |
+| `vision` | 读取截图/图片 |
+| `manual` | 要求用户描述 |
+
+无 design_context 时，兼容直接提供：Pencil .pen 文件、截图/图片、Figma（通过截图或 MCP）。
 
 检查设计稿是否覆盖 `01-requirements.md` 中 UI 相关 AC。
 
@@ -242,7 +251,8 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 
 | 条件 | 行为 |
 |------|------|
-| 无设计稿输入 | **不可运行**——提示用户提供设计稿 |
+| 有 design_context | 按 access_method 自动选择工具获取设计稿 |
+| 无设计稿输入（且无 design_context） | **不可运行**——提示用户提供设计稿 |
 | 有设计稿，无浏览器 MCP | 阶段 1 正常；阶段 2 要求用户提供实现截图 |
 | 有浏览器 MCP，无设计稿 MCP | 要求用户提供设计稿截图 |
 

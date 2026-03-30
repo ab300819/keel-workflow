@@ -131,6 +131,22 @@ docs/devdocs/
 | **UI 层** (Component/View) | 🟢 可选 | 可实现后补 |
 | **基础设施** (DB/Config) | ⚪ 不适用 | 集成测试验证 |
 
+## 设计稿关联
+
+当 `01-requirements.md` 中存在 `## 设计资产`（design_context）时，任务定义增加设计信息：
+
+| 任务层级 | 设计稿关联 |
+|----------|-----------|
+| 🟢 UI 层 | **必须**：标注 design_ref（关联设计稿页面/组件，如 D-01:登录页） |
+| 🟡 接口层 | **推荐**：标注驱动接口设计的设计稿页面 |
+| 🔴 核心逻辑 | 不适用 |
+| ⚪ 基础设施 | 不适用 |
+
+- 组件库引用：🟢 UI 任务必须在 `UI 约束` 中列出使用的组件库组件
+- 无 design_context 时：上述字段留空，不阻塞任务生成
+
+> design_context schema 定义见 [prd/references/design-context.md](../prd/references/design-context.md)
+
 ## 约束
 
 ### 阶段边界约束（最高优先级）
