@@ -42,6 +42,8 @@ metadata:
 /ms-requirements --context     → 背景信息模式（追加/更新背景）
 /ms-requirements --fast        → 跳过方案确认，直接生成，仅最终汇总确认
 /ms-requirements --from-prd <index路径> → 消费产品需求包
+/ms-requirements --update-design              → 设计资产写入/更新（由 pipeline design 委托）
+/ms-requirements --update-design --target prd-index → 写入 PRD index（依次尝试 docs/prd/requirements/index.md → docs/product/requirements/index.md）
 ```
 
 | 模式 | 触发条件 | 说明 |
@@ -50,6 +52,7 @@ metadata:
 | **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加功能点/用户故事/验收标准 |
 | **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
 | **产品导入模式** | `--from-prd` + index 路径 | 消费 ms-prd 输出的结构化需求包 |
+| **设计资产更新** | `--update-design` 参数 | 由 pipeline design 委托，写入/更新 design_context |
 
 ### `--from-prd` 模式
 
@@ -216,6 +219,17 @@ metadata:
    ▼
 5. 用户确认
 ```
+
+### 设计资产更新模式
+
+由 `/ms-pipeline design` 委托调用，专门处理 design_context 的写入和更新。
+
+1. 接收 pipeline 传递的 design_context 数据
+2. 确定写入目标：`--target prd-index` → prd index.md，默认 → 01-requirements.md
+3. 写入/合并：无 `## 设计资产` 则新增章节；已有则按合并规则更新（见 design-context.md § 主动推送协议）
+4. AC 联动检查（仅当已有 US/AC）：新增 D-XX 关联 UI 相关 US → 检查是否需补充交互状态 AC
+
+**约束**：不触发需求拆解流程（Step 1-9），仅写入 design_context。AC 联动采用"缺失才补"规则。
 
 ## 上下文管理
 
@@ -459,7 +473,7 @@ status: success | failed | partial
 summary:
   headline: "初始需求完成，3 功能点 15 验收标准"
   details:
-    mode: initial | incremental | from-prd
+    mode: initial | incremental | from-prd | update-design
 blockers: []
 output_files:
   - docs/devdocs/01-requirements.md

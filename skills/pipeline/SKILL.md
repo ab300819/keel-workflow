@@ -1,6 +1,6 @@
 ---
 name: ms-pipeline
-description: Top-level orchestrator for DevDocs workflow. Provides 6 entry points (init/feature/bugfix/verify/close/insights) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start", "insights", "洞察", "调研", "借鉴", "竞品". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
+description: Top-level orchestrator for DevDocs workflow. Provides 7 entry points (init/feature/bugfix/verify/close/insights/design) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start", "insights", "洞察", "调研", "借鉴", "竞品", "设计稿", "design ready", "设计到了", "UI稿". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
 metadata:
   patterns: [pipeline]
   interaction: multi-turn
@@ -11,7 +11,7 @@ user-invocable: true
 
 # DevDocs 工作流编排器
 
-顶层编排器，提供 6 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
+顶层编排器，提供 7 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
 
 ## 语言规则
 
@@ -39,6 +39,7 @@ user-invocable: true
 /ms-pipeline verify         → 质量检查
 /ms-pipeline close          → 周期收尾
 /ms-pipeline insights       → 外部洞察吸收
+/ms-pipeline design         → 设计稿到达/更新（主动推送）
 ```
 
 ## 提问式调度（智能引导）
@@ -239,6 +240,27 @@ Q3（feature/bugfix 追加，可选）:
 /ms-onboard --update（更新上下文摘要）
 ```
 
+### design — 设计稿到达/更新
+
+用户主动推送设计资产的入口。Pipeline 仅做阶段检测和收集，写入/回填委托原子 skill。
+
+> 详细流程见 [prd/references/design-context.md](../prd/references/design-context.md) § 主动推送协议。
+
+```text
+1. 阶段检测（复用现有阶段扫描逻辑，首个命中即路由）
+   │
+   ├── no-prd → 收集信息，提示先 /ms-prd 或 /ms-requirements
+   ├── prd-ready → 收集 → Task: /ms-requirements --update-design --target prd-index
+   ├── post-requirements / post-design → 收集 → Task: /ms-requirements --update-design
+   ├── in-dev（有 04 + 有代码提交/任务进行中）→ 收集 → Task: /ms-requirements --update-design → 提示 /ms-verify --ui
+   └── post-tasks（有 04 + 无代码提交）→ 收集 → Task: /ms-requirements --update-design → Task: /ms-dev-tasks --backfill-design
+```
+
+**约束**：
+- Pipeline 不写文档，仅路由和委托
+- no-prd 阶段不阻塞：收集 design_context 信息并暂存在委托参数中，提示用户先建立文档基础
+- 不中断当前进行中的 dev-workflow 任务
+
 ## 阶段间衔接
 
 pipeline 在每个阶段完成后：
@@ -344,6 +366,7 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | verify | verify --docs/--impl/--ui |
 | insights | 见下方 insights 流程图 |
 | close | sync → compound → onboard --update |
+| design | 阶段检测 → 委托 ms-requirements --update-design [→ ms-dev-tasks --backfill-design] |
 
 > **补充说明**：dev-workflow 批量模式内部会调用 `/ms-test-run --trace` 执行全量测试 + 追溯验证，详见 `skills/dev-workflow/SKILL.md`。
 
@@ -373,7 +396,7 @@ status: success | failed | interrupted | partial
 summary:
   headline: "init 流程完成 2/5 阶段"
   details:
-    entry: init | feature | bugfix | verify | close | insights
+    entry: init | feature | bugfix | verify | close | insights | design
     stages_completed:
       - { skill: ms-requirements, status: success }
       - { skill: ms-system-design, status: success }

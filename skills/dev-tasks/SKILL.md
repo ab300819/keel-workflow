@@ -37,8 +37,9 @@ metadata:
 ## 运行模式
 
 ```bash
-/ms-dev-tasks              → 标准模式（逐步确认）
-/ms-dev-tasks --fast       → 跳过逐步确认，直接生成，仅最终确认
+/ms-dev-tasks                  → 标准模式（逐步确认）
+/ms-dev-tasks --fast           → 跳过逐步确认，直接生成，仅最终确认
+/ms-dev-tasks --backfill-design → 回填 design_ref（由 pipeline design 委托）
 ```
 
 ### `--fast` 模式
@@ -225,6 +226,17 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 - **插入任务**：高优先级任务插入合适位置
 - **更新依赖**：调整受影响任务的依赖关系
 - **更新状态**：标记任务完成/进行中
+- **回填 design_ref**：（`--backfill-design`）当 design_context 新增/更新后，扫描已有 🟢 UI 任务，按 D-XX 匹配补标 design_ref 和组件库映射
+
+### design_ref 回填规则
+
+由 `/ms-pipeline design` 在 post-tasks 阶段委托调用。
+
+- 扫描 04-dev-tasks.md 中所有 🟢 UI 层任务
+- 已有 design_ref 的任务跳过（幂等保护）
+- 按任务关联的 US/AC 与 design_context.references[] 的 pages/描述做语义匹配，标注对应 D-XX
+- 无法匹配的任务不写 design_ref，在任务备注中标注"⚠️ 待绑定设计稿"，由用户手动绑定
+- 同时补充 component_library 中的组件映射（如有）
 
 ## 完成后操作
 

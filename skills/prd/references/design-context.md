@@ -64,9 +64,11 @@ ms-prd Step 0 和 ms-requirements 步骤 0.5 调用此协议，通过 AskUserQue
 - 有组件库 → 填充 component_library 字段
 - 无组件库 → 标记 `component_library.available: false`
 
-## 迟到协议
+## 迟到协议（被动检测）
 
-设计稿可在任意阶段到达。按"到达时已完成到哪个阶段"，由对应 skill 负责回填：
+设计稿可在任意阶段到达。各 skill 在入口自动检测 design_context 是否存在并消费——这是**被动检测**机制。用户主动声明"设计稿到了"时，应使用 `/ms-pipeline design`（见下方 § 主动推送协议）。两者互补：主动推送将 design_context 写入文档，被动检测在后续 skill 入口自然消费。
+
+按"到达时已完成到哪个阶段"，由对应 skill 负责回填：
 
 | 设计稿到达时 | 回填动作 | 负责 skill |
 |-------------|---------|------------|
@@ -79,6 +81,54 @@ ms-prd Step 0 和 ms-requirements 步骤 0.5 调用此协议，通过 AskUserQue
 ### 设计稿更新
 
 已有 design_context 但设计稿内容变更时：由用户主动声明，不做自动检测。声明后按当前所处阶段对应的回填动作执行。
+
+## 主动推送协议
+
+用户主动声明"设计稿已到达/已更新"时的处理流程。入口：`/ms-pipeline design`。
+
+### 阶段检测与路由
+
+Pipeline 扫描 docs/devdocs/ 和 docs/prd/ 判断当前阶段，委托对应原子 skill 执行写入：
+
+按表格顺序自上而下，**首个命中即路由**（与 pipeline 现有阶段扫描优先级一致）：
+
+| 阶段 | 检测条件 | 委托 skill | 委托模式 |
+|------|---------|-----------|---------|
+| no-prd | 无 PRD index 或 maturity=idea/draft | — | 仅收集 design_context，提示先运行 /ms-prd 或 /ms-requirements |
+| prd-ready | 有 PRD index 且 maturity=ready，无 01-requirements.md | ms-requirements | `--update-design --target prd-index` |
+| post-requirements | 有 01，无 02 | ms-requirements | `--update-design` |
+| post-design | 有 01+02，无 04 | ms-requirements | `--update-design` |
+| in-dev | 有 04，且有代码提交或任务进行中 | ms-requirements `--update-design` | 写入后提示运行 /ms-verify --ui |
+| post-tasks | 有 04，无代码提交且无任务进行中 | ms-requirements `--update-design` + ms-dev-tasks `--backfill-design` | 顺序委托 |
+
+### 收集模式
+
+Pipeline 在委托前通过 AskUserQuestion 收集设计稿信息（复用探测协议询问脚本），然后将结果传递给委托 skill。
+
+| 情形 | 行为 |
+|------|------|
+| 01-requirements.md 无 `## 设计资产` | initial 模式：完整探测协议询问 |
+| 已有 `## 设计资产` | update 模式：展示已有 design_context，询问变更类型 |
+
+### update 模式合并规则
+
+| 变更类型 | 合并语义 |
+|---------|---------|
+| 新增设计稿 | `references[]` append，D-XX 编号递增（基于现有最大编号） |
+| 替换设计稿 | 用户指定目标 D-XX，更新该条目的 location/pages，保留 id |
+| 组件库变更 | `component_library` 局部字段更新，缺省字段保留原值 |
+
+**去重规则**：
+- `references[]` 按 `id`（D-XX）去重，同 id 视为替换
+- `available` 标记仅在用户显式声明"暂无/移除"时变更为 false
+- `access_method` 随 source_type 联动更新
+
+### 委托边界
+
+- **Pipeline 职责**：阶段检测 + 收集 design_context + 委托路由
+- **ms-requirements 职责**：写入 design_context 到目标文档
+- **ms-dev-tasks 职责**：post-tasks 阶段回填 🟢 任务的 design_ref
+- Pipeline 不直接写入任何文档
 
 ## 设计源能力矩阵
 
