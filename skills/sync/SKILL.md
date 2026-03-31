@@ -286,7 +286,7 @@ metadata:
     v
 3. 对比 index.md 映射表 vs 01-requirements.md
    ├── 新增 F-XXX（无对应 FR-XX 映射）→ 标注「DevDocs 侧新增，无 prd 来源」
-   ├── 废弃 F-XXX（已从 01-requirements.md 移除）→ 标注 mapping_status: removed
+   ├── 废弃 F-XXX（已从 01-requirements.md 移除）→ 标注 mapping_status: removed（规范见 skills/prd/references/prd-mapping-status.md）
    └── 已有映射未变 → 保持
     |
     v

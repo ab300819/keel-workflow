@@ -142,23 +142,7 @@ Step 1+: 正常编排流程（brainstorm / prd-parse）
 
 ### mapping_status 规范
 
-映射表唯一存储位置：`index.md` 的"DevDocs 映射"章节。
-
-| 列 | 说明 |
-|----|------|
-| `product_id` | FR-XX / NFR-XX |
-| `devdocs_id` | F-XXX |
-| `mapping_status` | `active` / `outdated` / `remapped` / `removed` |
-| `mapped_at` | 首次映射时间 |
-| `remapped_at` | 重新映射时间（仅 remapped 时有值）|
-
-**状态枚举**：
-- `active`：FR 与 F 内容一致（由 ms-requirements --from-prd 在导入成功时写入）
-- `outdated`：FR 已修改但 F 未更新（由 ms-prd --revise 在修改 FR 内容时写入）
-- `remapped`：FR 重新导入后 F 已更新（由 ms-requirements --from-prd 在重新导入时写入）
-- `removed`：对应 F-XXX 已从 DevDocs 移除（由 ms-sync --back-propagate-prd 在检测到废弃时写入）
-
-**authoritative row**：同一 `product_id` 存在多条映射历史时，以表中最后一条记录为准。旧行仅作审计历史，不删除。
+> 详细规范见 `references/prd-mapping-status.md`（列定义、状态枚举、authoritative row 规则）
 
 ## 编排流程
 
@@ -205,6 +189,10 @@ Step 5: 成熟度评估 → DevDocs 衔接建议
 ```text
 用户提供更新后的 PRD
     |
+    v
+Step 0: 留存原始文档（仅 multi-PRD 模式）
+    |  将 source/ 全量复制到 _snapshots/<YYYYMMDD-HHMMSS>/source/
+    |  _snapshots/ 不入库，与 source/ 同忽略策略
     v
 Step 1: Task: ms-prd-parser（重新拆分）
     |  ← 计算新 document_fingerprint
@@ -349,8 +337,10 @@ docs/prd/
 |   |   +-- FR-XX-<topic>.md
 |   |   +-- NFR-XX-<topic>.md
 |   +-- source/                     <- 原始文件来源记录（.gitignore 排除）
-|       +-- manifest.md
-|       +-- original-prd.md
+|   |   +-- manifest.md
+|   |   +-- original-prd.md
+|   +-- _snapshots/                    <- 重解析前的原始文档留存（与 source/ 同忽略策略）
+|       +-- <YYYYMMDD-HHMMSS>/source/
 +-- synthesis/                      <- 跨 PRD 综合产物
 |   +-- terminology.md
 |   +-- shared-constraints.md

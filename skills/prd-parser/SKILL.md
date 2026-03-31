@@ -66,6 +66,7 @@ metadata:
    |
    +-- 项目内文件 → 移动到 docs/prd/<prd_id>/source/（git mv 保留历史）
    +-- 项目外文件 → 复制到 docs/prd/<prd_id>/source/
+   +-- 若源文档为 Markdown → 扫描内嵌图片引用（`![...](相对路径)`），将引用的本地文件一并归集到 source/，保持相对路径结构
    +-- 记录 source/manifest.md（原始路径、归集方式 copy/move、哈希、类型）
    +-- 计算 document_fingerprint（对转换后的全文计算 sha256）
    |
@@ -232,6 +233,7 @@ status: pending
 - 所有格式均自动归集（md/PDF/图片），不再需要用户手动复制
 - `source/manifest.md` 记录每个文件的：原始路径、归集方式（`move` / `copy`）、sha256 哈希、文件类型
 - 此目录在 `.gitignore` 中排除，不提交仓库（避免二进制膨胀和敏感信息入库）
+- `_snapshots/` 目录与 `source/` 同忽略策略，不提交仓库
 
 ## 变更追踪机制
 

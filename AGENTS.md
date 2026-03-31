@@ -77,6 +77,7 @@ next_recommended:
 | Harness 深度 | Lite/Standard/Deep 三档自适应流程深度，基于变更影响面选择 |
 | design_context | 跨 skill 共享的设计上下文 schema（设计稿来源+组件库信息），定义于 `skills/prd/references/design-context.md` |
 | design_ref | 任务/需求项关联的设计稿页面/组件标识（如 D-01:登录页） |
+| _snapshots | PRD 重解析前的原始文档留存目录，与 source/ 同忽略策略 |
 
 ## 命令
 

@@ -59,7 +59,7 @@ metadata:
 消费 `/ms-prd` 产出的结构化需求包，转化为正式 F/US/AC。
 
 **模式定位**：初始模式的变体。产品流程通常在 DevDocs 之前运行，此时 `01-requirements.md` 尚不存在。如果已存在：
-- 检查映射表中 `mapping_status: outdated` 的条目 → **原地更新**对应 F/US/AC（不创建新编号）
+- 检查映射表中 `mapping_status: outdated` 的条目 → **原地更新**对应 F/US/AC（不创建新编号）（mapping_status 规范见 `skills/prd/references/prd-mapping-status.md`）
 - 新增的 FR-XX（无映射记录）→ 按增量模式追加新 F/US/AC
 
 **与其他模式的关系**：
