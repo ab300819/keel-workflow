@@ -1,7 +1,7 @@
 ---
 name: adversarial-review
 description: >
-  对抗性审查——调用外部 LLM（codex-mcp 或独立子 Agent）对计划、设计、代码变更进行独立审查并逐条验证结论。
+  对抗性审查——调用外部 LLM（codex CLI / codex-mcp / 独立子 Agent）对计划、设计、代码变更进行独立审查并逐条验证结论。
   支持审查循环和收敛检测熔断（加权健康分 + 可配置安全上限）。默认审查工作区全部修改（staged + unstaged diff）。
   触发词："adversarial review"、"对抗审查"、"外部审查"、"independent review"、"second opinion"、"让 codex 审查"。
   不用于内部自检（用 ms-verify）或代码规范检查（用 code-quality）。
@@ -113,18 +113,30 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 
 ### S3 外部审查调度
 
-调用外部 LLM 执行审查。详见 `references/codex-mcp-integration.md`。
+调用外部 LLM 执行审查。详见 `references/external-reviewer-integration.md`。
 
-**主路径**：codex-mcp
-1. 代码审查 → `mcp__codex-mcp__review-code`
-2. 方案/设计/文档审查 → `mcp__codex-mcp__delegate-task`（传 S2 的审查 brief）
+**三级降级链**（首次探测确定首选通道，每轮允许临时降级）：
+
+**T1 codex CLI**（优先）：
+1. 两步检测：`which codex` + 冒烟调用
+2. 代码审查 → `codex exec --sandbox read-only --output-schema <schema> -o <tmpfile> "<adversarial prompt>"`（结构化 JSON 输出）
+3. 方案/设计/文档审查 → stdin 输入长 brief（here-doc 或临时文件，见集成文档）
+4. 代码审查：读取 tmpfile，解析 JSON，映射 severity，合成 F-XXX ID；方案审查：文本解析
+5. JSON 解析失败 → 降级为文本解析；文本也无法解析 → 包装为单条 F-001 展示
+
+**T2 codex-mcp**（次选）：
+1. 代码审查 → `mcp__codex-mcp__review-code`（传 prompt + uncommitted: true）
+2. 方案/设计/文档审查 → `mcp__codex-mcp__delegate-task`（传 goal + `mode: "plan"` + `allowedPaths: ["."]`）
 3. 轮询 → `mcp__codex-mcp__check-task` 直到完成
-4. 获取审查结论
 
-**降级路径**：Task 子 Agent
-- 触发条件：首次调用 codex-mcp 失败（连接错误/工具不存在/超时）
-- 降级后整个会话使用 Task 子 Agent 模式，不再尝试 codex-mcp
-- 子 Agent 使用独立审查员角色 prompt（见 `references/codex-mcp-integration.md`）
+**T3 Task 子 Agent**（兜底）：
+- 触发条件：T1 和 T2 均失败
+- 子 Agent 使用独立审查员角色 prompt（见 `references/external-reviewer-integration.md`）
+
+**降级规则**：
+- 首选通道（`primary_method`）在首次探测时确定，每轮优先使用
+- 单轮失败临时降级（`effective_method`），下一轮仍先尝试首选通道
+- 连续 2 轮失败 → 永久降级，更新 `primary_method`
 
 ### S4 展示审查结论
 
@@ -136,7 +148,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 ```
 ## 外部审查结论（原始）
 
-审查方式：codex-mcp / 独立子 Agent
+审查方式：codex CLI / codex-mcp / 独立子 Agent
 发现数量：X 条
 
 ---
@@ -367,9 +379,11 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 - [ ] 审查对象必须明确（diff / 文件路径 / 方案文本）
 
 ### 审查调度约束
-- [ ] 优先使用 codex-mcp；连接失败时自动降级到 Task 子 Agent
-- [ ] 降级决策仅做一次（首次调用时），之后整个会话使用同一模式
-- [ ] codex-mcp 重试不超过 2 次
+- [ ] 按 T1→T2→T3 优先级探测首选通道；每轮允许临时降级到下一级
+- [ ] 首选通道探测仅做一次（首次调用时）；记录 primary_method 和 effective_method
+- [ ] T1 通过 `which codex` + 冒烟调用检测；T2 连接失败时降级到 T3
+- [ ] T1 代码审查使用 `--output-schema` 获取结构化 JSON；JSON 解析失败时降级为文本解析
+- [ ] 连续 2 轮 primary_method 失败时永久降级
 
 ### 结论展示约束
 - [ ] ⛔ 必须先原样展示外部审查结论，再进行验证分析
@@ -425,7 +439,10 @@ summary:
   details:
     review_target: "工作区 diff / 文件路径 / 方案描述"
     review_type: "代码审查 / 方案评审 / 文档审查"
-    review_method: codex-mcp | task-subagent
+    review_method: codex-cli | codex-mcp | task-subagent   # 最后一轮实际使用的方式
+    primary_method: codex-cli | codex-mcp | task-subagent  # 首次探测锁定的首选通道
+    effective_method: codex-cli | codex-mcp | task-subagent # 最后一轮实际生效的通道（= review_method）
+    fallback_events: []          # 降级事件列表，如 ["R2: codex-cli→codex-mcp (timeout)"]
     rounds: 1
     health_scores: [22]          # 各轮健康分
     breaker_reason: null         # convergence | safety_limit | null

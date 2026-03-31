@@ -3,7 +3,10 @@
 **审查时间**：<YYYY-MM-DD>
 **审查对象**：<工作区 diff / 文件路径 / 方案描述>
 **审查类型**：<代码审查 / 方案评审 / 文档审查>
-**审查方式**：<codex-mcp / 独立子 Agent>
+**审查方式**：<codex CLI / codex-mcp / 独立子 Agent>
+**首选通道**：<primary_method>
+**实际通道**：<effective_method>
+**降级事件**：<无 / 降级记录列表>
 **审查轮次**：<N>
 
 ---
