@@ -12,6 +12,14 @@ metadata:
 
 收集来自 UI/UX 审查、文档调研、外部参考等来源的改进建议，经用户确认后转化为开发需求。
 
+## 快速开始
+
+**一句话**: 收集优化建议（UI/UX审查、调研、外部参考），确认后转化为开发需求。
+
+**最常见用法**: `/ms-insights`（描述改进来源和建议）
+
+**不适合?** 直接加功能→`/ms-feature`，修 Bug→`/ms-bugfix`
+
 ## 语言规则
 
 - 支持中英文提问
@@ -179,7 +187,7 @@ metadata:
 | 🔍 外部参考 | 竞品/开源项目/行业报告 | 竞品优势、行业模式、用户期望 |
 | 💡 内部反馈 | 用户反馈/团队建议/监控数据 | 用户痛点、团队共识、性能瓶颈 |
 
-> **收集建议时，必须读取 [source-types.md](source-types.md) 获取各来源类型的输入方式、关注点和示例。**
+> **收集建议时，必须读取 [source-types.md](references/source-types.md) 获取各来源类型的输入方式、关注点和示例。**
 
 ## 用户确认流程
 
@@ -297,7 +305,7 @@ metadata:
 
 ## 使用示例
 
-> 详见 [examples.md](examples.md)
+> 详见 [examples.md](references/examples.md)
 
 ## 子 Agent 摘要格式
 

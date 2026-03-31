@@ -13,6 +13,14 @@ user-invocable: true
 
 编排产品需求处理流程，自动路由到 brainstorm 或 PRD 解析，产出结构化需求包供 DevDocs 消费。
 
+## 快速开始
+
+**一句话**: 处理模糊想法或大型 PRD 文档，产出结构化 FR-XX/NFR-XX 需求。
+
+**最常见用法**: `/ms-prd`（自动检测新建/修订/继续）
+
+**不适合?** 需求已明确→`/ms-requirements`
+
 ## 语言规则
 
 - 支持中英文提问

@@ -125,7 +125,7 @@
 - **关联**：F-XXX / INS-XXX
 ```
 
-详细 ADR 模板参见 [templates/design-template.md](templates/design-template.md)
+详细 ADR 模板参见 [templates/design-template.md](../templates/design-template.md)
 
 ## 增量设计检查清单
 

@@ -28,6 +28,14 @@ user-invocable: true
 
 **核心价值**：用户只需说"我要做什么"，pipeline 负责"用哪些 skill、按什么顺序"。
 
+## 快速开始
+
+**一句话**: 不知道该用哪个 skill？从这里开始，自动路由到正确的工作流。
+
+**最常见用法**: `/ms-pipeline`（自动判断）、`/ms-pipeline init`（新项目）、`/ms-pipeline feature`（加功能）
+
+**不适合?** 已知目标 skill → 直接调用 `/ms-requirements`、`/ms-feature`、`/ms-bugfix` 等
+
 ## 运行模式
 
 ```bash

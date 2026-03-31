@@ -19,6 +19,14 @@ metadata:
 - 回避：技术实现、架构决策、性能方案
 - 判断倾向：宁可多问不可假设，拒绝模糊需求直接通过
 
+## 快速开始
+
+**一句话**: 将明确的需求转化为 F（功能点）/ US（用户故事）/ AC（验收标准）结构化文档。
+
+**最常见用法**: `/ms-requirements`（自动检测初始/增量）、`/ms-requirements --from-prd <index路径>`（消费 PRD）
+
+**不适合?** 模糊想法→`/ms-prd`，技术设计→`/ms-system-design`，测试用例→`/ms-test-cases`
+
 ## 语言规则
 
 - 支持中英文提问
@@ -42,8 +50,6 @@ metadata:
 /ms-requirements --context     → 背景信息模式（追加/更新背景）
 /ms-requirements --fast        → 跳过方案确认，直接生成，仅最终汇总确认
 /ms-requirements --from-prd <index路径> → 消费产品需求包
-/ms-requirements --update-design              → 设计资产写入/更新（由 pipeline design 委托）
-/ms-requirements --update-design --target prd-index → 写入 PRD index（依次尝试 docs/prd/requirements/index.md → docs/product/requirements/index.md）
 ```
 
 | 模式 | 触发条件 | 说明 |
@@ -52,7 +58,6 @@ metadata:
 | **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加功能点/用户故事/验收标准 |
 | **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
 | **产品导入模式** | `--from-prd` + index 路径 | 消费 ms-prd 输出的结构化需求包 |
-| **设计资产更新** | `--update-design` 参数 | 由 pipeline design 委托，写入/更新 design_context |
 
 ### `--from-prd` 模式
 
@@ -365,7 +370,7 @@ MVP 范围： / 非目标： / 删减理由：
 
 ## 背景信息模式详解
 
-> **进入 --context 模式时，必须读取 [context-mode.md](context-mode.md) 获取信息收集引导、输入方式和文档结构模板。**
+> **进入 --context 模式时，必须读取 [context-mode.md](references/context-mode.md) 获取信息收集引导、输入方式和文档结构模板。**
 
 ## 约束
 
@@ -494,3 +499,12 @@ next_recommended:
 | 背景信息模式 | 继续 `/ms-requirements` 定义功能点，或 `/ms-system-design` 设计 |
 
 > **提示**：文档变更较大时，建议运行 `/agent-memory` 同步记忆文件。
+
+## 编排器接口
+
+> 以下模式由编排器（ms-pipeline）内部调用，用户通常不需要直接使用。
+
+```bash
+/ms-requirements --update-design              → 设计资产写入/更新（由 pipeline design 委托）
+/ms-requirements --update-design --target prd-index → 写入 PRD index
+```

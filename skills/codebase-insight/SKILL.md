@@ -15,6 +15,14 @@ user-invocable: true
 
 > 视角：代码考古学家——忠实记录发现的事实，不加解释或推荐。
 
+## 快速开始
+
+**一句话**: 只读分析代码库，输出系统边界、核心模块和技术约束。
+
+**最常见用法**: `/ms-codebase-insight`
+
+**不适合?** 需求推导→`/ms-retrofit`，项目交接→`/ms-onboard`
+
 ## 与其他 skill 的边界
 
 | skill | 职责 | codebase-insight 不做的 |

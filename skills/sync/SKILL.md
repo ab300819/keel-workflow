@@ -12,6 +12,14 @@ metadata:
 
 保持 DevDocs 文档与实际实现进度一致，检测偏差并更新状态。
 
+## 快速开始
+
+**一句话**: 同步文档与实现进度，检测 doc-code 偏差。
+
+**最常见用法**: `/ms-sync`（自动执行 trace+audit）、`/ms-sync --absorb`（自动吸收低风险偏差）
+
+**不适合?** 验证对齐→`/ms-verify`，提取经验→`/ms-compound`
+
 ## 语言规则
 
 - 支持中英文提问
@@ -117,8 +125,8 @@ metadata:
 
 无参数调用时自动执行两步流程：
 
-1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注，与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](trace-mode.md)
-2. **audit 阶段**：检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号。详见 [audit-mode.md](audit-mode.md)
+1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注，与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](references/trace-mode.md)
+2. **audit 阶段**：检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号。详见 [audit-mode.md](references/audit-mode.md)
 
 > audit 依赖 trace 的扫描结果，因此自动串行执行，不再作为独立子命令。
 
@@ -126,7 +134,7 @@ metadata:
 
 从"检查员"进化为"记录员"，支持代码优先开发路径。低风险偏差自动吸收，高风险需确认。自动包含 trace 步骤。
 
-详见 [absorb-mode.md](absorb-mode.md)
+详见 [absorb-mode.md](references/absorb-mode.md)
 
 ### 文档归档 (--archive)
 
@@ -141,7 +149,7 @@ metadata:
 
 归档时支持级联：归档 F-001 时可同时归档关联的设计/测试/任务。
 
-详见 [archive.md](archive.md)
+详见 [archive.md](references/archive.md)
 
 ## 同步命令
 
@@ -233,11 +241,11 @@ metadata:
 
 ## 参考资料
 
-- [absorb-mode.md](absorb-mode.md) - 吸收模式详解
-- [audit-mode.md](audit-mode.md) - 追溯健康度检查
-- [trace-mode.md](trace-mode.md) - 代码追溯扫描
-- [archive.md](archive.md) - 任务归档功能
-- [examples.md](examples.md) - 使用示例与偏差类型
+- [absorb-mode.md](references/absorb-mode.md) - 吸收模式详解
+- [audit-mode.md](references/audit-mode.md) - 追溯健康度检查
+- [trace-mode.md](references/trace-mode.md) - 代码追溯扫描
+- [archive.md](references/archive.md) - 任务归档功能
+- [examples.md](references/examples.md) - 使用示例与偏差类型
 
 ## 偏差修复路由（调度器功能）
 

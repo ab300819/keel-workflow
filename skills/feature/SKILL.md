@@ -32,6 +32,14 @@ metadata:
 - 新项目 → `/ms-requirements`
 - 已有代码无文档 → `/ms-retrofit`
 
+## 快速开始
+
+**一句话**: 在已有 DevDocs 项目中追加新功能，自动编排需求/设计/测试/任务。
+
+**最常见用法**: `/ms-feature "功能描述"`（自动选档位）、`/ms-feature --fast "功能描述"`
+
+**不适合?** 新项目→`/ms-pipeline init`，修 Bug→`/ms-bugfix`，已有代码无文档→`/ms-retrofit`
+
 ## 运行模式
 
 ### 模式选择

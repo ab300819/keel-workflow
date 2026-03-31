@@ -2,7 +2,7 @@
 
 任务归档功能已整合到 `/ms-sync --archive` 统一归档体系中。
 
-详见 [sync/archive.md](../../sync/archive.md)
+详见 [sync/references/archive.md](../../sync/references/archive.md)
 
 ## 快速参考
 

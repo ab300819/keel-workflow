@@ -34,12 +34,19 @@ metadata:
 - 测试用例文档：`docs/devdocs/03-test-cases.md`
 - 如不存在，建议先运行前置阶段
 
+## 快速开始
+
+**一句话**: 将系统设计拆分为可执行的开发任务，按 🔴🟡🟢⚪ 分层标记 TDD 强度。
+
+**最常见用法**: `/ms-dev-tasks`（标准模式）、`/ms-dev-tasks --fast`（跳过逐步确认）
+
+**不适合?** 执行任务→`/ms-dev-workflow`，设计还没做→`/ms-system-design`
+
 ## 运行模式
 
 ```bash
 /ms-dev-tasks                  → 标准模式（逐步确认）
 /ms-dev-tasks --fast           → 跳过逐步确认，直接生成，仅最终确认
-/ms-dev-tasks --backfill-design → 回填 design_ref（由 pipeline design 委托）
 ```
 
 ### `--fast` 模式
@@ -226,11 +233,11 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 - **插入任务**：高优先级任务插入合适位置
 - **更新依赖**：调整受影响任务的依赖关系
 - **更新状态**：标记任务完成/进行中
-- **回填 design_ref**：（`--backfill-design`）当 design_context 新增/更新后，扫描已有 🟢 UI 任务，按 D-XX 匹配补标 design_ref 和组件库映射
+- **回填 design_ref**：当 design_context 新增/更新后，由编排器触发扫描已有 🟢 UI 任务，按 D-XX 匹配补标 design_ref 和组件库映射
 
 ### design_ref 回填规则
 
-由 `/ms-pipeline design` 在 post-tasks 阶段委托调用。
+由编排器在 post-tasks 阶段委托调用（详见文末[编排器接口](#编排器接口)）。
 
 - 扫描 04-dev-tasks.md 中所有 🟢 UI 层任务
 - 已有 design_ref 的任务跳过（幂等保护）
@@ -296,3 +303,11 @@ next_recommended:
 | 同步文档状态 | `/ms-sync` |
 | 新增功能需求 | `/ms-feature` |
 | 修复 Bug | `/ms-bugfix` |
+
+## 编排器接口
+
+> 以下模式由编排器（ms-pipeline）内部调用，用户通常不需要直接使用。
+
+```bash
+/ms-dev-tasks --backfill-design → 回填 design_ref（由 pipeline design 委托）
+```
