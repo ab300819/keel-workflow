@@ -73,7 +73,11 @@ metadata:
 - 保留最终文档确认（仅确认 F/US/AC 生成结果）
 
 **消费流程**：
-1. 读取用户指定的 `<index路径>`（如未指定，依次尝试 `docs/prd/requirements/index.md` → `docs/product/requirements/index.md`）
+1. 读取用户指定的 `<index路径>`（如未指定，自动检测）：
+   - 检查 `docs/prd/index.md`（全局索引）是否存在
+     - 存在 → multi-PRD 模式：解析 PRD 清单，自动检测仅筛选 active 候选（因 L88 需回写映射，archived/superseded 不可自动选中），对每个候选检查 `requirements/index.md` 是否存在（不存在则跳过），仅 1 个可用 → 自动使用，多个 → AskUserQuestion 让用户选择。archived/superseded PRD 仅在用户显式指定路径时可消费
+     - 不存在 → legacy 模式：直接尝试 `docs/prd/requirements/index.md`
+   - 以上均未找到 → 提示用户手动指定路径
    - 记录实际读取的路径（`source_index_path`），后续回写映射时使用同一路径
    - 读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产`
 2. 逐个读取 `requirements/FR-XX-<topic>.md` 和 `requirements/NFR-XX-<topic>.md`（通过 Glob 匹配 `FR-*`/`NFR-*` 模式）→ 提取澄清结论中的功能描述和验收意图

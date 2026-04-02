@@ -127,7 +127,7 @@ Step 1+: 正常编排流程（brainstorm / prd-parse）
     v
 1. 定位 FR-03 文件：
    multi-PRD 模式：glob docs/prd/*/requirements/FR-03-*.md 定位所属 PRD
-   legacy 模式：先查 docs/prd/requirements/FR-03-*.md，再查 docs/product/requirements/FR-03-*.md
+   legacy 模式：查 docs/prd/requirements/FR-03-*.md
    ⛔ 若文件位于 _archived/ 下 → 禁止 revise（提示：已归档 PRD 不可修改，需创建新版 PRD）
    记录实际路径（source_fr_path），后续回写使用同一路径
     |

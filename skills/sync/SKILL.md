@@ -284,9 +284,14 @@ metadata:
 /ms-sync --back-propagate-prd
     |
     v
-1. 读取 docs/prd/requirements/index.md（兼容 docs/product/）
-   ├── 不存在 → 提示「无 prd 映射表，无需反向同步」
-   └── 存在 → 继续
+1. 定位 PRD requirements index（写路径，仅允许 active PRD）：
+   - 检查 docs/prd/index.md → 存在则解析 PRD 清单，仅筛选 active 状态候选，检查 requirements/index.md 是否存在
+     - 命中 archived/superseded → 拒绝并提示「归档/已替代的 PRD 不可回写，请指定 active PRD」
+     - 仅 1 个 active 可用 → 自动使用
+     - 多个 active → AskUserQuestion 让用户选择
+   - 不存在 → legacy 模式：直接尝试 docs/prd/requirements/index.md
+   ├── 未找到 → 提示「无 prd 映射表，无需反向同步」
+   └── 找到 → 继续
     |
     v
 2. 读取 docs/devdocs/01-requirements.md 的 F-XXX 列表

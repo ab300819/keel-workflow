@@ -63,8 +63,14 @@ user-invocable: true
     │
     ├── 无文件 → 先检测项目状态，再路由
     │     │
-    │     ├── 有 docs/prd/requirements/index.md（兼容 docs/product/） 且 maturity=ready → "产品需求已就绪，建议运行 /ms-requirements --from-prd <实际检测到的 index.md 路径>"
-    │     ├── 有 docs/prd/requirements/index.md（兼容 docs/product/） 且 maturity=idea/draft → "产品需求包未就绪（maturity: <当前值>），建议继续运行 /ms-prd 完善需求"
+    │     ├── PRD 候选检测（两段式）：
+    │     │     1. 检查 docs/prd/index.md → 存在则解析 PRD 清单（仅 active 候选，因后续 --from-prd 需回写映射），对每个候选检查 requirements/index.md 是否存在（不存在跳过）；不存在 → legacy：尝试 docs/prd/requirements/index.md
+    │     │     2. 仅 1 个可用候选 → 读取其 per-PRD requirements/index.md，从"整体成熟度"字段判断
+    │     │        多个可用候选 → AskUserQuestion 让用户选择目标 PRD，再读 maturity
+    │     │        0 个可用候选 → 跳过 PRD 检测，继续后续路由
+    │     │     └─ per-PRD index 缺失 → "PRD 已登记但未生成可消费总纲"
+    │     ├── maturity=ready → "产品需求已就绪，建议运行 /ms-requirements --from-prd <实际检测到的 index.md 路径>"
+    │     ├── maturity=idea/draft → "产品需求包未就绪（maturity: <当前值>），建议继续运行 /ms-prd 完善需求"
     │     ├── 项目已有代码（src/、lib/、app/ 等）但无 DevDocs → Q1a：新项目还是已有项目？
     │     │     ├── 已有项目 → "建议先运行 /ms-retrofit 逆向生成文档"
     │     │     └── 新项目（代码是脚手架/模板）→ 继续按输入类型路由
