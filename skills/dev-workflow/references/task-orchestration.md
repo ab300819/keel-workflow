@@ -81,13 +81,21 @@
 ```
 Step 1: 文档状态检测
         ├── 读取 04-dev-tasks*.md 中该任务的 状态 字段
-        ├── 已完成 → 跳过该任务
+        ├── 已完成 → Step 1.5（验证证据复核）
         └── 进行中 / 待开发 → Step 2
 
-Step 2: Git 历史检测
+Step 1.5: 证据复核（仅"已完成"任务）
+        ├── 检查 AC 完备性表是否可复核（S8 产物，存于任务记录或 Commit 1 附加信息）
+        ├── 检查关联测试是否存在且未被标记 skipped/todo（除豁免）
+        ├── 检查 trace（若 ms-sync 已跑则读 04-trace-matrix.md；否则标 trace_pending）
+        ├── 三项全部可复核 → 跳过该任务
+        └── 任一不可复核 → 进入"复核续做"（续做信号表 verification_pending / trace_pending / docs_only_pending 之一）
+            └── 旧任务迁移（AC 表不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
+
+Step 2: Git 历史检测（任务状态非"已完成"时的兜底）
         ├── git log --grep="(T-XX)" --oneline
-        ├── 有代码提交 + 有文档提交 → 跳过（任务已完成，文档状态滞后）
-        ├── 有代码提交 + 无文档提交 → 仅执行文档同步（/ms-sync + Commit 2）
+        ├── 有代码提交 + 有文档提交 → ⚠️ 不再直接跳过，改为进入 Step 1.5 证据复核路径
+        ├── 有代码提交 + 无文档提交 → 标 docs_only_pending，仅执行文档同步（/ms-sync + Commit 2）
         └── 无提交 → Step 3
 
 Step 3: 工作区检测
@@ -118,7 +126,10 @@ Step 5: 工作区决策
 | 测试通过 + 未通过完成检查 | Impl Agent 完成 | S8 AC 验证 | 编排器 |
 | 验证 Blocker 未修（实现类） | 验证完成 | 修复 Blocker | Impl Agent |
 | 验证 Blocker 未修（测试类：测试文件被修改/测试缺陷） | 验证完成 | 修复测试 | 编排器→AskUserQuestion→Test Agent |
-| 代码提交完成 + 无文档提交 | 代码提交 | 文档同步 | 编排器 |
+| 代码提交完成 + 无文档提交（`docs_only_pending`） | 代码提交 | 文档同步 | 编排器 |
+| 任务状态=已完成但 AC 表不可复核（`verification_pending`） | 代码/文档均已提交 | S8 重跑 AC 完备性 | 编排器 |
+| 任务状态=已完成但 trace 未同步（`trace_pending`） | 代码/文档均已提交 | `/ms-sync` 重跑 + trace 校验 | 编排器 |
+| 旧任务（AC 表不存在，Fix 4 前完成） | 全量历史 | AskUserQuestion：复核 / 豁免 / 终止 | 编排器 |
 
 ### 续做模式行为
 

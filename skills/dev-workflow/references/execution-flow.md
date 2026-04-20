@@ -91,7 +91,8 @@
 | 6. 运行测试→确认通过（绿，skipped/todo=0） | Impl Agent | ■ | ■ | ■ | ■ |
 | 7. 重构优化（保持测试通过） | Impl Agent | ■ | □ | ○ | ○ |
 | 8. 检查验收标准（AC 完备性表） | 编排器 | ■ | ■ | ■ | ■ |
-| 9. 对抗式验证 | 编排器 | ■ 自动 | □ --review | □ --review | ○ --review |
+| 9a. 前置验证（ms-verify） | 编排器 | ■ --impl | ■ --impl | ■ --ui --impl / 无设计稿降级 | ■ --impl --trace |
+| 9b. 对抗式验证 | 编排器 | ■ 自动 | □ --review | □ --review | ○ --review |
 | 10. 更新自描述 | 编排器 | ■ | ■ | ■ | ■ |
 | 11. 提交决策+原子提交 | 编排器 | ■ | ■ | ■ | ■ |
 
@@ -229,23 +230,28 @@ S4 执行时，在清单基础上补全可运行断言。S4 跳过时，清单�
    - 输出 AC 检查表（编号/证据类型/代码或测试位置/判定），证据类型须来自 [SKILL.md 完成检查约束](../SKILL.md#完成检查约束) 白名单
    - 执行声称 vs 实际 diff 交叉验证（对比 AC 列表与 `git diff`）
    - 任一 AC 缺证据 / 声称满足但 diff 无变更 / 未关联 AC 的大块变更 → ⛔ 回到对应步骤修复
-5. **对抗式验证**（■🔴自动 / □🟡🟢--review / ○⚪--review）：
+5. **前置验证（按层级默认必做）**：
+   - 🔴/🟡：`/ms-verify --impl`（AC 满足度 + 设计一致性 + 追溯）
+   - 🟢：`/ms-verify --ui --impl`（有设计稿），无设计稿降级为 Phase 2-UI 自查 + `/ms-verify --impl`
+   - ⚪：`/ms-verify --impl --trace`（仅追溯子集，不要求完整 AC 语义对齐）
+   - Blocker → ⛔ 回退修复，不因"未加 --review"而放行
+6. **对抗式验证**（■🔴自动 / □🟡🟢--review / ○⚪--review；`--review` 仅作增强叠加）：
    - Phase 1: 代码质量审查（/code-quality 视角）
    - Phase 2: 测试完备性审查（/testing-guide 视角）
    - Phase 2-UI: UI 质量自查（仅 🟢，ui-quality-checklist）
    - Phase 3: 综合报告，处理 Blocker
-6. **更新自描述**：运行 /code-self-describe --update
-7. **提交决策**：
+7. **更新自描述**：运行 /code-self-describe --update
+8. **提交决策**：
    - `--headless` 模式：自动提交（安全不变量已在前置步骤保证）
    - `--auto-commit` 模式：测试通过 + 无 Blocker 时自动提交
    - 交互模式：AskUserQuestion："任务 T-XX 已完成，是否提交代码？"
      - 选项："提交" / "继续修改" / "跳过"
-8. **如提交**（原子提交）：
+9. **如提交**（原子提交）：
    - Commit 1: `git add [代码文件] && git commit -m "<type>(T-XX): <名称>"`
    - 更新 04-dev-tasks*.md 状态为 `已完成`
    - 运行 /ms-sync
    - Commit 2: `git add [文档文件] && git commit -m "docs(T-XX): 更新任务状态并同步 trace"`
-9. **更新 TodoWrite**：将任务标记为已完成
+10. **更新 TodoWrite**：将任务标记为已完成
 
 ## 提交信息格式
 
