@@ -77,6 +77,7 @@ metadata:
 | 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停（与 `--headless` 互斥） |
 | 上下文重置 | `--context-reset N` | 每 N 个任务后编排器重置上下文（默认 3，仅批量模式） |
 | 跳过审查（🔴 限定） | `--skip-review-reason="<原因>"` | 仅 🔴 任务可用；必须带 reason，否则视为非法参数（详见[对抗式验证](#对抗式验证可选)） |
+| 跳过 trace 校验 | `--skip-trace="<原因>"` | 单任务模式关闭 `--affected` 后置校验；必须带 reason，写入 `Skip-Trace-Reason:` 尾注 |
 
 ### 模式对比
 
@@ -329,7 +330,7 @@ Step 4: 完成检查 + 提交（编排器）
 | 依赖解析 | `/ms-dev-tasks` | 读取任务依赖关系和状态 |
 | 任务完成 | `/ms-sync` | 后续：更新追溯矩阵（追溯同步） |
 | 知识沉淀 | `/ms-compound` | 推荐：sync 后提取经验模式（批量模式默认执行） |
-| 全量测试 | `/ms-test-run` | 批量完成后：全量测试 + 追溯验证（--trace） |
+| 全量测试 | `/ms-test-run` | 批量完成后 `--trace`（全量+追溯）；单任务完成后 `--affected`（受变更影响测试），affected 无匹配时回退 `--trace` |
 
 ## 约束
 
@@ -469,9 +470,12 @@ Step 4: 完成检查 + 提交（编排器）
 
 ### 全量测试验证约束
 
-- [ ] **批量模式完成后必须调用 /ms-test-run --trace**
-- [ ] 单任务模式不触发全量测试（已在开发中运行自身测试）
-- [ ] 全量测试失败不回滚已提交任务
+- [ ] **批量模式完成后必须调用 `/ms-test-run --trace`**（全量 + 追溯完整性）
+- [ ] **单任务模式完成后必须调用 `/ms-test-run --affected`**（受变更影响的测试，基于 git diff，见 `/ms-test-run` SKILL）
+   - `--affected` 无匹配时（ms-test-run 返回"建议运行全量"）→ 回退 `/ms-test-run --trace`
+   - 单任务不得完全跳过该校验，除非显式 `--skip-trace="<原因>"` 并登记
+- [ ] **`--skip-trace` 收紧**：理由必须写入 Commit 1 `Skip-Trace-Reason:` 尾注，批量交付报告单列（便于事后补跑）
+- [ ] 全量/受影响测试失败不回滚已提交任务（原子提交已落盘）
 - [ ] 交互模式：AskUserQuestion 询问是否修复失败测试
 - [ ] --headless / --auto-commit 模式：记录警告到交付报告，不中断
 
@@ -505,6 +509,8 @@ Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）�
 关联: F-XXX, AC-XXX
 测试: UT-XXX, IT-XXX 通过
 Skip-Review-Reason: <仅 🔴 任务使用 --skip-review-reason 时填写；其他情况省略此行>
+Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
+Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
 ```
 
 **type 类型**：feat | fix | refactor | test | docs | chore
