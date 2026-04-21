@@ -88,11 +88,12 @@ Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判
         ├── [A] AC 完备性表可复核（S8 产物，存于任务记录或 Commit 1 附加信息）
         ├── [B] 关联测试存在且 skipped/todo=0（除显式豁免）
         ├── [C] trace 矩阵已同步（ms-sync 产物 04-trace-matrix.md 存在并覆盖该任务）
-        ├── [D] 对抗式验证证据：🔴 任务须有 Phase 3 综合报告落地；若 Commit 1 带 `Skip-Review-Reason:` 尾注且补跑审查未完成 → review_pending
-        ├── [E] 后置测试证据（任一即可）：单任务为 `/ms-test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/ms-test-run --trace` 执行记录；若 Commit 1 带 `Skip-Trace-Reason:` 尾注且补跑未完成 → postcheck_pending
-        ├── A~E 全部可复核 → 跳过该任务
-        └── 任一不可复核 → 进入"复核续做"（续做信号表对应 pending 之一）
-            └── 旧任务迁移（Fix 4 前完成，A/D/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
+        ├── [D1] 对抗式验证 Phase 1~3 证据：🔴 任务须有 Phase 3 综合报告落地；若 Commit 1 带 `Skip-Review-Reason:` 尾注且补跑未完成 → `INT_PENDING`
+        ├── [D2] Phase 4 外部对抗审查证据：🔴 任务必须 `ext_review_state=EXT_REVIEWED` 且 L1/L2/L3 三级证据完备（L1 尾注 / L2 `audit/<T-XX>-external-review.yaml` / L3 `audit/<T-XX>-external-review-raw/<round-N>.txt`）；若任一缺失或状态冲突 → 按 verification-flow.md 真值表映射到 `EXT_UNRESOLVED` 或 `EXT_BLOCKED`；若 Commit 1 带 `Skip-External-Review-Reason:` → `EXT_PENDING`
+        ├── [E] 后置测试证据（任一即可）：单任务为 `/ms-test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/ms-test-run --trace` 执行记录；若 Commit 1 带 `Skip-Trace-Reason:` 尾注且补跑未完成 → `postcheck_pending`
+        ├── A~E 全部可复核（[D1] `INT_REVIEWED` ∧ [D2] `EXT_REVIEWED` 或均未触发）→ 跳过该任务
+        └── 任一不可复核 → 进入"复核续做"（续做信号表对应 pending/state 之一）
+            └── 旧任务迁移（前版本完成，A/D1/D2/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
 
 Step 2: Git 历史检测（任务状态非"已完成"时的兜底）
         ├── git log --grep="(T-XX)" --oneline
@@ -131,9 +132,20 @@ Step 5: 工作区决策
 | 代码提交完成 + 无文档提交（`docs_only_pending`） | 代码提交 | 文档同步 | 编排器 |
 | 任务状态=已完成但 AC 表不可复核（`verification_pending`） | 代码/文档均已提交 | S8 重跑 AC 完备性 | 编排器 |
 | 任务状态=已完成但 trace 未同步（`trace_pending`） | 代码/文档均已提交 | `/ms-sync` 重跑 + trace 校验 | 编排器 |
-| 🔴 任务跳过 S9 后未补跑对抗式验证（`review_pending`，Skip-Review-Reason 已登记但审查窗未闭） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
+| 🔴 任务跳过 S9 Phase 1~3 后未补跑（`INT_PENDING`，Skip-Review-Reason 已登记但审查窗未闭） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
 | 单任务 `--skip-trace` 后未补跑后置测试（`postcheck_pending`） | 代码/文档均已提交 | `/ms-test-run --affected` 或 `--trace` 补跑 | 编排器 |
-| 旧任务（AC 表不存在，Fix 4 前完成） | 全量历史 | AskUserQuestion：复核 / 豁免 / 终止 | 编排器 |
+| Phase 4 外部对抗审查通过（`EXT_REVIEWED`） | 代码/文档/外审均已完成 | —（终态，直接放行） | —（不进入续做） |
+| 🔴 任务跳过 Phase 4 或证据未落（`EXT_PENDING`） | 代码/文档已提交，Phase 4 L1/L2/L3 未完整 | Phase 4 补跑（T1 或 T2 通道），产出完整三级证据 | 编排器调度 Phase 4 |
+| Phase 4 降级到 T3 未接受 / 通道失败 / 证据冲突（`EXT_UNRESOLVED`） | 代码/文档已提交，Phase 4 未落到 T1/T2 成功态 | 交互模式 AskUserQuestion 接受降级（需 Emergency）或手动补跑 T1/T2；headless fail-fast | 编排器 |
+| Phase 4 熔断或 Emergency 超时（`EXT_BLOCKED`） | 代码/文档已提交，Phase 4 达 max_rounds 或 `rollback_by_expired=true` | 交互模式解除 max_rounds 重跑；headless fail-fast；超时后清除 pending 后只能重启完整 Phase 4 | 编排器 |
+| 旧任务（AC 表不存在，前版本完成） | 全量历史 | AskUserQuestion：复核 / 豁免 / 终止 | 编排器 |
+
+**状态优先级（并存时取高）**：`EXT_BLOCKED` (1) > `EXT_UNRESOLVED` (2) > `EXT_PENDING` (3) > `EXT_REVIEWED` (4)；`INT_*` 优先级与 `EXT_*` 独立判定，各自维护。详见 [verification-flow.md Phase 4 章节](verification-flow.md)。
+
+**术语迁移**（本版规范完成）：
+- 原名 `review_pending` → 现名 `INT_PENDING`（对应 Phase 1~3 内置审查）
+- 新增 `EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED`（对应 Phase 4 外部审查）
+- 其他 `*_pending` 信号（`docs_only_pending` / `verification_pending` / `trace_pending` / `postcheck_pending`）保持原名（语义独立，不纳入 INT_/EXT_ canonical enum）
 
 ### 续做模式行为
 
@@ -175,7 +187,13 @@ Step 5: 工作区决策
 │     ├── 成功 → 继续                            │
 │     ├── 测试缺陷 → AskUserQuestion 确认        │
 │     └── 失败 → 交互：询问 / headless：终止      │
-│  6. 完成检查 + 对抗式验证 + Commit 1            │
+│  6. 完成检查 + 对抗式验证 Phase 1~3                │
+│  6.5 Phase 4 外部对抗审查（🔴 默认；其他 --external-review）│
+│     ├── embedded-headless 调度器按 T1→T2→T3 顺序调用 │
+│     ├── 收敛循环（max_rounds=3，--external-rounds 可覆盖）│
+│     ├── 产出 L1/L2/L3 三级证据 + ext_review_state   │
+│     └── ext_review_state ≠ EXT_REVIEWED（🔴 必须）→ ⛔ 不进入 Commit 1 │
+│  6.9 Commit 1（代码提交，前置：Phase 1~3 ∧ Phase 4 均已放行）│
 │  7. 更新 04-dev-tasks*.md 状态为 已完成         │
 │  8. /ms-sync                                │
 │  9. Commit 2: docs(T-XX): 更新任务状态+追踪      │

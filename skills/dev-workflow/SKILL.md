@@ -78,6 +78,9 @@ metadata:
 | 上下文重置 | `--context-reset N` | 每 N 个任务后编排器重置上下文（默认 3，仅批量模式） |
 | 跳过审查（🔴 限定） | `--skip-review-reason="<原因>"` | 仅 🔴 任务可用；必须带 reason，否则视为非法参数（详见[对抗式验证](#对抗式验证可选)） |
 | 跳过 trace 校验 | `--skip-trace="<原因>"` | 单任务模式关闭 `--affected` 后置校验；必须带 reason，写入 `Skip-Trace-Reason:` 尾注 |
+| 外部对抗审查（Phase 4） | `--external-review` | 🟡/🟢/⚪ 层级显式启用 Phase 4 外部对抗审查（🔴 默认开启，无需此 flag） |
+| 外部对抗审查跳过（🔴 限定） | `--skip-external-review-reason="<原因>"` | **仅交互模式 + 🔴 任务可用**；跳过 Phase 4 并登记原因；自动标 `EXT_PENDING`，Step 1.5 [D2] 会拦截。`--headless` 下传入此参数视为非法参数 |
+| 外部对抗审查轮次 | `--external-rounds N` | 覆盖 Phase 4 默认 `max_rounds=3`；上限 5（对齐 /adversarial-review skill 的 max_rounds） |
 
 ### 模式对比
 
@@ -158,7 +161,14 @@ metadata:
    │   │   └── 无设计稿 → Phase 2-UI 自查 + /ms-verify --impl
    │   └── ⚪：/ms-verify --impl --trace（追溯子集，非完整 AC 语义对齐）
    │
-   └── 对抗式验证（🔴 自动触发 / 🟡🟢⚪ 通过 `--review` 手动叠加；`--skip-review-reason` 仅 🔴 可用）
+   ├── 对抗式验证 Phase 1~3（🔴 自动触发 / 🟡🟢⚪ 通过 `--review` 手动叠加；`--skip-review-reason` 仅 🔴 可用）
+   │   └── 同进程角色切换式自审（内置），产物落 `INT_*` canonical state
+   │
+   └── **Phase 4：外部对抗审查（embedded-headless 模式）** —— 🔴 默认触发；🟡🟢⚪ `--external-review` 显式触发
+       ├── 三级通道：T1 codex CLI → T2 codex-mcp → T3 Task 子 Agent（T3 自动标 `EXT_UNRESOLVED`）
+       ├── 最大轮次：默认 max_rounds=3，`--external-rounds N` 覆盖至 5
+       ├── 状态：`EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED`（见 verification-flow.md 真值表）
+       └── `--skip-external-review-reason="<原因>"` 仅 🔴 可用；自动标 `EXT_PENDING`
        ├── 🔍 代码质量审查（/code-quality 视角）
        ├── 🧪 测试完备性审查（/testing-guide 视角）
        └── 📋 综合审查报告
@@ -333,6 +343,7 @@ Step 4: 完成检查 + 提交（编排器）
 | 任务完成 | `/ms-sync` | 后续：更新追溯矩阵（追溯同步） |
 | 知识沉淀 | `/ms-compound` | 推荐：sync 后提取经验模式（批量模式默认执行） |
 | 全量测试 | `/ms-test-run` | 批量完成后 `--trace`（全量+追溯）；单任务完成后 `--affected`（受变更影响测试），affected 无匹配时回退 `--trace` |
+| 外部对抗审查（契约复用） | `/adversarial-review` | **dev-workflow S9 Phase 4 仅复用其 `references/external-reviewer-integration.md` 底层三级降级链和熔断协议**，不直接调用整个 multi-turn skill（避免 AskUserQuestion 阻塞）。Phase 4 调度器以 embedded-headless 模式运行；`/adversarial-review` 仍可被用户独立调用做交互式审查 |
 
 ## 约束
 
@@ -354,6 +365,7 @@ Step 4: 完成检查 + 提交（编排器）
 
 - [ ] **S8 必须产出 AC 完备性表**（逐条 AC：编号/**AC 类型**（行为型/视觉型/结构型，必填）/证据类型/代码或测试位置/判定）
 - [ ] **任一 AC 缺失有效证据 / 违反 AC 类型×证据类型分级矩阵 → ⛔ 禁止继续**（恢复方式：补实现或补测试后重新生成证据表）
+- [ ] **Phase 4 `ext_review_state` 必须为 `EXT_REVIEWED`（🔴 任务）或非 🔴 任务未触发 Phase 4 时 `EXT_REVIEWED`/空** 才能进入 Commit 1；`EXT_UNRESOLVED` / `EXT_BLOCKED` ⛔ 阻塞（恢复方式见 [verification-flow.md 真值表](references/verification-flow.md)）
 - [ ] **声称 vs 实际 diff 交叉验证必做**（所有层级 S8 必做，不再是 --review 才触发）
 - [ ] **测试通过判定排除 skipped / todo**（skipped/todo 计数 > 0 → ⛔ 禁止继续，除非任务文档显式豁免并记录原因）
 - [ ] **Review 要点自查完成**
@@ -401,26 +413,49 @@ Step 1.5 [A] 复核"可复核"的具体判据：证据栏引用的路径/行号�
 
 > **层级判定**：任务层级标记（🔴🟡🟢⚪）来自 `04-dev-tasks.md` 中的任务定义，由 `/ms-dev-tasks` 在任务拆分时根据任务分层规则分配。
 
-| 任务层级 | 默认前置验证（按层级最小必做） | 对抗式验证默认 | 手动控制 |
-|---------|-------------------------------|---------------|---------|
-| 🔴 核心逻辑 | `/ms-verify --impl` | **自动触发** | `--skip-review-reason="<原因>"` 跳过对抗式（见下方约束）；`--impl` 前置验证不可跳过 |
-| 🟡 接口层 | `/ms-verify --impl` | 不触发 | `--review` 叠加完整对抗式验证 |
-| 🟢 UI 层 | 有设计稿 → `/ms-verify --impl` + `/ms-verify --ui --impl`（两次调用）；无设计稿 → Phase 2-UI 自查 + `/ms-verify --impl`（降级） | 不触发 | `--review` 叠加完整对抗式验证 |
-| ⚪ 基础设施 | `/ms-verify --impl --trace`（仅追溯子集） | 不触发 | `--review` 叠加完整对抗式验证 |
+| 任务层级 | 默认前置验证（按层级最小必做） | Phase 1~3 自审 | Phase 4 外部对抗 | 手动控制 |
+|---------|-------------------------------|---------------|------------------|---------|
+| 🔴 核心逻辑 | `/ms-verify --impl` | **自动触发** | **自动触发**（走 T1→T2→T3 降级链，必须落 T1/T2 才放行） | `--skip-review-reason="<原因>"` 跳过 Phase 1~3（见下方约束）；`--skip-external-review-reason="<原因>"` 跳过 Phase 4（仅交互模式）；`--external-rounds N` 覆盖 max_rounds；`--impl` 前置验证不可跳过 |
+| 🟡 接口层 | `/ms-verify --impl` | 不触发 | 不触发 | `--review` 叠加 Phase 1~3；`--external-review` 叠加 Phase 4（独立判定） |
+| 🟢 UI 层 | 有设计稿 → `/ms-verify --impl` + `/ms-verify --ui --impl`（两次调用）；无设计稿 → Phase 2-UI 自查 + `/ms-verify --impl`（降级） | 不触发 | 不触发 | `--review` 叠加 Phase 1~3；`--external-review` 叠加 Phase 4 |
+| ⚪ 基础设施 | `/ms-verify --impl --trace`（仅追溯子集） | 不触发 | 不触发 | `--review` 叠加 Phase 1~3；`--external-review` 叠加 Phase 4 |
 
 **设计原则**：
 
 - 前置验证是"按层级最小必做"，保证每层都有独立验证者（不再出现"非 🔴 默认无独立验证"的逃逸）。
+- Phase 1~3（内置角色演绎）与 Phase 4（外部独立审查）**独立判定**：两者各自维护 `INT_*` / `EXT_*` canonical state，`--review` 控制 Phase 1~3，`--external-review` 控制 Phase 4，互不替代。
 - `--review` **不再决定是否有独立验证**，仅决定是否额外叠加完整对抗式验证（Phase 1 + Phase 2 [+ Phase 2-UI]）。
 - 前置验证失败（Blocker）同样 ⛔ 阻塞 Commit 1，不因"未加 --review"而放行。
+- Phase 4 详细调用契约（T1/T2/T3 通道、max_rounds、状态真值表、证据三级协议、Emergency-Mode 授权锚定）见 [verification-flow.md Phase 4 章节](references/verification-flow.md)。
 
-**`--skip-review-reason` 收紧约束**（只作用于 🔴）：
+**`--skip-review-reason` 收紧约束**（只作用于 🔴 的 Phase 1~3）：
 
 - ⛔ 不带 reason 或 reason 为空 → 视为非法参数，直接拒绝（恢复方式：补充 reason 或放弃跳过）
 - ⛔ 🟡/🟢/⚪ 层任务使用此参数 → 非法参数（对应层级默认本就不触发）
 - ⚠️ reason 必须写入 Commit 1 提交信息尾部 `Skip-Review-Reason: ...` 尾注，并追加 TODO 登记事后补跑审查时间窗（默认 7 天内）
-- ⛔ **跳过审查的 🔴 任务自动标 `review_pending`，不得进入"已完成可跳过"态**（恢复方式：补跑 Phase 1~3 对抗式验证并落地综合报告，Step 1.5 [D] 才放行）
+- ⛔ **跳过审查的 🔴 任务自动标 `INT_PENDING`，不得进入"已完成可跳过"态**（恢复方式：补跑 Phase 1~3 对抗式验证并落地综合报告，Step 1.5 [D1] 才放行）
 - ℹ️ 批量模式下，使用 `--skip-review-reason` 的任务数在交付报告中单列，方便事后统一补审
+
+**`--skip-external-review-reason` 收紧约束**（只作用于 🔴 的 Phase 4，且仅交互模式）：
+
+- ⛔ 不带 reason 或 reason 为空 → 视为非法参数，直接拒绝
+- ⛔ 🟡/🟢/⚪ 层任务使用此参数 → 非法参数（对应层级 Phase 4 默认本就不触发；需跳过只能不加 `--external-review`）
+- ⛔ `--headless` 下传入此参数 → 非法参数（--headless 严禁跳过 Phase 4，`EXT_*` 非 `EXT_REVIEWED` 一律 fail-fast）
+- ⚠️ reason 必须写入 Commit 1 `Skip-External-Review-Reason: ...` 尾注
+- ⛔ **跳过 Phase 4 的 🔴 任务自动标 `EXT_PENDING`，不得进入"已完成可跳过"态**（恢复方式：补跑 Phase 4 并产出 L1/L2/L3 完整三级证据，Step 1.5 [D2] 才放行）
+- ℹ️ 批量交互模式下使用此参数的任务数单列，便于事后补审
+
+**双 skip 禁令 + Emergency-Mode 授权协议**：
+
+- ⛔ **默认禁令**：`--skip-review-reason` + `--skip-external-review-reason` 同时使用 → 非法参数组合（恢复方式：删除其中一个）
+- ⚠️ **例外通道**：Emergency-Mode 需满足全部条件（见 [verification-flow.md Emergency-Mode](references/verification-flow.md)）：
+  - **仅交互模式**（`--headless` 禁止自启用）
+  - 授权来源锚定三选一：(a) 当轮用户 AskUserQuestion 确认（原问答+时间戳入 artifact）/ (b) 外部既有工单引用（创建时间 < 任务 S1）/ (c) detached signature（sigstore/GPG）
+  - 授权证据 artifact：`docs/devdocs/audit/<T-XX>-emergency-auth.md`
+  - Commit 尾注：`Emergency-Mode: true` + `Emergency-Authorized-By` + `Emergency-Anchor-Type` + `Emergency-Rollback-By`（UTC 绝对时间戳）
+  - 状态门禁：同时标 `INT_PENDING + EXT_PENDING`
+  - 超时（`Emergency-Rollback-By` 过期）：`rollback_by_expired=true` → 直转 `EXT_BLOCKED`（硬阻塞）
+  - **自写防护**：Phase 4 调度器/编排器同轮内禁止创建或修改 `Emergency-Authorized-By` 来源记录，只能引用
 
 ### 验证流程概要
 
@@ -433,10 +468,13 @@ Step 1.5 [A] 复核"可复核"的具体判据：证据栏引用的路径/行号�
 - [ ] **Blocker 问题必须修复后才能提交**
 - [ ] **每个 Phase 必须明确声明当前审查角色**
 - [ ] **审查结果必须分级（Blocker/Suggestion）**
-- [ ] 核心逻辑任务（🔴）默认触发
+- [ ] 核心逻辑任务（🔴）Phase 1~3 自审和 Phase 4 外部对抗均默认触发
 - [ ] 修复 Blocker 后必须重新运行验证
-- [ ] **`--skip-review-reason` 仅作用于 🔴 且必须附 reason**（非法参数 → 直接拒绝；详见上方收紧约束）
-- [ ] **跳过 🔴 审查后，reason 写入 Commit 1 `Skip-Review-Reason:` 尾注**，事后补跑审查时间窗默认 7 天
+- [ ] **`--skip-review-reason` 仅作用于 🔴 Phase 1~3 且必须附 reason**（非法参数 → 直接拒绝）
+- [ ] **`--skip-external-review-reason` 仅作用于 🔴 Phase 4 且必须附 reason + 仅交互模式**（非法参数 → 直接拒绝）
+- [ ] **跳过 Phase 1~3 后自动标 `INT_PENDING`**，reason 写入 Commit 1 `Skip-Review-Reason:` 尾注，事后补跑窗默认 7 天
+- [ ] **跳过 Phase 4 后自动标 `EXT_PENDING`**，reason 写入 `Skip-External-Review-Reason:` 尾注；Step 1.5 [D2] 校验三级证据（L1/L2/L3）存在后才放行
+- [ ] **双 skip 禁令**：`--skip-review-reason` + `--skip-external-review-reason` 同时使用 → 非法，除非启用 Emergency-Mode 授权链（仅交互模式，需外部锚定）
 
 ### 依赖解析约束
 
@@ -458,9 +496,9 @@ Step 1.5 [A] 复核"可复核"的具体判据：证据栏引用的路径/行号�
 
 - [ ] **每个任务开始前执行状态检测**（6 步流水线：Step 1 / 1.5 证据复核 / 2~5）
 - [ ] **不相关变更必须警告用户**（AskUserQuestion：stash/忽略/终止）
-- [ ] **存在完成痕迹的任务必须通过 Step 1.5 五项证据复核才允许跳过**：[A] AC 表可复核 / [B] 测试无 skip/todo / [C] trace 已同步 / [D] 对抗式验证证据（🔴 必查，Skip-Review-Reason 不得作为放行）/ [E] 后置测试证据（--skip-trace 不得作为放行）
+- [ ] **存在完成痕迹的任务必须通过 Step 1.5 五项证据复核才允许跳过**：[A] AC 表可复核 / [B] 测试无 skip/todo / [C] trace 已同步 / [D1] Phase 1~3 内置对抗式验证证据（🔴 必查，`Skip-Review-Reason` 不得作为放行）/ [D2] Phase 4 外部对抗审查证据（🔴 必查，`ext_review_state=EXT_REVIEWED` 且 L1/L2/L3 三级证据完备；`Skip-External-Review-Reason` 不得作为放行）/ [E] 后置测试证据（`Skip-Trace-Reason` 不得作为放行）
 - [ ] **Git 历史有 code+doc commit 但任务状态≠已完成**：不再直接跳过，改为进入 Step 1.5 证据复核路径
-- [ ] 旧任务（Fix 4 前完成，无 A/D/E 产物）→ AskUserQuestion：复核续做 / 登记豁免原因 / 终止
+- [ ] 旧任务（前版本完成，无 A/D1/D2/E 产物）→ AskUserQuestion：复核续做 / 登记豁免原因 / 终止
 - [ ] 进行中任务分析续做起点（精确定位：S1~S12 + S1.5，含续做 Agent 判定）
 - [ ] 文档状态 + 证据复核 + Git 历史 + 工作区四重验证
 
@@ -533,10 +571,20 @@ Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）�
 
 关联: F-XXX, AC-XXX
 测试: UT-XXX, IT-XXX 通过
+External-Review-Verdict: <EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED>（Phase 4 触发时必填，含 rounds 和 health_scores）
+External-Review-Channel: <T1 | T2 | T3 | none>（非状态字段，Phase 4 触发时记录实际通道）
+External-Review-Degraded: <true | false>（非状态字段，是否从 T1/T2 降级到 T3）
 Skip-Review-Reason: <仅 🔴 任务使用 --skip-review-reason 时填写；其他情况省略此行>
+Skip-External-Review-Reason: <仅 🔴 任务使用 --skip-external-review-reason 时填写>
 Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
 Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
+Emergency-Mode: <仅双 skip 组合启用 Emergency-Mode 时设为 true，并伴随下方字段>
+Emergency-Authorized-By: <@user-id | ticket://... | signature-ref>
+Emergency-Anchor-Type: <user-confirmation | external-ticket | signed-artifact>
+Emergency-Rollback-By: <UTC 绝对时间戳，双 pending 必须在此之前完成补跑>
 ```
+
+**合法 `External-Review-Verdict` 枚举**：`EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED`。禁用 `CONVERGED` / `DEGRADED` / `SKIPPED` 等非 canonical 词汇。
 
 **type 类型**：feat | fix | refactor | test | docs | chore
 
