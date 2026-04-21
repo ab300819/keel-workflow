@@ -84,13 +84,15 @@ Step 1: 文档状态检测
         ├── 已完成 → Step 1.5（验证证据复核）
         └── 进行中 / 待开发 → Step 2
 
-Step 1.5: 证据复核（仅"已完成"任务）
-        ├── 检查 AC 完备性表是否可复核（S8 产物，存于任务记录或 Commit 1 附加信息）
-        ├── 检查关联测试是否存在且未被标记 skipped/todo（除豁免）
-        ├── 检查 trace（若 ms-sync 已跑则读 04-trace-matrix.md；否则标 trace_pending）
-        ├── 三项全部可复核 → 跳过该任务
-        └── 任一不可复核 → 进入"复核续做"（续做信号表 verification_pending / trace_pending / docs_only_pending 之一）
-            └── 旧任务迁移（AC 表不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
+Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判为"已完成"或 Step 2 检出 code+doc 双提交）
+        ├── [A] AC 完备性表可复核（S8 产物，存于任务记录或 Commit 1 附加信息）
+        ├── [B] 关联测试存在且 skipped/todo=0（除显式豁免）
+        ├── [C] trace 矩阵已同步（ms-sync 产物 04-trace-matrix.md 存在并覆盖该任务）
+        ├── [D] 对抗式验证证据：🔴 任务须有 Phase 3 综合报告落地；若 Commit 1 带 `Skip-Review-Reason:` 尾注且补跑审查未完成 → review_pending
+        ├── [E] 后置测试证据（任一即可）：单任务为 `/ms-test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/ms-test-run --trace` 执行记录；若 Commit 1 带 `Skip-Trace-Reason:` 尾注且补跑未完成 → postcheck_pending
+        ├── A~E 全部可复核 → 跳过该任务
+        └── 任一不可复核 → 进入"复核续做"（续做信号表对应 pending 之一）
+            └── 旧任务迁移（Fix 4 前完成，A/D/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
 
 Step 2: Git 历史检测（任务状态非"已完成"时的兜底）
         ├── git log --grep="(T-XX)" --oneline
@@ -129,6 +131,8 @@ Step 5: 工作区决策
 | 代码提交完成 + 无文档提交（`docs_only_pending`） | 代码提交 | 文档同步 | 编排器 |
 | 任务状态=已完成但 AC 表不可复核（`verification_pending`） | 代码/文档均已提交 | S8 重跑 AC 完备性 | 编排器 |
 | 任务状态=已完成但 trace 未同步（`trace_pending`） | 代码/文档均已提交 | `/ms-sync` 重跑 + trace 校验 | 编排器 |
+| 🔴 任务跳过 S9 后未补跑对抗式验证（`review_pending`，Skip-Review-Reason 已登记但审查窗未闭） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
+| 单任务 `--skip-trace` 后未补跑后置测试（`postcheck_pending`） | 代码/文档均已提交 | `/ms-test-run --affected` 或 `--trace` 补跑 | 编排器 |
 | 旧任务（AC 表不存在，Fix 4 前完成） | 全量历史 | AskUserQuestion：复核 / 豁免 / 终止 | 编排器 |
 
 ### 续做模式行为
