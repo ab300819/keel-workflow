@@ -100,9 +100,8 @@
 | 8 | 自动补充依赖 | 静默记录（不变） |
 | 9 | 全量测试失败 | 记录到交付报告，标记 ⚠️ 警告（不 fail-fast，任务已提交） |
 | 10 | Phase 4 外部对抗审查 Blocker | 任务内重试 ≤`max_rounds`（默认 3）次，耗尽则 `EXT_BLOCKED` → fail-fast 终止批量 |
-| 11 | Phase 4 三级降级链全挂（T1+T2+T3 均 status=failed） | `EXT_UNRESOLVED` → fail-fast，交付报告提示"检查 codex 环境（codex CLI / codex-mcp 可用性）" |
-| 12 | Phase 4 breaker_reason=safety_limit | `EXT_BLOCKED` → fail-fast（不走 Emergency 通道，--headless 禁止自启用 Emergency） |
-| 13 | Phase 4 降级到 T3 通道 | `EXT_UNRESOLVED` → fail-fast（T3 同进程独立上下文非真外部，--headless 不接受 T3 作为放行） |
+| 11 | Phase 4 T1/T2 全失败（codex CLI / codex-mcp 均不可用或 status=failed） | `EXT_UNRESOLVED` → fail-fast，交付报告提示"检查 codex 环境（codex CLI / codex-mcp 可用性）" |
+| 12 | Phase 4 breaker_reason=safety_limit | `EXT_BLOCKED` → fail-fast |
 | 14 | 🔴 `--skip-external-review-reason` 登记 | **--headless 下禁止使用**（`--skip-external-review-reason` 只作用于交互模式；--headless 下传入该参数视为非法并 fail-fast）。交互模式：`EXT_PENDING` + 记录到交付报告"待补跑 Phase 4"清单 |
 
 ## 安全不变量
@@ -116,8 +115,8 @@
 7. **断言数量不减** — 修复后断言总数 ≥ 修复前
 8. **工作区洁净校验** — 每任务 Commit 2 后 `git status --porcelain` 必须为空，非空则 fail-fast
 9. **漂移防护** — 禁止自动猜测补齐缺失内容，统一 fail 并记录
-10. **Phase 4 外部对抗审查**（🔴 任务必须）— `ext_review_state` ≠ `EXT_REVIEWED` → fail-fast 不提交；`--headless` 下任何 `EXT_PENDING`/`EXT_UNRESOLVED`/`EXT_BLOCKED` 均触发 fail-fast，**不允许 Emergency-Mode 自启用**
-11. **三级证据协议** — Phase 4 必须产出完整 L1 尾注 + L2 `docs/devdocs/audit/<T-XX>-external-review.yaml` + L3 `docs/devdocs/audit/<T-XX>-external-review-raw/<round-N>.txt`，任一缺失 → 状态降级为 `EXT_UNRESOLVED` → fail-fast
+10. **Phase 4 外部对抗审查**（🔴 任务必须）— `ext_review_state` ≠ `EXT_REVIEWED` → fail-fast 不提交；`--headless` 下任何 `EXT_PENDING`/`EXT_UNRESOLVED`/`EXT_BLOCKED` 均触发 fail-fast
+11. **Phase 4 证据（L2 权威）** — Phase 4 必须产出 L2 yaml（`docs/devdocs/audit/<T-XX>-external-review.yaml`）；L2 缺失或不可读 → `EXT_UNRESOLVED` → fail-fast。L1 尾注由 L2 派生（Commit 1 生成时读 L2 填充），L3 原始输出为可选调试 artifact 不参与门禁
 
 ## 重试规范
 
@@ -180,7 +179,7 @@ if not all_passed:
 - 总任务数: 2
 - Blocker 已修复: 3
 - Suggestion 已跳过: 5
-- Phase 4 外部对抗调用次数: 2（T1: 1, T2: 1, T3: 0）
+- Phase 4 外部对抗调用次数: 2（T1: 1, T2: 1）
 - EXT_PENDING 待补跑: 0（`--skip-external-review-reason` 单列统计）
 - EXT_UNRESOLVED: 0 | EXT_BLOCKED: 0
 - 总耗时: 由编排器记录

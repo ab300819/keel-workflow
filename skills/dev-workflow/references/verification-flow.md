@@ -205,13 +205,52 @@ Phase 3 综合报告汇总 Phase 1 + Phase 2 + Phase 2-UI（如有）的全部�
 
 ---
 
+## AC 完备性（S8 权威定义）
+
+### AC 完备性表模板（S8 必须输出）
+
+```markdown
+| AC 编号 | AC 类型 | 证据类型 | 位置 | 判定 |
+|---------|---------|---------|------|------|
+| AC-001 | 行为型 | UT 断言 | tests/user.spec.ts:42 `it('拒绝空密码')` | ✅ 满足 |
+| AC-002 | 行为型 | IT 断言 + 实现代码 | tests/auth.int.ts:15, src/auth.ts:88 | ✅ 满足 |
+| AC-003 | 视觉型 | UI 清单 + --ui --live 截图 | ui-checklist §2-UI.2, artifacts/T-03-disabled.png | ✅ 满足 |
+| AC-004 | 结构型 | 实现代码 | src/types.ts:42（新增 `UserRole` 枚举）| ✅ 满足 |
+```
+
+### AC 类型分类（S8 必须为每条 AC 标注）
+
+| AC 类型 | 定义 | 典型例子 |
+|---------|------|---------|
+| **行为型** | 描述可观察的运行时行为（输入→输出、状态迁移、副作用）| "点击按钮后 API 返回 200"、"空密码时拒绝登录" |
+| **视觉型** | 描述 UI 外观或交互状态 | "disabled 态显示灰色"、"hover 态显示 tooltip" |
+| **结构型** | 描述代码/数据结构本身（类型定义、schema、配置项）| "导出 `UserRole` 枚举"、"数据库加 `deleted_at` 列" |
+
+### 证据类型 × AC 类型分级矩阵
+
+| 证据类型 | 行为型 AC | 视觉型 AC | 结构型 AC |
+|---------|-----------|-----------|-----------|
+| `UT 断言` / `IT 断言` / `E2E 断言` | ✅ 可作唯一证据 | ⚠️ 可作唯一证据（需覆盖状态） | ✅ 可作唯一证据 |
+| `--ui --live 截图` / `--ui --live trace` | ❌ 不可作唯一证据 | ✅ 可作唯一证据 | ❌ 不适用 |
+| `UI 清单`（未配断言/live） | ❌ 禁止 | ⚠️ 仅作辅助，必须配断言或 live | ❌ 不适用 |
+| `实现代码`（无测试） | ❌ **禁止作唯一证据**（至少配一条测试） | ❌ 禁止 | ✅ 可作唯一证据 |
+| `显式豁免（附原因）` | ⚠️ 仅限枚举白名单：第三方服务不可测 / 灰度功能关闭 / 平台 API 限制；每条豁免必须登记 artifact 路径或外部票据 | ⚠️ 同左 + **自动化成本过高（感知类视觉项）**（UI 特例，见 [ui-quality-checklist.md](ui-quality-checklist.md#blocker-项证据要求)，**不得**用于交互类 Blocker） | ⚠️ 同左 |
+
+⛔ 违反分级表（例如行为型 AC 仅用"实现代码"做证据）→ S8 直接判失败，不得进入 S9/Commit 1（恢复方式：补一条 UT/IT/E2E 断言或走豁免枚举）。
+
+### Step 1.5 [A] 可复核判据
+
+证据栏引用的路径/行号存在、测试名在测试文件中能定位、artifact 文件可打开、AC 类型与证据类型符合分级表。任一不满足 → AC 表不可复核 → `verification_pending`。
+
+---
+
 ## 对抗式审查强化
 
 ### 声称 vs 实际验证
 
 > **已前移到 S8（全层级必做）**，不再是 --review 触发的增强项。S9 对抗式验证**复用** S8 产出的"AC 完备性表 + 声称 vs 实际对比表"，不再单独生成。
 >
-> 详见 [execution-flow.md](execution-flow.md) S8 步骤和 [SKILL.md](../SKILL.md#完成检查约束) AC 完备性表模板。
+> 详见 [execution-flow.md](execution-flow.md) S8 步骤和本文件上方 "AC 完备性" 章节。
 
 机制原文（保留以便 S9 复用格式）：
 
@@ -373,39 +412,37 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 │             { prompt: "<brief>", uncommitted: true }       │
 │         retry 轮询 → yaml-summary                          │
 │                                                            │
-│  4. T3 Task 子 Agent（T1/T2 全失败时兜底）                 │
-│     └── 起独立 prompt（无 AskUserQuestion 权限）           │
-│         警告：T3 不是真外部，自动标 EXT_UNRESOLVED         │
-│                                                            │
-│  5. 收敛循环（自动，无 AskUserQuestion）                   │
-│     ├── blocker=[] → 收敛，导出 L1/L2/L3 artifact          │
+│  4. 收敛循环（自动，无 AskUserQuestion）                   │
+│     ├── blocker=[] → 收敛，导出 L2 yaml，可选落 L3          │
 │     ├── blocker!=[] 且 round < max_rounds → 自动构建下一轮 │
 │     │      brief（嵌入修复指引 + 前轮 findings），继续     │
 │     ├── blocker!=[] 且 round==max_rounds → breaker_reason  │
 │     │      =safety_limit，状态 EXT_BLOCKED                 │
-│     └── 任何步骤 status=failed / 降级链全挂 → 状态         │
-│             EXT_UNRESOLVED                                  │
+│     └── 任何步骤 status=failed / T1/T2 全失败 → 状态       │
+│             EXT_UNRESOLVED（headless 立即 fail-fast）      │
 │                                                            │
-│  6. 产出                                                    │
-│     ├── L1: Commit 1 尾注（External-Review-Verdict 等）   │
-│     ├── L2: docs/devdocs/audit/<T-XX>-external-review.yaml │
-│     └── L3: docs/devdocs/audit/<T-XX>-external-review-raw/ │
-│           <round-N>.txt（原样 pass-through，每轮一个文件） │
+│  5. 产出（L1 由 L2 派生生成）                               │
+│     ├── L1 尾注：写 Commit 1 时从 L2 读取派生              │
+│     ├── L2 权威：docs/devdocs/audit/<T-XX>-external-review │
+│     │            .yaml（Step 1.5 [D2] 唯一消费源）         │
+│     └── L3 可选调试：audit/<T-XX>-external-review-raw/     │
+│           <round-N>.txt（不参与门禁）                       │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
 **默认轮次**：`max_rounds=3`（dev-workflow 嵌入收紧值）。`--external-rounds N` 覆盖上限 5（对齐 /adversarial-review 自身默认）。
 
-### 三级通道 `external_review_channel_used`（非状态字段）
+**无 T3 兜底**：dev-workflow embedded-headless 模式**仅采用 T1/T2**真外部通道，不复用 /adversarial-review skill 的 T3 Task 子 Agent（T3 是同进程独立上下文，不满足"独立审查"承诺）。T1/T2 全失败 → `EXT_UNRESOLVED` → --headless 立即 fail-fast；交互模式由用户选择手动补跑或终止。
 
-| 通道 | 触发调用 | 语义 | 默认对应状态 |
-|-----|---------|------|-------------|
-| `T1` | codex CLI | 真正外部独立审查（不同进程/不同模型） | `EXT_REVIEWED`（当 status=success ∧ blockers=[] ∧ 证据完备） |
-| `T2` | codex-mcp | 真正外部独立审查 | 同上 |
-| `T3` | Task 子 Agent | **同进程独立上下文**，非真外部，仅兜底 | 自动 `EXT_UNRESOLVED`（覆盖其他判定，除非 Emergency-Mode 接受） |
+### 双通道 `external_review_channel_used`（非状态字段）
 
-🔴 任务 Phase 4 **必须落到 T1 或 T2 通道并达成 `EXT_REVIEWED`** 才能放行。
+| 通道 | 触发调用 | 语义 |
+|-----|---------|------|
+| `T1` | codex CLI | 真正外部独立审查（不同进程/不同模型），首选 |
+| `T2` | codex-mcp | 真正外部独立审查，T1 不可用时降级 |
+
+🔴 任务 Phase 4 **必须落到 T1 或 T2 通道并达成 `EXT_REVIEWED`** 才能放行；T1/T2 全失败 → `EXT_UNRESOLVED`。
 
 ### Canonical state enum `EXT_*`
 
@@ -413,20 +450,17 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 
 | 状态 ID | 触发条件 | 优先级 | 唯一恢复动作 | 放行 |
 |---------|---------|--------|-------------|------|
-| `EXT_REVIEWED` | T1/T2 + status=success + blockers=[] + 证据完备 | 4（终态） | —（无需恢复） | ✅ |
-| `EXT_PENDING` | `--skip-external-review-reason` 登记主动跳过；或 T3 经 Emergency-Mode 接受 | 3 | 事后补跑 Phase 4，产出 L1/L2/L3 完整证据 | ❌ |
-| `EXT_UNRESOLVED` | 通道降级到 T3 / T1 T2 T3 全部 status!=success / 证据协议 L1/L2/L3 任缺一 | 2 | 交互模式 AskUserQuestion 接受降级（需 Emergency）或手动补跑；headless fail-fast | ❌ |
-| `EXT_BLOCKED` | `breaker_reason=safety_limit`（达 max_rounds 未收敛）或 Emergency 超时（`rollback_by_expired=true`） | 1（最高） | 交互模式用户可解除 max_rounds += 3 重跑；headless fail-fast；超时终态须重新启动完整 Phase 4 | ❌ |
+| `EXT_REVIEWED` | T1/T2 + status=success + blockers=[] + L2 yaml 可读 | 4（终态） | —（无需恢复） | ✅ |
+| `EXT_PENDING` | `--skip-external-review-reason` 登记主动跳过 | 3 | 事后补跑 Phase 4，产出 L2 yaml | ❌ |
+| `EXT_UNRESOLVED` | T1/T2 全失败 / L2 yaml 缺失或不可读 | 2 | 交互模式 AskUserQuestion 手动补跑或终止；headless fail-fast | ❌ |
+| `EXT_BLOCKED` | `breaker_reason=safety_limit`（达 max_rounds 未收敛） | 1（最高） | 交互模式用户可解除 max_rounds += 3 重跑；headless fail-fast | ❌ |
 
 ### 非状态字段（派生输入）
 
 本身不是状态枚举，但作为 `EXT_*` 判定的派生输入参与计算：
-- `external_review_channel_used: T1 | T2 | T3 | none`——实际生效的调用通道
-- `degraded_to_t3: bool`——是否从 T1/T2 降级到 T3
-- `emergency_accepted: bool`——T3 是否经 Emergency-Mode 合法授权接受
-- `rollback_by_expired: bool`——`Emergency-Rollback-By` 时间戳是否已过
+- `external_review_channel_used: T1 | T2 | none`——实际生效的调用通道
 
-同时写入 L1 尾注（非状态字段区）和 L2 yaml 摘要的 `summary.details`。
+此字段同时写入 L1 尾注（非状态字段区）和 L2 yaml 摘要的 `summary.details`。
 
 ### 状态判定真值表
 
@@ -434,59 +468,51 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 
 | 优先级 | 输入组合 | → `ext_review_state` | 说明 |
 |-------|---------|----------------------|------|
-| 1 | `breaker_reason=safety_limit` | `EXT_BLOCKED` | 熔断终态，Emergency 授权不能绕过 |
-| 2 | `rollback_by_expired=true` | `EXT_BLOCKED` | Emergency 超时终态，**同时清除 `INT_PENDING` / `EXT_PENDING`**，Step 1.5 [D2] 识别为硬阻塞 |
-| 3 | 证据协议 L1/L2/L3 任缺一或不一致（Phase 4 运行时产出缺失 / Step 1.5 [D2] 续做校验失败） | `EXT_UNRESOLVED` | **必须优先于 `EXT_REVIEWED` 判定**——无可复核证据不得放行 |
-| 4 | `--skip-external-review-reason="..."` 登记 | `EXT_PENDING` | 主动跳过，待补跑 |
-| 5 | `channel=T3 ∧ emergency_accepted=true` | `EXT_PENDING` | **覆盖** 规则 6/8——Emergency 合法接受 T3 时不看 status/blockers |
-| 6 | `channel=T3 ∧ emergency_accepted=false` | `EXT_UNRESOLVED` | T3 默认不放行 |
-| 7 | `channel∈{T1,T2} ∧ status=success ∧ blockers=[]`（且规则 3 未命中） | `EXT_REVIEWED` | 外审通过，**唯一**放行分支 |
-| 8 | `channel∈{T1,T2} ∧ (status!=success ∨ blockers!=[])` | `EXT_UNRESOLVED` | Phase 4 单轮未通过（已达 max_rounds 由规则 1 捕获） |
+| 1 | `breaker_reason=safety_limit` | `EXT_BLOCKED` | 熔断终态 |
+| 2 | L2 yaml 缺失或不可读（Phase 4 运行时产出失败 / Step 1.5 [D2] 续做校验失败） | `EXT_UNRESOLVED` | **必须优先于 `EXT_REVIEWED` 判定**——无可复核证据不得放行 |
+| 3 | `--skip-external-review-reason="..."` 登记 | `EXT_PENDING` | 主动跳过，待补跑 |
+| 4 | `channel∈{T1,T2} ∧ status=success ∧ blockers=[]`（且规则 2 未命中） | `EXT_REVIEWED` | 外审通过，**唯一**放行分支 |
+| 5 | `channel∈{T1,T2} ∧ (status!=success ∨ blockers!=[])` 或 T1/T2 全失败 | `EXT_UNRESOLVED` | Phase 4 单轮未通过（已达 max_rounds 由规则 1 捕获） |
 | fallback | 以上均不命中（应不可达） | `EXT_UNRESOLVED` | 安全阀，同时产生诊断日志 |
 
 **互斥性保证**：规则按优先级**唯一命中**一条（高优先级短路低优先级），任一输入组合有且仅有一个 `EXT_*` 映射。
 
 **优先级冲突澄清**：
-- 规则 5（T3 + Emergency 接受）优先于规则 6/8，覆盖 "T3 默认 UNRESOLVED" 和 "status!=success → UNRESOLVED"
-- 规则 1（safety_limit）和规则 2（超时）是硬终态，优先于 Emergency 授权——Emergency 不能绕过熔断或超时
-- 规则 3（证据缺失）优先于规则 7（EXT_REVIEWED）——防止"通道 T1/T2 + status=success + blockers=[] + 证据缺失"被误判为 `EXT_REVIEWED`
+- 规则 1（safety_limit）是硬终态，优先于其他规则
+- 规则 2（L2 证据缺失）优先于规则 4（EXT_REVIEWED）——防止"T1/T2 + status=success + blockers=[] + L2 缺失"被误判为 `EXT_REVIEWED`
 
-### 证据三级协议
+### 证据协议（L2 为权威源）
 
-| 层级 | 存储位置 | 内容 | 权威性 |
-|------|---------|------|-------|
-| L1 尾注 | Commit 1 message trailer | `External-Review-Verdict: EXT_*` + rounds + health_scores + method | 快速扫描，不含证据 |
-| L2 摘要 | `docs/devdocs/audit/<T-XX>-external-review.yaml` | yaml-summary-v1 完整摘要（blockers, findings, rounds, fallback_events, primary_method, effective_method） | 结构化证据，Step 1.5 [D2] 主要消费源 |
-| L3 原始 | `docs/devdocs/audit/<T-XX>-external-review-raw/<round-N>.txt` | 每轮 codex 原始 stdout/json 输出 | **原样保留强制要求**：Phase 4 调度器必须在每轮结束时 pass-through 到主编排器可访问的 artifact，不得仅存调度器本地日志 |
+| 层级 | 存储位置 | 权威性 | 生成时机 |
+|------|---------|-------|---------|
+| L2 摘要（**唯一权威**） | `docs/devdocs/audit/<T-XX>-external-review.yaml` | **Step 1.5 [D2] 唯一消费源**，schema 见下方"L2 最小必需 schema" | Phase 4 调度器每轮结束产出 |
+| L1 尾注（**派生**） | Commit 1 message trailer | L1 由 L2 自动派生（`External-Review-Verdict` 值直接读自 L2 的 `ext_review_state`，`health_scores` / rounds / channel 等也从 L2 读取），不作为独立校验来源 | Commit 1 生成时读 L2 填充 |
+| L3 原始（**可选调试**） | `docs/devdocs/audit/<T-XX>-external-review-raw/<round-N>.txt` | 调度器保存每轮 codex 原始输出以便人工 debug，**不是门禁要求**——缺失或损坏不影响状态判定 | Phase 4 调度器可选产出 |
 
-### T3 状态迁移链（Emergency-Mode 衔接）
+**L2 最小必需 schema**（Phase 4 调度器必须产出；缺键视为 L2 无效）：
 
-```
-T3 触发
-  └── 初始状态：EXT_UNRESOLVED
-      ├── --headless：直接 fail-fast（不走 Emergency 通道）
-      └── 交互模式
-          ├── 用户不接受降级 → 保持 EXT_UNRESOLVED（手动补跑 T1/T2 或终止）
-          └── 用户经 Emergency-Mode 合法授权接受（满足下方锚定三选一）
-              └── 状态覆盖为 EXT_PENDING + 同时标 INT_PENDING + EXT_PENDING（双 pending 挂起）
-                  └── 在 Emergency-Rollback-By 时间戳前补跑 T1/T2
-                      ├── 补跑成功 → EXT_REVIEWED（清除 pending）
-                      ├── 补跑失败 → EXT_BLOCKED
-                      └── 超时未补跑 → rollback_by_expired=true → EXT_BLOCKED（规则 2）
+```yaml
+ext_review_state: EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED   # 必需：canonical enum 之一
+status: success | failed | partial | interrupted                              # 必需
+blockers: []                                                                  # 必需（数组，可空）
+rounds: N                                                                     # 必需（整数 ≥ 1）
+health_scores: [N, N, ...]                                                    # 必需（长度 == rounds）
+external_review_channel_used: T1 | T2 | none                                  # 必需
+breaker_reason: safety_limit | null                                           # 必需（可为 null）
+findings: []                                                                  # 可选
+fallback_events: []                                                           # 可选
 ```
 
-### Emergency-Mode 授权协议（双 skip 例外通道）
+**Step 1.5 [D2] 一致性校验**（对齐上表 schema）：
+- L2 yaml 文件存在且可被 YAML 解析
+- 所有**必需键**均存在（`ext_review_state` / `status` / `blockers` / `rounds` / `health_scores` / `external_review_channel_used` / `breaker_reason`）
+- `ext_review_state` 属于 canonical enum 的 4 个值之一
+- `health_scores` 长度等于 `rounds`
+- `blockers` 为数组类型
+- 任一失败 → `EXT_UNRESOLVED`（真值表规则 2）
 
-**默认禁令**：`--skip-review-reason` + `--skip-external-review-reason` 同时使用 → ⛔ 非法参数组合。
+不再校验 L1↔L2 一致性（L1 由 L2 派生，结构上同源）或 L3 存在性（L3 已降为可选）。
 
-**例外条件**（全部满足缺一即禁令生效）：
+### 双 skip 禁令
 
-| 条件 | 要求 |
-|------|------|
-| 触发模式 | **仅交互模式**（`--headless` 禁止自启用） |
-| 授权来源锚定（三选一） | (a) **当轮用户 AskUserQuestion 确认**：原始问答 + UTC 时间戳写入 artifact 的 `user_confirmation:` 字段；或 (b) **外部既有工单**：`Emergency-Authorized-By: ticket://<url>`，Step 1.5 [D2] 校验工单创建时间 < 任务 S1 起始时间；或 (c) **签名工件**：detached signature（sigstore/GPG），签名者+时间可离线校验 |
-| 证据 artifact | `docs/devdocs/audit/<T-XX>-emergency-auth.md` 必须存在且包含：理由、影响范围、风险评估、补跑计划、上方锚定证据 |
-| Commit 尾注 | `Emergency-Mode: true` + `Emergency-Authorized-By` + `Emergency-Anchor-Type` + `Emergency-Rollback-By`（UTC 绝对时间） |
-| 状态门禁 | 同时标 `INT_PENDING + EXT_PENDING`，不得进入"已完成可跳过"态 |
-| 超时行为 | `rollback_by_expired=true` → 真值表规则 2 转 `EXT_BLOCKED` + 清 pending；Step 1.5 [D2] 硬阻塞 |
-| 自写防护 | Phase 4 调度器/编排器**同轮禁止创建或修改** `Emergency-Authorized-By` 来源记录，只能引用既有记录 |
+`--skip-review-reason` + `--skip-external-review-reason` 同时使用 → ⛔ 非法参数组合（恢复方式：删除其中一个）。不设例外通道——实际遇到需要跳过 Phase 1~3 和 Phase 4 的场景极少，且任何"例外通道"都会被滥用为常规路径；与其用复杂的 Emergency-Mode 授权链软化禁令，不如让两个 skip 参数互斥，遇到真需要时手动在 diff 上跑一次 T1/T2 外审做证据补跑。

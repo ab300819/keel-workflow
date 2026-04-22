@@ -10,24 +10,29 @@
    - 适用场景：用户直接调用 `/adversarial-review` 做交互式审查
 
 2. **dev-workflow embedded-headless 模式**（`/ms-dev-workflow` S9 Phase 4）
-   - 由 dev-workflow 编排器自带的 Phase 4 调度器复用本文档三级降级链 + 熔断协议
+   - 由 dev-workflow 编排器自带的 Phase 4 调度器复用本文档 **T1/T2 双通道** + 熔断协议
+   - **不使用 T3 Task 子 Agent 兜底**——T3 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺；T1/T2 全失败直接 fail-fast
    - **禁用** AskUserQuestion（避免子 Agent 阻塞），自动收敛循环（blocker!=[] 且 round < max_rounds → 自动构建下一轮 brief）
    - 状态名遵循 dev-workflow 的 canonical enum `EXT_REVIEWED / EXT_PENDING / EXT_UNRESOLVED / EXT_BLOCKED`（非本 skill 的 verdict/rounds 结构）
    - 默认 max_rounds=3（dev-workflow 嵌入收紧值），可由 `--external-rounds N` 覆盖到 5
    - 详见 `skills/dev-workflow/references/verification-flow.md` Phase 4 章节
 
-两种模式共享本文档的 T1/T2/T3 调用契约和 yaml-summary-v1 字段语义，但**协调层互不依赖**：embedded-headless 模式不经过 skill S4/S5/S6 流程，直接消费外部审查的底层结果。
+两种模式共享本文档的 T1/T2 调用契约和 yaml-summary-v1 字段语义（skill multi-turn 模式还另外使用 T3 作为兜底），**协调层互不依赖**：embedded-headless 模式不经过 skill S4/S5/S6 流程，直接消费外部审查的底层结果。
 
 ## 概述
 
 对抗审查使用外部 LLM 作为独立审查者。三级降级链：codex CLI → codex-mcp → Task 子 Agent。
+
+> **适用范围限定**：以下三级链仅适用于 adversarial-review skill 的 **multi-turn 模式**。`ms-dev-workflow` S9 Phase 4 embedded-headless 模式**只消费 T1/T2 子集，不执行 T3 分支**——T3 Task 子 Agent 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺。本文档"降级探测流程"和"T3"相关段落仅在 skill multi-turn 模式下生效。
 
 > **设计说明**：T1 直接使用 codex CLI（非 companion 脚本），因为 `CLAUDE_PLUGIN_ROOT` 在 skill 上下文中不可用。
 > adversarial-review skill 对外部审查输出做二次加工（解析、映射、F-XXX 合成、收敛评分），是 skill 层面的有意架构选择；dev-workflow embedded-headless 模式下则由 Phase 4 调度器自行生成摘要和状态，不经过本 skill 的二次加工层。
 
 ---
 
-## 降级探测流程
+## 降级探测流程（skill multi-turn 模式专用）
+
+> dev-workflow embedded-headless 模式不走本章 T3 分支，T1/T2 全失败直接 fail-fast。
 
 ### 首选通道探测（首次调用时执行）
 

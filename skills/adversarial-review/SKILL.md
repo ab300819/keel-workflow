@@ -422,7 +422,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 |------|-----------|------|
 | 系统设计审查 | `/ms-system-design` | 设计完成后调用对抗审查验证方案可行性 |
 | 开发后代码审查 | `/ms-dev-workflow` | 开发完成后调用进行独立代码审查 |
-| dev-workflow 内嵌契约复用 | `/ms-dev-workflow` S9 Phase 4 | **底层 `references/external-reviewer-integration.md` 契约被 dev-workflow 编排器以 `embedded-headless` 模式复用**（仅调用 T1/T2/T3 三级降级链和熔断协议；不走本 skill 的 multi-turn S4/S5/S6 协调流程，避免子 Agent 中 AskUserQuestion 阻塞）。两种模式并存：本 skill 仍可被用户独立调用做交互式审查 |
+| dev-workflow 内嵌契约复用 | `/ms-dev-workflow` S9 Phase 4 | **底层 `references/external-reviewer-integration.md` 契约被 dev-workflow 编排器以 `embedded-headless` 模式复用**（仅调用 T1/T2 双通道 + 熔断协议；**不使用 T3 Task 子 Agent 兜底**——T3 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺；不走本 skill 的 multi-turn S4/S5/S6 协调流程，避免子 Agent 中 AskUserQuestion 阻塞）。两种模式并存：本 skill 仍可被用户独立调用做交互式审查 |
 | 功能评审 | `/ms-feature` | 功能迭代中对设计方案进行外部挑战 |
 | 验证互补 | `/ms-verify` | ms-verify 检查对齐，adversarial-review 挑战正确性 |
 | 质量标准参考 | `/code-quality` | 代码审查时参考 MTE 原则 |

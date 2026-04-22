@@ -97,7 +97,7 @@
 | 8. 检查验收标准（AC 完备性表） | 编排器 | ■ | ■ | ■ | ■ |
 | 9a. 前置验证（ms-verify） | 编排器 | ■ --impl | ■ --impl | ■ --impl + --ui --impl（有设计稿，两次调用）/ 无设计稿降级 | ■ --impl --trace |
 | 9 / Phase 1~3（内置角色演绎对抗式验证） | 编排器 | ■ 自动 | □ --review | □ --review | ○ --review |
-| 9 / Phase 4（外部对抗审查，embedded-headless） | 编排器调度 T1/T2/T3 | ■ 自动（必须落 T1/T2 + EXT_REVIEWED） | □ --external-review | □ --external-review | ○ --external-review |
+| 9 / Phase 4（外部对抗审查，embedded-headless） | 编排器调度 T1 → T2 | ■ 自动（必须落 T1/T2 + EXT_REVIEWED） | □ --external-review | □ --external-review | ○ --external-review |
 | 10. 更新自描述 | 编排器 | ■ | ■ | ■ | ■ |
 | 11. 提交决策+原子提交 | 编排器 | ■ | ■ | ■ | ■ |
 
@@ -249,12 +249,12 @@ S4 执行时，在清单基础上补全可运行断言。S4 跳过时，清单�
    - Phase 2-UI: UI 质量自查（仅 🟢，ui-quality-checklist）
    - Phase 3: 综合报告，处理 Blocker
 6.5. **对抗式验证 Phase 4：外部对抗审查**（■🔴 默认自动 / □🟡🟢--external-review / ○⚪--external-review；产出 `ext_review_state`）：
-   - 调度器调用三级通道 T1 codex CLI → T2 codex-mcp → T3 Task 子 Agent（T3 自动 `EXT_UNRESOLVED`）
+   - 调度器调用双通道 T1 codex CLI → T2 codex-mcp（T1/T2 全失败 → `EXT_UNRESOLVED` → --headless fail-fast，不设子 Agent 兜底）
    - 自动收敛循环（`max_rounds=3`，`--external-rounds N` 覆盖上限 5）
    - 按状态真值表映射到 `EXT_REVIEWED / EXT_PENDING / EXT_UNRESOLVED / EXT_BLOCKED`
-   - 🔴 任务必须落 T1/T2 + 证据完备 + `EXT_REVIEWED` 才放行
+   - 🔴 任务必须落 T1/T2 + L2 yaml 可读 + `EXT_REVIEWED` 才放行
    - 非 `EXT_REVIEWED`（任何状态）→ ⛔ 阻塞 Commit 1
-   - 详细契约、真值表、证据三级协议、Emergency-Mode 授权 见 [verification-flow.md Phase 4 章节](verification-flow.md)
+   - 详细契约、真值表、证据协议（L2 权威） 见 [verification-flow.md Phase 4 章节](verification-flow.md)
 7. **更新自描述**：运行 /code-self-describe --update
 8. **提交决策**：
    - **前置门禁**：`int_review_state=INT_REVIEWED`（或未触发时为空）∧ `ext_review_state=EXT_REVIEWED`（或未触发时为空）才允许进入下面任一模式；任一为 `*_PENDING` / `*_UNRESOLVED` / `*_BLOCKED` → ⛔ 阻塞提交（恢复动作见各自 canonical state 定义）
@@ -282,16 +282,11 @@ S4 执行时，在清单基础上补全可运行断言。S4 跳过时，清单�
 关联: F-XXX, AC-XXX
 测试: UT-XXX, IT-XXX 通过
 External-Review-Verdict: <Phase 4 触发时必填：EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED；含 rounds 和 health_scores>
-External-Review-Channel: <Phase 4 触发时必填：T1 | T2 | T3 | none（非状态字段）>
-External-Review-Degraded: <Phase 4 触发时必填：true | false（非状态字段）>
+External-Review-Channel: <Phase 4 触发时必填：T1 | T2 | none（非状态字段）>
 Skip-Review-Reason: <仅 🔴 任务使用 --skip-review-reason 时填写；其他情况省略此行>
 Skip-External-Review-Reason: <仅 🔴 任务使用 --skip-external-review-reason 时填写>
 Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
 Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
-Emergency-Mode: <双 skip 组合启用 Emergency-Mode 时设为 true，并伴随下方三字段>
-Emergency-Authorized-By: <@user-id | ticket://... | signature-ref>
-Emergency-Anchor-Type: <user-confirmation | external-ticket | signed-artifact>
-Emergency-Rollback-By: <UTC 绝对时间戳>
 ```
 
 **type 类型**：feat | fix | refactor | test | docs | chore
