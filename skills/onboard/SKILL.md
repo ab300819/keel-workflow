@@ -26,6 +26,7 @@ metadata:
 /ms-onboard              → 智能检测（询问读或写）
 /ms-onboard --read       → 只读取现有文档，不修改
 /ms-onboard --update     → 强制重新扫描更新
+/ms-onboard --realign    → 规范升级回扫：00-context.md 按当前 `context.v1` 查漏补缺（不重扫项目）。复用 [共享契约](../pipeline/references/realign.md)；推荐用户入口 `/ms-pipeline realign`
 ```
 
 | 模式 | 读取文档 | 扫描项目 | 写入文件 | 适用场景 |
@@ -123,6 +124,16 @@ metadata:
 此文件设计为可直接复制给新 AI 工具作为初始上下文。
 
 ## 文档结构
+
+**文件头必填 frontmatter**（realign 扫描依据）：
+
+```yaml
+---
+generated_by: ms-onboard
+spec_version: context.v1
+generated_at: 2026-04-23T10:30:00+08:00
+---
+```
 
 ```markdown
 # 项目上下文：<项目名称>

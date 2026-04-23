@@ -33,6 +33,10 @@ metadata:
 - 用户要迁移或升级已有 DevDocs 文档
 - 项目缺少文档，需要从代码逆向生成
 
+## 与 realign 的边界
+
+retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmatter + `spec_version` 字段为主判据**：文档顶部 YAML frontmatter 存在且含有效 `spec_version` → 信任元数据，归 **realign**（`/ms-pipeline realign`），无论正文是否缺 F-XXX 编号（编号补齐由 realign 内 additive 差距处理）；反之（无 frontmatter / 无 `spec_version` / 无 DevDocs）归 **retrofit**。详见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 ms-retrofit 的边界。
+
 ## 工作流程
 
 ```

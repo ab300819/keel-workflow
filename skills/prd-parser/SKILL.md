@@ -27,6 +27,8 @@ metadata:
 
 **不适合?** 需求已明确→`/ms-requirements`，想头脑风暴→`/ms-prd`
 
+**Realign**：`/ms-prd-parser --realign` 按当前 `chunk.v1` 扫描 chunk frontmatter/分段字段差距补齐，不重新解析 PRD。共享契约见 [../pipeline/references/realign.md](../pipeline/references/realign.md)；推荐 `/ms-pipeline realign`。
+
 ## 语言规则
 
 - 支持中英文提问
@@ -190,8 +192,18 @@ metadata:
 
 文件路径：`docs/prd/<prd_id>/chunks/<编号>-<主题>.md`（legacy: `docs/prd/chunks/<编号>-<主题>.md`）
 
+**Frontmatter 必填**：生成 chunk 时必须在 frontmatter 顶部包含以下 3 个 realign 元数据字段（与 A 类模板同级约束；缺字段会被 `/ms-verify --schema-drift` 判为 `legacy`）：
+- `generated_by: ms-prd-parser`
+- `spec_version: chunk.v1`
+- `generated_at: <ISO-8601 timestamp>`
+
 ```markdown
 ---
+# realign 元数据（schema-drift 扫描依据 - 必填）
+generated_by: ms-prd-parser
+spec_version: chunk.v1
+generated_at: 2026-04-23T10:30:00+08:00
+# 业务字段
 id: FR-09
 title: 用户认证
 type: FR

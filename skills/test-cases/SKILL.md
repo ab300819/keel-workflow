@@ -90,6 +90,7 @@ metadata:
 
 - `/ms-test-cases` → 标准模式（逐步确认）
 - `/ms-test-cases --fast` → 跳过逐步确认，直接生成，仅最终确认
+- `/ms-test-cases --realign[=scope]` → 规范升级回扫（结构/字段差距补齐；缺失测试类型传递给 dev-workflow）。详见 [references/realign.md](references/realign.md)；推荐 `/ms-pipeline realign`
 
 ### `--fast` 模式
 
@@ -306,6 +307,7 @@ docs/devdocs/
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] 测试用例以文档形式（表格/文字）描述，不生成 `.test.ts`/`.spec.ts` 等代码文件
 - [ ] 编码和测试编写由 `/ms-dev-workflow` 负责，本 Skill 不涉及
+- [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/test-cases-template.md](templates/test-cases-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）
 
 ### 追溯约束
 - [ ] 每个验收标准至少有 1 个测试用例覆盖

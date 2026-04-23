@@ -62,6 +62,7 @@ metadata:
 | 外部对抗审查（Phase 4） | `--external-review` | 🟡/🟢/⚪ 层级显式启用 Phase 4 外部对抗审查（🔴 默认开启，无需此 flag） |
 | 外部对抗审查跳过（🔴 限定） | `--skip-external-review-reason="<原因>"` | **仅交互模式 + 🔴 任务可用**；跳过 Phase 4 并登记原因；自动标 `EXT_PENDING`，Step 1.5 [D2] 会拦截。`--headless` 下传入此参数视为非法参数 |
 | 外部对抗审查轮次 | `--external-rounds N` | 覆盖 Phase 4 默认 `max_rounds=3`；上限 5（对齐 /adversarial-review skill 的 max_rounds） |
+| 规范升级回扫 | `--realign` | 已完成任务按新 spec_version 查漏补缺；**独立于 12 种续做信号**，不覆盖原证据，仅追加补齐+`Realigned-From` 尾注。详见 [references/realign.md](references/realign.md)。推荐用户入口：`/ms-pipeline realign`。 |
 
 ### 模式对比
 

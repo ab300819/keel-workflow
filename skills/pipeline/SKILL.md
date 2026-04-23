@@ -1,6 +1,6 @@
 ---
 name: ms-pipeline
-description: Top-level orchestrator for DevDocs workflow. Provides 7 entry points (init/feature/bugfix/verify/close/insights/design) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start", "insights", "洞察", "调研", "借鉴", "竞品", "设计稿", "design ready", "设计到了", "UI稿". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
+description: Top-level orchestrator for DevDocs workflow. Provides 8 entry points (init/feature/bugfix/verify/close/insights/design/realign) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start", "insights", "洞察", "调研", "借鉴", "竞品", "设计稿", "design ready", "设计到了", "UI稿", "realign", "规范升级", "查漏补缺", "对齐已有产物". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
 metadata:
   patterns: [pipeline]
   interaction: multi-turn
@@ -11,7 +11,7 @@ user-invocable: true
 
 # DevDocs 工作流编排器
 
-顶层编排器，提供 7 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
+顶层编排器，提供 8 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
 
 ## 语言规则
 
@@ -48,6 +48,9 @@ user-invocable: true
 /ms-pipeline close          → 周期收尾
 /ms-pipeline insights       → 外部洞察吸收
 /ms-pipeline design         → 设计稿到达/更新（主动推送）
+/ms-pipeline realign        → 规范升级回扫（已完成产物按新规范查漏补缺）
+/ms-pipeline realign --dry-run → 只出差距报告，不修改文件
+/ms-pipeline realign --no-realign → 显式拒绝本次升级提示，写入 .devdocs-realign-ack（编排调度到 ms-dev-workflow --headless 时必需 --realign/--no-realign 其一，否则透传层 fail-fast）
 ```
 
 ## 提问式调度（智能引导）
@@ -90,6 +93,12 @@ user-invocable: true
           │
           > 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
 ```
+
+### 一次性升级提示（阶段检测后）
+
+阶段检测完成后、返回路由建议之前，执行 schema drift 轻量检查。检测到 drift 且无 `.devdocs-realign-ack` 标记时，打印**一次性**轻量提示（不阻塞原路由），提示用户运行 `/ms-pipeline realign`。用户任一决策后写入标记，之后不再提示。详细规则（检测流程、提示格式、标记失效策略）见 [references/realign.md](references/realign.md) § 一次性升级提示。
+
+**`.devdocs-realign-ack` 读写责任**：读取发生在阶段检测后；**写入仅由 `ms-pipeline realign` / `--no-realign` 执行完成时触发**（整仓决策）—— `ms-feature F-XX realign` / `ms-bugfix BUG-XX realign` 是定向局部对齐，**不写入 ack**（用户未对整仓做决策，下次进入 pipeline 若仍有 drift 仍应提示；若定向 realign 正好清空全部 drift，pipeline 入口自然 drift_count=0 不会提示）。失效条件见 [references/realign.md](references/realign.md)。标记文件入 git，协作者共享决策。
 
 ### 自适应 Harness 深度
 
@@ -254,6 +263,57 @@ Q3（feature/bugfix 追加，可选）:
 /ms-onboard --update（更新上下文摘要）
 ```
 
+### realign — 规范升级回扫
+
+当 DevDocs 规范（模板/校验规则/证据标准）升级后，已完成的产物会按"已完成"被跳过；realign 入口让用户按新规范重新对齐，**不破坏原完成证据**，仅追加差距补齐。
+
+```text
+扫描 docs/devdocs/ 所有产物 → 比对各 skill 当前 spec_version
+    │
+    ├── --dry-run → 只出差距报告（分 additive / restructuring 两级）
+    │
+    └── 执行 → 按 DevDocs 主链路顺序依次调度（传递 context）：
+         # Phase 1：B 类上游（PRD 流程产物，如果相关文件存在）
+         Task: /ms-prd-parser --realign       （若 docs/prd/<prd_id>/chunks/ 存在）
+             │
+             ▼
+         Task: /ms-prd-brainstorm --realign   （若 docs/prd/<prd_id>/requirements/ 存在）
+             │
+             ▼
+         # Phase 2：A 类 DevDocs 主链路
+         Task: /ms-requirements --realign
+             │
+             ▼
+         Task: /ms-system-design --realign
+             │
+             ▼
+         Task: /ms-test-cases --realign
+             │
+             ▼
+         Task: /ms-dev-tasks --realign
+             │
+             ▼
+         Task: /ms-dev-workflow --all --realign
+             │
+             ▼
+         # Phase 3：B 类旁路（洞察/onboard）
+         Task: /ms-insights --realign         （若 docs/devdocs/05-insights.md 存在）
+             │
+             ▼
+         Task: /ms-onboard --realign          （若 docs/devdocs/00-context.md 存在）
+             │
+             ▼
+         汇总 yaml-summary-v1 → 用户报告（N 产物 / M 任务 / K 差距补齐）
+```
+
+**关键约束**：
+- realign **不是**续做信号（不混入 ms-dev-workflow 12 种续做机制）
+- restructuring 差距必须 `⚠️ 必须确认`，additive 差距可直接补齐
+- 二次运行幂等（无新差距即 no-op）
+- `--headless` 下必须显式 `--realign` 或 `--no-realign`（不隐式触发）
+
+详细规则见 [references/realign.md](references/realign.md)（共享契约）与各 skill 的 `references/realign.md`（实例化差异矩阵）。
+
 ### design — 设计稿到达/更新
 
 用户主动推送设计资产的入口。Pipeline 仅做阶段检测和收集，写入/回填委托原子 skill。
@@ -381,6 +441,7 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | insights | 见下方 insights 流程图 |
 | close | sync → compound → onboard --update |
 | design | 阶段检测 → 委托 ms-requirements --update-design [→ ms-dev-tasks --backfill-design] |
+| realign | Phase 1 B 类上游：prd-parser/prd-brainstorm --realign（若存在）→ Phase 2 A 类主链路：requirements → system-design → test-cases → dev-tasks → dev-workflow --all → Phase 3 B 类旁路：insights/onboard（若存在）（详见 [references/realign.md](references/realign.md)） |
 
 > **补充说明**：dev-workflow 批量模式内部会调用 `/ms-test-run --trace` 执行全量测试 + 追溯验证，详见 `skills/dev-workflow/SKILL.md`。
 

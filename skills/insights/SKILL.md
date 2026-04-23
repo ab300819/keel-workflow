@@ -118,6 +118,16 @@ metadata:
 
 降级为**变更日志**——仅记录 INS 编号、来源、确认时间和转化目标，不重复需求内容。避免 `05-insights.md` 与 `01-requirements.md` 之间的双写不同步风险。
 
+**文件头必填 frontmatter**（realign 扫描依据）：
+
+```yaml
+---
+generated_by: ms-insights
+spec_version: ins.v1
+generated_at: 2026-04-23T10:30:00+08:00
+---
+```
+
 ```markdown
 ## 洞察变更日志
 
@@ -347,7 +357,12 @@ next_recommended:                # 动态：有架构变更 → ms-system-design
 
 # 快速模式：直接输入建议列表
 /ms-insights --quick
+
+# 规范升级回扫：INS 条目按新 spec_version 查漏补缺（不新增 INS，仅补字段/格式）
+/ms-insights --realign
 ```
+
+> **Realign 模式**（B 类 skill 最小实现）：`--realign` 对 `docs/devdocs/05-insights.md` 按当前 `ins.v1` 扫描结构差距，补齐模板缺字段。详细规则复用 [共享契约](../pipeline/references/realign.md)；推荐用户入口 `/ms-pipeline realign`（编排层会串行调度到本 skill）。
 
 ## 下一步
 

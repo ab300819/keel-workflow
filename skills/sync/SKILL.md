@@ -47,7 +47,10 @@ metadata:
 /ms-sync --archive --release v1.0.0  → 创建版本快照
 /ms-sync T-01 T-02          → 指定范围同步
 /ms-sync --back-propagate-prd  → 反向同步 prd 映射状态
+/ms-sync --schema-drift        → health report 附加 schema drift 列（权重低，不阻断主流程；委托 /ms-verify --schema-drift 生成扫描结果）
 ```
+
+> **`--schema-drift` 说明**：在标准 sync 输出的 health report 末尾附加一列，汇总各产物的 spec_version 状态（legacy/drift/current 数量）。权重 ≤0.1，**不影响** audit 的 pass/fail 判定。诊断数据由 `/ms-verify --schema-drift` 提供，sync 仅做合并呈现。
 
 ### 默认模式变更
 

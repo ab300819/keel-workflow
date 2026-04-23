@@ -50,6 +50,7 @@ metadata:
 /ms-requirements --context     → 背景信息模式（追加/更新背景）
 /ms-requirements --fast        → 跳过方案确认，直接生成，仅最终汇总确认
 /ms-requirements --from-prd <index路径> → 消费产品需求包
+/ms-requirements --realign[=scope] → 规范升级回扫（结构/字段差距补齐，不修改业务内容）。详见 [references/realign.md](references/realign.md)；推荐用户入口 `/ms-pipeline realign`
 ```
 
 | 模式 | 触发条件 | 说明 |
@@ -383,6 +384,7 @@ MVP 范围： / 非目标： / 删减理由：
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] 用户确认方案后，执行文档编写（非代码实现）
 - [ ] 编码实现由 `/ms-dev-workflow` 负责，本 Skill 不涉及
+- [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/requirements-template.md](templates/requirements-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md) § 当前 spec_version）
 
 ### 功能点约束
 - [ ] 每个功能点必须有唯一编号 (F-XXX)

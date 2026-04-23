@@ -47,6 +47,7 @@ metadata:
 ```bash
 /ms-dev-tasks                  → 标准模式（逐步确认）
 /ms-dev-tasks --fast           → 跳过逐步确认，直接生成，仅最终确认
+/ms-dev-tasks --realign[=scope] → 规范升级回扫（任务结构/字段差距补齐；不改任务状态）。详见 [references/realign.md](references/realign.md)；推荐 `/ms-pipeline realign`
 ```
 
 ### `--fast` 模式
@@ -162,6 +163,7 @@ docs/devdocs/
 - [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] Bash 工具仅用于只读操作（如查看目录结构），不得执行代码修改
 - [ ] 编码实现由 `/ms-dev-workflow` 负责，本 Skill 不涉及
+- [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/task-template.md](templates/task-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）
 
 ### 基础约束
 

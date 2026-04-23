@@ -2,6 +2,16 @@
 
 完整的开发任务文档模板，用于 `docs/devdocs/04-dev-tasks.md`。
 
+> **Frontmatter 必填**：生成文档时必须在正文最顶部插入以下 YAML frontmatter（供 realign 机制识别产物版本），之后才是 `# 开发任务：...` 标题。
+
+```yaml
+---
+generated_by: ms-dev-tasks
+spec_version: tasks.v1
+generated_at: <ISO-8601 timestamp, e.g. 2026-04-23T10:30:00+08:00>
+---
+```
+
 ```markdown
 # 开发任务：<功能名称>
 

@@ -4,6 +4,16 @@
 
 ---
 
+> **Frontmatter 必填**：生成文档时必须在正文最顶部插入以下 YAML frontmatter（供 realign 机制识别产物版本），之后才是 `# 测试用例：...` 标题。
+
+```yaml
+---
+generated_by: ms-test-cases
+spec_version: test.v1
+generated_at: <ISO-8601 timestamp, e.g. 2026-04-23T10:30:00+08:00>
+---
+```
+
 ```markdown
 # 测试用例：<功能名称>
 

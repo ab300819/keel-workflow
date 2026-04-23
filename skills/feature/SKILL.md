@@ -50,6 +50,7 @@ metadata:
 /ms-feature --deep "功能描述"      → 强制深度模式（强制 review + docs 验证）
 /ms-feature --fast "功能描述"      → 连续执行 Step 1-5，仅最终汇总确认
 /ms-feature --lite --fast "功能描述" → 轻量 + 快速组合
+/ms-feature F-XX realign           → 只对齐 F-XX 关联产物（调度 system-design/test-cases/dev-tasks/dev-workflow --realign=F-XX）；共享契约见 [../pipeline/references/realign.md](../pipeline/references/realign.md)
 ```
 
 ### 模式对比

@@ -147,6 +147,18 @@ Step 5: 工作区决策
 - 新增 `EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED`（对应 Phase 4 外部审查）
 - 其他 `*_pending` 信号（`docs_only_pending` / `verification_pending` / `trace_pending` / `postcheck_pending`）保持原名（语义独立，不纳入 INT_/EXT_ canonical enum）
 
+### Realign 与续做的边界（重要）
+
+**realign（规范升级回扫）不是续做信号**。
+
+- 续做 = execution resume（流程中断未闭环），由本表 5 步检测触发
+- realign = policy re-evaluation（规范升级后对已完成产物查漏补缺），由用户显式 `--realign` 触发
+- `schema_drift`（产物 spec_version 落后当前常量）**不得**作为 Step 1.5 的证据复核失败判据，也**不得**并入上表的续做信号
+- Step 1.5 `A~E 全部可复核` 通过后 → 正常放行（即便 spec_version 落后）；只有用户显式 `--realign` 才进入独立的 realign 子流程
+- realign 子流程保留原完成证据（AC 表 / 内审 / Phase 4 外审 / 测试），仅追加差距补齐与 `Realigned-From` 尾注
+
+详见 [realign.md](realign.md)（policy re-evaluation 子流程）。
+
 ### 续做模式行为
 
 进入续做模式后：

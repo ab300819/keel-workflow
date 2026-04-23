@@ -30,6 +30,7 @@ user-invocable: true
 | ms-retrofit | 逆向生成 DevDocs 文档（F/US/AC） | 需求推导、编号分配 |
 | ms-onboard | 项目上下文 + 进度 + 待办 | 进度追踪、待办汇总 |
 | code-self-describe | 模块级 CLAUDE.md + 依赖图 | 文件级描述、依赖图生成 |
+| ms-verify `--schema-drift` | 扫描 A/B 类 DevDocs 产物的 `spec_version` 元数据 | 本 skill 的 `schema_version + commit_hash` 独立机制**被 `--schema-drift` 读取并在主报告独立章节呈现**（不并入 A/B 类主统计，不纳入 realign 编排；失效后由本 skill 自身 `--force` 处理，见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 ms-codebase-insight 的关系） |
 
 ## 运行模式
 

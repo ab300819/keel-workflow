@@ -60,7 +60,11 @@ metadata:
 ```bash
 /ms-system-design              → 自动检测模式（初始/增量）
 /ms-system-design --fast       → 跳过偏好询问和方案确认交互，保留已有实现核对和最终汇总确认
+/ms-system-design --realign    → 规范升级回扫：已完成设计按新 spec_version 查漏补缺（不触发 L1~L4 重做）
+/ms-system-design --realign=<scope> → 限定范围：layer1/layer2/layer3/layer4 或具体章节名
 ```
+
+> **Realign 模式**：当 system-design 规范升级（spec_version bump）后，已有设计文档的结构/字段按新规范补齐；**不是**初始/增量设计的替代，仅做"差距补齐"。详见 [references/realign.md](references/realign.md)。用户入口推荐 `/ms-pipeline realign`（由编排层统一调度）。
 
 ## 工作流程
 
@@ -307,6 +311,7 @@ docs/devdocs/
 - 代码目录约定（非设计决策） → [references/code-structure-conventions.md](references/code-structure-conventions.md)
 - 方案草案模板（初始+增量） → [references/plan-drafts.md](references/plan-drafts.md)
 - 增量设计详解 → [references/incremental-design.md](references/incremental-design.md)
+- Realign 子流程（规范升级回扫） → [references/realign.md](references/realign.md)
 
 ## 约束
 
@@ -317,6 +322,7 @@ docs/devdocs/
 - [ ] **⛔ 禁止继续：接口契约内出现越界反例**（算法细化/内部状态/控制流/伪代码/字段注释性描述/时序重试策略/依赖耦合到实现，见 `references/design-boundary-guide.md`）（恢复方式：改写为行为契约表述）
 - [ ] **⛔ 禁止继续：存在跨模块依赖时，§4 模块表"依赖接口引用"列出现具体实现类名或裸模块名**（恢复方式：改写为 `I*(§章节号)` 引用；接口未定义则回 L3 层补足；单模块或无跨模块依赖填"无"）
 - [ ] **⛔ 禁止继续（增量设计）：仅追加 ADR 而正文相关章节未更新**（恢复方式：按修订清单执行正文更新，或在清单内登记"仅追加 ADR 的理由"）
+- [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/design-template.md](templates/design-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）
 
 ### 基础约束
 

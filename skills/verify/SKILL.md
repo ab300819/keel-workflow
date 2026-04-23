@@ -67,8 +67,11 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 /ms-verify --ui --design      → 仅设计稿 ↔ 需求
 /ms-verify --ui --impl        → 仅设计稿 ↔ 实现
 /ms-verify --readiness          → 开发就绪检查（进入 dev-workflow 前的质量关卡）
+/ms-verify --schema-drift       → 只读扫描所有 DevDocs 产物的 spec_version，报告 legacy / drift / current 三态
 /ms-verify T-01 T-02          → 指定任务范围（自动 --impl）
 ```
+
+> **`--schema-drift` 说明**：扫描 `docs/devdocs/*.md`（含拆分文件）与 `docs/prd/<prd_id>/chunks/*.md`、`docs/prd/<prd_id>/requirements/*.md` 的 frontmatter `spec_version`，对照各 skill `references/realign.md` 顶部"当前 spec_version"常量，输出三态报告（`legacy` 无 frontmatter / `drift` 落后 / `current` 匹配）。ms-codebase-insight 产物按其独立 `schema_version` 字段扫描，在主报告独立章节呈现（不并入 A/B 类产物主统计）。仅只读，不触发 realign；如需对齐使用 `/ms-pipeline realign`。完整扫描范围表见 [references/schema-drift.md](references/schema-drift.md)。
 
 ### 自动检测规则
 

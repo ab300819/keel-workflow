@@ -98,6 +98,28 @@ next_recommended:
 - SKILL.md 不超过 500 行
 - **Codex 审查边界**：审查 skill spec 时聚焦命名一致性、交叉引用完整性和契约兼容性。运行时 edge case（git 状态、文件时间戳、缓存失效条件等）属于实现层，不在 spec 审查范围内
 
+## Spec Version Bump 规则（realign 配套治理）
+
+A/B 类产物 skill（有 `references/realign.md`）修改模板的"必填章节/字段/结构"时，**必须同步更新**以下两处；仅改文案措辞/参考链接/交互步骤顺序**不** bump：
+
+1. `skills/<skill>/references/realign.md` 顶部"当前 spec_version"小节（如 `design.v1` → `design.v2`）
+2. 同文件 Migration Matrix 新增一行 `v1 → v2` 条目（additive / restructuring 分级，附判据）
+
+产物模板（`skills/<skill>/templates/...`）的 frontmatter 示例中的 `spec_version` 值同步更新。
+
+**未同步的后果**：
+- `/ms-verify --schema-drift` 会把按新模板生成的产物报为 `drift`（因为产物 frontmatter 写了新值、realign.md 常量还是旧值，或反之）
+- realign 执行时 Migration Matrix 缺条目 → 差距无法自动识别，需人工补
+
+**审查清单**（PR 合入前自查）：
+- [ ] 修改的模板字段是否属于 bump 白名单（必填章节/字段/结构/硬校验规则）
+- [ ] `references/realign.md` 顶部常量已更新到新版本
+- [ ] Migration Matrix 已新增对应条目，additive/restructuring 分级正确
+- [ ] 模板 frontmatter 示例的 `spec_version` 同步到新值
+- [ ] 如为 restructuring 变更，已说明用户确认触发点（AskUserQuestion 逐项 apply）
+
+适用 skill：ms-requirements、ms-system-design、ms-test-cases、ms-dev-tasks、ms-dev-workflow、ms-insights、ms-onboard、ms-prd-brainstorm、ms-prd-parser。
+
 ## 详细文档
 
 - Skill 结构规范：各 `skills/<dir>/SKILL.md`（目录短名，name 字段为调用名）

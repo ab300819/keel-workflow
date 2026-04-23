@@ -45,6 +45,7 @@ metadata:
 ```bash
 /ms-prd-brainstorm                → 完整头脑风暴模式（一句话想法）
 /ms-prd-brainstorm --chunk <path> → 块澄清模式（PRD 分段逐块澄清）
+/ms-prd-brainstorm --realign      → 规范升级回扫：FR/NFR 结构差距补齐（不新增/修改业务内容）。复用 [共享契约](../pipeline/references/realign.md)；推荐 `/ms-pipeline realign`
 ```
 
 | 模式 | 触发条件 | 说明 |
@@ -212,10 +213,20 @@ brainstorm 对每个需求项执行分类终判，复核 parser 的 FR/NFR 初�
 
 **输出目录**：`docs/prd/<prd_id>/requirements/`（legacy: `docs/prd/requirements/`）
 
-每个需求项生成一个独立文件：
+每个需求项生成一个独立文件。
+
+**Frontmatter 必填**：生成文件时必须在 frontmatter 顶部包含以下 3 个 realign 元数据字段（与 A 类模板同级约束；缺字段会被 `/ms-verify --schema-drift` 判为 `legacy`）：
+- `generated_by: ms-prd-brainstorm`
+- `spec_version: fr.v1`
+- `generated_at: <ISO-8601 timestamp>`
 
 ```markdown
 ---
+# realign 元数据（schema-drift 扫描依据 - 必填）
+generated_by: ms-prd-brainstorm
+spec_version: fr.v1
+generated_at: 2026-04-23T10:30:00+08:00
+# 业务字段
 id: FR-09
 title: 用户认证
 type: FR

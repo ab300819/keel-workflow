@@ -4,6 +4,16 @@
 
 ---
 
+> **Frontmatter 必填**：生成文档时必须在正文最顶部插入以下 YAML frontmatter（供 realign 机制识别产物版本），之后才是 `# 需求文档：...` 标题。
+
+```yaml
+---
+generated_by: ms-requirements
+spec_version: req.v1
+generated_at: <ISO-8601 timestamp, e.g. 2026-04-23T10:30:00+08:00>
+---
+```
+
 ```markdown
 # 需求文档：<功能名称>
 
