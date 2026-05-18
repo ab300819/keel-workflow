@@ -36,6 +36,13 @@ user-invocable: true
 
 **不适合?** 已知目标 skill → 直接调用 `/ms-requirements`、`/ms-feature`、`/ms-bugfix` 等
 
+## 详细文档
+
+- 共享约束 SSOT：[../_shared/constraints.md](../_shared/constraints.md)
+- pipeline 治理 SSOT：[references/realign.md](references/realign.md)、[references/layout/](references/layout/)
+
+> 本 skill 遵循共享约束 SSOT：门控标记、yaml-summary-v1、Task 委托、用户确认、Recovery 格式、只读 / dry-run、FUTURE 三态、realign / spec_version 见 [skills/_shared/constraints.md](../_shared/constraints.md)。本文件只描述 ms-pipeline 编排私有规则。
+
 ## 运行模式
 
 ```bash
@@ -60,40 +67,34 @@ user-invocable: true
 
 ### 阶段检测
 
-首先扫描 `docs/devdocs/` 已有文件，判断当前阶段：
+首先扫描 `docs/devdocs/` 实际文件（而非依赖 `00-context.md` 进度），按下表首个命中即路由。
 
-```text
-扫描 docs/devdocs/ 目录
-    │
-    ├── 无文件 → 先检测项目状态，再路由
-    │     │
-    │     ├── PRD 候选检测（两段式）：
-    │     │     1. 检查 docs/prd/index.md → 存在则解析 PRD 清单（仅 active 候选，因后续 --from-prd 需回写映射），对每个候选检查 requirements/index.md 是否存在（不存在跳过）；不存在 → legacy：尝试 docs/prd/requirements/index.md
-    │     │     2. 仅 1 个可用候选 → 读取其 per-PRD requirements/index.md，从"整体成熟度"字段判断
-    │     │        多个可用候选 → AskUserQuestion 让用户选择目标 PRD，再读 maturity
-    │     │        0 个可用候选 → 跳过 PRD 检测，继续后续路由
-    │     │     └─ per-PRD index 缺失 → "PRD 已登记但未生成可消费总纲"
-    │     ├── maturity=ready → "产品需求已就绪，建议运行 /ms-requirements --from-prd <实际检测到的 index.md 路径>"
-    │     ├── maturity=idea/draft → "产品需求包未就绪（maturity: <当前值>），建议继续运行 /ms-prd 完善需求"
-    │     ├── 项目已有代码（src/、lib/、app/ 等）但无 DevDocs → Q1a：新项目还是已有项目？
-    │     │     ├── 已有项目 → "建议先运行 /ms-retrofit 逆向生成文档"
-    │     │     └── 新项目（代码是脚手架/模板）→ 继续按输入类型路由
-    │     ├── 用户输入明显模糊/极短（<200字，无结构）→ "建议先运行 /ms-prd 探索需求"
-    │     └── 用户提供大文档引用（文件/URL/粘贴长文）→ "建议先运行 /ms-prd prd 解析文档"
-    │
-    └── 有文件 → 分析当前阶段（基于文件存在性，首个命中即路由）
-          │
-          ├── 有 verify-report（--impl/全部，通过）→ "验证已完成，建议运行 /ms-sync 或 /ms-compound"
-          ├── 有代码提交 + 任务进行中 → "开发进行中，建议继续 /ms-dev-workflow"
-          ├── 有 01~04 + readiness-report（通过）→ "就绪检查已通过，建议运行 /ms-dev-workflow"
-          ├── 有 01~04 + readiness 未通过或缺失 → "建议运行 /ms-verify --readiness"
-          ├── 有 01~03 → "测试设计已完成，建议运行 /ms-dev-tasks"
-          ├── 有 01 + 02 → "设计已完成，建议运行 /ms-test-cases"
-          ├── 仅 01-requirements.md → "需求已完成，建议运行 /ms-system-design"
-          └── 有 05-insights.md + 含 ⏳ 待确认条目 → "有未转化洞察，建议运行 /ms-insights 确认后进入 system-design 或 dev-tasks"
-          │
-          > 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
-```
+**无 DevDocs 文件时**：
+
+| 检测项 | 判定 | 路由建议 |
+|------|------|---------|
+| PRD 候选（两段式） | 先读 `docs/prd/index.md` active 清单并检查每个 `requirements/index.md`；无全局 index 时 legacy 回退 `docs/prd/requirements/index.md` | 1 个可用候选读 maturity；多个候选用 AskUserQuestion 选择；0 个跳过 |
+| per-PRD index 缺失 | PRD 已登记但未生成可消费总纲 | 停留提示，不伪造 `--from-prd` 路径 |
+| `maturity=ready` | 产品需求已就绪 | 建议 `/ms-requirements --from-prd <实际检测到的 index.md 路径>` |
+| `maturity=idea/draft` | 产品需求包未就绪 | 建议 `/ms-prd` 继续完善需求 |
+| 有 `src/`、`lib/`、`app/` 等代码 | Q1a：新项目还是已有项目 | 已有项目 → `/ms-retrofit`；脚手架/模板 → 继续按输入类型路由 |
+| 用户输入极短（<200 字、无结构） | 模糊想法 | 建议 `/ms-prd` 探索需求 |
+| 文件/URL/长文 | 大文档引用 | 建议 `/ms-prd prd` 解析文档 |
+
+**已有 DevDocs 文件时**：
+
+| 检测项 | 路由建议 |
+|------|---------|
+| verify-report（`--impl` / 全部，通过） | `/ms-sync` 或 `/ms-compound` |
+| 有代码提交 + 任务进行中 | 继续 `/ms-dev-workflow` |
+| 有 01~04 + readiness-report 通过 | `/ms-dev-workflow` |
+| 有 01~04 + readiness 未通过或缺失 | `/ms-verify --readiness` |
+| 有 01~03 | `/ms-dev-tasks` |
+| 有 01 + 02 | `/ms-test-cases` |
+| 仅 `01-requirements.md` | `/ms-system-design` |
+| `05-insights.md` 含 ⏳ 待确认条目 | `/ms-insights` 确认后进入 system-design 或 dev-tasks |
+
+报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
 
 ### 一次性升级提示（阶段检测后）
 
@@ -152,179 +153,57 @@ Q3（feature/bugfix 追加，可选）:
 
 ## 入口详解
 
-### init — 新项目全流程
+| 入口 | 适用边界 | 调用顺序 / 路由 | 必传摘要字段 |
+|------|---------|----------------|-------------|
+| `init` | 全新项目，从需求到开发的完整流程 | `ms-requirements` → `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow`（批量）→ `ms-verify --docs --impl` → `ms-sync` | `output_files`、`new_ids.features`、`new_ids.acceptance`、各阶段 `status` |
+| `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep | `ms-feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness + Step 6 dev-workflow）→ `ms-verify --docs --impl` → `ms-sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
+| `bugfix` | 修复 Bug；不改变 feature 入口语义 | 简单 Bug：`ms-bugfix` → `ms-verify --impl` → `ms-sync`；复杂 Bug：`ms-dev-tasks` → `ms-dev-workflow` → `ms-verify --impl` → `ms-sync` | Bug 范围、复杂度判定、修复文件、验证结果 |
+| `verify` | 任意阶段质量检查 | 有代码变更 → `ms-verify --impl`；有文档变更 → `ms-verify --docs`；有 UI 设计稿 → `ms-verify --ui`；不确定 → 询问用户；再路由到对应 skill 修复 | 检查维度、问题摘要、建议修复 skill |
+| `close` | 开发周期结束收尾 | `ms-sync`（trace + audit）→ `ms-compound`（知识沉淀）→ `ms-onboard --update` | 同步结果、沉淀文件、更新后的上下文摘要 |
+| `insights` | 外部洞察吸收 | `ms-insights`（收集 + 用户确认 + 追加 01）→ 有架构变更则 `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow` → `ms-verify` → `ms-sync`；简单改进则 `ms-dev-tasks` → `ms-dev-workflow` → `ms-verify` → `ms-sync` | 洞察确认结果、架构影响判定、变更链路 |
+| `design` | 用户主动推送设计资产；pipeline 只做阶段检测和收集 | no-prd → 收集并提示先 `/ms-prd` 或 `/ms-requirements`；prd-ready → `ms-requirements --update-design --target prd-index`；post-requirements/post-design → `ms-requirements --update-design`; in-dev → `ms-requirements --update-design` + 提示 `ms-verify --ui`; post-tasks → `ms-requirements --update-design` → `ms-dev-tasks --backfill-design` | `design_context`、目标阶段、委托目标、UI 验证提示 |
+| `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | spec_version：扫描 frontmatter → 比对各 skill 当前常量 → Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1；docs_layout：扫描 AGENTS.md devdocs frontmatter → 比对 `writes_layout` → 三阶段迁移 | drift 数量、Phase 结果、确认项、layout/id/trace 差距 |
 
-适用于全新项目，从需求到开发的完整流程。
+### 入口私有约束
 
-```text
-/ms-requirements
-    │
-    ▼
-/ms-system-design
-    │
-    ▼
-/ms-test-cases
-    │
-    ▼
-/ms-dev-tasks
-    │
-    ▼
-/ms-verify --readiness   ← 就绪关卡（P1 阻塞则修复后重试）
-    │
-    ▼
-/ms-dev-workflow（批量模式）
-    │  ← 批量模式内部已含逐任务 sync + compound
-    ▼
-/ms-verify --docs --impl  ← 全量验证（显式指定维度，覆盖文档对齐 + 实现正确性）
-    │
-    ▼
-/ms-sync          ← 全量补充同步（幂等，捕获跨任务遗漏）
-```
+- **readiness 关卡**：`dev-tasks` 后必须调用 `ms-verify --readiness`；检查 AC↔测试用例对齐、任务文件路径具体性、依赖无环、设计↔任务一致性。P1 阻塞则展示问题清单，修复后重试。
+- **全量补充验证**：`dev-workflow` 批量模式内部已含逐任务 sync + compound；pipeline 后置 `verify → sync` 是全量验证 + 幂等补充同步，不再额外执行 compound。
+- **上下文传递**：启动时可读 `docs/devdocs/00-context.md` 作参考，但阶段检测始终以 `docs/devdocs/` 实际文件为准。
+- **Deep 模式**：跨模块 / 架构 / 安全变更时，dev-workflow 所有任务强制 `--review`，feature 完成后额外执行 `ms-verify --docs`，并展示影响面摘要。
+- **Sprint Contract 协调**：`ms-test-cases` 产出的可执行验收契约作为 `ms-dev-workflow` 输入；pipeline 只传摘要、文件路径、新增编号，不内联测试全文。
+- **design 主动推送**：详细协议见 [../prd/references/design-context.md](../prd/references/design-context.md)；pipeline 不写文档，no-prd 不阻塞，且不中断当前 dev-workflow。
+- **realign 协调机制**：realign 非续做信号；restructuring / docs-layout 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；`--headless` 必须显式 `--realign` 或 `--no-realign`；docs-layout 升级需先跑 `--dry-run` + 独立 git branch 演练。
+- **layout / id / trace 三层版本共性**：pipeline 是 SSOT 来源。三层版本号宪法见 [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md)，元数据 schema 见 [references/layout/layout-metadata-schema.md](references/layout/layout-metadata-schema.md)，aliases 见 [references/layout/aliases-yml-schema.md](references/layout/aliases-yml-schema.md)，迁移矩阵和不可逆操作见 [references/layout/docs-layout-migration.md](references/layout/docs-layout-migration.md)。
 
-> **就绪关卡**：dev-tasks 完成后自动调用 `verify --readiness`。检查项包括：AC↔测试用例对齐、任务文件路径具体性、依赖无环、设计↔任务一致性。P1 问题阻塞进入 dev-workflow，显示问题清单并建议修复后重试。
->
-> **粒度说明**：dev-workflow 批量模式内部已执行逐任务 sync 和 compound。pipeline 此处的 verify → sync 是**全量验证+补充同步**，覆盖跨任务的整体一致性。sync 是幂等的，多次执行不会产生错误结果。不再额外执行 compound——dev-workflow 批量模式已默认执行。
+### Sprint Contract 握手
 
-**上下文传递**：pipeline 启动时优先检查 `docs/devdocs/00-context.md`，如存在则读取作为参考上下文。但 pipeline 始终以 `docs/devdocs/` 目录下的实际文件进行阶段检测（而非依赖 00-context.md 中的进度数据），确保路由基于最新文档状态。
+pipeline 启动 `ms-test-cases` 和 `ms-dev-workflow` 时，保留跨 skill 协作的最小上下文：
 
-### feature — 新功能开发
+| 来源 | 去向 | 必传内容 | 规则 |
+|------|------|---------|------|
+| `ms-test-cases` | `ms-dev-tasks` | UT/IT/E2E 编号、覆盖到的 AC、测试文件建议 | 只传摘要 + 文件路径，具体测试设计由下游自行读取 |
+| `ms-dev-tasks` | `ms-verify --readiness` | 任务清单、依赖关系、任务 ↔ AC/测试映射 | readiness 失败时阻塞进入 dev-workflow |
+| `ms-verify --readiness` | `ms-dev-workflow` | 通过状态、P1 阻塞清零证据、可执行任务范围 | 无通过证据不得启动开发执行 |
+| `ms-dev-workflow` | `ms-sync` / `ms-verify` | 已完成任务、修改文件、测试结果、trace 变更 | pipeline 后置全量验证，覆盖跨任务遗漏 |
 
-适用于已有项目追加新功能。根据自适应 Harness 深度选择流程档位。
+### realign / layout 协调细节
 
-```text
-/ms-feature（含 requirements/design/tests/tasks + readiness 关卡 + 自动衔接 dev-workflow）
-    │  ← feature 内置 Step 4.5 verify --readiness，P1 阻塞则修复后重试
-    │  ← dev-workflow 内部已含逐任务 sync
-    ▼
-/ms-verify --docs --impl  ← 全量验证（显式指定维度，与 init 流程一致）
-    │
-    ▼
-/ms-sync          ← 全量补充同步（幂等，捕获跨任务遗漏）
-```
+`realign` 默认处理 spec_version 维度；`--docs-layout` 处理治理层 layout/id/trace 维度，两者都由 pipeline 汇总 yaml-summary-v1。
 
-**--deep 模式**（跨模块/架构/安全变更时自动推荐或手动指定）：
-- dev-workflow 所有任务强制 `--review`（对抗式验证）
-- feature 完成后额外执行 `ms-verify --docs`（确保文档层间对齐）
-- pipeline 展示 Deep 档位建议时附带影响面摘要
+| 维度 | 扫描源 | 调度 / 迁移阶段 | 输出 |
+|------|--------|----------------|------|
+| spec_version | 各产物 frontmatter + 各 skill `references/realign.md` 当前常量 | Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 | drift 清单、逐 skill summary、remaining blockers |
+| docs_layout_version | AGENTS.md devdocs frontmatter + skill `writes_layout` / `reads_layout` | Phase 1 预扫描 → Phase 2 编号 + 文件迁移 → Phase 3 后置校验 | layout 差距、确认项、aliases、traceability 校验 |
 
-> `/ms-feature` 已内置 Step 4.5 readiness 关卡和 Step 6 自动衔接 dev-workflow，pipeline 只需在 feature 完成后补充 verify 和 sync。verify 是全量验证，覆盖 dev-workflow 逐任务验证可能遗漏的跨任务一致性；sync 是幂等的全量补充同步，不是重复执行。
+docs-layout dry-run 必输出 5 项契约：
 
-### bugfix — Bug 修复
+1. `file_ops`：文件移动、复制、删除、重命名计划
+2. `aliases`：旧路径到新路径的兼容映射
+3. `unmappable`：无法自动定位或安全迁移的对象
+4. `broken_links`：迁移后可能断裂的引用
+5. `trace_drift`：编号、任务、代码追溯关系差距
 
-适用于已有项目修复 Bug。
-
-```text
-评估复杂度
-    │
-    ├── 简单 Bug → /ms-bugfix（直接修复）
-    │                  │
-    │                  ▼
-    │              /ms-verify --impl
-    │                  │
-    │                  ▼
-    │              /ms-sync
-    │
-    └── 复杂 Bug → /ms-dev-tasks（拆分任务）
-                       │
-                       ▼
-                   /ms-dev-workflow
-                       │
-                       ▼
-                   /ms-verify --impl
-                       │
-                       ▼
-                   /ms-sync
-```
-
-### verify — 质量检查
-
-适用于任意阶段的质量检查。
-
-```text
-自动判断维度
-    │
-    ├── 有代码变更 → /ms-verify --impl
-    ├── 有文档变更 → /ms-verify --docs
-    ├── 有 UI 设计稿 → /ms-verify --ui
-    └── 不确定 → 询问用户
-    │
-    ▼
-生成修复建议
-    │
-    ▼
-路由到对应 skill 执行修复
-```
-
-### close — 周期收尾
-
-适用于开发周期结束后的收尾工作。
-
-```text
-/ms-sync（trace + audit）
-    │
-    ▼
-/ms-compound（知识沉淀）
-    │
-    ▼
-/ms-onboard --update（更新上下文摘要）
-```
-
-### realign — 规范升级回扫
-
-DevDocs 规范升级后，让已完成产物按新规范"查漏补缺"。**不破坏原完成证据**，仅追加差距补齐。两个维度：
-
-| 维度 | 命令 | 治理对象 |
-|------|------|--------|
-| **spec_version**（产物模板）| `/ms-pipeline realign` | 单文件模板格式（design.v2 / req.v1 等）|
-| **docs_layout_version**（治理层）| `/ms-pipeline realign --docs-layout` | 目录结构 / 编号体系 / 代码追溯（详见 [references/layout/](references/layout/)）|
-
-```text
-spec_version 维度（默认）：
-扫描 spec_version → 比对各 skill 当前常量 → 三段式调度（Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路）
-  → 汇总 yaml-summary-v1
-（详细执行流程见 [references/realign.md](references/realign.md)）
-
-docs_layout_version 维度（--docs-layout）：
-扫描 AGENTS.md devdocs frontmatter → 比对 skill writes_layout → 执行三阶段迁移
-  Phase 1: 预扫描（dry-run 必输出 5 项契约：file_ops / aliases / unmappable / broken_links / trace_drift）
-  Phase 2: 编号 + 文件迁移（按 dry-run 批准项执行）
-  Phase 3: 后置校验（traceability 提取 + SSOT lint + AGENTS.md upgraded_at 写入）
-（详细迁移矩阵 + 不可逆操作清单见 [references/layout/docs-layout-migration.md](references/layout/docs-layout-migration.md)）
-```
-
-**关键约束**：
-- realign 非续做信号（不混入 ms-dev-workflow 续做机制）
-- restructuring / docs-layout 差距必须 `⚠️ 必须确认`，additive 可直接补齐
-- 二次运行幂等
-- `--headless` 必须显式 `--realign` 或 `--no-realign`
-- **docs-layout 升级**需先跑 `--dry-run` + 独立 git branch 演练（不可逆操作多）
-
-详细规则：
-- 共享契约 [references/realign.md](references/realign.md) / 各 skill [references/realign.md](references/realign.md)
-- 三层版本号宪法 [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md)
-- 元数据 schema [references/layout/layout-metadata-schema.md](references/layout/layout-metadata-schema.md)
-- aliases.yml [references/layout/aliases-yml-schema.md](references/layout/aliases-yml-schema.md)
-
-### design — 设计稿到达/更新
-
-用户主动推送设计资产的入口。Pipeline 仅做阶段检测和收集，写入/回填委托原子 skill。
-
-> 详细流程见 [prd/references/design-context.md](../prd/references/design-context.md) § 主动推送协议。
-
-```text
-1. 阶段检测（复用现有阶段扫描逻辑，首个命中即路由）
-   │
-   ├── no-prd → 收集信息，提示先 /ms-prd 或 /ms-requirements
-   ├── prd-ready → 收集 → Task: /ms-requirements --update-design --target prd-index
-   ├── post-requirements / post-design → 收集 → Task: /ms-requirements --update-design
-   ├── in-dev（有 04 + 有代码提交/任务进行中）→ 收集 → Task: /ms-requirements --update-design → 提示 /ms-verify --ui
-   └── post-tasks（有 04 + 无代码提交）→ 收集 → Task: /ms-requirements --update-design → Task: /ms-dev-tasks --backfill-design
-```
-
-**约束**：
-- Pipeline 不写文档，仅路由和委托
-- no-prd 阶段不阻塞：收集 design_context 信息并暂存在委托参数中，提示用户先建立文档基础
-- 不中断当前进行中的 dev-workflow 任务
+Phase 2 只执行 dry-run 批准项；Phase 3 必做 traceability 提取、SSOT lint、AGENTS.md `upgraded_at` 写入。详细迁移矩阵见 [references/layout/docs-layout-migration.md](references/layout/docs-layout-migration.md)。
 
 ## 阶段间衔接
 
@@ -374,6 +253,19 @@ pipeline（编排层）
 每个子 Agent 自行读取所需的前置文档（从 `docs/devdocs/` 文件系统），不依赖编排 Agent 传递全文。
 
 ## 约束
+
+### DevDocs 6 阶段治理
+
+pipeline 视角的主链路阶段固定为：
+
+1. requirements：编码结构化需求与 AC
+2. system-design：补齐技术设计与接口边界
+3. test-cases：产出 UT/IT/E2E 与 Sprint Contract
+4. dev-tasks：拆分可执行任务与依赖
+5. dev-workflow：按任务执行开发与逐任务验证
+6. verify/sync：全量验证、追溯同步和收尾
+
+insights、design、realign 属于入口或治理分支，不改变 6 阶段主链路顺序；bugfix 可走独立快速路径或回落到 dev-tasks → dev-workflow。
 
 ### 阶段边界约束（全局规则）
 
@@ -454,31 +346,31 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 
 ## 子 Agent 摘要格式
 
-当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+当本 Skill 作为子 Agent 运行时，返回 yaml-summary-v1；完整 envelope 见 [../_shared/constraints.md](../_shared/constraints.md) § 2。pipeline 私有字段只放在 `summary.details`：
 
 ```yaml
-skill: ms-pipeline
-status: success | failed | interrupted | partial
 summary:
   headline: "init 流程完成 2/5 阶段"
   details:
     entry: init | feature | bugfix | verify | close | insights | design
+    harness_depth: Lite | Standard | Deep
     stages_completed:
       - { skill: ms-requirements, status: success }
       - { skill: ms-system-design, status: success }
     stages_remaining:
       - ms-test-cases
     interrupt_reason: "用户选择退出"  # 仅中断时
-blockers: []
-output_files:
-  - docs/devdocs/01-requirements.md
-  - docs/devdocs/02-system-design.md
-new_ids:
-  features: [F-001, F-002]
-  acceptance: [AC-001~AC-012]
-next_recommended:
-  skill: ms-test-cases
 ```
+
+| 字段 | 含义 |
+|------|------|
+| `entry` | 本次入口，必须对应运行模式之一 |
+| `harness_depth` | feature / bugfix 场景的 Lite、Standard、Deep 判定 |
+| `stages_completed` | 已完成阶段及子 Agent status |
+| `stages_remaining` | 用户中断或 partial 时的剩余阶段 |
+| `interrupt_reason` | 仅中断时记录用户选择或环境限制 |
+
+`output_files`、`new_ids`、`next_recommended` 仍使用共享 envelope 字段；pipeline 只填文件路径、新增编号和下一建议 skill，不扩展字段语义。
 
 ## 下一步
 
