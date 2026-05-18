@@ -362,7 +362,21 @@ bash skills/scripts/deploy-skills.sh
 代码追溯职责  → traceability.yml 外置追溯（代码保持干净）
 ```
 
-这就是下文 6 大原则、三层版本号、6 阶段 spec 的设计逻辑。
+### 实战痛点（治理框架的具体依据）
+
+治理框架不是凭空设计，而是来自一个真实项目（`mic-en`，跨 17 sprint / 半年研发期 / 80+ 文档）暴露的具体问题：
+
+| 问题域 | 实际状况 | 暴露的本质矛盾 | 治理回应 |
+|--------|---------|-------------|---------|
+| **单文件膨胀** | `04-dev-tasks.md` 累计到 700 行，含 17 sprint 累积摘要 | DevDocs 当作数据库用，但 Markdown 无法承载结构化查询 | #2 一文件一编号 + sprint 分组折叠 + index.md 索引化 |
+| **编号自造** | `INS-XXX` 混合 3 种语义（决策 + 经验沉淀 + 一次性观察）；`BUG-XXX` 非社区主流 | 编号语义不收敛，难以工具化解析 | #1 BUG → ISSUE / INS 拆 ADR/PATTERN/NOTE |
+| **代码污染** | 636 处 `@satisfies` / `@verifies` 注释嵌入代码 | DevDocs 元信息侵入代码（公共项目场景不可接受）| #4 trace.v1 外置追溯 + legacy 注释保留窗口 |
+| **追溯断裂** | INS-018 / T-145 / BUG-045+046：DTO 新字段未传播到 controller-service-mapper 全链 | 缺少机器可检测的 AC ↔ 实现映射 | `/ms-verify --impl` 盲区 7（SPI DTO 透传完备性）+ #4 traceability.yml（提供机器可检测的映射）|
+| **测试断言弱化** | V0.9.x P15 / T-157：IT 测试 setup 完整但断言只验状态码不验载荷 | 测试用例与 AC 失耦 | `/ms-verify --impl` 盲区 6（IT 断言完备性）|
+| **版本占位** | **0 release tag + 未上线 production**，但文档累积 ~2,000 处 V<x.y.z> 引用，演化出 V0.9.x 占位、V1.0 候选冻结大重构、P 编号跨多 V 累计 | 无 git tag → 文档被迫承担版本边界 | `/ms-iteration-policy` 横切：研发阶段命名策略 |
+| **追溯不可逆** | 文档大量出现 `V0.9.x P17` 字面占位 + Sprint 节奏与 V 节奏脱钩 | 命名约定回潮难防 | iteration-policy baseline + AGENTS.md 项目阶段约定段 |
+
+每个问题对应一个或多个治理产物，6 大原则 + 6 阶段 spec + 横切 skill 的设计都是对这些实战痛点的系统化回应（**先有问题，后有方案**）。
 
 ### 6 大治理原则（用户驱动）
 
@@ -436,6 +450,17 @@ devdocs:
 | `/ms-sync --refresh-traceability` | 刷新过期 trace link | [FUTURE] |
 | `/ms-pipeline distill` | 迭代蒸馏（13 类动作）| [FUTURE] |
 | `/ms-iteration-policy` | 横切：研发阶段命名策略（防 semver 形式主义）| [FUTURE] |
+
+#### 相关验证工具（skill 级治理，非 layout 6 阶段 spec）
+
+| 命令 | 用途 | 状态 |
+|------|------|------|
+| `/ms-verify --impl` | 实现验证（含盲区 6: IT 断言完备性 + 盲区 7: SPI DTO 透传完备性）| ✅ 可用 |
+| `/ms-verify --docs` | 文档层间对齐验证 | ✅ 可用 |
+| `/ms-verify --ui` | UI 与设计稿对齐 | ✅ 可用 |
+| `/ms-verify --readiness` | 开发前就绪检查 | ✅ 可用 |
+
+这些是 `ms-verify` skill 提供的运行时验证（非 layout 治理 spec 范畴，但与治理框架协同；如盲区 7 暴露的追溯断裂问题需配合 #4 traceability.yml 落地后才彻底解决）。
 
 ### 治理设计的关键选择
 
