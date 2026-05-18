@@ -344,6 +344,26 @@ bash skills/scripts/deploy-skills.sh
 >
 > 治理框架完整 spec 位于 [`skills/pipeline/references/layout/`](skills/pipeline/references/layout/) 目录。
 
+### 根本问题：DevDocs 的三职责困境
+
+治理框架的起点是识别出一个本质矛盾：**DevDocs 被迫同时承担三种性质截然不同的职责**，导致用 Markdown 单文件累积大表难以为继。
+
+| 职责 | 性质 | 累积期的表现 |
+|------|------|------------|
+| **数据库**（编号 + 索引 + 引用关系）| 结构化数据 | 单文件累积 → 越来越难查找/更新 |
+| **版本边界**（layout / id / trace 演进）| 治理规则 | 规则与产物混在一起 → skill 升级带不动文档体系 |
+| **代码追溯**（AC ↔ 测试 ↔ 实现）| 跨载体映射 | 代码内 `@satisfies` 注释 → 公共项目场景下污染代码 |
+
+**治理核心**：把这三件事**拆开**，分别用合适的工具治理：
+
+```
+数据库职责    → layout.v2 一文件一编号 + index.md 索引化 + SSOT lint
+版本边界职责  → 三层版本号（docs_layout / id_scheme / traceability）+ realign 命令
+代码追溯职责  → traceability.yml 外置追溯（代码保持干净）
+```
+
+这就是下文 6 大原则、三层版本号、6 阶段 spec 的设计逻辑。
+
 ### 6 大治理原则（用户驱动）
 
 | # | 原则 | 落地 |
