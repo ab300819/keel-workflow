@@ -31,7 +31,7 @@
 | `/ms-sync --refresh-traceability` | [FUTURE] | #4 代码解耦阶段交付 |
 | `/ms-sync --multi-repo --discover` / `--merge` | [FUTURE] | layout.v3 候选 |
 | `/ms-pipeline distill` (--action / --scope / --since / --dry-run / --apply) | [FUTURE] | #5 迭代蒸馏阶段交付（详见 [distillation-implementation.md](distillation-implementation.md)）|
-| `/ms-iteration-policy` | [FUTURE] | 待独立 skill 起草 |
+| `/ms-iteration-policy` (--apply-migration --dry-run/--apply / --baseline-init/show / --strategy / --scan-only) | [FUTURE] skill spec 已起草，runtime 待落地 | 横切 skill（详见 [skills/iteration-policy/SKILL.md](../../../iteration-policy/SKILL.md)）|
 
 ### 调用未实现命令的预期行为
 
