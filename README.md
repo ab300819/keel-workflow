@@ -338,6 +338,99 @@ bash skills/scripts/deploy-skills.sh
 
 ---
 
+## DevDocs 文档治理体系
+
+> DevDocs 不仅是流程模板，还自带一套**文档生命周期治理框架**，防止文档随项目演进而腐化（编号自造、单文件膨胀、追溯断裂、代码注释污染、命名形式主义等）。
+>
+> 治理框架完整 spec 位于 [`skills/pipeline/references/layout/`](skills/pipeline/references/layout/) 目录。
+
+### 6 大治理原则（用户驱动）
+
+| # | 原则 | 落地 |
+|---|------|------|
+| 1 | **编号体系标准化** — 避免自造（BUG → ISSUE 等社区主流） | id.v2 双轨 |
+| 2 | **主文件只记索引** — 按编号一文件一文件夹 | layout.v2 目录树 |
+| 3 | **单一事实源（SSOT）** — 按归属放置，其他引用 | SSOT lint（12 规则）|
+| 4 | **不污染代码注释** — DevDocs 元信息走 `traceability.yml`，代码保持干净（主仓 + 子仓策略）| trace.v1 外置追溯 |
+| 5 | **每次迭代蒸馏** — 代码是唯一事实源，DevDocs 是辅助 | 13 类蒸馏动作 |
+| 6 | **Skill 升级带文档体系升级** — 避免新 skill 跑在旧文档体系 | 三层版本号 + spec_version |
+
+### 三层版本号体系
+
+DevDocs 用三层独立版本号治理（解耦演进，强依赖联动）：
+
+| 层 | 字段 | 治理对象 | 当前可选 |
+|---|------|---------|---------|
+| **目录结构** | `docs_layout_version` | 顶层目录树 + SSOT 强约束 | `layout.v1` / `layout.v2` |
+| **编号体系** | `id_scheme` | 编号前缀清单 + alias 兼容 | `id.v1` / `id.v2` |
+| **代码追溯** | `traceability_version` | trace.yml schema + 漂移检测 | `trace.v0` / `trace.v1` |
+
+声明位置：项目 `AGENTS.md` 的 `devdocs:` frontmatter 段。
+
+```yaml
+---
+devdocs:
+  docs_layout_version: layout.v2
+  id_scheme: id.v2
+  traceability_version: trace.v1
+  initialized_at: "2026-05-15"
+---
+```
+
+**强依赖**：`layout.v2` 要求 `id.v2` + `trace.v1`；违反 → skill 阻塞 + 推荐 `/ms-pipeline realign --docs-layout` 升级。
+
+#### 用哪个版本？
+
+| 你的项目状态 | 推荐版本 | 原因 |
+|------------|---------|------|
+| 既有项目（已有 DevDocs 文档）| **保持 `layout.v1`** | 等 `realign` runtime 落地后再迁移；现在迁移需手动维护，成本高 |
+| 全新项目，普通规模 | **使用 `layout.v1`** | runtime 完整可用；spec 已就绪但 v2 工具链待完善 |
+| 全新实验项目 + 用户明确接受手动治理 | 可声明 `layout.v2` | 享受目录结构清晰 / SSOT 强约束，但 lint/distill 等自动工具暂不可依赖（命令处于 [FUTURE]），需手动按 spec 维护 |
+| `mic-en` 等历史大项目 | **维持 `layout.v1` 不迁移** | 数千处 `@satisfies/@verifies` legacy 注释，等 `extract-trace` runtime + 用户主动调用 `realign` 才迁移 |
+
+### 6 阶段治理 Spec
+
+治理框架按 6 阶段组织（spec 已成文，runtime 仍按 [FUTURE] 状态逐步落地）：
+
+| 阶段 | spec | 内容 |
+|------|------|------|
+| **#6 治理框架（仲裁层宪法）**| [layout-versioning-policy.md](skills/pipeline/references/layout/layout-versioning-policy.md) | 三层版本号语义 + 升级规则 + 兼容性矩阵 |
+| **#1 编号体系（id.v2 双轨）**| [id-scheme-implementation.md](skills/pipeline/references/layout/id-scheme-implementation.md) | F→FEAT / T→TASK / BUG→ISSUE 等；INS 拆 ADR/PATTERN/NOTE |
+| **#2 文件夹组织**| [folder-organization-implementation.md](skills/pipeline/references/layout/folder-organization-implementation.md) | 目录树 + 一文件一编号 + sprint 分组 + modules 拆分 |
+| **#3 SSOT lint**| [ssot-lint-implementation.md](skills/pipeline/references/layout/ssot-lint-implementation.md) | 12 lint 规则 + baseline 防篡改 + CI 集成 |
+| **#4 代码解耦**| [code-decoupling-implementation.md](skills/pipeline/references/layout/code-decoupling-implementation.md) | trace.v1 写入 API + legacy 注释保留窗口 + 多仓聚合 |
+| **#5 迭代蒸馏**| [distillation-implementation.md](skills/pipeline/references/layout/distillation-implementation.md) | 13 类蒸馏动作 + 4 级安全门 + rollback + git hook 反循环 |
+
+### 治理工具命令
+
+> ⚠️ 当前阶段 spec 已完整，**runtime 接口处于 [FUTURE] 状态**（spec 先行落地、执行接口逐步实现）。`mic-en` 等 layout.v1 历史项目不主动迁移；用户主动调用才触发。
+>
+> 完整命令实现状态见 [docs-layout-migration.md § 执行接口落地状态](skills/pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)。
+
+| 命令 | 用途 | 状态 |
+|------|------|------|
+| `/ms-pipeline realign --docs-layout` | layout.v1 → v2 迁移（dry-run + apply）| [FUTURE] |
+| `/ms-verify --layout-drift` | 检测项目 layout 与 skill 兼容性 | [FUTURE] |
+| `/ms-verify --ssot-lint` | 跑 12 条 SSOT lint 规则 | [FUTURE] |
+| `/ms-sync --extract-trace` | 从代码 `@satisfies` / `@verifies` 注释抽取 traceability.yml | [FUTURE] |
+| `/ms-sync --refresh-traceability` | 刷新过期 trace link | [FUTURE] |
+| `/ms-pipeline distill` | 迭代蒸馏（13 类动作）| [FUTURE] |
+| `/ms-iteration-policy` | 横切：研发阶段命名策略（防 semver 形式主义）| [FUTURE] |
+
+### 治理设计的关键选择
+
+1. **诚实声明**：参与 DevDocs 治理并声明 `writes_*` 字段的 A/B 类写入 skill（9 个）当前保持 `layout.v1` / `id.v1` / `trace.v0`（"声明 = 行为"对齐；独立工具 skill 和只读 skill 不在此列）。spec 起草完成 **≠** runtime 就绪 — 4 条件全满足（spec + template + runtime + 至少 1 个 v2 项目验证）才升 v2，避免"声明先行陷阱"。
+
+2. **核心目录树 vs 执行层扩展**：layout.v2 强制目录树（requirements/design/tests/tasks/issues/patterns/notes）受 foundation 治理；衍生派生项（`_archived/` / `design/modules/` / `tests/index.md`）属执行层扩展，不污染 foundation。
+
+3. **蒸馏 ≠ 归档**：蒸馏（distillation）= 知识压缩 + 结构优化（产物仍在主目录）；归档（archive）= 已完成项目搬移到 `_archived/`。两者明确分离。
+
+4. **预防型 vs 治疗型**：`ms-iteration-policy` 是 **预防型**（源头治理 V<x.y.z> 形式主义），`ms-pipeline distill` 是 **治疗型**（已成型文档的压缩）。`init` 阶段先用 iteration-policy 立约 → 累积期用 distill 周期蒸馏。
+
+5. **历史项目兼容**：`mic-en` 等 layout.v1 项目维持现状，**不主动迁移**。任何升级必须用户显式调用 `/ms-pipeline realign --docs-layout`。
+
+---
+
 ## 全部 Skill
 
 ### 编排层（用户主入口）
