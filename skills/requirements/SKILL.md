@@ -6,6 +6,14 @@ metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
+reads_layout: [layout.v1, layout.v2]
+writes_layout: layout.v1
+reads_id_scheme: [id.v1, id.v2]
+writes_id_scheme: id.v1
+reads_traceability: [trace.v0, trace.v1]
+writes_traceability: trace.v0
+on_incompatible: block
+migration: /ms-pipeline realign --docs-layout
 ---
 
 # 需求扩写
@@ -82,10 +90,10 @@ metadata:
    - 记录实际读取的路径（`source_index_path`），后续回写映射时使用同一路径
    - 读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产`
 2. 逐个读取 `requirements/FR-XX-<topic>.md` 和 `requirements/NFR-XX-<topic>.md`（通过 Glob 匹配 `FR-*`/`NFR-*` 模式）→ 提取澄清结论中的功能描述和验收意图
-   - FR-XX → 生成功能需求（F-XXX/US-XXX/AC-XXX）
+   - FR-XX → 生成功能需求（v1: F-XXX/US-XXX/AC-XXX；v2 [FUTURE]: FEAT-XXX/STORY-XXX/AC-XXX）
    - NFR-XX → 写入 `01-requirements.md` 的非功能需求章节（性能、安全、兼容性等约束）
 3. 将 FR-XX/NFR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "ms-prd"）
-4. 按现有流程生成 F-XXX/US-XXX/AC-XXX（跳过方案确认，直接生成）
+4. 按现有流程生成功能/故事/AC 编号（v1: F-XXX/US-XXX/AC-XXX；v2 [FUTURE]: FEAT-XXX/STORY-XXX/AC-XXX；跳过方案确认，直接生成）
 5. 回写映射到 `source_index_path`（即实际读取的 index.md）：
    - 若 `## DevDocs 映射` 章节已存在 → **更新现有章节**（追加/修改行，不创建新章节）
    - 若不存在 → 在文末创建该章节
@@ -144,10 +152,10 @@ metadata:
 4. 用户确认方案 → 确认拆解方向或调整
    │
    ▼
-5. 生成需求文档：识别功能点 (F-XXX)
+5. 生成需求文档：识别功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）
    │
    ▼
-6. 文档编写：用户故事 (US-XXX)
+6. 文档编写：用户故事（v1: US-XXX / v2 [FUTURE]: STORY-XXX）
    │
    ▼
 7. 文档编写：验收标准 (AC-XXX)
@@ -243,22 +251,9 @@ metadata:
 
 ## 上下文管理
 
-### 分批原则
-
-按功能点 (F-XXX) 分批扩写，每批完成一个功能点的全部用户故事和验收标准。
-
-### 质量锚点
-
-- 首个功能点的 US/AC 作为**质量锚点**
-- 每个新功能点开始前，回顾首批的详细程度（US 的角色/期望/目的具体性、AC 的可量化程度、GWT 格式完整性）
-- 若当前批次详细程度明显低于锚点，立即补充
-
-### 一致性自检
-
-每个功能点扩写完成后，对比检查：
-- [ ] US 格式是否与首批一致（角色/期望/目的三要素完整）
-- [ ] AC 是否可量化可验证（非"系统应正常工作"等模糊描述）
-- [ ] 每个 US 是否有 2-3 条 AC（覆盖密度一致）
+- **分批原则**：按功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）分批扩写，每批完成一个功能点的全部用户故事和验收标准
+- **质量锚点**：首个功能点的 US/AC 作为锚点；每新功能点开始前回顾首批详细程度（US 角色/期望/目的具体性、AC 可量化程度、GWT 完整性），低于锚点立即补充
+- **一致性自检**（每个功能点完成后）：US 三要素完整 / AC 可量化（非"系统应正常工作"）/ 每 US 2-3 条 AC
 
 ## 方案确认规范
 
@@ -319,16 +314,21 @@ MVP 范围： / 非目标： / 删减理由：
 
 ## 编号规范
 
-| 类型 | 前缀 | 格式 | 示例 |
-|------|------|------|------|
-| 功能点 | F | F-XXX | F-001, F-002 |
-| 用户故事 | US | US-XXX | US-001, US-002 |
-| 验收标准 | AC | AC-XXX | AC-001, AC-002 |
+> ℹ️ **编号前缀双轨**：layout.v1 用 `F`/`US`/`AC`（下表），layout.v2 [FUTURE] 用 `FEAT`/`STORY`/`AC`；切换由 AGENTS.md `devdocs.id_scheme` 触发。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
+>
+> ℹ️ **输出路径双轨**：layout.v1 写单文件 `docs/devdocs/01-requirements.md`；layout.v2 [FUTURE] 写多文件 `docs/devdocs/requirements/{FEAT,STORY,AC}-NNN.md` + 自动维护 `index.md`。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
+
+| 类型 | v1 前缀 | v2 前缀 [FUTURE] | 格式 | 示例 |
+|------|---------|------------------|------|------|
+| 功能点 | F | FEAT | F-XXX / FEAT-XXX | F-001 / FEAT-001 |
+| 用户故事 | US | STORY | US-XXX / STORY-XXX | US-001 / STORY-001 |
+| 验收标准 | AC | AC | AC-XXX | AC-001, AC-002 |
 
 **编号规则**：
 - 全局顺序编号，不嵌套
 - 通过追溯矩阵表达关联关系
 - 编号一旦分配不可复用
+- v1 编号在 v2 项目通过 `aliases.yml` 解析（详见 [aliases-yml-schema.md](../pipeline/references/layout/aliases-yml-schema.md)）
 
 ## 输出文件
 
@@ -343,39 +343,19 @@ MVP 范围： / 非目标： / 删减理由：
 
 ## 文档结构
 
-```markdown
-# 需求文档：<功能名称>
-
-## 0. 原始需求
-## 0.5 设计资产（design_context，可选）
-## 1. 背景与目标
-## 2. 功能点清单
-## 3. 用户故事
-## 4. 验收标准
-## 5. 追溯矩阵
-## 6. 非功能性需求
-## 7. 范围边界
-## 8. 风险与假设
-```
-
-> `## 0. 原始需求` 记录用户原话或关键表述，作为需求精化的基准参照。详见模板。
+10 个章节：`## 0. 原始需求` / `## 0.5 设计资产（可选）` / `## 1. 背景与目标` / `## 2. 功能点清单` / `## 3. 用户故事` / `## 4. 验收标准` / `## 5. 追溯矩阵` / `## 6. 非功能性需求` / `## 7. 范围边界` / `## 8. 风险与假设`。`## 0. 原始需求` 记录用户原话作为精化基准。详细格式见 [templates/requirements-template.md](templates/requirements-template.md)。
 
 ## 核心概念
 
-- **功能点 (F-XXX)**：用户可感知的独立功能单元，可独立交付和验证
-- **用户故事 (US-XXX)**：格式 "作为 \<角色\>，我希望 \<功能\>，以便 \<价值\>"
-- **验收标准 (AC-XXX)**：可量化、可验证的完成条件，每个 US 至少 2-3 条
-- **追溯矩阵**：展示 F → US → AC 的关联关系
+- **功能点**（v1: `F-XXX` / v2 [FUTURE]: `FEAT-XXX`）：用户可感知的独立功能单元，可独立交付和验证
+- **用户故事**（v1: `US-XXX` / v2 [FUTURE]: `STORY-XXX`）：格式 "作为 \<角色\>，我希望 \<功能\>，以便 \<价值\>"
+- **验收标准 (AC-XXX)**：v1/v2 一致；可量化、可验证的完成条件，每个 US 至少 2-3 条
+- **追溯矩阵**：展示 F→US→AC（v1）/ FEAT→STORY→AC（v2 [FUTURE]）的关联关系
 
-详细格式和示例参见 [templates/requirements-template.md](templates/requirements-template.md)
+## 增量模式 / 背景信息模式详解
 
-## 增量模式详解
-
-详见 [references/incremental-mode.md](references/incremental-mode.md)（编号扫描、追加格式、返回值）
-
-## 背景信息模式详解
-
-> **进入 --context 模式时，必须读取 [context-mode.md](references/context-mode.md) 获取信息收集引导、输入方式和文档结构模板。**
+- 增量模式：见 [references/incremental-mode.md](references/incremental-mode.md)（编号扫描、追加格式、返回值）
+- 背景信息模式（`--context`）：必须读取 [references/context-mode.md](references/context-mode.md) 获取信息收集引导
 
 ## 约束
 
@@ -387,7 +367,7 @@ MVP 范围： / 非目标： / 删减理由：
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/requirements-template.md](templates/requirements-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md) § 当前 spec_version）
 
 ### 功能点约束
-- [ ] 每个功能点必须有唯一编号 (F-XXX)
+- [ ] 每个功能点必须有唯一编号（v1: `F-XXX` / v2 [FUTURE]: `FEAT-XXX`；按项目 `AGENTS.md devdocs.id_scheme` 选择）
 - [ ] 功能点必须标注优先级 (P0/P1/P2)
 - [ ] 功能点描述应简洁明确
 

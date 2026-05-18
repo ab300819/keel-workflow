@@ -1,5 +1,7 @@
 # 无人值守模式详解
 
+> ℹ️ 本文件提及的 `@satisfies` / `@verifies` 等标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
+
 ## 概述
 
 `--headless` 模式在批量模式的编排器-执行器架构之上，叠加无人值守决策策略。

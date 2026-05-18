@@ -6,9 +6,21 @@ metadata:
   patterns: [pipeline, reviewer]
   interaction: multi-turn
   handoff: yaml-summary-v1
+reads_layout: [layout.v1, layout.v2]
+writes_layout: layout.v1
+reads_id_scheme: [id.v1, id.v2]
+writes_id_scheme: id.v1
+reads_traceability: [trace.v0, trace.v1]
+writes_traceability: trace.v0
+on_incompatible: block
+migration: /ms-pipeline realign --docs-layout
 ---
 
 # 开发工作流
+
+> ℹ️ 编号双轨：v1 项目用 `T-XX`，v2 项目 [FUTURE] 用 `TASK-XX`。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
+>
+> ℹ️ 输入路径双轨：v1 读 `04-dev-tasks.md` 找任务；v2 [FUTURE] 读 `tasks/<ID>.md` + 写回状态到该文件。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 > 视角：资深开发者 — 务实优先，不过度设计，测试先行，提交原子化。
 
@@ -40,7 +52,7 @@ metadata:
 
 ## 触发条件
 
-用户开始/批量/继续开发任务（如 T-01、T-01~T-05、F-001、--all）；关键词如"开发任务"、"执行任务"、"开始 T-XX"、"批量开发"、"继续开发"。
+用户开始/批量/继续开发任务（v1: T-01/T-01~T-05/F-001/--all；v2 [FUTURE]: TASK-01/TASK-01~TASK-05/FEAT-001/--all）；关键词如"开发任务"、"执行任务"、"开始 T-XX / TASK-XX"、"批量开发"、"继续开发"。
 
 ## 运行模式
 
@@ -48,11 +60,11 @@ metadata:
 
 | 指定符 | 示例 | 说明 |
 |--------|------|------|
-| 单任务 | `T-03` | 执行单个任务（现有行为） |
-| 范围 | `T-01~T-05` | 执行范围内所有任务 |
-| 枚举 | `T-01,T-03,T-07` | 执行指定任务列表 |
-| 功能点 | `F-001` | 通过 `关联需求` 字段反查所有关联任务 |
-| 用户故事 | `US-001` | 同上 |
+| 单任务 | `T-03`（v1）/ `TASK-03`（v2 [FUTURE]）| 执行单个任务（现有行为） |
+| 范围 | `T-01~T-05`（v1）/ `TASK-01~TASK-05`（v2 [FUTURE]）| 执行范围内所有任务 |
+| 枚举 | `T-01,T-03,T-07`（v1）/ `TASK-01,TASK-03,TASK-07`（v2 [FUTURE]）| 执行指定任务列表 |
+| 功能点 | `F-001`（v1）/ `FEAT-001`（v2 [FUTURE]）| 通过 `关联需求` 字段反查所有关联任务 |
+| 用户故事 | `US-001`（v1）/ `STORY-001`（v2 [FUTURE]）| 同上 |
 | 全部 | `--all` | 所有 `状态≠已完成` 的任务 |
 | 无人值守 | `--headless` | 批量模式 + 全自动决策（fail-fast） |
 | 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停（与 `--headless` 互斥） |
@@ -102,8 +114,8 @@ metadata:
 ```text
 1. 读取任务定义
    ├── 从 04-dev-tasks.md 获取任务详情
-   ├── 确认关联的 F-XXX、AC-XXX
-   └── 确认关联的测试用例 UT/IT/E2E-XXX
+   ├── 确认关联的功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）和 AC-XXX
+   └── 确认关联的测试用例 UT/IT/E2E-XXX（v1/v2 一致）
            │
            ▼
 1.5 Sprint Contract（验收契约协商）
@@ -116,8 +128,8 @@ metadata:
            │
            ▼
 2. 生成骨架代码（自顶向下）
-   ├── 接口骨架 + @requirement/@satisfies 标注
-   └── 测试骨架 + @verifies/@testcase 标注（基于 Sprint Contract）
+   ├── 接口骨架 + @requirement/@satisfies 标注 [layout.v1 legacy]
+   └── 测试骨架 + @verifies/@testcase 标注（基于 Sprint Contract）[layout.v1 legacy]
            │
            ▼
 3. 执行开发（统一流程，分级强制）
@@ -163,7 +175,7 @@ metadata:
         │
         ▼
 6.5 更新 AGENTS.md "当前状态"（若存在）
-    ├── 更新活跃任务编号 (T-XX)
+    ├── 更新活跃任务编号（v1: T-XX / v2 [FUTURE]: TASK-XX）
     └── 更新进度统计 (X/Y)
         │
         ▼
@@ -178,26 +190,11 @@ metadata:
 
 > 详见 [execution-flow.md](references/execution-flow.md) 步骤状态追踪表
 
-## 代码追溯标注规范
+## 代码追溯标注规范（layout.v1 legacy）
 
-> 实现文档↔代码的双向追溯，AI 在生成代码时自动添加标注。
-
-### 标注类型
-
-| 标注 | 用途 | 位置 |
-|------|------|------|
-| `@requirement F-XXX` | 关联功能点 | 接口/类/模块 |
-| `@satisfies AC-XXX` | 满足的验收标准 | 接口/方法 |
-| `@verifies AC-XXX` | 验证的验收标准 | 测试用例 |
-| `@testcase UT/IT/E2E-XXX` | 测试编号 | 测试用例 |
-
-### 标注规则
-
-| 层级 | 标注位置 | 强制性 |
-|------|----------|--------|
-| 公共接口 | Service/API 入口方法 | **必须** |
-| 测试文件 | 每个测试用例 | **必须** |
-| 内部实现 | 复杂逻辑 | 可选 |
+> ⚠️ **layout.v2 起改用 [traceability.yml](../pipeline/references/layout/layout-metadata-schema.md#4-traceabilityyml-schematracev1) 外置追溯**。**禁止新增** `@satisfies` / `@verifies` 注释；legacy retained 注释允许保留直到 layout.v3。
+>
+> **layout.v1 标注类型**（仅历史代码兼容）：`@requirement F-XXX`（功能点）/ `@satisfies AC-XXX`（接口）/ `@verifies AC-XXX`（测试用例）/ `@testcase UT/IT/E2E-XXX`（测试编号）。**强制性**：公共接口 + 测试文件每用例**必须**标注；内部实现可选。
 
 ## 自顶向下开发模式
 
@@ -206,10 +203,10 @@ metadata:
 ### 骨架生成约束
 
 - [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）
-- [ ] **接口骨架必须添加追溯标注**
+- [ ] **接口骨架必须添加追溯标注**（layout.v1 legacy — layout.v2 起改用 traceability.yml；本约束在 v1 项目仍生效）
 - [ ] **未实现方法必须抛出 Error 并注明任务编号**
 - [ ] **测试骨架必须使用 skip/todo 标记**
-- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**
+- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**（layout.v1 legacy）
 
 详见 [skeleton-examples.md](references/skeleton-examples.md)
 
@@ -442,13 +439,15 @@ Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）�
 
 遵循 `/commit-convention` 规范，格式如下：
 
+> ℹ️ 提交标题与 `关联` 字段按项目 `AGENTS.md devdocs.id_scheme` 选择：v1 用 `T-XX/F-XXX/US-XXX`，v2 [FUTURE] 用 `TASK-XX/FEAT-XXX/STORY-XXX`。`AC/UT/IT/E2E` 编号双轨一致。
+
 ```markdown
-<type>(T-XX): <任务名称>
+<type>(T-XX): <任务名称>   # v1；v2 [FUTURE] 用 (TASK-XX)
 
 - <完成内容1>
 - <完成内容2>
 
-关联: F-XXX, AC-XXX
+关联: F-XXX, AC-XXX        # v1；v2 [FUTURE] 用 FEAT-XXX/STORY-XXX
 测试: UT-XXX, IT-XXX 通过
 External-Review-Verdict: <EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED>（Phase 4 触发时必填，含 rounds 和 health_scores）
 External-Review-Channel: <T1 | T2 | none>（非状态字段，Phase 4 触发时记录实际通道）
@@ -472,7 +471,7 @@ status: success | failed
 summary:
   headline: "T-03 开发完成，测试全部通过"
   details:
-    task: T-XX
+    task: T-XX           # v1；v2 [FUTURE] 用 TASK-XX
     commits:
       code: "abc1234"
       docs: "def5678"

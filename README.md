@@ -4,6 +4,8 @@
 
 包含 19 个 ms- 流程 skill（覆盖 PRD → 需求 → 设计 → 测试 → 开发 → 验证全链路）和 9 个独立工具 skill。
 
+> ℹ️ 本 README 中提及的 `@satisfies` / `@verifies` 代码注释属于 **layout.v1 legacy**（layout.v2 起改读 `traceability.yml`；详见 [skills/pipeline/references/layout/docs-layout-migration.md § 执行接口落地状态](skills/pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
+
 兼容 **Claude Code**、**Codex CLI**、**OpenCode** 等遵循 [Agent Skills](https://agentskills.io) 开放标准的 AI 编码工具。
 
 ## 安装

@@ -10,6 +10,8 @@ metadata:
 
 # Bug 修复
 
+> ℹ️ 本文件提及的 `@satisfies` / `@verifies` / `@requirement` / `@testcase` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
+
 测试先行的 Bug 修复流程，确保每个修复都有回归测试保护和完整记录。
 
 ## 快速开始

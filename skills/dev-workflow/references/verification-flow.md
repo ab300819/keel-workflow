@@ -1,5 +1,7 @@
 # 对抗式验证流程详解
 
+> ⚠️ **layout.v1 legacy 标注上下文** — 本文件中 `@satisfies` / `@verifies` 检查项属于 layout.v1 机制。**layout.v2 起改读 `traceability.yml`**；legacy retained 检查项在 v1 项目仍生效。v2 接口落地状态见 [skills/pipeline/references/layout/docs-layout-migration.md § 执行接口落地状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)。
+
 ## 理念
 
 ### 为什么需要对抗式验证？

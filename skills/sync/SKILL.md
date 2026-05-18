@@ -128,7 +128,7 @@ metadata:
 
 无参数调用时自动执行两步流程：
 
-1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注，与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](references/trace-mode.md)
+1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注（**layout.v1 legacy** — layout.v2 起改读 `traceability.yml`，迁移命令 [FUTURE] `/ms-sync --extract-trace`），与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](references/trace-mode.md)
 2. **audit 阶段**：检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号。详见 [audit-mode.md](references/audit-mode.md)
 
 > audit 依赖 trace 的扫描结果，因此自动串行执行，不再作为独立子命令。

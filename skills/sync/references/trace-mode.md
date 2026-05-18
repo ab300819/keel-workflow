@@ -1,5 +1,7 @@
 # 代码追溯扫描 (--trace)
 
+> ⚠️ **layout.v1 legacy** — 本文件描述的扫描机制基于代码内 `@requirement`/`@satisfies`/`@verifies` 注释。**layout.v2 起改用 `traceability.yml` 外置追溯**（迁移命令 [FUTURE] `/ms-sync --extract-trace`）。v2 接口落地状态见 [skills/pipeline/references/layout/docs-layout-migration.md § 执行接口落地状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)。
+
 > 扫描代码中的 `@requirement`/`@satisfies`/`@verifies` 标注，与文档进行交叉验证，自动更新追溯矩阵的代码位置列。
 
 ## 扫描流程

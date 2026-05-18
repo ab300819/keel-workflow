@@ -6,6 +6,8 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 # 代码自描述
 
+> ℹ️ 本文件提及的 `@satisfies` / `@verifies` 等代码标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
+
 为代码库生成和维护自描述结构，利用 Claude Code 的层级加载机制实现渐进式上下文理解。
 
 ## 语言规则

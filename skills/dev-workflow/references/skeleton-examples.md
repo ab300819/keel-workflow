@@ -1,5 +1,7 @@
 # 骨架代码示例
 
+> ⚠️ **layout.v1 legacy** — 本文件骨架示例中的 `@requirement` / `@satisfies` / `@verifies` / `@testcase` 标注属于 layout.v1 机制。**layout.v2 起追溯走 `traceability.yml` 外置载体**；legacy retained 注释允许保留直到 layout.v3。v2 接口落地状态见 [skills/pipeline/references/layout/docs-layout-migration.md § 执行接口落地状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)。
+
 自顶向下开发模式中的接口骨架和测试骨架示例。
 
 ## 接口骨架示例（Step 1）

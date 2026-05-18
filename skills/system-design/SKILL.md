@@ -6,9 +6,21 @@ metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
+reads_layout: [layout.v1, layout.v2]
+writes_layout: layout.v1
+reads_id_scheme: [id.v1, id.v2]
+writes_id_scheme: id.v1
+reads_traceability: [trace.v0, trace.v1]
+writes_traceability: trace.v0
+on_incompatible: block
+migration: /ms-pipeline realign --docs-layout
 ---
 
 # 系统设计
+
+> ℹ️ 编号双轨：v1 项目用 `F`/`ADR`/`AC`，v2 项目 [FUTURE] 用 `FEAT`/`ADR`/`AC`。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
+>
+> ℹ️ 输出路径双轨：v1 写单文件 `02-system-design.md`；v2 [FUTURE] 写 `design/current.md` + `design/decisions/ADR-NNN.md`（current.md ≥ 1500 行拆到 `design/modules/`）。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 基于需求文档创建或更新系统设计文档，支持初始设计和增量设计两种模式。
 
@@ -53,7 +65,7 @@ metadata:
 
 ## 设计模式检测
 
-启动时自动检测：`02-system-design.md` 不存在 → 初始设计模式；存在 → 检查是否有未覆盖的 F-XXX，有则提示增量设计，无则询问用户意图。
+启动时自动检测：`02-system-design.md` 不存在 → 初始设计模式；存在 → 检查是否有未覆盖的功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX），有则提示增量设计，无则询问用户意图。
 
 ## 运行模式
 
@@ -103,7 +115,7 @@ metadata:
 6. 生成 docs/devdocs/02-system-design.md 文档（含审查结论 + 原则校验表 + 关键选型 ADR）
       │
       ▼
-7. 验证覆盖 → 所有 F-XXX 都有对应模块/接口
+7. 验证覆盖 → 所有功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）都有对应模块/接口
       │
       ▼
 8. 用户确认 → 获得批准后定稿
@@ -122,8 +134,8 @@ metadata:
       │
       ▼
 2. 识别变更来源
-      ├── 新功能需求（F-XXX）
-      ├── 优化建议（INS-XXX）
+      ├── 新功能需求（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）
+      ├── 优化建议（v1: INS-XXX / v2 [FUTURE]: ADR/PATTERN/NOTE-XXX，归类见 ms-insights）
       └── 技术改进
       │
       ▼
@@ -286,12 +298,12 @@ docs/devdocs/
 1. **目标平台** - 平台、版本要求、部署环境
 2. **架构概览** - 高层架构图（**Mermaid**）
 3. **技术选型** - 技术选择及理由
-4. **模块设计** - 模块职责与依赖，**标注关联功能点 (F-XXX)**
-5. **核心接口** - **面向接口 (签名 + 行为契约)**: 方法签名 + 前置条件/后置条件/错误契约（**严禁包含具体实现逻辑**），标注关联 F-XXX
+4. **模块设计** - 模块职责与依赖，**标注关联功能点**（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）
+5. **核心接口** - **面向接口 (签名 + 行为契约)**: 方法签名 + 前置条件/后置条件/错误契约（**严禁包含具体实现逻辑**），标注关联功能点（v1: F-XXX / v2: FEAT-XXX）
 6. **设计模式** - 应用的模式及理由
 7. **代码落位原则** - 模块落位/接口-实现分离/命名约束（非完整目录树；详见 `references/code-structure-conventions.md`）
 8. **数据模型** - 实体定义与关系
-9. **API 设计** - 接口端点及请求/响应示例，**标注关联 F-XXX, AC-XXX**；design_context 存在时页面数据需求驱动响应结构
+9. **API 设计** - 接口端点及请求/响应示例，**标注关联功能点 (v1: F-XXX / v2: FEAT-XXX) + AC-XXX**；design_context 存在时页面数据需求驱动响应结构
 10. **状态流转** - 关键业务流程的状态机
 11. **异常处理** - 错误码与处理策略
 12. **日志设计** - 日志级别、关键日志点、追溯 ID
@@ -393,7 +405,7 @@ SOLID + 迪米特六原则为达成上位目标的**设计证据**（见 [refere
 - [ ] **增量设计前必须进行影响分析 + 向后兼容性评估 + 变更范围分类**
 - [ ] **破坏性变更必须标注处理方式，数据模型变更必须说明迁移方案**
 - [ ] **必须生成设计变更记录（ADR 格式）；初始设计对关键选型同样生成 ADR**
-- [ ] 新增内容必须标注关联需求（F-XXX / INS-XXX），修改接口必须说明兼容性
+- [ ] 新增内容必须标注关联需求（v1: F-XXX / INS-XXX；v2 [FUTURE]: FEAT-XXX / ADR-PATTERN-NOTE-XXX），修改接口必须说明兼容性
 - [ ] **涉及模块接口或架构的变更必须使用变更对比格式**
 - [ ] **必须自动扫描受影响文档并列出更新清单**
 

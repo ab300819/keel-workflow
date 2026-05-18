@@ -1,5 +1,7 @@
 # 追溯健康度评分规则（Health Scoring）
 
+> ℹ️ 本文件评分基于 `@satisfies` / `@verifies` 等标注扫描，属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
+
 ## 偏差检测规则
 
 | 偏差类型 | 检测方式 | 严重程度 |

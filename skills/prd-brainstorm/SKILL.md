@@ -6,6 +6,14 @@ metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
+reads_layout: [layout.v1, layout.v2]
+writes_layout: layout.v1
+reads_id_scheme: [id.v1, id.v2]
+writes_id_scheme: id.v1
+reads_traceability: [trace.v0, trace.v1]
+writes_traceability: trace.v0
+on_incompatible: block
+migration: /ms-pipeline realign --docs-layout
 ---
 
 # 需求探索与澄清
@@ -195,6 +203,10 @@ brainstorm 对每个需求项执行分类终判，复核 parser 的 FR/NFR 初�
 ```
 
 ## 编号规范
+
+> ℹ️ PRD 阶段编号（FR/NFR）**v1/v2 一致**（与 DevDocs id_scheme 解耦）。`--from-prd` 流转到 DevDocs 后映射为 F/FEAT（按目标项目 id_scheme 双轨），详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
+>
+> ℹ️ 输出路径：PRD 输出路径 `docs/prd/<slug>/{requirements,chunks}/` **不随 layout.v1/v2 切换**（PRD 不属 DevDocs 内部）。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 | 类型 | 前缀 | 格式 | 示例 |
 |------|------|------|------|

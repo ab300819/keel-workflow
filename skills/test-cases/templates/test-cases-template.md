@@ -1,5 +1,7 @@
 # 测试用例概览模板
 
+> ℹ️ 测试编号（UT/IT/E2E）v1/v2 一致；引用其他编号（AC / F-vs-FEAT）走双轨。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
+
 使用此模板生成 `docs/devdocs/03-test-cases.md`
 
 ---

@@ -6,6 +6,14 @@ metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
+reads_layout: [layout.v1, layout.v2]
+writes_layout: layout.v1
+reads_id_scheme: [id.v1, id.v2]
+writes_id_scheme: id.v1
+reads_traceability: [trace.v0, trace.v1]
+writes_traceability: trace.v0
+on_incompatible: block
+migration: /ms-pipeline realign --docs-layout
 ---
 
 # 洞察收集
@@ -266,9 +274,13 @@ generated_at: 2026-04-23T10:30:00+08:00
 
 ### 编号规则
 
-- 功能点编号：延续 `01-requirements.md` 中的编号
-- 验收标准编号：延续现有 AC 编号
-- 建议编号：INS-XXX（仅在洞察文档中使用）
+> ℹ️ **双轨**：layout.v1 用 `INS-XXX` 混合（决策 + 经验 + 一次性观察）；layout.v2 [FUTURE] 新增 INS 候选必须 AskUserQuestion 拆 3 类（ADR / PATTERN / NOTE），详见 [id-scheme-implementation.md § INS 拆 3 类人工归类机制](../pipeline/references/layout/id-scheme-implementation.md#ins-拆-3-类人工归类机制)。
+>
+> ℹ️ 输出路径双轨：v1 写单文件 `docs/devdocs/05-insights.md`；v2 [FUTURE] 按 AskUserQuestion 归类分流：决策类 → `design/decisions/ADR-NNN.md`，经验类 → `patterns/PATTERN-NNN.md`，一次性 → `notes/NOTE-NNN.md`。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
+
+- 功能点编号：延续 `01-requirements.md` 中的编号（v1: F-XXX / v2: FEAT-XXX）
+- 验收标准编号：延续现有 AC 编号（v1/v2 一致）
+- 建议编号：v1 用 `INS-XXX`；v2 [FUTURE] 拆为 `ADR-XXX` / `PATTERN-XXX` / `NOTE-XXX`
 
 ## 约束
 

@@ -48,9 +48,10 @@ user-invocable: true
 /ms-pipeline close          → 周期收尾
 /ms-pipeline insights       → 外部洞察吸收
 /ms-pipeline design         → 设计稿到达/更新（主动推送）
-/ms-pipeline realign        → 规范升级回扫（已完成产物按新规范查漏补缺）
+/ms-pipeline realign        → 规范升级回扫（spec_version 维度）
+/ms-pipeline realign --docs-layout → 文档体系版本升级（layout.v1→v2，含编号/目录/追溯重组）
 /ms-pipeline realign --dry-run → 只出差距报告，不修改文件
-/ms-pipeline realign --no-realign → 显式拒绝本次升级提示，写入 .devdocs-realign-ack（编排调度到 ms-dev-workflow --headless 时必需 --realign/--no-realign 其一，否则透传层 fail-fast）
+/ms-pipeline realign --no-realign → 拒绝升级提示，写入 .devdocs-realign-ack（--headless 时必需）
 ```
 
 ## 提问式调度（智能引导）
@@ -96,7 +97,12 @@ user-invocable: true
 
 ### 一次性升级提示（阶段检测后）
 
-阶段检测完成后、返回路由建议之前，执行 schema drift 轻量检查。检测到 drift 且无 `.devdocs-realign-ack` 标记时，打印**一次性**轻量提示（不阻塞原路由），提示用户运行 `/ms-pipeline realign`。用户任一决策后写入标记，之后不再提示。详细规则（检测流程、提示格式、标记失效策略）见 [references/realign.md](references/realign.md) § 一次性升级提示。
+阶段检测完成后、返回路由建议之前，执行两个维度的 drift 轻量检查：
+
+1. **schema drift**（产物模板）：检测各产物 `spec_version` 与各 skill 当前常量差距 → 提示 `/ms-pipeline realign`
+2. **layout drift**（治理层）：检测 AGENTS.md devdocs frontmatter 是否存在 + `docs_layout_version` 是否在各 skill `reads_layout` 范围 → 提示 `/ms-pipeline realign --docs-layout`
+
+检测到 drift 且无 `.devdocs-realign-ack` 标记时，打印**一次性**轻量提示（不阻塞原路由）。**layout drift 强阻塞场景**（skill `on_incompatible: block` 触发）会直接拒绝执行，不走"一次性提示"软路径。详细规则见 [references/realign.md](references/realign.md) § 一次性升级提示 + [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md) § 检测时机。
 
 **`.devdocs-realign-ack` 读写责任**：读取发生在阶段检测后；**写入仅由 `ms-pipeline realign` / `--no-realign` 执行完成时触发**（整仓决策）—— `ms-feature F-XX realign` / `ms-bugfix BUG-XX realign` 是定向局部对齐，**不写入 ack**（用户未对整仓做决策，下次进入 pipeline 若仍有 drift 仍应提示；若定向 realign 正好清空全部 drift，pipeline 入口自然 drift_count=0 不会提示）。失效条件见 [references/realign.md](references/realign.md)。标记文件入 git，协作者共享决策。
 
@@ -265,54 +271,39 @@ Q3（feature/bugfix 追加，可选）:
 
 ### realign — 规范升级回扫
 
-当 DevDocs 规范（模板/校验规则/证据标准）升级后，已完成的产物会按"已完成"被跳过；realign 入口让用户按新规范重新对齐，**不破坏原完成证据**，仅追加差距补齐。
+DevDocs 规范升级后，让已完成产物按新规范"查漏补缺"。**不破坏原完成证据**，仅追加差距补齐。两个维度：
+
+| 维度 | 命令 | 治理对象 |
+|------|------|--------|
+| **spec_version**（产物模板）| `/ms-pipeline realign` | 单文件模板格式（design.v2 / req.v1 等）|
+| **docs_layout_version**（治理层）| `/ms-pipeline realign --docs-layout` | 目录结构 / 编号体系 / 代码追溯（详见 [references/layout/](references/layout/)）|
 
 ```text
-扫描 docs/devdocs/ 所有产物 → 比对各 skill 当前 spec_version
-    │
-    ├── --dry-run → 只出差距报告（分 additive / restructuring 两级）
-    │
-    └── 执行 → 按 DevDocs 主链路顺序依次调度（传递 context）：
-         # Phase 1：B 类上游（PRD 流程产物，如果相关文件存在）
-         Task: /ms-prd-parser --realign       （若 docs/prd/<prd_id>/chunks/ 存在）
-             │
-             ▼
-         Task: /ms-prd-brainstorm --realign   （若 docs/prd/<prd_id>/requirements/ 存在）
-             │
-             ▼
-         # Phase 2：A 类 DevDocs 主链路
-         Task: /ms-requirements --realign
-             │
-             ▼
-         Task: /ms-system-design --realign
-             │
-             ▼
-         Task: /ms-test-cases --realign
-             │
-             ▼
-         Task: /ms-dev-tasks --realign
-             │
-             ▼
-         Task: /ms-dev-workflow --all --realign
-             │
-             ▼
-         # Phase 3：B 类旁路（洞察/onboard）
-         Task: /ms-insights --realign         （若 docs/devdocs/05-insights.md 存在）
-             │
-             ▼
-         Task: /ms-onboard --realign          （若 docs/devdocs/00-context.md 存在）
-             │
-             ▼
-         汇总 yaml-summary-v1 → 用户报告（N 产物 / M 任务 / K 差距补齐）
+spec_version 维度（默认）：
+扫描 spec_version → 比对各 skill 当前常量 → 三段式调度（Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路）
+  → 汇总 yaml-summary-v1
+（详细执行流程见 [references/realign.md](references/realign.md)）
+
+docs_layout_version 维度（--docs-layout）：
+扫描 AGENTS.md devdocs frontmatter → 比对 skill writes_layout → 执行三阶段迁移
+  Phase 1: 预扫描（dry-run 必输出 5 项契约：file_ops / aliases / unmappable / broken_links / trace_drift）
+  Phase 2: 编号 + 文件迁移（按 dry-run 批准项执行）
+  Phase 3: 后置校验（traceability 提取 + SSOT lint + AGENTS.md upgraded_at 写入）
+（详细迁移矩阵 + 不可逆操作清单见 [references/layout/docs-layout-migration.md](references/layout/docs-layout-migration.md)）
 ```
 
 **关键约束**：
-- realign **不是**续做信号（不混入 ms-dev-workflow 12 种续做机制）
-- restructuring 差距必须 `⚠️ 必须确认`，additive 差距可直接补齐
-- 二次运行幂等（无新差距即 no-op）
-- `--headless` 下必须显式 `--realign` 或 `--no-realign`（不隐式触发）
+- realign 非续做信号（不混入 ms-dev-workflow 续做机制）
+- restructuring / docs-layout 差距必须 `⚠️ 必须确认`，additive 可直接补齐
+- 二次运行幂等
+- `--headless` 必须显式 `--realign` 或 `--no-realign`
+- **docs-layout 升级**需先跑 `--dry-run` + 独立 git branch 演练（不可逆操作多）
 
-详细规则见 [references/realign.md](references/realign.md)（共享契约）与各 skill 的 `references/realign.md`（实例化差异矩阵）。
+详细规则：
+- 共享契约 [references/realign.md](references/realign.md) / 各 skill [references/realign.md](references/realign.md)
+- 三层版本号宪法 [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md)
+- 元数据 schema [references/layout/layout-metadata-schema.md](references/layout/layout-metadata-schema.md)
+- aliases.yml [references/layout/aliases-yml-schema.md](references/layout/aliases-yml-schema.md)
 
 ### design — 设计稿到达/更新
 

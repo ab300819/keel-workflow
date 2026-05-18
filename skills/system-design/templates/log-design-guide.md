@@ -1,6 +1,8 @@
 # 日志设计指南
 
 > 日志是调试和问题排查的关键工具，特别是对于手动测试和 E2E 测试场景。
+>
+> ℹ️ 文中编号示例使用 v1 前缀；v2 项目 [FUTURE] 走双轨。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
 
 ## 日志级别
 

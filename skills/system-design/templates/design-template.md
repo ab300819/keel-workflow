@@ -1,5 +1,7 @@
 # System Design Document Template
 
+> ℹ️ 模板示例编号使用 v1 前缀（`F-001` / `ADR-001`）；v2 项目 [FUTURE] 应替换为 `FEAT-001`（ADR 不变）。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
+
 Use this template to generate `docs/devdocs/02-system-design.md`.
 
 > **Frontmatter 必填**：生成文档时必须在正文最顶部插入以下 YAML frontmatter（供 realign 机制识别产物版本），之后才是 `# 系统设计：...` 标题。
@@ -426,7 +428,7 @@ Order *──* Product
 - **决策**：使用分层单体架构（接口→服务→领域→基础设施）
 - **替代方案**：微服务（运维复杂度高）
 - **下游影响**：部署简单，但需注意模块边界保持清晰
-- **关联**：INS-001
+- **关联**：v1 用 `INS-001` / v2 [FUTURE] 用 `ADR-001` 或 `PATTERN-001` 或 `NOTE-001`（按 ms-insights AskUserQuestion 归类）
 ```
 
 > ADR 编号在项目内全局递增，不重复。状态可选：`已采纳` | `已废弃` | `已取代`。
