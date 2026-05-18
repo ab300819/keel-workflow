@@ -18,21 +18,21 @@ migration: /ms-pipeline realign --docs-layout
 
 # 开发工作流
 
+- 共享约束 SSOT：[../_shared/constraints.md](../_shared/constraints.md)
+
+> 本 skill 遵循共享约束 SSOT：门控标记、yaml-summary-v1、Task 委托、用户确认、Recovery 格式、只读 / dry-run、FUTURE 三态、realign / spec_version 见 [skills/_shared/constraints.md](../_shared/constraints.md)。本文件只描述 ms-dev-workflow 私有规则（11 步流程、Sprint Contract、headless 安全、Step 1.5 五项证据、Phase 1-4 外部审查、EXT 状态机、Commit 1/2 双 commit）。
+>
 > ℹ️ 编号双轨：v1 项目用 `T-XX`，v2 项目 [FUTURE] 用 `TASK-XX`。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
 > ℹ️ 输入路径双轨：v1 读 `04-dev-tasks.md` 找任务；v2 [FUTURE] 读 `tasks/<ID>.md` + 写回状态到该文件。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 > 视角：资深开发者 — 务实优先，不过度设计，测试先行，提交原子化。
 
-执行开发任务的工作流指导，支持单任务和批量执行，采用自顶向下开发模式和分层 TDD。
-
 ## 快速开始
 
-**一句话**: 执行开发任务，采用骨架先行 + 分层 TDD。**最常见用法**: `/ms-dev-workflow T-03`（单任务）、`T-01~T-05`（批量）。**不适合?** 拆分任务→`/ms-dev-tasks`，修 Bug→`/ms-bugfix`。**语言**: 支持中英文提问，统一中文回复。
+执行开发任务，采用骨架先行 + 分层 TDD。常见用法：`/ms-dev-workflow T-03`（单任务）、`T-01~T-05`（批量）。拆分任务用 `/ms-dev-tasks`，修 Bug 用 `/ms-bugfix`。支持中英文提问，统一中文回复。
 
 ## 模式选择
-
-入口处根据任务规模选择合适的开发模式：
 
 | 模式 | 适用场景 | 流程 |
 |------|---------|------|
@@ -40,15 +40,7 @@ migration: /ms-pipeline realign --docs-layout
 | **标准** | 新功能、需求变更 | → 完整 Requirements→Design→Tests→Tasks→Dev |
 | **探索** | 原型、技术调研 | → 允许跳过部分验证，事后 `/ms-retrofit` 补文档 |
 
-### 模式判断指引
-
-- 若任务来自 `ms-dev-tasks`（已有完整文档链）→ **标准模式**
-- 若用户描述为 bug/hotfix/配置变更 → **轻量模式**，路由到 `/ms-bugfix`
-- 若用户描述为原型/调研/探索/spike → **探索模式**，跳过对抗式验证和追溯标注强制，开发完成后提示运行 `/ms-retrofit`
-
 > **探索模式最小行为验证**：可跳过文档强制（AC/追溯标注/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；写入 Commit 1 `Exploration-Mode: true` 尾注便于 `/ms-retrofit` 补 AC。无证据 ⛔ 阻止提交。
-
-> 以下流程为**标准模式**。轻量/探索模式见上述路由。
 
 ## 触发条件
 
@@ -76,33 +68,9 @@ migration: /ms-pipeline realign --docs-layout
 | 外部对抗审查轮次 | `--external-rounds N` | 覆盖 Phase 4 默认 `max_rounds=3`；上限 5（对齐 /adversarial-review skill 的 max_rounds） |
 | 规范升级回扫 | `--realign` | 已完成任务按新 spec_version 查漏补缺；**独立于 12 种续做信号**，不覆盖原证据，仅追加补齐+`Realigned-From` 尾注。详见 [references/realign.md](references/realign.md)。推荐用户入口：`/ms-pipeline realign`。 |
 
-### 模式对比
-
-| 特性 | 单任务模式 | 批量模式（交互） | `--auto-commit` | `--headless` |
-|------|-----------|----------------|----------------|--------------|
-| 依赖解析 | 自动补充前置依赖 | 拓扑排序全部任务 | 拓扑排序全部任务 | 拓扑排序 + 前置校验 |
-| 断点检测 | 编排器轻量执行 | 编排器轻量执行 | 编排器轻量执行 | 编排器轻量执行 |
-| 提交方式 | 子 Agent 内交互确认 | 子 Agent 内交互确认 | 测试通过自动提交 | 自动提交（安全不变量保证） |
-| 中断处理 | 子 Agent 内交互 | 子 Agent 内交互 | Blocker 时暂停询问 | fail-fast 终止 + 续做命令 |
-| 完成汇总 | 任务完成摘要 | 批量执行报告 | 批量执行报告 | 交付报告 + 检查点文件 |
-| 执行模式 | 编排器 + 子 Agent | 编排器 + 子 Agent | 编排器 + 子 Agent | 编排器 + 子 Agent |
-| 上下文隔离 | 任务执行隔离 | 每任务独立上下文 | 每任务独立上下文 | 每任务独立上下文 |
-
 ### 统一编排流程
 
-所有模式均采用**编排器 + 子 Agent** 架构，主 Agent 只做编排和决策，不直接执行 TDD 循环：
-
-```text
-解析任务指定符 → 依赖解析
-  ├── 扩展后仅 1 任务 → 启动子 Agent 执行完整流程 → 接收摘要 → 后续步骤
-  └── 扩展后 >1 任务 → 拓扑排序 → 逐任务循环（断点检测 → 子 Agent 执行 → 原子提交）→ 汇总
-```
-
-**编排器（主 Agent）职责**：解析指定符、依赖解析、断点检测、启动子 Agent、接收摘要、展示结果、调度后续子 Agent（sync/compound/test-run）
-
-**任务子 Agent 职责**：执行开发流程（步骤 1→5），包括 TDD 循环、对抗式验证、Blocker 修复闭环、code-self-describe、Commit 1（代码提交）。Commit 2（文档同步）由编排器调度 /ms-sync 子 Agent 完成。
-
-> 详见 [task-orchestration.md](references/task-orchestration.md)
+所有模式均采用**编排器 + 子 Agent**：编排器解析指定符、依赖/断点、启动子 Agent、接收 yaml-summary-v1、调度 `/ms-sync`/`/ms-test-run`/`/ms-compound`；任务子 Agent 执行 TDD、对抗式验证、Blocker 修复、自描述和 Commit 1。扩展后 >1 任务时拓扑排序并逐任务原子提交。通用 Task 委托协议见共享约束 §3，批量/续做细节见 [task-orchestration.md](references/task-orchestration.md)。
 
 ## 前置条件
 
@@ -111,84 +79,23 @@ migration: /ms-pipeline realign --docs-layout
 
 ## 工作流程
 
-```text
-1. 读取任务定义
-   ├── 从 04-dev-tasks.md 获取任务详情
-   ├── 确认关联的功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）和 AC-XXX
-   └── 确认关联的测试用例 UT/IT/E2E-XXX（v1/v2 一致）
-           │
-           ▼
-1.5 Sprint Contract（验收契约协商）
-   ├── Test Agent 基于 AC + 当前代码上下文，生成可执行的验收契约
-   │   └── 具体到：函数签名、返回值类型、边界条件、异常场景
-   ├── 编排器审核契约合理性（过度 vs 不足）
-   │   ├── 过度：契约超出 AC 范围 → 裁剪
-   │   └── 不足：契约未覆盖 AC 关键行为 → 补充
-   └── 契约确认后作为 Test Agent 写测试的输入约束
-           │
-           ▼
-2. 生成骨架代码（自顶向下）
-   ├── 接口骨架 + @requirement/@satisfies 标注 [layout.v1 legacy]
-   └── 测试骨架 + @verifies/@testcase 标注（基于 Sprint Contract）[layout.v1 legacy]
-           │
-           ▼
-3. 执行开发（统一流程，分级强制）
-   ├── 所有层级遵循统一 11 步流程
-   ├── 层级标记（🔴🟡🟢⚪）决定各步骤强制程度
-   └── 详见 [execution-flow.md](references/execution-flow.md) 强制程度矩阵
-           │
-           ▼
-4. 完成检查
-   ├── 基础检查（始终执行）
-   │   ├── AC 完备性表：逐条 AC 产出「AC 类型（行为型/视觉型/结构型）/证据类型/代码或测试位置/判定」
-   │   │   └── 任一 AC 缺证据 / 违反 AC 类型×证据类型分级矩阵 → ⛔ 禁止继续（补实现/补证据后重跑）
-   │   ├── 声称 vs 实际 diff 交叉验证（对比 AC 列表与 git diff）
-   │   │   └── 遗漏实现 / 未关联 AC 的大块变更 → ⛔ 禁止继续
-   │   ├── 测试通过（skipped/todo 计数=0，豁免见下方约束）
-   │   └── Review 要点自查
-   │
-   ├── 前置验证（按层级默认触发，`--review` 作为"增强"叠加对抗式验证）
-   │   ├── 🔴：/ms-verify --impl（前置） + 对抗式验证（自动）
-   │   ├── 🟡：/ms-verify --impl（默认必做）
-   │   ├── 🟢：
-   │   │   ├── 有设计稿 → /ms-verify --impl（AC + 追溯）＋ /ms-verify --ui --impl（设计稿↔实现）两次显式调用
-   │   │   └── 无设计稿 → Phase 2-UI 自查 + /ms-verify --impl
-   │   └── ⚪：/ms-verify --impl --trace（追溯子集，非完整 AC 语义对齐）
-   │
-   ├── 对抗式验证 Phase 1~3（🔴 自动触发 / 🟡🟢⚪ 通过 `--review` 手动叠加；`--skip-review-reason` 仅 🔴 可用）
-   │   └── 同进程角色切换式自审（内置），产物落 `INT_*` canonical state
-   │
-   └── **Phase 4：外部对抗审查（embedded-headless 模式）** —— 🔴 默认触发；🟡🟢⚪ `--external-review` 显式触发
-       ├── 双通道：T1 codex CLI → T2 codex-mcp（T1/T2 全失败 → fail-fast，不设 Task 子 Agent 兜底）
-       ├── 最大轮次：默认 max_rounds=3，`--external-rounds N` 覆盖至 5
-       ├── 状态：`EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED`（见 verification-flow.md 真值表）
-       └── `--skip-external-review-reason="<原因>"` 仅 🔴 可用；自动标 `EXT_PENDING`
-           │
-           ▼
-4.5 更新自描述（/code-self-describe --update）
-           │
-           ▼
-5. 提交代码（Commit 1: 代码，遵循 /commit-convention）
-           │
-           ▼
-6. 更新追溯 + 文档提交（/ms-sync → Commit 2: 文档）
-        │
-        ▼
-6.5 更新 AGENTS.md "当前状态"（若存在）
-    ├── 更新活跃任务编号（v1: T-XX / v2 [FUTURE]: TASK-XX）
-    └── 更新进度统计 (X/Y)
-        │
-        ▼
-7. [推荐] 知识沉淀（/ms-compound）
-    ├── 批量模式完成后默认执行（用户可跳过）
-    └── 单任务模式：提示用户是否运行 /ms-compound
-```
+本文件保留 S1~S11 骨架；S12 文档同步/知识沉淀属于 Commit 2 后置流程，详见 [execution-flow.md](references/execution-flow.md)。
 
-### 步骤状态追踪
+| 步骤 | 质量门 |
+|------|--------|
+| S1 读取任务定义 | 从 `04-dev-tasks.md` 获取任务、F/AC/UT/IT/E2E 关联 |
+| S1.5 Sprint Contract | Test Agent 基于 AC + 当前代码上下文生成可执行验收契约（函数签名、返回值类型、边界条件、异常场景）；编排器裁剪过度契约、补足遗漏契约，确认后作为测试输入约束 |
+| S2-S3 骨架 | 接口骨架 + 测试骨架；layout.v1 legacy 使用 `@requirement`/`@satisfies`/`@verifies`/`@testcase`，layout.v2 改用 `traceability.yml` |
+| S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0` |
+| S8 完成检查 | AC 完备性表、AC 类型×证据类型矩阵、声称 vs 实际 diff 交叉验证；缺证据或未关联大块 diff → ⛔ 禁止继续 |
+| S9 前置验证 | 🔴/🟡 `/ms-verify --impl`；🟢 有设计稿时 `/ms-verify --impl` + `/ms-verify --ui --impl` 两次调用，无设计稿走 Phase 2-UI + `/ms-verify --impl`；⚪ `/ms-verify --impl --trace` |
+| S9 Phase 1~3 | 内置角色演绎对抗式验证，🔴 自动触发，其他层级用 `--review`；`--skip-review-reason` 仅 🔴 可用并标 `INT_PENDING` |
+| S9 Phase 4 | 外部对抗审查 embedded-headless；🔴 自动触发，其他层级用 `--external-review`；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态仅 `EXT_REVIEWED`/`EXT_PENDING`/`EXT_UNRESOLVED`/`EXT_BLOCKED` |
+| S10 自描述 | `/code-self-describe --update` |
+| S11 Commit 1 | 代码提交，遵循 `/commit-convention`，Phase 4 触发时必须写 `External-Review-Verdict` |
+| Commit 2 后置 | `/ms-sync` 更新 trace + 文档提交；若有 AGENTS.md 仅更新“当前状态”；批量默认 `/ms-compound` |
 
-11 步执行流程中，每步完成后记录状态标记（S1~S11），用于断点恢复时精确定位。比原有 5 步检查点更精确，减少重复工作。
-
-> 详见 [execution-flow.md](references/execution-flow.md) 步骤状态追踪表
+步骤状态（S1~S11 + S1.5）用于断点恢复；详细矩阵、S12 后置同步和状态标记见 [execution-flow.md](references/execution-flow.md)。
 
 ## 代码追溯标注规范（layout.v1 legacy）
 
@@ -289,7 +196,7 @@ migration: /ms-pipeline realign --docs-layout
 
 ### 分层 TDD 约束
 
-- [ ] **所有层级遵循统一执行流程（S1~S12 + S1.5 Contract）**（层级标记仅决定强制程度）
+- [ ] **所有层级遵循统一执行流程（S1~S11 + S1.5 Contract；S12 为 Commit 2 后置同步）**（层级标记仅决定强制程度）
 - [ ] **核心逻辑任务必须标记 🔴 强制 TDD**（全部步骤 ■ 必须）
 - [ ] **Test Agent 先写测试，Impl Agent 后写实现**（物理隔离）
 - [ ] **核心逻辑任务禁止在测试通过前提交**
@@ -375,7 +282,7 @@ migration: /ms-pipeline realign --docs-layout
 - [ ] **存在完成痕迹的任务必须通过 Step 1.5 五项证据复核才允许跳过**：[A] AC 表可复核 / [B] 测试无 skip/todo / [C] trace 已同步 / [D1] Phase 1~3 内置对抗式验证证据（🔴 必查，`Skip-Review-Reason` 不得作为放行）/ [D2] Phase 4 外部对抗审查证据（🔴 必查，`ext_review_state=EXT_REVIEWED` 且 L2 yaml 可读；`Skip-External-Review-Reason` 不得作为放行）/ [E] 后置测试证据（`Skip-Trace-Reason` 不得作为放行）
 - [ ] **Git 历史有 code+doc commit 但任务状态≠已完成**：不再直接跳过，改为进入 Step 1.5 证据复核路径
 - [ ] 旧任务（前版本完成，无 A/D1/D2/E 产物）→ AskUserQuestion：复核续做 / 登记豁免原因 / 终止
-- [ ] 进行中任务分析续做起点（精确定位：S1~S12 + S1.5，含续做 Agent 判定）
+- [ ] 进行中任务分析续做起点（精确定位：S1~S11 + S1.5；S12 后置同步单独判定，含续做 Agent 判定）
 - [ ] 文档状态 + 证据复核 + Git 历史 + 工作区四重验证
 
 > 详见 [task-orchestration.md](references/task-orchestration.md)
@@ -463,32 +370,18 @@ Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他
 
 ## 子 Agent 摘要格式
 
-当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+当本 Skill 作为子 Agent 运行时，envelope 遵循共享约束 §2 `yaml-summary-v1`；私有字段仅放 `summary.details`：
 
-```yaml
-skill: ms-dev-workflow
-status: success | failed
-summary:
-  headline: "T-03 开发完成，测试全部通过"
-  details:
-    task: T-XX           # v1；v2 [FUTURE] 用 TASK-XX
-    commits:
-      code: "abc1234"
-      docs: "def5678"
-    test_summary:
-      passed: X
-      failed: 0
-      coverage: "XX%"
-    blockers_resolved: 0
-    suggestions_skipped: 0
-    ac_verified: [AC-001, AC-002]
-    decision_log: []  # 关键决策事件（Contract 审核、重试、Blocker 修复等）
-blockers: []
-output_files: []
-new_ids: {}
-next_recommended:
-  skill: ms-sync
-```
+| details 字段 | 含义 |
+|---|---|
+| `task` | 任务编号，v1 `T-XX`，v2 [FUTURE] `TASK-XX` |
+| `commits.code` / `commits.docs` | Commit 1 代码提交、Commit 2 文档提交 |
+| `test_summary` | passed/failed/coverage |
+| `blockers_resolved` / `suggestions_skipped` | 本任务处理结果 |
+| `ac_verified` | 已验证 AC 列表 |
+| `decision_log` | Contract 审核、重试、Blocker 修复等关键决策事件 |
+
+`next_recommended` 常用 `/ms-sync`；若已完成 Commit 2，可推荐 `/ms-compound` 或为空。
 
 ## 参考资料
 
@@ -497,3 +390,4 @@ next_recommended:
 - [verification-flow.md](references/verification-flow.md) - 对抗式验证流程详解
 - [task-orchestration.md](references/task-orchestration.md) - 多任务编排（批量/依赖/断点续做）
 - [auto-mode.md](references/auto-mode.md) - 无人值守模式详解
+- [realign.md](references/realign.md) - dev-workflow spec_version 回扫
