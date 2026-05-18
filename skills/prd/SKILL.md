@@ -26,6 +26,9 @@ user-invocable: true
 - PRD 全局编号 SSOT：[references/governance/prd-index-ssot.md](references/governance/prd-index-ssot.md)
 - PRD 修订边界：[references/governance/prd-revision-policy.md](references/governance/prd-revision-policy.md)
 - PRD ↔ DevDocs Mapping：[references/governance/prd-devdocs-mapping.md](references/governance/prd-devdocs-mapping.md)
+- 共享约束 SSOT：[../_shared/constraints.md](../_shared/constraints.md)
+
+> 本 skill 遵循共享约束 SSOT：门控标记、yaml-summary-v1、Task 委托、用户确认、Recovery 格式、只读 / dry-run、FUTURE 三态、realign / spec_version 见 [skills/_shared/constraints.md](../_shared/constraints.md)。本文件只描述 PRD 私有规则。
 
 ## 语言规则
 
@@ -94,30 +97,27 @@ user-invocable: true
 - "引用大文件"指用户提供文件路径且文件 > 2000 字，或为 PDF/图片等二进制格式
 - 模糊区间时询问：「输入内容介于想法和文档之间，请确认：(1) 作为想法进行头脑风暴 (2) 作为文档进行结构化解析」
 
+## PRD 私有门控
+
+**门控标记**：见 [skills/_shared/constraints.md § 1](../_shared/constraints.md#1-门控标记-ssot)
+
+| 触发点 | 门控 | 恢复 / 继续 |
+|---|---|---|
+| `docs/prd/index.md` 与 legacy `docs/prd/chunks/` 或 `docs/prd/requirements/` 同时存在 | ⚠️ 必须确认 | 用户执行 `/ms-prd migrate` 或手动清理后继续 |
+| 输入 200~2000 字且无法判断是想法还是文档 | ⚠️ 必须确认 | 用户选择「作为想法进行头脑风暴」或「作为文档进行结构化解析」 |
+| `--revise` 目标文件位于 `_archived/` 下 | ⛔ 禁止继续 | 已归档 PRD 不可修改，需创建新版 PRD |
+| `archive <prd_id>` 目标已归档 | ⛔ 禁止继续 | 报错退出；只允许 `status` 或只读 `--from-prd` |
+| `archive <prd_id>` 目标为 active 或 superseded | ⚠️ 必须确认 | AskUserQuestion 确认归档意图后，移动目录并更新全局 index 与 per-PRD index |
+
 ## Step 0: 上下文感知（自动，所有场景前置）
 
 启动时自动检测是否存在已有系统，无需用户指定：
 
-```text
-/ms-prd 启动
-    |
-    v
-Step 0: 上下文感知
-    |
-    +-- 检测项目是否有代码（检查 git ls-files 是否有非文档文件，或检测常见代码文件模式）
-    |   ├── 有代码 → 委托 ms-codebase-insight（由其缓存机制决定是否重扫）
-    |   │            读取返回的 docs/codebase-insight.md 作为已有上下文
-    |   └── 无代码 → 绿地模式，跳过
-    |
-    +-- 检测 docs/devdocs/01-requirements.md
-    |   ├── 存在 → 提取已有 F/US 列表作为补充上下文
-    |   └── 不存在 → 跳过
-    |
-    +-- 设计资产探测 → 按 references/design-context.md 探测协议执行
-    |
-    v
-Step 1+: 正常编排流程（brainstorm / prd-parse）
-```
+| 项 | 规则 | 输出 |
+|---|---|---|
+| 代码检测 | 检查 `git ls-files` 是否有非文档文件，或检测常见代码文件模式 | 有代码 → 委托 ms-codebase-insight（由其缓存机制决定是否重扫），读取返回的 `docs/codebase-insight.md`；无代码 → 绿地模式，跳过 |
+| DevDocs 检测 | 检测 `docs/devdocs/01-requirements.md` | 存在 → 提取已有 F/US 列表作为补充上下文；不存在 → 跳过 |
+| 设计资产探测 | 按 `references/design-context.md` 探测协议执行 | 进入 Step 1+ 正常编排流程（brainstorm / prd-parse） |
 
 携带已有上下文后，brainstorm 探索时标注每个 FR-XX 与已有系统的关系：
 - FR-XX YAML 增加 `relation` 字段：`new`（全新功能）| `extend`（扩展已有）| `modify`（修改已有）
@@ -160,72 +160,11 @@ Step 1+: 正常编排流程（brainstorm / prd-parse）
 
 ## 编排流程
 
-### 场景 1：头脑风暴（idea → requirements）
-
-```text
-用户输入（一句话/简短想法）
-    |
-    v
-Task: ms-prd-brainstorm（完整模式）
-    |  ← 5W1H → 用户旅程 → MoSCoW 收敛
-    v
-生成 requirements/ 小文档 + index.md
-    |
-    v
-成熟度评估 → DevDocs 衔接建议
-```
-
-### 场景 2：PRD 解析（大文档 → chunks → requirements）
-
-```text
-用户提供 PRD 文档
-    |
-    v
-Step 1: Task: ms-prd-parser
-    |  ← 转换 + 拆分 → chunks/FR-XX.md + NFR-XX.md
-    v
-Step 2: 逐块 Task: ms-prd-brainstorm --chunk <chunk文件路径>
-    |  ← 自适应深度：成熟块快速确认，模糊块深入探索
-    |  ← 终判分类：复核 parser 的 FR/NFR 初判
-    |  ← 入参示例：/ms-prd-brainstorm --chunk docs/prd/<prd_id>/chunks/FR-09-用户认证.md
-    v
-Step 3: 跨块合成
-    |  ← 全局术语、共享假设、横切 NFR、冲突/重复解决
-    v
-Step 4: 生成/更新 requirements/index.md 总纲
-    |
-    v
-Step 5: 成熟度评估 → DevDocs 衔接建议
-```
-
-### 场景 3：PRD 更新（增量处理）
-
-```text
-用户提供更新后的 PRD
-    |
-    v
-Step 0: 留存原始文档（仅 multi-PRD 模式）
-    |  将 source/ 全量复制到 _snapshots/<YYYYMMDD-HHMMSS>/source/
-    |  _snapshots/ 不入库，与 source/ 同忽略策略
-    v
-Step 1: Task: ms-prd-parser（重新拆分）
-    |  ← 计算新 document_fingerprint
-    v
-Step 2: 指纹对比
-    |  ← 通过 chunk_key 匹配新旧块
-    |  ← 对比 source_fingerprint
-    |
-    +-- 不变 → 保持 clarified，跳过
-    +-- 变化 → 标记 outdated，重新 brainstorm
-    +-- 新增 → 创建新文件，status=pending
-    +-- 删除 → 标记 removed，对应 requirement 标记失效
-    |
-    v
-Step 3: 仅对 outdated/pending 块调用 ms-prd-brainstorm
-    |
-    v
-Step 4: 更新 index.md + 成熟度重评估
-```
+| 场景 | 输入 | 步骤 | 输出 / 门控 |
+|---|---|---|---|
+| 头脑风暴（idea → requirements） | 用户输入（一句话/简短想法） | Task: ms-prd-brainstorm（完整模式），按 5W1H → 用户旅程 → MoSCoW 收敛 | 生成 requirements/ 小文档 + index.md；成熟度评估 → DevDocs 衔接建议 |
+| PRD 解析（大文档 → chunks → requirements） | 用户提供 PRD 文档 | 1. Task: ms-prd-parser（转换 + 拆分 → chunks/FR-XX.md + NFR-XX.md）<br>2. 逐块 Task: ms-prd-brainstorm --chunk `<chunk文件路径>`；自适应深度：成熟块快速确认，模糊块深入探索；终判分类：复核 parser 的 FR/NFR 初判；入参示例：`/ms-prd-brainstorm --chunk docs/prd/<prd_id>/chunks/FR-09-用户认证.md`<br>3. 跨块合成：全局术语、共享假设、横切 NFR、冲突/重复解决<br>4. 生成/更新 requirements/index.md 总纲<br>5. 成熟度评估 | DevDocs 衔接建议 |
+| PRD 更新（增量处理） | 用户提供更新后的 PRD | 0. 留存原始文档（仅 multi-PRD 模式）：将 source/ 全量复制到 `_snapshots/<YYYYMMDD-HHMMSS>/source/`，`_snapshots/` 不入库，与 source/ 同忽略策略<br>1. Task: ms-prd-parser（重新拆分），计算新 document_fingerprint<br>2. 指纹对比：通过 chunk_key 匹配新旧块，对比 source_fingerprint<br>3. 仅对 outdated/pending 块调用 ms-prd-brainstorm<br>4. 更新 index.md + 成熟度重评估 | 不变 → 保持 clarified，跳过；变化 → 标记 outdated，重新 brainstorm；新增 → 创建新文件，status=pending；删除 → 标记 removed，对应 requirement 标记失效 |
 
 ## 跨块合成（Step 3 详解）
 
@@ -307,33 +246,15 @@ maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响�
 
 ## 编排规范（子 Agent 调度）
 
-### 调度原则
+**Task tool / 子 Agent 委托规则**：见 [skills/_shared/constraints.md § 3](../_shared/constraints.md#3-task-tool--子-agent-委托规则)
 
-pipeline 调用其他技能时，**必须通过 Task tool 启动子 Agent**：
-
-```text
-ms-prd（编排层）
-    |
-    +-- Task: ms-prd-parser → YAML 摘要
-    +-- Task: ms-prd-brainstorm（逐块）→ YAML 摘要
-    +-- 跨块合成（pipeline 自身执行）
-    +-- 生成 index.md（pipeline 自身执行）
-```
-
-### 摘要传递
-
-阶段间只传递 YAML 摘要 + 文件路径。编排 Agent **不读取**子技能的完整输出文档内容来做编排决策。
-
-### 异常回退
-
-子 Agent 返回 `status: failed` + `blockers` 时：
-1. 展示阻塞项给用户
-2. 询问用户处理方式（修复/跳过/终止）
-3. **不自行读取文档排障**
-
-### 上下文隔离
-
-每个子 Agent 自行读取所需的前置文件（从 `docs/prd/` 文件系统），不依赖编排 Agent 传递全文。
+| 分工 | PRD 私有约束 |
+|---|---|
+| 委托 | ms-prd 通过 Task 启动 ms-prd-parser 和 ms-prd-brainstorm（逐块），并接收 YAML 摘要 |
+| 自执行 | 跨块合成和 index.md 生成由 ms-prd 自身执行 |
+| 摘要传递 | 阶段间只传递 YAML 摘要 + 文件路径 + 新增编号列表；编排 Agent **不读取**子技能的完整输出文档内容来做编排决策 |
+| 异常回退 | 子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项并询问用户修复/跳过/终止；**不自行读取文档排障** |
+| 上下文隔离 | 每个子 Agent 自行读取所需的前置文件（从 `docs/prd/` 文件系统），不依赖编排 Agent 传递全文 |
 
 ## 文件产出路径
 
@@ -429,13 +350,6 @@ docs/prd/
 - [ ] **AskUserQuestion 最多 1 次确认路由，不开放式提问**
 - [ ] 用户明确指定模式时直接路由，不二次确认
 
-### 子 Agent 约束
-
-- [ ] **调用其他技能时必须通过 Task tool 启动子 Agent**
-- [ ] **阶段间只传递 YAML 摘要 + 文件路径**
-- [ ] **子 Agent 失败时展示阻塞项询问用户，不自行排障**
-- [ ] **每个子 Agent 自行读取前置文档，编排层不传递全文**
-
 ### 成熟度约束
 
 - [ ] **成熟度标记为建议性，不硬阻塞流程**
@@ -459,40 +373,22 @@ docs/prd/
 
 ## 子 Agent 摘要格式
 
-当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+**yaml-summary-v1 envelope**：见 [skills/_shared/constraints.md § 2](../_shared/constraints.md#2-yaml-summary-v1-envelope-ssot)
 
-```yaml
-skill: ms-prd
-status: success | partial | failed
-summary:
-  headline: "需求处理完成，成熟度 ready，含 6 个功能 + 2 个非功能"
-  details:
-    prd_id: 20260330-用户认证
-    prd_status: active
-    index_path: docs/prd/20260330-用户认证/requirements/index.md
-    mode: brainstorm | prd-parse
-    maturity: idea | draft | ready
-    functional_count: 6
-    nonfunctional_count: 2
-    clarified_count: 8
-    open_questions: 2
-    ready_checks_passed: 6
-    ready_checks_total: 6
-blockers: []
-output_files:
-  - docs/prd/20260330-用户认证/requirements/index.md
-  - docs/prd/20260330-用户认证/requirements/FR-09-登录.md
-new_ids:
-  requirements: [FR-09~FR-14, NFR-04~NFR-05]
-next_recommended:
-  skill: ms-requirements
-  args: "--from-prd docs/prd/20260330-用户认证/requirements/index.md"
-```
+**summary.details 私有字段**：
 
-**status 值域**：
-- `success`：所有块处理完成，index.md 已生成
-- `partial`：部分块处理完成（用户中断或部分块失败）
-- `failed`：关键步骤失败（如 PRD 无法解析）
+| 字段 | 值域 / 示例 |
+|---|---|
+| `prd_id` / `prd_status` | `20260330-用户认证` / `active` |
+| `index_path` | `docs/prd/20260330-用户认证/requirements/index.md` |
+| `mode` / `maturity` | `brainstorm \| prd-parse` / `idea \| draft \| ready` |
+| `functional_count` / `nonfunctional_count` | 功能 / 非功能数量 |
+| `clarified_count` / `open_questions` | 已澄清块数 / 开放问题数 |
+| `ready_checks_passed` / `ready_checks_total` | ready 检查通过数 / 总数 |
+
+**PRD status 判定**：`success` = 所有块处理完成且 index.md 已生成；`partial` = 部分块处理完成（用户中断或部分块失败）；`failed` = 关键步骤失败（如 PRD 无法解析）。
+
+**产物字段**：`output_files` 列出 per-PRD index 与 FR/NFR 文件；`new_ids.requirements` 记录 `FR-09~FR-14, NFR-04~NFR-05` 这类新增编号；`next_recommended` 可指向 `ms-requirements --from-prd <实际 index.md 路径>`。
 
 ## 下一步
 
