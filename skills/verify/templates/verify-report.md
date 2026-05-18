@@ -1,5 +1,7 @@
 # 验证报告模板
 
+> ℹ️ 本模板提及的 `@satisfies` / `@verifies` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
+
 使用此模板生成 `docs/devdocs/verify-report.md`
 
 ---
@@ -132,6 +134,62 @@
 | # | 文件:行号 | 代码摘要 | 建议标注 |
 |---|----------|----------|----------|
 | 1 | `src/auth.ts:45-60` | 密码加密逻辑 | @satisfies AC-004 |
+
+### B4. IT 断言完备性（盲区 6）
+
+> 仅在任务 spec / 03-test-cases.md 显式提及 IT-XXX 期望"N 类断言"等量化数量时填写。判定标准见 [references/impl-completeness-rubric.md](../references/impl-completeness-rubric.md)。
+
+#### IT 断言期望 vs 实际 diff
+
+| IT 编号 | spec 期望断言数 / 类型集 | 实际 @Test 数 / 类级断言粒度 | 差距 (K/N) | 判定 | 说明 |
+|---------|--------------------------|-----------------------------|-----------|------|------|
+| IT-XXX | 8 类（反射 + 文件扫描 + ...） | 3 类（仅核心） | 3/8 | ❌ P1 | 缺 5 类断言；DoD 不允许整项 ✅ |
+| IT-YYY | 4 项校验 | 4 项 | 4/4 | ✅ 满足 | - |
+
+#### DoD checkbox 粒度检查
+
+| 任务 | DoD 整项 ✅？ | 测试用例完成度（K/N） | 是否拆分为子项？ | 判定 |
+|------|--------------|---------------------|----------------|------|
+| T-XXX | ✅ | 3/8 | ❌ 未拆分 | ❌ P1 ⛔ 阻断 DoD |
+| T-YYY | `[完成 3/8 类]` | 3/8 | ✅ 已拆分 + 转 candidate | ⚠️ P2（允许通过） |
+
+#### 恢复建议
+
+- 补齐缺失断言：`/ms-dev-workflow --task T-XXX-followup-1`
+- 或更新 spec 期望：`/ms-test-cases --update IT-XXX` 并附调整理由
+- 或拆分子任务：`/ms-dev-tasks --split T-XXX`
+
+### B5. SPI DTO 字段透传完备性（盲区 7）
+
+> 仅在 `--impl` 检测到 SPI / 对外契约 DTO 字段集变化时填写。判定标准见 [references/impl-completeness-rubric.md](../references/impl-completeness-rubric.md)。
+
+#### DTO 字段集变化检测
+
+| DTO 类 | 变化类型 | 变化字段 | 上游 PO |
+|--------|---------|---------|--------|
+| `FundTraceFlowResult` | 升级替换 | (替换 `FundTraceContextDTO`) | `FundGpTraceNodePO`, `FundGpTraceRoutePO` |
+
+#### 字段透传矩阵 diff
+
+| Upstream PO Field | Type | New DTO Field | Frontend Display Anchor | Status |
+|-------------------|------|---------------|------------------------|--------|
+| FundGpTraceNodePO.origAmount | BigDecimal | FundTraceFlowResult.origAmount | Figma:供应商-底部"整笔来账金额" | ✅ 透传 |
+| FundGpTraceNodePO.origCurrency | String | - | Figma:供应商-币种标签 | ❌ P1 缺失（无 DEFER） |
+| FundGpTraceNodePO.receiveAmount | BigDecimal | - | Figma:买家-Sent 节点"到账金额" | ⚠️ DEFER → T-XXX-buyer-fields |
+
+#### 字段透传完备性判定
+
+| 检查项 | 结果 | 严重程度 |
+|--------|------|----------|
+| 新 DTO 字段集 ⊇ 上游 PO 视觉展示性字段类型集 | ❌ 缺失 1 项无 DEFER | P1 ⛔ |
+| task spec 含"字段透传矩阵"三列映射表 | ✅ / ❌ | P1 ⛔（如缺失） |
+| `--ui --design` 已在 DTO 字段定稿前执行 | ✅ / ❌ | P2 |
+
+#### 恢复建议
+
+- 补齐透传字段：在 DTO + Mapper + Provider 透传缺失字段，新增 IT 验证非 null
+- 显式 DEFER：task spec 矩阵标 `DEFER:<原因>` + cross-link follow-up task
+- UI 视觉对齐提前：下次 SPI 升级前先执行 `/ms-verify --ui --design`
 
 ---
 

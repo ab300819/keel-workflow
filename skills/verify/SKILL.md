@@ -67,11 +67,12 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 /ms-verify --ui --design      → 仅设计稿 ↔ 需求
 /ms-verify --ui --impl        → 仅设计稿 ↔ 实现
 /ms-verify --readiness          → 开发就绪检查（进入 dev-workflow 前的质量关卡）
-/ms-verify --schema-drift       → 只读扫描所有 DevDocs 产物的 spec_version，报告 legacy / drift / current 三态
+/ms-verify --schema-drift       → 扫产物 spec_version 三态报告（详见下方说明块）
+/ms-verify --layout-drift       → 扫治理层 layout/id/trace 兼容性（详见下方说明块）
 /ms-verify T-01 T-02          → 指定任务范围（自动 --impl）
 ```
 
-> **`--schema-drift` 说明**：扫描 `docs/devdocs/*.md`（含拆分文件）与 `docs/prd/<prd_id>/chunks/*.md`、`docs/prd/<prd_id>/requirements/*.md` 的 frontmatter `spec_version`，对照各 skill `references/realign.md` 顶部"当前 spec_version"常量，输出三态报告（`legacy` 无 frontmatter / `drift` 落后 / `current` 匹配）。ms-codebase-insight 产物按其独立 `schema_version` 字段扫描，在主报告独立章节呈现（不并入 A/B 类产物主统计）。仅只读，不触发 realign；如需对齐使用 `/ms-pipeline realign`。完整扫描范围表见 [references/schema-drift.md](references/schema-drift.md)。
+> **drift 双维度（均只读）**：`--schema-drift` 扫产物 spec_version，对齐 `/ms-pipeline realign`，详见 [references/schema-drift.md](references/schema-drift.md)；`--layout-drift` 扫治理层（AGENTS.md `devdocs:` + 各 skill `reads/writes_layout` + 兼容性总表），对齐 `/ms-pipeline realign --docs-layout`，详见 [skills/pipeline/references/layout/](../pipeline/references/layout/)。
 
 ### 自动检测规则
 
@@ -162,8 +163,8 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 
 逐条验证实现是否匹配验收标准。
 
-1. 读取 `01-requirements.md` 中所有 AC
-2. 通过 `@satisfies` 标注 + 代码搜索定位实现
+1. 读取 `01-requirements.md` 中所有 AC（layout.v1）/ `requirements/AC-NNN.md`（layout.v2 [FUTURE]）
+2. 通过 `@satisfies` 标注（layout.v1 legacy）或 `traceability.yml`（layout.v2 [FUTURE]）+ 代码搜索定位实现
 3. **语义判断**实现是否匹配 AC 描述（不仅检查标注存在性）
 4. 对每条 AC 给出判定：✅ 满足 / ⚠️ 部分满足 / ❌ 未满足
 
@@ -180,7 +181,7 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 
 ### B3：追溯完整性审查
 
-检查 `@satisfies`/`@verifies` 覆盖率。**复用 ms-sync --check 的追溯扫描能力**（只读模式，不修改文档）。
+检查 `@satisfies`/`@verifies` 覆盖率（layout.v1 legacy）或 `traceability.yml` 完整性（layout.v2 [FUTURE]）。**复用 ms-sync --check 的追溯扫描能力**（只读模式，不修改文档）。
 
 ### B4：实际交互验证（--live，可选）
 
@@ -382,6 +383,12 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 - [ ] **--ui 阶段 2 必须获取实现截图进行视觉对比**
 - [ ] **--ui 无设计稿输入时不可运行，必须提示用户提供**
 - [ ] **必须生成验证报告**
+
+- [ ] **IT 断言完备性检查**（盲区 6, P1）：spec 显式提及 IT-XXX 期望 N 类断言时，`--impl --ac` 必须 diff 期望 vs 实际 @Test 数 + 类级断言粒度；不匹配 ⛔ 阻断 DoD ✅。判定/源案例见 [references/impl-completeness-rubric.md](references/impl-completeness-rubric.md)。
+- [ ] **DoD checkbox 粒度约束**（盲区 6）：测试用例部分完成（K/N 类）时 DoD 必须显式标 `[完成 X/Y 类]`，禁止整项 ✅。
+- [ ] **SPI DTO 字段透传完备性 cross-check**（盲区 7, P1）：DTO 字段集变化时必须扫描上游 PO 视觉展示性字段类型集做交叉验证；缺失字段必须 `DEFER:<原因>` + cross-link 前端锚点，否则 ⛔ 阻断 SPI 升级合并。
+- [ ] **task spec "字段透传矩阵"必填项**（盲区 7）：SPI 出参升级 task 必须含 `Upstream PO Field → New DTO Field → Frontend Display Anchor` 三列映射表。
+- [ ] **UI 视觉对齐 review 提前触发**（盲区 7）：SPI 升级影响前端时，`--ui --design` 必须在 DTO 字段定稿前执行（先提取 `visual_anchor_field_set` 再设计 DTO）。
 
 ### 分级约束
 
