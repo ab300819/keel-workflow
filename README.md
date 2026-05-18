@@ -435,6 +435,18 @@ devdocs:
 | **#4 代码解耦**| [code-decoupling-implementation.md](skills/pipeline/references/layout/code-decoupling-implementation.md) | trace.v1 写入 API + legacy 注释保留窗口 + 多仓聚合 |
 | **#5 迭代蒸馏**| [distillation-implementation.md](skills/pipeline/references/layout/distillation-implementation.md) | 13 类蒸馏动作 + 4 级安全门 + rollback + git hook 反循环 |
 
+### PRD 流程治理 Spec（轻量同类，已显性化）
+
+PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**的耦合（数据库 + 修订边界），但**不直接面对代码追溯**（通过 DevDocs 间接）。治理机制已齐备但散落在 4 个文件，需收纳显性化而非重建 6 阶段框架。
+
+| spec | 内容 | 状态 |
+|------|------|------|
+| [prd-index-ssot.md](skills/prd/references/governance/prd-index-ssot.md) | FR/NFR 全局 SSOT + 最大值续编 + 冲突检测 + 跨 PRD 引用边界 | [现状] |
+| [prd-revision-policy.md](skills/prd/references/governance/prd-revision-policy.md) | 4 类变更边界统一规则（PRD 生命周期 / 单 FR / chunk / 模板）| [现状] |
+| [prd-devdocs-mapping.md](skills/prd/references/governance/prd-devdocs-mapping.md) | mapping 状态机（active/outdated/remapped/removed）+ 回扫责任分界 | [现状] |
+
+> **与 DevDocs 6 阶段的差异**：PRD 治理 ~85% 是收纳已有机制（chunk 指纹 / `--revise` / `--back-propagate-prd` / mapping_status），~15% 是必要边界补齐；总行数 413（vs DevDocs 治理 ~2700），保持轻量定位。
+
 ### 治理工具命令
 
 > ⚠️ 当前阶段 spec 已完整，**runtime 接口处于 [FUTURE] 状态**（spec 先行落地、执行接口逐步实现）。`mic-en` 等 layout.v1 历史项目不主动迁移；用户主动调用才触发。
@@ -473,6 +485,8 @@ devdocs:
 4. **预防型 vs 治疗型**：`ms-iteration-policy` 是 **预防型**（源头治理 V<x.y.z> 形式主义），`ms-pipeline distill` 是 **治疗型**（已成型文档的压缩）。`init` 阶段先用 iteration-policy 立约 → 累积期用 distill 周期蒸馏。
 
 5. **历史项目兼容**：`mic-en` 等 layout.v1 项目维持现状，**不主动迁移**。任何升级必须用户显式调用 `/ms-pipeline realign --docs-layout`。
+
+6. **PRD 治理走轻量同类，不复制 6 阶段**：PRD 不直接追代码（通过 DevDocs 间接），且核心机制已存在；治理目标是显性化已有规则而非发明新体系。具体落地见上文「PRD 流程治理 Spec」。
 
 ---
 
