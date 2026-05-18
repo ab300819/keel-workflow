@@ -14,31 +14,24 @@ metadata:
 
 四合一验证 Skill：文档对齐 + 实现正确性 + UI 设计对齐 + 开发就绪检查，替代原 `devdocs-review`、`ms-requirements-alignment`、`devdocs-ui-alignment`。
 
-## 语言规则
+- 共享约束 SSOT：[../_shared/constraints.md](../_shared/constraints.md)
 
-- 支持中英文提问
-- 统一中文回复
-- 使用中文生成报告
+> 本 skill 遵循共享约束 SSOT：门控标记、yaml-summary-v1、Task 委托、用户确认、Recovery 格式、只读 / dry-run、FUTURE 三态、realign / spec_version 见 [skills/_shared/constraints.md](../_shared/constraints.md)。本文件只描述 ms-verify 私有规则（P 级评分、四维验证、盲区机制、verify-report 契约）。
 
-## 定位
+## 快速定位
 
-```
-ms-verify --docs  ：各层文档之间是否对齐（原 requirements-alignment）
-ms-verify --impl  ：实现是否正确（原 review）
-ms-verify --ui    ：UI 设计和实现是否对齐（原 ui-alignment）
-对抗式验证            ：代码质量是否合格（dev-workflow 内置）
-ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
-```
+- 语言：支持中英文提问，统一中文回复，使用中文生成报告。
+- 一句话：检查文档/实现/UI/就绪性偏差，标记不一致。
+- 常见用法：`/ms-verify`（自动检测）、`/ms-verify --readiness`（开发前）、`/ms-verify --impl`（代码完成后）。
+- 不适合：同步文档进度→`/ms-sync`；代码质量审查→`/adversarial-review`。
 
-**互补关系**：`--docs` 检查"文档写对了没"，`--impl` 检查"代码做对了没"，`--ui` 检查"界面做对了没"，`--readiness` 检查"能开工了没"，对抗式验证检查"代码写得好不好"。
-
-## 快速开始
-
-**一句话**: 检查文档/实现/UI/就绪性偏差，标记不一致。
-
-**最常见用法**: `/ms-verify`（自动检测维度）、`/ms-verify --readiness`（开发前）、`/ms-verify --impl`（代码完成后）
-
-**不适合?** 同步文档进度→`/ms-sync`，代码质量审查→`/adversarial-review`
+| 模式 | 关注点 | 关系 |
+|------|--------|------|
+| `--docs` | 各层文档之间是否对齐 | 原 requirements-alignment |
+| `--impl` | 代码是否做对 AC / 设计 / 追溯 | 原 review；在对抗式验证之前 |
+| `--ui` | UI 设计和实现是否对齐 | 原 ui-alignment |
+| `--readiness` | 能否进入开发 | pipeline 关卡 |
+| 对抗式验证 | 代码质量是否合格 | dev-workflow 内置，互补而非替代 |
 
 > 精确控制见"运行模式"：`--impl --ac`、`--docs --layer2` 等细分选项。
 
@@ -74,49 +67,28 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 
 > **drift 双维度（均只读）**：`--schema-drift` 扫产物 spec_version，对齐 `/ms-pipeline realign`，详见 [references/schema-drift.md](references/schema-drift.md)；`--layout-drift` 扫治理层（AGENTS.md `devdocs:` + 各 skill `reads/writes_layout` + 兼容性总表），对齐 `/ms-pipeline realign --docs-layout`，详见 [skills/pipeline/references/layout/](../pipeline/references/layout/)。
 
-### 自动检测规则
+### 四维验证选择矩阵
 
-无参数调用时，根据项目状态自动选择维度：
+无参数调用时，先按项目状态自动选择维度；无法判断时询问用户。
 
-1. 检查是否存在最新 `05-test-report.md` → 有则 `--impl` 辅助判断
-2. 检查当前开发阶段（更具体的规则优先匹配）：
-   - 有 `03-test-cases.md` 但无代码提交 → `--docs`（文档阶段）
-   - UI 任务 + 有设计稿 + 有代码提交 → `--impl` + `--ui`
-   - 有代码提交且任务进行中 → `--impl`（开发阶段）
-3. 无法判断 → 询问用户
+| 场景 | 维度 | 必要条件 | 跳过 / 降级条件 |
+|------|------|----------|-----------------|
+| 文档阶段：需求/设计/测试文档完成 | A `--docs` | 有 `03-test-cases.md` 但无代码提交；或用户要求文档对齐 | 层 1 缺 `## 0. 原始需求` 且为历史/Retrofit 文档 → 输出 `⏭️ 前置缺失` 跳过层 1 |
+| 开发完成：任务代码已提交或进行中 | B `--impl` | 任务开发完成后、对抗式验证之前；最新 `05-test-report.md` 可辅助判断 | 指定 `--ac/--design/--trace` 时只跑对应子维度；`--live` 无浏览器 MCP 时降级静态验证 |
+| UI 任务完成 | C `--ui` | UI 任务 + 有设计稿 + 有代码提交；或用户要求 UI 对齐 | 无设计稿输入且无 design_context → 不可运行，提示用户提供 |
+| 任务拆分完成，进入开发前 | D `--readiness` | dev-tasks 完成后、dev-workflow 前 | 通常全量检查；若任务范围明确可限定 T-XX |
+
+### Schema / Layout Drift 检查
+
+`--schema-drift` 只读扫描产物 `spec_version` 三态报告（current / drift / legacy），不触发 realign、不阻塞下游；详细判据见 [references/schema-drift.md](references/schema-drift.md)。`--layout-drift` 只读扫描治理层 layout/id/trace 兼容性，对齐 `/ms-pipeline realign --docs-layout`。
 
 ## 工作流程
 
-```text
-1. 确定验证维度（自动检测或用户指定）
-   │
-   ▼
-2. 读取 DevDocs 文档
-   ├── 01-requirements.md（AC 列表、原始需求）
-   ├── 02-system-design.md（设计规范）
-   ├── 03-test-cases.md（测试用例、追溯矩阵）
-   ├── 05-test-report.md（如存在，辅助 --impl 判断）
-   └── docs/devdocs/patterns/verify-blindspots.md（如存在，作为额外检查项）
-   │
-   ▼
-2.5 加载验证盲区（评估者调优）
-   ├── 读取 docs/devdocs/patterns/verify-blindspots.md（如存在）
-   ├── 将历史盲区转化为本次检查的额外关注点
-   └── 在对应维度检查时优先覆盖已知盲区
-   │
-   ▼
-3. 按维度执行检查
-   ├── --docs：三层对齐检查
-   ├── --impl：三维度正确性审查
-   ├── --ui：两阶段设计对齐
-   └── --readiness：四维度就绪检查
-   │
-   ▼
-4. 生成验证报告
-   │
-   ▼
-5. 修复建议与路由
-```
+1. 确定验证维度（自动检测或用户指定）。
+2. 读取 DevDocs：`01-requirements.md`、`02-system-design.md`、`03-test-cases.md`、`05-test-report.md`（如存在）。
+3. 加载 `docs/devdocs/patterns/verify-blindspots.md`（如存在），将历史盲区转化为本次额外关注点。
+4. 按维度执行检查：`--docs` 三层、`--impl` 三维度 + 可选 `--live`、`--ui` 两阶段、`--readiness` 四维度。
+5. 生成验证报告，给出 P1/P2/P3 分级、修复建议与路由。
 
 ---
 
@@ -187,34 +159,18 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 
 通过浏览器自动化实际操作运行中的应用，验证 AC 描述的用户行为是否正确。
 
-**前提条件**：
-- 环境中有 Playwright MCP 或 Chrome DevTools MCP 可用
-- 应用可本地启动（有启动命令）
+**前提**：环境中有 Playwright MCP 或 Chrome DevTools MCP，可从 DevDocs 或 package.json 获取启动命令并本地启动应用。
 
-**执行流程**：
+**流程**：启动应用 → 逐条读取 AC 用户操作 → 用浏览器 MCP 执行导航/点击/填表/验证 → 对比实际行为与 AC 预期 → 停止应用。
 
-```text
-1. 从 DevDocs 或 package.json 获取启动命令
-2. 启动应用（dev server）
-3. 逐条读取 AC 中描述的用户操作
-4. 使用浏览器 MCP 执行操作（导航、点击、填表、验证）
-5. 对比实际行为与 AC 预期
-6. 停止应用
-```
-
-**适用范围**：
-
-| 任务类型 | 是否执行 --live |
-|----------|----------------|
-| UI/前端 任务（🟢） | ✅ 推荐 |
-| API 接口任务（🟡） | ✅ 可选（curl/API 调用验证） |
+| 任务类型 | --live 行为 |
+|----------|-------------|
+| UI/前端（🟢） | ✅ 推荐 |
+| API 接口（🟡） | ✅ 可选（curl/API 调用验证） |
 | 核心逻辑（🔴） | ⏭️ 跳过（单元测试已覆盖） |
 | 基础设施（⚪） | ⏭️ 跳过 |
 
-**降级策略**：
-- 无浏览器 MCP → 跳过 --live，输出 `ℹ️ 建议：环境中无浏览器 MCP，--live 验证已跳过`
-- 应用启动失败 → 记录为 P2 Warning，继续静态验证
-- --live 与静态验证互补，不替代 B1/B2/B3
+**降级**：无浏览器 MCP → 跳过并输出 `ℹ️ 建议：环境中无浏览器 MCP，--live 验证已跳过`；应用启动失败 → 记录为 P2 Warning，继续静态验证；`--live` 与静态验证互补，不替代 B1/B2/B3。
 
 > 灵感来源：[Harness Design](https://www.anthropic.com/engineering/harness-design-long-running-apps) 中 Evaluator 使用 Playwright 与运行中的应用交互验证，比纯静态代码审查更有效。
 
@@ -331,20 +287,20 @@ ms-verify --readiness ：开发就绪条件是否满足（pipeline 关卡）
 
 | 优先级 | 含义 | 处理方式 |
 |--------|------|----------|
-| **P1** | 阻塞发布 | 必须修复，建议转入 ms-dev-tasks |
-| **P2** | 应修复 | 建议修复，建议转入 ms-insights |
-| **P3** | 可优化 | 可选修复，记录备忘 |
+| **P1** | 阻塞合并 / 阻塞发布 | 必须修复，建议转入 ms-dev-tasks |
+| **P2** | 必须修复但不阻塞 | 建议修复，建议转入 ms-insights |
+| **P3** | 建议改进 | 可选修复，记录备忘 |
 
 P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-severity-rubric.md)，执行时按需加载。
 
-## 输出文件
+## verify-report 输出契约
 
-| 维度 | 输出文件 |
-|------|----------|
-| --docs / --impl / --ui | `docs/devdocs/verify-report.md` |
-| --readiness | `docs/devdocs/readiness-report.md` |
+| 报告 | 适用维度 | 必填字段 / 章节 |
+|------|----------|----------------|
+| `docs/devdocs/verify-report.md` | `--docs` / `--impl` / `--ui` | 验证时间、`verified_commit`、验证维度、验证范围、关联文档、验证结果摘要（各维度 P1/P2/P3/状态）、对应 A/B/C 章节、问题汇总、修复路由 |
+| `docs/devdocs/readiness-report.md` | `--readiness` | 验证时间、验证维度、验证范围、关联文档、D1-D4 就绪度摘要、D1-D4 明细、问题汇总、修复路由 |
 
-详细模板参见 [templates/verify-report.md](templates/verify-report.md)（--docs/--impl/--ui）和 [templates/readiness-report.md](templates/readiness-report.md)（--readiness）
+`--impl` 报告必须包含 CE 三问；触发盲区 6/7 时必须填写 B4/B5。字段与 A/B/C 类示例见 [templates/verify-report.md](templates/verify-report.md)，就绪报告见 [templates/readiness-report.md](templates/readiness-report.md)。
 
 ## 上下文管理
 
@@ -437,48 +393,31 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | 验证盲区 | `/ms-compound` | 闭环：compound 沉淀盲区 → verify 加载为额外检查项 |
 | 开发就绪 | `/ms-pipeline` | 被调用：dev-tasks 完成后、dev-workflow 前的质量关卡 |
 
+## 外部审查状态机
+
+`--impl` 是外部对抗审查前置验证；外审由 `/ms-dev-workflow` Phase 4 embedded-headless 或 `/adversarial-review` 执行，二者与本 skill 互补。`ms-verify` 不替代外审，只在报告中记录外审前置状态和后续路由。
+
+| 状态 | 含义 | verify 处理 |
+|------|------|-------------|
+| `EXT_REVIEWED` | T1 codex CLI 或 T2 codex-mcp 成功且无 blocker | 可继续后续同步/沉淀 |
+| `EXT_PENDING` | 需要外审但尚未执行 | `--impl` 通过后路由到对抗式验证 |
+| `EXT_UNRESOLVED` | T1/T2 全失败或环境不可用 | 标为 P2 环境风险，提示补跑外审 |
+| `EXT_BLOCKED` | 外审发现未解除 blocker | 保持阻塞，修复后重跑 `--impl` + 外审 |
+
 ## 子 Agent 摘要格式
 
-当本 Skill 作为子 Agent（通过 Task tool）运行时，返回以下结构化摘要：
+当本 Skill 作为子 Agent（通过 Task tool）运行时，遵循 [../_shared/constraints.md § 2-3](../_shared/constraints.md)：统一 envelope 不重复复制；verify 私有统计只放 `summary.details`。
 
-```yaml
-skill: ms-verify
-status: success | failed | partial
-summary:
-  headline: "--impl 审查完成，1 个 P1 阻塞"
-  details:
-    dimensions: [docs, impl, ui, readiness]
-    total_p1: 0
-    total_p2: 0
-    total_p3: 0
-    docs:
-      layer1: pass | fail | skipped
-      layer2: pass | fail | skipped
-      layer3: pass | fail | skipped
-    impl:
-      ac_satisfaction: "X/Y satisfied"
-      design_conformance: pass | fail
-      traceability: "X% coverage"
-      test_report_used: true | false
-      live_verification: pass | fail | skipped  # --live 模式结果
-    ui:
-      stage1: pass | fail | skipped
-      stage2: pass | fail | skipped
-    readiness:
-      ac_test_coverage: "X/Y covered"
-      path_specificity: pass | fail
-      dependency_cycle: false
-      design_task_consistency: pass | fail
-blockers:
-  - "P1: AC-003 未满足（--impl）"
-output_files:
-  - docs/devdocs/verify-report.md
-  - docs/devdocs/readiness-report.md
-new_ids: {}
-next_recommended:             # 条件分支：全部通过→ms-sync，有 P1→按下方"下一步"表路由
-  skill: ms-sync
-  args: ""
-```
+| `summary.details` 字段 | 内容 |
+|------------------------|------|
+| `dimensions` | `[docs, impl, ui, readiness]` 本次执行维度 |
+| `total_p1/total_p2/total_p3` | 各级问题总数 |
+| `docs` | `layer1/layer2/layer3: pass | fail | skipped` |
+| `impl` | `ac_satisfaction`、`design_conformance`、`traceability`、`test_report_used`、`live_verification` |
+| `ui` | `stage1/stage2: pass | fail | skipped` |
+| `readiness` | `ac_test_coverage`、`path_specificity`、`dependency_cycle`、`design_task_consistency` |
+
+`blockers` 使用 `"P1: <问题>（<维度>）"`；`output_files` 列出 `verify-report.md` / `readiness-report.md`；`next_recommended` 条件分支：全部通过→`ms-sync`，有 P1→按下方"下一步"表路由。
 
 ## 下一步
 
