@@ -35,6 +35,12 @@ migration: /ms-pipeline realign --docs-layout
 
 **不适合?** 模糊想法→`/ms-prd`，技术设计→`/ms-system-design`，测试用例→`/ms-test-cases`
 
+## 详细文档
+
+- 共享约束 SSOT：[../_shared/constraints.md](../_shared/constraints.md)
+
+> 本 skill 遵循共享约束 SSOT：门控标记、yaml-summary-v1、Task 委托、用户确认、Recovery 格式、只读 / dry-run、FUTURE 三态、realign / spec_version 见 [skills/_shared/constraints.md](../_shared/constraints.md)。本文件只描述 ms-requirements 私有规则。
+
 ## 语言规则
 
 - 支持中英文提问
@@ -82,23 +88,23 @@ migration: /ms-pipeline realign --docs-layout
 - 保留最终文档确认（仅确认 F/US/AC 生成结果）
 
 **消费流程**：
-1. 读取用户指定的 `<index路径>`（如未指定，自动检测）：
-   - 检查 `docs/prd/index.md`（全局索引）是否存在
-     - 存在 → multi-PRD 模式：解析 PRD 清单，自动检测仅筛选 active 候选（因 L88 需回写映射，archived/superseded 不可自动选中），对每个候选检查 `requirements/index.md` 是否存在（不存在则跳过），仅 1 个可用 → 自动使用，多个 → AskUserQuestion 让用户选择。archived/superseded PRD 仅在用户显式指定路径时可消费
-     - 不存在 → legacy 模式：直接尝试 `docs/prd/requirements/index.md`
-   - 以上均未找到 → 提示用户手动指定路径
-   - 记录实际读取的路径（`source_index_path`），后续回写映射时使用同一路径
-   - 读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产`
-2. 逐个读取 `requirements/FR-XX-<topic>.md` 和 `requirements/NFR-XX-<topic>.md`（通过 Glob 匹配 `FR-*`/`NFR-*` 模式）→ 提取澄清结论中的功能描述和验收意图
-   - FR-XX → 生成功能需求（v1: F-XXX/US-XXX/AC-XXX；v2 [FUTURE]: FEAT-XXX/STORY-XXX/AC-XXX）
-   - NFR-XX → 写入 `01-requirements.md` 的非功能需求章节（性能、安全、兼容性等约束）
-3. 将 FR-XX/NFR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "ms-prd"）
-4. 按现有流程生成功能/故事/AC 编号（v1: F-XXX/US-XXX/AC-XXX；v2 [FUTURE]: FEAT-XXX/STORY-XXX/AC-XXX；跳过方案确认，直接生成）
-5. 回写映射到 `source_index_path`（即实际读取的 index.md）：
-   - 若 `## DevDocs 映射` 章节已存在 → **更新现有章节**（追加/修改行，不创建新章节）
-   - 若不存在 → 在文末创建该章节
-   - 重新导入时：旧映射行保留（审计历史），追加新行并标记 `mapping_status: remapped`
-6. 返回新增编号列表
+
+| 步骤 | 规则 |
+|---|---|
+| 定位 index | 读取用户指定的 `<index路径>`；未指定时先查 `docs/prd/index.md`，存在则解析 PRD 清单并仅自动筛选 active 候选（archived/superseded 仅在用户显式指定路径时可消费），逐个检查 `requirements/index.md`；仅 1 个可用自动使用，多个用 AskUserQuestion 选择；全局索引不存在则尝试 legacy `docs/prd/requirements/index.md`；均未找到则提示手动指定 |
+| 记录来源 | 记录实际读取的 `source_index_path`，后续回写映射使用同一路径；读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产` |
+| 读取需求 | 通过 Glob 匹配 `requirements/FR-*` / `NFR-*`，提取澄清结论中的功能描述和验收意图；FR-XX → 生成功能需求（v1: F-XXX/US-XXX/AC-XXX；v2 [FUTURE]: FEAT-XXX/STORY-XXX/AC-XXX），NFR-XX → 写入非功能需求章节 |
+| 写入 DevDocs | 将 FR-XX/NFR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "ms-prd"）；按现有流程生成功能/故事/AC 编号，跳过方案确认但保留最终确认 |
+| 回写映射 | 回写到 `source_index_path`：已有 `## DevDocs 映射` 则**更新现有章节**（追加/修改行，不创建新章节），没有则在文末创建；重新导入时旧映射行保留（审计历史），追加新行并标记 `mapping_status: remapped` |
+| 返回 | 返回新增编号列表 |
+
+### `mapping_status` 责任分界
+
+| 状态 | 写入方 / 时机 |
+|---|---|
+| `active` | `/ms-requirements --from-prd` 首次成功生成 F/US/AC 并回写 DevDocs 映射 |
+| `outdated` | `/ms-prd` 修订或 PRD 更新导致既有 DevDocs 映射失效时写入；requirements 读取后原地更新对应 F/US/AC，不创建新编号 |
+| `remapped` | `/ms-requirements --from-prd` 重新导入 outdated 来源时追加新映射行，旧映射行保留作为审计历史 |
 
 **最小输入字段**（每个 FR-XX/NFR-XX 文件必须包含）：
 - title（功能名称）
@@ -115,128 +121,25 @@ migration: /ms-pipeline realign --docs-layout
 - 仅保留最终写入前的 1 次汇总确认
 - 默认行为不变，`--fast` 是 opt-in
 
+## requirements 私有门控
+
+**门控标记**：见 [skills/_shared/constraints.md § 1](../_shared/constraints.md#1-门控标记-ssot)
+
+| 触发点 | 门控 | 恢复 / 继续 |
+|---|---|---|
+| 输入 `< 200` 字且无结构化标记 | ⚠️ 必须确认 | 建议先运行 `/ms-prd` 探索；用户选择继续或切换后进入对应流程 |
+| `--from-prd` 自动检测到多个 active 可用 PRD | ⚠️ 必须确认 | 用户选择具体 `requirements/index.md` 后继续；archived/superseded 仅显式路径可消费 |
+| 初始模式理解需求 + 探索代码后、编号分配前 | ⚠️ 必须确认 | 用户确认功能点划分、范围边界、优先级后，才开始编号分配和文档写入 |
+| 文档阶段试图产出实现代码（源代码、脚本、配置变更） | ⛔ 禁止继续 | 转交 `/ms-dev-workflow` 执行编码；本 skill 只写 DevDocs Markdown |
+| 生成/更新文档缺少 `generated_by / spec_version / generated_at` frontmatter | ⛔ 禁止继续 | 按 [templates/requirements-template.md](templates/requirements-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md) |
+
 ## 工作流程
 
-### 初始模式
-
-```text
-0. 输入检查
-   │
-   ├── 输入 < 200 字 + 无结构化标记 → 建议先运行 /ms-prd 探索
-   │   └── AskUserQuestion：「输入较模糊，建议先用 /ms-prd 进行需求探索。继续还是切换？」
-   └── 输入 >= 200 字 或有明确功能点 → 继续
-   │
-   ▼
-0.5 设计资产感知（按 prd/references/design-context.md 探测协议）
-   └── AskUserQuestion 询问设计稿和组件库 → 结果写入 01-requirements.md ## 设计资产
-   │
-   ▼
-1. 收集原始需求
-   │
-   ├── 记录用户原话或关键表述
-   ├── 标记来源（口述/邮件/Issue/会议纪要）
-   └── 记录日期
-   │
-   ▼
-2. 理解需求 + 探索代码库（如适用）
-   │
-   ▼
-3. 呈现需求拆解方案 + 轻量假设挑战（AskUserQuestion）
-   │  拆解确认：功能点划分、边界范围、优先级
-   │  轻量假设挑战（仅初始模式 + 非 --from-prd + 非 --fast）：
-   │  ① 去掉此功能，用户最大损失？ ② MVP 最小可用集？
-   │  ③ 6 个月后还重要吗？
-   │  （--from-prd 跳过：prd 层已做 4 题产品视角挑战）
-   │  （--fast 跳过：加风险提示「跳过假设挑战，低质量需求可能进入 F/US/AC」）
-   ▼
-4. 用户确认方案 → 确认拆解方向或调整
-   │
-   ▼
-5. 生成需求文档：识别功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）
-   │
-   ▼
-6. 文档编写：用户故事（v1: US-XXX / v2 [FUTURE]: STORY-XXX）
-   │
-   ▼
-7. 文档编写：验收标准 (AC-XXX)
-   │  design_context 存在时：UI 相关 US 自动补充交互状态 AC（hover/disabled/error/loading/empty）
-   │
-   ▼
-8. 生成追溯矩阵
-   │
-   ▼
-9. 用户确认
-```
-
-### 增量模式
-
-```text
-1. 扫描现有编号
-   │
-   ├── 读取 01-requirements.md
-   └── 获取 F/US/AC 最大编号
-   │
-   ▼
-1.5 设计资产感知
-   ├── 01-requirements.md 已有 ## 设计资产 → 读取已有 design_context
-   └── 无 → AskUserQuestion 询问（按 design-context.md 探测协议）
-   │
-   ▼
-2. 收集新增原始需求
-   │
-   ├── 记录用户原话，追加到 `## 0. 原始需求` 表格
-   └── 若该章节不存在（历史文档），标注"缺失历史原始需求"后继续
-   │
-   ▼
-3. 理解新增需求
-   │
-   ▼
-4. 追加功能点/用户故事/验收标准
-   │
-   ├── 延续现有编号
-   └── 标注增量版本和日期
-   │
-   ▼
-5. 更新追溯矩阵
-   │
-   ▼
-6. 用户确认
-   │
-   ▼
-7. 返回新增编号列表（供调用方使用）
-```
-
-### 背景信息模式
-
-> 背景信息模式不涉及功能点生成，跳过设计资产探测（步骤 0.5）。
-
-```text
-1. 读取现有文档
-   │
-   ├── 检查 01-requirements.md 是否存在
-   └── 提取现有"背景与目标"章节内容
-   │
-   ▼
-2. 收集背景信息
-   │
-   ├── 引导用户提供信息（AskUserQuestion）
-   ├── 接收用户直接输入
-   ├── 从文件路径提取（Read）
-   └── 从 URL 提取摘要（WebFetch）
-   │
-   ▼
-3. 整合信息
-   │
-   ├── 合并到"背景与目标"章节
-   ├── 补充到"技术约束"子章节
-   └── 补充到"参考资料"子章节
-   │
-   ▼
-4. 更新文档
-   │
-   ▼
-5. 用户确认
-```
+| 模式 | 输入 / 前置 | 步骤 | 输出 / 门控 |
+|---|---|---|---|
+| 初始模式 | 无 `01-requirements.md`；输入 `< 200` 字且无结构化标记时先建议 `/ms-prd`，并 AskUserQuestion 确认继续或切换 | 0.5 设计资产感知（按 prd/references/design-context.md 探测协议，询问设计稿和组件库并写入 `## 设计资产`）→ 收集原始需求（记录原话/关键表述、来源、日期）→ 理解需求 + 探索代码库（如适用）→ 呈现需求拆解方案 + 轻量假设挑战 → 用户确认 → 识别功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）→ 编写用户故事（v1: US-XXX / v2 [FUTURE]: STORY-XXX）→ 编写 AC-XXX（design_context 存在时，UI 相关 US 自动补充 hover/disabled/error/loading/empty 等交互状态 AC）→ 生成追溯矩阵 | 初始方案确认后才写入；轻量假设挑战仅初始模式 + 非 `--from-prd` + 非 `--fast`，问题为：去掉此功能用户最大损失、MVP 最小可用集、6 个月后是否仍重要；`--from-prd` 跳过（prd 层已做 4 题产品视角挑战），`--fast` 跳过并提示风险 |
+| 增量模式 | 已有 `01-requirements.md`；读取已有 design_context，无则按 design-context.md 探测协议询问 | 扫描现有 F/US/AC 最大编号 → 收集新增原始需求并追加到 `## 0. 原始需求`（历史文档缺章节则标注"缺失历史原始需求"后继续）→ 读取已有上下文 / codebase-insight（如存在）→ 理解新增需求 → 追加功能点/用户故事/验收标准，延续编号并标注增量版本和日期 → 更新追溯矩阵 → 用户确认 | 返回新增编号列表（供调用方使用）；不得删除或覆盖既有内容 |
+| 背景信息模式 | `--context` 或用户要补充背景；不涉及功能点生成，跳过设计资产探测 | 读取现有文档并提取"背景与目标"章节 → 收集背景信息（AskUserQuestion、用户直接输入、Read 文件路径、WebFetch URL 摘要）→ 合并到"背景与目标"章节，补充"技术约束"和"参考资料"子章节 → 更新文档 → 用户确认 | 不写入 `## 0. 原始需求`，除非用户提供的是需求原话而非背景补充 |
 
 ### 设计资产更新模式
 
@@ -454,27 +357,28 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 | 设计阶段 | `/ms-system-design` | 后续：需求确认后进入设计 |
 | 上下文生成 | `/ms-onboard` | 后续：背景信息会被提取到上下文摘要 |
 
+## 下游 needs review 协作
+
+- F/US/AC 中不得把未确认假设写成确定事实；开放问题、范围争议、映射疑问必须进入需求文档的 needs review 块或等价待确认区。
+- needs review 项需标注关联 F/US/AC、问题、建议确认人和对下游 `/ms-system-design`、`/ms-test-cases` 的影响。
+- 下游 skill 读取到 needs review 时不得静默忽略；必须在自身输出中延续或请求用户确认。
+
 ## 子 Agent 摘要格式
 
-当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+**yaml-summary-v1 envelope**：见 [skills/_shared/constraints.md § 2](../_shared/constraints.md#2-yaml-summary-v1-envelope-ssot)
 
-```yaml
-skill: ms-requirements
-status: success | failed | partial
-summary:
-  headline: "初始需求完成，3 功能点 15 验收标准"
-  details:
-    mode: initial | incremental | from-prd | update-design
-blockers: []
-output_files:
-  - docs/devdocs/01-requirements.md
-new_ids:
-  features: [F-001~F-003]
-  stories: [US-001~US-008]
-  acceptance: [AC-001~AC-015]
-next_recommended:
-  skill: ms-system-design
-```
+**summary.details 私有字段**：
+
+| 字段 | 值域 / 示例 |
+|---|---|
+| `mode` | `initial` / `incremental` / `from-prd` / `update-design` |
+| `feature_count` / `story_count` / `acceptance_count` | 本次生成或更新的 F/US/AC 数量 |
+| `coverage` | F→US→AC 追溯覆盖率或缺口数 |
+| `quality_checks` | INVEST / AC 可测试性 / GWT 完整性自检结果 |
+| `source_index_path` | `--from-prd` 实际读取并回写的 PRD index 路径 |
+| `mapping_updates` | `active` / `outdated` / `remapped` 相关映射变更摘要 |
+
+**产物字段**：`output_files` 列出 `docs/devdocs/01-requirements.md` 等产物；`new_ids.features` / `new_ids.stories` / `new_ids.acceptance` 记录 `F-001~F-003`、`US-001~US-008`、`AC-001~AC-015`；`next_recommended.skill` 通常为 `ms-system-design`。
 
 ## 下一步
 
