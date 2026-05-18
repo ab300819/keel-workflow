@@ -21,6 +21,12 @@ user-invocable: true
 
 **不适合?** 需求已明确→`/ms-requirements`
 
+## 详细文档
+
+- PRD 全局编号 SSOT：[references/governance/prd-index-ssot.md](references/governance/prd-index-ssot.md)
+- PRD 修订边界：[references/governance/prd-revision-policy.md](references/governance/prd-revision-policy.md)
+- PRD ↔ DevDocs Mapping：[references/governance/prd-devdocs-mapping.md](references/governance/prd-devdocs-mapping.md)
+
 ## 语言规则
 
 - 支持中英文提问

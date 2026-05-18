@@ -1,0 +1,128 @@
+# PRD 修订边界统一规则
+
+> 本 spec 把 PRD 整体、单条 FR/NFR、chunk、模板四类变更边界收纳到同一张治理表。目标是显性化已有机制，不把 PRD 流程扩展成 DevDocs 6 阶段治理框架。
+
+## 目标
+
+- 明确四类变更的触发条件、操作边界、下游影响和确认要求。
+- 建立 `FR revise -> mapping outdated -> DevDocs 更新` 的显性链路。
+- 区分内容修订、原文重解析、生命周期变更和模板结构升级，避免用同一种流程处理所有变化。
+
+## 现状证据
+
+| 机制 | 证据 | 状态 |
+|---|---|---|
+| PRD 生命周期 | `skills/prd/templates/global-index-template.md:9-15` 定义 `active / superseded / archived` 和 supersedes 链不变式 | [现状] |
+| archive 边界 | `skills/prd/SKILL.md:380-398`：归档需要确认，归档后禁止 `--revise`，允许只读 `--from-prd` 和 status | [现状] |
+| 单 FR revise | `skills/prd/SKILL.md:126-154`：定位 FR，保持 id 不变，原地覆盖，有 DevDocs 映射时置 `mapping_status: outdated` | [现状] |
+| PRD 更新与 chunk 指纹 | `skills/prd/SKILL.md:201-227`、`skills/prd-parser/SKILL.md:130-163`：document/source fingerprint 对比后标记 unchanged/outdated/pending/removed | [现状] |
+| chunk 状态机 | `skills/prd-parser/SKILL.md:288-307`：pending、clarified、outdated、removed 的转换和保持原 chunk ID | [现状] |
+| 模板 spec_version | `skills/prd-parser/SKILL.md:207-210`、`skills/prd-brainstorm/SKILL.md:230-233` 要求写入 `generated_by/spec_version/generated_at` | [现状] |
+| realign 规则 | `skills/prd-parser/references/realign.md:5-28`、`skills/prd-brainstorm/references/realign.md:5-29`、`skills/pipeline/references/realign.md:65-75` | [现状] |
+
+## 规则
+
+### 四类变更边界
+
+| 变更边界 | 触发条件 | 操作 | 下游影响 | 用户确认 |
+|---|---|---|---|---|
+| PRD 整体生命周期 | 产品方向换代、停止维护、归档管理 | [现状] 更新全局 index 的 `active/superseded/archived`；归档时移动到 `_archived/` | active 候选减少；archived/superseded 不可自动回写 mapping | ⚠️ archive 必须确认；supersede 需确认 owner 链 |
+| 单条 FR/NFR 内容 | 用户对 `FR-XXX` 或 `NFR-XXX` 提出修订 | [现状] 原地 revise，保持编号不变；如已有 DevDocs 映射则置 `mapping_status: outdated` | DevDocs 对应 F/FEAT 需要重新导入或人工确认 | ⚠️ 修改需求语义时必须确认；编号不重分配 |
+| chunk 原文 | 原始 PRD 文档重传或内容变化 | [现状] document/source fingerprint + chunk_key 匹配；变化标 outdated，新增 pending，删除 removed | 仅 outdated/pending 块重新 brainstorm；removed 需求需标记失效 | ⚠️ 拆分结果需确认；章节删除影响需求时需确认 |
+| 模板结构 | FR/chunk 模板必填字段、章节或硬校验规则变化 | [现状] bump `spec_version` 常量并维护 Migration Matrix；realign 补齐结构差距 | 旧产物可能 legacy/drift，需要 additive 补齐或 restructuring 确认 | additive 可直接补齐；restructuring 必须确认 |
+
+### 状态机
+
+```mermaid
+stateDiagram-v2
+  [*] --> PRDActive
+  PRDActive --> PRDSuperseded: supersede
+  PRDActive --> PRDArchived: archive
+  PRDSuperseded --> PRDArchived: archive
+
+  [*] --> ChunkPending
+  ChunkPending --> ChunkClarified: brainstorm
+  ChunkClarified --> ChunkOutdated: source_fingerprint changed
+  ChunkOutdated --> ChunkClarified: re-brainstorm
+  ChunkClarified --> ChunkRemoved: chunk_key removed
+  ChunkPending --> ChunkRemoved: chunk_key removed
+
+  [*] --> MappingActive
+  MappingActive --> MappingOutdated: FR/NFR revise
+  MappingOutdated --> MappingRemapped: ms-requirements --from-prd
+  MappingActive --> MappingRemoved: ms-sync --back-propagate-prd detects removed F
+```
+
+## 跨边界传递规则
+
+### FR revise 到 DevDocs
+
+1. [现状] `/ms-prd --revise FR-XXX` 保持 `FR-XXX` 编号不变并原地覆盖内容（`skills/prd/SKILL.md:146-153`）。
+2. [现状] 若该 FR 已映射到 DevDocs，则 mapping 表追加或更新为 `mapping_status: outdated`。
+3. [现状] `/ms-requirements --from-prd` 检测 `outdated` 条目后，原地更新对应 F/US/AC，不创建新编号（`skills/requirements/SKILL.md:75-100`）。
+4. [FUTURE] 自动“DevDocs content drift”报告未单独实现；当前可感知信号是 mapping_status，而非语义 diff 引擎。
+
+### chunk 更新到 FR/NFR
+
+1. [现状] `document_fingerprint` 判断文档是否有变化。
+2. [现状] `chunk_key + source_fingerprint` 判断具体块是否变化、删除或新增。
+3. [现状] `outdated/pending` 块进入 brainstorm；`removed` 块保留文件但标记状态，不物理删除（`skills/prd-parser/SKILL.md:337-342`）。
+4. [新增] 若 chunk 变化导致既有 requirement 内容语义变化，per-PRD index 应同步标记对应 FR/NFR 的状态和开放问题。理由：现有流程说明“对应 requirement 标记失效”，但未统一要求写入哪个表格字段。
+
+### 模板升级到产物
+
+1. [现状] `references/realign.md` 顶部记录当前 `spec_version`。
+2. [现状] additive 差距可补齐；restructuring 差距必须 AskUserQuestion 逐项确认。
+3. [现状] PRD parser/brainstorm realign 不重跑业务流程，不改编号，不重切原文。
+
+## 处理算法
+
+1. 判断输入变化类型：命中 PRD 生命周期管理词（archive/supersede/list/status）时走 PRD 整体边界；命中单个 `FR-XXX/NFR-XXX` 时走单条 revise；提供新版原始 PRD 时走 chunk 指纹；修改模板必填结构时走 realign。
+2. 读取对应 SSOT：PRD 生命周期读全局 index；单条 revise 读 requirement 文件和 per-PRD index；chunk 更新读 source/chunks 指纹；模板升级读 `references/realign.md` 当前常量。
+3. 执行最小影响操作：生命周期只改状态和目录；单条 revise 保编号；chunk 更新只处理 outdated/pending/removed；realign 只补结构。
+4. 写入下游感知信号：mapping outdated、chunk status、PRD status 或 realign-log。
+5. 若触发 ⛔ 或 ⚠️ 门控，停止写入业务内容，按门控恢复方式处理。
+
+## 门控
+
+- ⛔ 禁止继续：archived PRD 执行 `--revise`、FR/NFR revise 试图换编号、parser 改写 chunk 原文、realign restructuring 未经用户确认。恢复方式：创建新版 PRD、保持原编号、还原原文或取得确认后再继续。
+- ⚠️ 必须确认：归档、supersede、章节删除、FR/NFR 语义修订、模板 restructuring、跨 PRD 引用受影响。恢复方式：用户确认 owner、影响范围和继续策略。
+- ℹ️ 建议：maturity 未达 ready、开放问题较多、mapping 已 outdated 但用户暂不进入 DevDocs。恢复方式：记录建议，不阻断 PRD 阶段继续沉淀。
+
+## 验证
+
+- 生命周期验证：全局 index 中 PRD 状态、编号范围状态和 `_archived/` 目录一致。
+- FR revise 验证：修订后 `product_id` 不变；若存在 DevDocs 映射，mapping_status 不再保持 active。
+- chunk 验证：outdated 保留原编号，removed 保留文件且不物理删除。
+- 模板验证：frontmatter 的 `spec_version` 与对应 `references/realign.md` 当前常量一致。
+- [FUTURE] 自动 drift 验证：当前没有独立 PRD content drift runtime；后续若接入，应只报告，不修改业务内容。
+
+## FAQ
+
+### 单条 FR 改动后为什么不重新编号？
+
+现有 `--revise` 明确要求保持 id 和编号不变。重新编号会破坏下游 mapping 和用户引用。
+
+### PRD 整体更新与单 FR revise 怎么选？
+
+只改某个需求语义时用单 FR revise；原始 PRD 文档整体换版或多章节变化时走 PRD 更新和 chunk 指纹重解析。
+
+### 模板 realign 能否顺便修正需求内容？
+
+不能。现有 realign 约束是补齐结构差距，不重新头脑风暴、不重切 PRD、不修改业务内容。
+
+## Related Specs
+
+- [prd-index-ssot.md](./prd-index-ssot.md)
+- [prd-devdocs-mapping.md](./prd-devdocs-mapping.md)
+- [prd-mapping-status.md](../prd-mapping-status.md)
+- [prd-parser realign](../../../prd-parser/references/realign.md)
+- [prd-brainstorm realign](../../../prd-brainstorm/references/realign.md)
+- [pipeline realign](../../../pipeline/references/realign.md)
+
+## 可能的失败模式
+
+1. `mapping_status` 只能表达“已知映射过期”，不能证明 DevDocs 内容与 PRD 语义完全一致。
+2. chunk 的 `chunk_key` 依赖标题路径，标题大幅改写时可能无法识别同一块，只能进入 pending/removed 组合。
+3. PRD 生命周期和 DevDocs 生命周期并非同一状态机，superseded PRD 的已生成 DevDocs 是否废弃仍需人工判断。
+4. 模板 restructuring 的用户确认粒度如果过粗，可能把结构迁移误当成业务需求修改。
