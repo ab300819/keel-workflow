@@ -11,6 +11,7 @@
 - 技术债是否可控？关键依赖是否稳定？
 - 性能瓶颈在哪？是否有扩展空间？
 - 与现有架构的兼容性？迁移成本？
+- 重构 / 命名变更 / 接口拆分涉及"老名→新名"过渡时，是否合理判定了桥接策略边界？（是否已发布？调用方是否内部 / 单 PR 可改齐？默认 `@Deprecated` 在未发布场景是否产生纯粹中间状态成本？详见 [`incremental-design.md` § 桥接策略边界判定](incremental-design.md#桥接策略边界判定重构--命名变更--接口拆分类-adr)）
 
 **SOLID + LoD 六原则校验**（按项目复杂度分级强制触发，详见 [`solid-principles-guide.md`](solid-principles-guide.md)）：
 
