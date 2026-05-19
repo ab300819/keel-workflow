@@ -1,6 +1,6 @@
 ---
 name: ms-verify
-description: Unified verification skill combining document alignment, implementation correctness, UI design alignment, and development readiness checks. Supports --docs, --impl, --ui, --readiness flags; auto-detects dimensions when called without flags. Triggers on "verify", "review", "alignment", "验证", "审查", "对齐检查", "需求验证", "设计一致性", "UI 对齐", "就绪检查", "质量关卡", "readiness". NOT for syncing docs with progress (use ms-sync).
+description: Unified verification skill combining document alignment, implementation correctness, UI design alignment, and development readiness checks. Supports --docs, --impl, --ui, --readiness, --schema-drift flags; auto-detects dimensions when called without flags. Triggers on "verify", "review", "alignment", "验证", "审查", "对齐检查", "需求验证", "设计一致性", "UI 对齐", "就绪检查", "质量关卡", "readiness". NOT for syncing docs with progress (use ms-sync).
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 metadata:
   patterns: [reviewer]
@@ -33,7 +33,7 @@ metadata:
 | `--readiness` | 能否进入开发 | pipeline 关卡 |
 | 对抗式验证 | 代码质量是否合格 | dev-workflow 内置，互补而非替代 |
 
-> 精确控制见"运行模式"：`--impl --ac`、`--docs --layer2` 等细分选项。
+> 细分检查由 LLM 根据用户意图自动聚焦；只有高成本交互验证需显式追加 `--live`。
 
 ## 触发条件
 
@@ -46,26 +46,18 @@ metadata:
 ## 运行模式
 
 ```bash
-/ms-verify                    → 自动检测维度（见下方规则）
-/ms-verify --docs             → 仅文档对齐（三层检查）
-/ms-verify --docs --layer1    → 仅原始需求 → 需求文档
-/ms-verify --docs --layer2    → 仅需求文档 → 系统设计
-/ms-verify --docs --layer3    → 仅需求文档 → 测试用例
-/ms-verify --impl             → 仅实现正确性（AC + 设计 + 追溯）
-/ms-verify --impl --ac        → 仅 AC 满足度
-/ms-verify --impl --design    → 仅设计符合度
-/ms-verify --impl --trace     → 仅追溯完整性
-/ms-verify --impl --live      → 实现正确性 + 实际交互验证（启动应用 + 浏览器自动化）
-/ms-verify --ui               → 仅 UI 设计对齐（两阶段）
-/ms-verify --ui --design      → 仅设计稿 ↔ 需求
-/ms-verify --ui --impl        → 仅设计稿 ↔ 实现
-/ms-verify --readiness          → 开发就绪检查（进入 dev-workflow 前的质量关卡）
-/ms-verify --schema-drift       → 扫产物 spec_version 三态报告（详见下方说明块）
-/ms-verify --layout-drift       → 扫治理层 layout/id/trace 兼容性（详见下方说明块）
+/ms-verify                    → 自动检测维度（LLM 路由）
+/ms-verify --docs             → 文档对齐（三层默认覆盖）
+/ms-verify --impl             → 实现正确性（默认覆盖 AC / 设计 / 追溯）
+/ms-verify --impl "检查 AC"   → LLM 自动聚焦 AC 子维度
+/ms-verify --impl --live      → 显式启用实际交互验证（启动应用 + 浏览器自动化）
+/ms-verify --ui               → UI 设计对齐（两阶段默认覆盖）
+/ms-verify --readiness        → 开发就绪检查（进入 dev-workflow 前的质量关卡）
+/ms-verify --schema-drift     → 合并 drift 报告（schema drift + layout drift）
 /ms-verify T-01 T-02          → 指定任务范围（自动 --impl）
 ```
 
-> **drift 双维度（均只读）**：`--schema-drift` 扫产物 spec_version，对齐 `/ms-pipeline realign`，详见 [references/schema-drift.md](references/schema-drift.md)；`--layout-drift` 扫治理层（AGENTS.md `devdocs:` + 各 skill `reads/writes_layout` + 兼容性总表），对齐 `/ms-pipeline realign --docs-layout`，详见 [skills/pipeline/references/layout/](../pipeline/references/layout/)。
+> 除 `--live` 外，二级控制（`--layer1/2/3`、`--ac`、`--design`、`--trace`、UI 阶段选择）不作为顶部用户面入口暴露；用户用自然语言表达聚焦意图，执行细则按 references 内部说明。`--schema-drift` 为只读合并入口，输出 schema drift 与 layout drift 两段：前者扫产物 spec_version，详见 [references/schema-drift.md](references/schema-drift.md)；后者扫治理层 layout/id/trace 兼容性，对齐 `/ms-pipeline realign --docs-layout`，详见 [skills/pipeline/references/layout/](../pipeline/references/layout/)。
 
 ### 四维验证选择矩阵
 
@@ -74,13 +66,9 @@ metadata:
 | 场景 | 维度 | 必要条件 | 跳过 / 降级条件 |
 |------|------|----------|-----------------|
 | 文档阶段：需求/设计/测试文档完成 | A `--docs` | 有 `03-test-cases.md` 但无代码提交；或用户要求文档对齐 | 层 1 缺 `## 0. 原始需求` 且为历史/Retrofit 文档 → 输出 `⏭️ 前置缺失` 跳过层 1 |
-| 开发完成：任务代码已提交或进行中 | B `--impl` | 任务开发完成后、对抗式验证之前；最新 `05-test-report.md` 可辅助判断 | 指定 `--ac/--design/--trace` 时只跑对应子维度；`--live` 无浏览器 MCP 时降级静态验证 |
+| 开发完成：任务代码已提交或进行中 | B `--impl` | 任务开发完成后、对抗式验证之前；最新 `05-test-report.md` 可辅助判断 | 用户要求检查 AC/设计/追溯时自动聚焦对应子维度；`--live` 无浏览器 MCP 时降级静态验证 |
 | UI 任务完成 | C `--ui` | UI 任务 + 有设计稿 + 有代码提交；或用户要求 UI 对齐 | 无设计稿输入且无 design_context → 不可运行，提示用户提供 |
 | 任务拆分完成，进入开发前 | D `--readiness` | dev-tasks 完成后、dev-workflow 前 | 通常全量检查；若任务范围明确可限定 T-XX |
-
-### Schema / Layout Drift 检查
-
-`--schema-drift` 只读扫描产物 `spec_version` 三态报告（current / drift / legacy），不触发 realign、不阻塞下游；详细判据见 [references/schema-drift.md](references/schema-drift.md)。`--layout-drift` 只读扫描治理层 layout/id/trace 兼容性，对齐 `/ms-pipeline realign --docs-layout`。
 
 ## 工作流程
 

@@ -16,7 +16,7 @@ metadata:
 
 **一句话**: 同步文档与实现进度，检测 doc-code 偏差。
 
-**最常见用法**: `/ms-sync`（自动执行 trace+audit）、`/ms-sync --absorb`（自动吸收低风险偏差）
+**最常见用法**: `/ms-sync`（默认 trace+audit+check）、`/ms-sync --archive`（归档历史 docs）、`/ms-sync --back-propagate-prd`（反向同步 PRD mapping）
 
 **不适合?** 验证对齐→`/ms-verify`，提取经验→`/ms-compound`
 
@@ -36,34 +36,29 @@ metadata:
 ## 运行模式
 
 ```bash
-/ms-sync                    → 默认模式：trace → audit 自动串行
-/ms-sync --check            → 仅检查，不更新文档
-/ms-sync --absorb           → 吸收模式（自动 + 智能补齐）
-/ms-sync --archive          → 全量归档检查（所有文档类型）
-/ms-sync --archive requirements  → 仅归档需求文档
-/ms-sync --archive design        → 仅归档设计文档
-/ms-sync --archive tests         → 仅归档测试用例
-/ms-sync --archive tasks         → 仅归档开发任务
-/ms-sync --archive --release v1.0.0  → 创建版本快照
-/ms-sync T-01 T-02          → 指定范围同步
+/ms-sync                    → 默认：trace + audit + check，可带任务范围如 T-01 T-02
+/ms-sync --archive [requirements|design|tests|tasks] [--release v1.0.0]  → 归档历史 docs
 /ms-sync --back-propagate-prd  → 反向同步 prd 映射状态
-/ms-sync --schema-drift        → health report 附加 schema drift 列（权重低，不阻断主流程；委托 /ms-verify --schema-drift 生成扫描结果）
 ```
-
-> **`--schema-drift` 说明**：在标准 sync 输出的 health report 末尾附加一列，汇总各产物的 spec_version 状态（legacy/drift/current 数量）。权重 ≤0.1，**不影响** audit 的 pass/fail 判定。诊断数据由 `/ms-verify --schema-drift` 提供，sync 仅做合并呈现。
 
 ### 默认模式变更
 
-原 `--trace` 和 `--audit` 已合并到默认模式。无参数调用时自动执行 `trace → audit` 串行流程（audit 依赖 trace 的输出，因此不再作为独立子命令）。`--absorb` 自动包含 trace 步骤。
+原 `--trace`、`--audit`、`--check`、`--absorb` 已合并到默认模式。无参数调用时自动执行 `trace → audit → check` 串行流程（audit/check 依赖 trace 的输出，因此不再作为独立用户命令）。低风险偏差吸收能力按原 absorb 规则纳入默认流程。
+
+### 内部编排接口（非用户入口）
+
+- `check`：默认流程内置检查，不再暴露 `/ms-sync --check`
+- `absorb`：默认流程内置低风险吸收，不再暴露 `/ms-sync --absorb`
+- `extract-trace` / `refresh-traceability`：由 `/ms-pipeline realign --scope=layout` Phase 4 调度
+- `schema-drift`：迁移到 `/ms-verify --schema-drift`，sync 仅在 health report 合并 verify 产出的 drift 结果
 
 ### 模式对比
 
-| 模式 | 检查 | 自动更新 | 智能补齐 | 用户确认 |
-|------|------|----------|----------|----------|
-| check | ✅ | ❌ | ❌ | ❌ |
-| sync（默认） | ✅ trace+audit | ✅ | ❌ | ✅ 全部 |
-| absorb | ✅ trace+吸收 | ✅ | ✅ | ✅ 仅高风险 |
-| archive | ✅ 归档条件 | ✅ 归档文件 | ❌ | ✅ 全部 |
+| 用户入口 | 检查 | 自动更新 | 用户确认 |
+|----------|------|----------|----------|
+| `/ms-sync` | ✅ trace+audit+check | ✅ 低风险吸收/状态更新 | ✅ 高风险/写入前 |
+| `/ms-sync --archive` | ✅ 归档条件 | ✅ 归档文件 | ✅ 全部 |
+| `/ms-sync --back-propagate-prd` | ✅ PRD mapping 对比 | ✅ 映射状态 | ✅ 写入前 |
 
 ## 核心理念
 
@@ -124,16 +119,17 @@ metadata:
 
 ## 模式详解
 
-### 默认模式（trace → audit 自动串行）
+### 默认模式（trace → audit → check 自动串行）
 
-无参数调用时自动执行两步流程：
+无参数调用时自动执行三段流程：
 
-1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注（**layout.v1 legacy** — layout.v2 起改读 `traceability.yml`，迁移命令 [FUTURE] `/ms-sync --extract-trace`），与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](references/trace-mode.md)
+1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注（**layout.v1 legacy** — layout.v2 起改读 `traceability.yml`，迁移由内部编排接口触发），与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](references/trace-mode.md)
 2. **audit 阶段**：检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号。详见 [audit-mode.md](references/audit-mode.md)
+3. **check 阶段**：输出偏差报告与 health report；schema drift 诊断统一委托 `/ms-verify --schema-drift`，本 Skill 只合并其结果。
 
-> audit 依赖 trace 的扫描结果，因此自动串行执行，不再作为独立子命令。
+> audit/check 依赖 trace 的扫描结果，因此自动串行执行，不再作为独立子命令。
 
-### 吸收模式 (--absorb)
+### 默认吸收规则
 
 从"检查员"进化为"记录员"，支持代码优先开发路径。低风险偏差自动吸收，高风险需确认。自动包含 trace 步骤。
 
@@ -156,32 +152,11 @@ metadata:
 
 ## 同步命令
 
-### 快速检查
-
-```bash
-/ms-sync --check
-# 输出: 偏差报告（仅显示，不写入）
-```
-
 ### 完整同步（默认）
 
 ```bash
 /ms-sync
-# 流程: trace 扫描 → audit 检查 → 显示报告 → 确认 → 更新文档
-```
-
-### 吸收模式
-
-```bash
-/ms-sync --absorb
-# 流程: trace 扫描 → 自动吸收低风险 → 确认高风险 → 生成报告
-```
-
-### 指定范围
-
-```bash
-/ms-sync T-01 T-02
-# 只同步特定任务
+# 流程: trace 扫描 → audit/check → 自动吸收低风险 → 确认高风险/写入 → 更新文档
 ```
 
 ## 输出文件
@@ -190,7 +165,7 @@ metadata:
 
 生成 `docs/devdocs/00-progress-report.md`，包含总体进度、偏差汇总、下一步建议。
 
-> **注意**：`--check` 模式为只读，不生成进度报告也不更新文档，仅返回检查结果。
+> **注意**：默认流程会先返回检查结果并等待写入确认；用户未确认时不生成进度报告也不更新文档。
 
 ### 文档更新
 
@@ -234,7 +209,7 @@ metadata:
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 开发完成 | `/ms-dev-workflow` | 被调用：任务完成后触发 --trace |
+| 开发完成 | `/ms-dev-workflow` | 被调用：任务完成后触发 trace 阶段 |
 | 任务完成后 | `/ms-dev-tasks` | 执行任务后触发同步 |
 | 测试追溯 | `/ms-test-cases` | 协作：更新追溯矩阵代码位置 |
 | 需求变更 | `/ms-feature` | 新功能添加后同步 |
@@ -259,7 +234,7 @@ metadata:
 | 设计缺失/漂移 | `/ms-system-design` | 代码有新接口但文档未记录 |
 | AC 缺测试 | `/ms-test-cases` | 验收标准无对应测试用例 |
 | F 缺任务闭环 | `/ms-dev-tasks` | 功能点无关联开发任务 |
-| 代码已实现文档落后 | `/ms-sync --absorb` | 状态未更新、新内容未登记 |
+| 代码已实现文档落后 | `/ms-sync` | 状态未更新、新内容未登记，默认流程处理低风险吸收 |
 | 追溯矩阵代码位置缺失 | `/ms-sync` | 代码标注未扫描到矩阵 |
 
 > **调度器原则**：偏差报告不能只列出问题，必须给出明确的修复路由。
@@ -269,11 +244,10 @@ metadata:
 任务完成后直接运行：
 
 ```text
-/ms-sync            # trace → audit 自动串行 → 显示报告 → 确认更新
-  或 --absorb            # trace + 自动吸收低风险 → 确认高风险
+/ms-sync            # trace → audit → check 自动串行 → 显示报告 → 确认更新
 ```
 
-> 默认模式已将 trace 和 audit 合并为自动串行流程，无需手动分两步调用。
+> 默认模式已将 trace、audit、check 和低风险吸收合并为自动串行流程，无需手动分步调用。
 
 ## 批量确认优化
 
@@ -324,7 +298,8 @@ status: success | partial
 summary:
   headline: "同步完成，健康度 85%，2 个偏差已修复"
   details:
-    mode: default | check | absorb | archive
+    mode: default | archive | back_propagate_prd
+    internal_operations: [trace, audit, check, absorb]
     trace_results:
       satisfies_found: X
       verifies_found: X
@@ -339,7 +314,7 @@ summary:
       needs_confirm: X
 blockers: []
 output_files:
-  - docs/devdocs/00-progress-report.md  # --check 模式不生成此文件，output_files 为空
+  - docs/devdocs/00-progress-report.md  # 仅确认写入后生成；检查-only 内部调用为空
 new_ids: {}
 next_recommended:
   skill: ms-compound

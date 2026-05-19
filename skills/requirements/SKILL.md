@@ -1,6 +1,6 @@
 ---
 name: ms-requirements
-description: 将已明确需求编码为 F/US/AC 体系。Supports initial, incremental, context (--context), and --from-prd modes. 模糊需求请先用 /ms-prd 探索。Triggers on "requirements", "feature request", "user story", "需求", "功能点", "验收标准", "项目背景", "补充信息". NOT for fuzzy ideas (use ms-prd), system/technical design (use ms-system-design), or test case design (use ms-test-cases).
+description: 将已明确需求编码为 F/US/AC 体系。Supports default auto initial/incremental, --from-prd, --update-design, and --context modes. 模糊需求请先用 /ms-prd 探索。Triggers on "requirements", "feature request", "user story", "需求", "功能点", "验收标准", "项目背景", "补充信息". NOT for fuzzy ideas (use ms-prd), system/technical design (use ms-system-design), or test case design (use ms-test-cases).
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 metadata:
   patterns: [inversion, generator]
@@ -59,20 +59,21 @@ migration: /ms-pipeline realign --docs-layout
 ## 运行模式
 
 ```bash
-/ms-requirements              → 自动检测模式
-/ms-requirements --incremental → 强制增量模式（追加功能点）
-/ms-requirements --context     → 背景信息模式（追加/更新背景）
-/ms-requirements --fast        → 跳过方案确认，直接生成，仅最终汇总确认
+/ms-requirements                     → 自动检测初始/增量模式
 /ms-requirements --from-prd <index路径> → 消费产品需求包
-/ms-requirements --realign[=scope] → 规范升级回扫（结构/字段差距补齐，不修改业务内容）。详见 [references/realign.md](references/realign.md)；推荐用户入口 `/ms-pipeline realign`
+/ms-requirements --update-design     → 设计资产写入/更新
+/ms-requirements --context           → 背景信息模式（追加/更新背景）
 ```
 
 | 模式 | 触发条件 | 说明 |
 |------|----------|------|
-| **初始模式** | 无 `01-requirements.md` | 从零创建需求文档 |
-| **增量模式** | 已有 `01-requirements.md` | 扫描编号 + 追加功能点/用户故事/验收标准 |
+| **初始模式** | 默认入口且无 `01-requirements.md` | 从零创建需求文档 |
+| **增量模式** | 默认入口且已有 `01-requirements.md` | 扫描编号 + 追加功能点/用户故事/验收标准 |
 | **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
 | **产品导入模式** | `--from-prd` + index 路径 | 消费 ms-prd 输出的结构化需求包 |
+| **设计资产更新模式** | `--update-design` 或 pipeline design 委托 | 写入 / 合并 design_context，不触发需求拆解 |
+
+**LLM 自动判断**：默认入口先探测 `docs/devdocs/01-requirements.md`，不存在走初始模式，存在走增量模式；用户表达"快速通过 / 少确认 / 直接生成"等意图时，自动启用快速通过语义：跳过初始方案确认和轻量假设挑战，仅保留最终写入前的 1 次汇总确认，并提示风险。
 
 ### `--from-prd` 模式
 
@@ -112,15 +113,6 @@ migration: /ms-pipeline realign --docs-layout
 - 澄清结论中的功能描述
 - 验收意图（至少 1 条）
 
-### `--fast` 模式
-
-`--fast` 可与任意模式组合，行为变更：
-
-- 跳过方案确认步骤（初始模式）
-- 使用合理默认值（不询问技术栈偏好等）
-- 仅保留最终写入前的 1 次汇总确认
-- 默认行为不变，`--fast` 是 opt-in
-
 ## requirements 私有门控
 
 **门控标记**：见 [skills/_shared/constraints.md § 1](../_shared/constraints.md#1-门控标记-ssot)
@@ -137,16 +129,16 @@ migration: /ms-pipeline realign --docs-layout
 
 | 模式 | 输入 / 前置 | 步骤 | 输出 / 门控 |
 |---|---|---|---|
-| 初始模式 | 无 `01-requirements.md`；输入 `< 200` 字且无结构化标记时先建议 `/ms-prd`，并 AskUserQuestion 确认继续或切换 | 0.5 设计资产感知（按 prd/references/design-context.md 探测协议，询问设计稿和组件库并写入 `## 设计资产`）→ 收集原始需求（记录原话/关键表述、来源、日期）→ 理解需求 + 探索代码库（如适用）→ 呈现需求拆解方案 + 轻量假设挑战 → 用户确认 → 识别功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）→ 编写用户故事（v1: US-XXX / v2 [FUTURE]: STORY-XXX）→ 编写 AC-XXX（design_context 存在时，UI 相关 US 自动补充 hover/disabled/error/loading/empty 等交互状态 AC）→ 生成追溯矩阵 | 初始方案确认后才写入；轻量假设挑战仅初始模式 + 非 `--from-prd` + 非 `--fast`，问题为：去掉此功能用户最大损失、MVP 最小可用集、6 个月后是否仍重要；`--from-prd` 跳过（prd 层已做 4 题产品视角挑战），`--fast` 跳过并提示风险 |
+| 初始模式 | 无 `01-requirements.md`；输入 `< 200` 字且无结构化标记时先建议 `/ms-prd`，并 AskUserQuestion 确认继续或切换 | 0.5 设计资产感知（按 prd/references/design-context.md 探测协议，询问设计稿和组件库并写入 `## 设计资产`）→ 收集原始需求（记录原话/关键表述、来源、日期）→ 理解需求 + 探索代码库（如适用）→ 呈现需求拆解方案 + 轻量假设挑战 → 用户确认 → 识别功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）→ 编写用户故事（v1: US-XXX / v2 [FUTURE]: STORY-XXX）→ 编写 AC-XXX（design_context 存在时，UI 相关 US 自动补充 hover/disabled/error/loading/empty 等交互状态 AC）→ 生成追溯矩阵 | 初始方案确认后才写入；轻量假设挑战仅初始模式 + 非 `--from-prd` + 非快速通过意图，问题为：去掉此功能用户最大损失、MVP 最小可用集、6 个月后是否仍重要；`--from-prd` 跳过（prd 层已做 4 题产品视角挑战），快速通过时跳过并提示风险 |
 | 增量模式 | 已有 `01-requirements.md`；读取已有 design_context，无则按 design-context.md 探测协议询问 | 扫描现有 F/US/AC 最大编号 → 收集新增原始需求并追加到 `## 0. 原始需求`（历史文档缺章节则标注"缺失历史原始需求"后继续）→ 读取已有上下文 / codebase-insight（如存在）→ 理解新增需求 → 追加功能点/用户故事/验收标准，延续编号并标注增量版本和日期 → 更新追溯矩阵 → 用户确认 | 返回新增编号列表（供调用方使用）；不得删除或覆盖既有内容 |
 | 背景信息模式 | `--context` 或用户要补充背景；不涉及功能点生成，跳过设计资产探测 | 读取现有文档并提取"背景与目标"章节 → 收集背景信息（AskUserQuestion、用户直接输入、Read 文件路径、WebFetch URL 摘要）→ 合并到"背景与目标"章节，补充"技术约束"和"参考资料"子章节 → 更新文档 → 用户确认 | 不写入 `## 0. 原始需求`，除非用户提供的是需求原话而非背景补充 |
 
 ### 设计资产更新模式
 
-由 `/ms-pipeline design` 委托调用，专门处理 design_context 的写入和更新。
+由 `/ms-pipeline design` 委托或 `/ms-requirements --update-design` 触发，专门处理 design_context 的写入和更新。
 
 1. 接收 pipeline 传递的 design_context 数据
-2. 确定写入目标：`--target prd-index` → prd index.md，默认 → 01-requirements.md
+2. 确定写入目标：LLM 根据用户表述或编排元数据识别；指向 PRD index 时写入 prd index.md，默认写入 01-requirements.md
 3. 写入/合并：无 `## 设计资产` 则新增章节；已有则按合并规则更新（见 design-context.md § 主动推送协议）
 4. AC 联动检查（仅当已有 US/AC）：新增 D-XX 关联 UI 相关 US → 检查是否需补充交互状态 AC
 
@@ -189,7 +181,7 @@ migration: /ms-pipeline realign --docs-layout
 
 ### 轻量假设挑战
 
-> 仅初始模式 + 非 --from-prd + 非 --fast 时展示。
+> 仅初始模式 + 非 --from-prd + 非快速通过意图时展示。
 
 | # | 问题 | 回答 |
 |---|------|------|
@@ -213,7 +205,7 @@ MVP 范围： / 非目标： / 删减理由：
 ### 约束
 - 用户确认前：只展示方案，不写入任何文件
 - 用户确认后：仅生成 `docs/devdocs/` 下的文档，严禁编写实现代码
-- `--fast` 模式：跳过方案确认，但保留最终汇总确认
+- 快速通过意图：跳过方案确认，但保留最终汇总确认
 
 ## 编号规范
 
@@ -321,9 +313,9 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 - [ ] **用户确认方案后才能开始编号分配和文档写入**
 - [ ] 用户要求调整时，更新方案后重新确认
 - [ ] 增量模式和背景信息模式无需方案确认
-- [ ] 轻量假设挑战（3 题）仅在初始模式 + 非 `--from-prd` + 非 `--fast` 时触发
+- [ ] 轻量假设挑战（3 题）仅在初始模式 + 非 `--from-prd` + 非快速通过意图时触发
 - [ ] `--from-prd` 跳过假设挑战（prd 层已做 4 题产品视角挑战）
-- [ ] `--fast` 跳过假设挑战，加风险提示
+- [ ] 快速通过意图跳过假设挑战，加风险提示
 - [ ] 输入模糊（< 200 字 + 无结构）时引导用户先运行 `/ms-prd`
 
 ### Generator 自检（用户确认前自动执行）
@@ -393,8 +385,5 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 ## 编排器接口
 
 > 以下模式由编排器（ms-pipeline）内部调用，用户通常不需要直接使用。
-
-```bash
-/ms-requirements --update-design              → 设计资产写入/更新（由 pipeline design 委托）
-/ms-requirements --update-design --target prd-index → 写入 PRD index
-```
+- `--realign[=scope]`：规范升级回扫，由 `/ms-pipeline realign` 调度；详见 references/realign.md
+- `--update-design + target=prd-index`：写入 PRD index（内部元数据，不作为用户面 flag）
