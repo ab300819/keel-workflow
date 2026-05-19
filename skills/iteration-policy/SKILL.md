@@ -1,6 +1,12 @@
 ---
 name: ms-iteration-policy
-description: 研发阶段命名策略横切 skill。Surface "semver 形式主义"反模式（未发布项目套 V<x.y.z>）并推荐敏捷三维度（Sprint + Milestone + Backlog）。当项目初始化、onboarding、改造时识别版本号占位（V0.9.x / V1.x）、版本号冻结绑大重构、Sprint 编号跨多版本累计等信号，主动 surface 给用户拍板。Triggers on "迭代策略"、"sprint 命名"、"版本号占位"、"semver 反模式"、"研发阶段"、"iteration policy"、"agile naming"。NOT for 已上线 production 的多版本并存项目（那里 semver 是真契约），不重新设计 INS/F/US/AC/T 等编号体系（仅治理 V 编号使用时机）。
+user-invocable: false
+description: >-
+  **Internal skill**：由 `/ms-pipeline realign --scope=layout` 编排调度，不作为用户直接调用入口。
+  研发阶段命名策略横切治理子组件。Surface "semver 形式主义"反模式（未发布项目套 V<x.y.z>）并推荐敏捷三维度（Sprint + Milestone + Backlog）。
+  当编排层检测到项目初始化、onboarding、改造、layout realign 中存在版本号占位（V0.9.x / V1.x）、版本号冻结绑大重构、Sprint 编号跨多版本累计等内部信号时使用。
+  Triggers on "realign/iteration-policy-internal"、"ms-pipeline realign layout"、"iteration-policy baseline"、"iteration-policy migration"、"semver anti-pattern scan"、"layout realign governance"。
+  NOT for direct user invocation；用户面治理请求必须路由到 `/ms-pipeline realign --scope=layout`。NOT for 已上线 production 的多版本并存项目（那里 semver 是真契约），不重新设计 INS/F/US/AC/T 等编号体系（仅治理 V 编号使用时机）。
 metadata:
   patterns: [signal-detection, cross-cutting, anti-pattern-surface]
   interaction: surface-then-confirm
@@ -12,14 +18,18 @@ writes_id_scheme: id.v1
 reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: warn
-migration: /ms-pipeline realign --docs-layout
+migration: /ms-pipeline realign --scope=layout
 ---
+
+> ⚠️ **Internal skill**：本 skill 是 `/ms-pipeline realign --scope=layout` 的编排子组件，不作为用户直接调用入口。用户面如需迭代策略治理，请使用 `/ms-pipeline realign` 主入口。
+> 
+> 详见 [共享约束 § 8 升级入口统一](../_shared/constraints.md#升级入口统一) 的 `realign/iteration-policy-internal` 规则。
 
 # 研发阶段命名策略（ms-iteration-policy）
 
 > ℹ️ 本 skill 是治理框架的横切补充（FUTURE 表已声明，详见 [pipeline/references/layout/docs-layout-migration.md](../pipeline/references/layout/docs-layout-migration.md)）。与 `/ms-pipeline distill` 互补：distill 处理"已成型文档的蒸馏"；本 skill 处理"研发阶段命名的源头治理"——避免文档先污染再蒸馏的高成本路径。
 >
-> ℹ️ 编号双轨：本 skill 仅治理 `V<x.y.z>` semver 使用时机，**不涉及** layout.v1/v2 编号迁移（F/FEAT、T/TASK 等）。任何项目（v1 / v2）都可调用。
+> ℹ️ 编号双轨：本 skill 仅治理 `V<x.y.z>` semver 使用时机，**不涉及** layout.v1/v2 编号迁移（F/FEAT、T/TASK 等）。编排层可在任何项目（v1 / v2）调度。
 
 ## 视角
 
@@ -33,7 +43,7 @@ migration: /ms-pipeline realign --docs-layout
 | onboarding 扫描（`/ms-onboard --read`）| 识别反模式信号清单 → onboarding 摘要 surface |
 | 已有项目改造（`/ms-retrofit`）| 评估是否需要废弃版本号驱动 |
 | 新增 sprint / 增量需求 / 增量设计（`/ms-feature` / `/ms-system-design` / `/ms-dev-tasks`）| 遵循项目已建立约定，不主动套版本号 |
-| 用户主动调用 `/ms-iteration-policy` | 全量扫描当前项目 + 反模式信号报告 |
+| 编排层内部调用 `/ms-iteration-policy` | 由 `/ms-pipeline realign --scope=layout` 触发，全量扫描当前项目 + 反模式信号报告 |
 
 ## 核心原则
 
@@ -170,7 +180,9 @@ options:
 
 iteration-policy 是**预防型**，distill 是**治疗型**。
 
-## CLI 入口
+## 编排接口（internal）
+
+> ⚠️ 以下命令为编排层内部调用，不在用户面暴露；用户面统一使用 `/ms-pipeline realign --scope=layout` 主入口。
 
 > ⚠️ 全部 CLI 命令均 [FUTURE]（spec 已起草，runtime 待实现，详见 [pipeline/references/layout/docs-layout-migration.md § 执行接口落地状态](../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
 

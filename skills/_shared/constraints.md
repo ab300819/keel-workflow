@@ -251,11 +251,20 @@ expected_output: yaml-summary-v1
 - `realign/bump-sync-three-places`：bump 时同步更新 `references/realign.md` 当前常量、Migration Matrix、模板 frontmatter 示例。
 - `realign/restructuring-confirm`：restructuring 级差距必须 AskUserQuestion 逐项确认。
 
+### 升级入口统一
+
+- `realign/single-entry`：所有文档体系升级动作统一通过 `/ms-pipeline realign [--scope=<spec|layout|prd-mapping>]` 入口，不再以散落 flag 形式暴露给用户。
+- `realign/scope-enum-authority`：scope 枚举白名单与执行接口指针位于 `skills/pipeline/references/realign.md` § scope 专用执行接口；新增 scope 需 bump `realign.md` 的 `spec_version` 并同步 Migration Matrix。
+- `realign/no-direct-user-call`：各 skill 内部 `--realign` 子动作（如 `/ms-system-design --realign=layer3-only`）属编排实现细节，不作为用户面命令暴露；用户面只承认 `/ms-pipeline realign` 入口。
+- `realign/deprecated-alias-one-version`:已存在的旧入口（如 `/ms-pipeline realign --docs-layout`）保留一个版本作为 deprecated alias，并在 SKILL.md 文档与运行时输出标注 deprecated；下一版本移除。
+- `realign/iteration-policy-internal`：`ms-iteration-policy` 是横切治理 skill，由 `/ms-pipeline realign --scope=layout` 编排调度，不作为用户直接调用入口；详见 `skills/iteration-policy/SKILL.md`。
+
 ### 指针
 
 - `realign/shared-contract-pointer`：跨 skill realign 共性见 `skills/pipeline/references/realign.md`。
 - `realign/skill-specific-pointer`：各 skill 细则见 `skills/<skill>/references/realign.md`，本文不复制具体矩阵。
 - `realign/layout-pointer`：layout/id/trace 治理见 `skills/pipeline/references/layout/*`。
+- `realign/layout-execution-pointer`：`--scope=layout` 执行接口见 `skills/pipeline/references/realign-scope-layout.md`。
 - `realign/prd-index-pointer`：PRD 编号 SSOT 见 `skills/prd/references/governance/prd-index-ssot.md`。
 
 ## 差异点与跳过项
