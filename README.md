@@ -2,7 +2,7 @@
 
 面向**个人开发者**的 AI Agent Skills 模板项目。
 
-包含 19 个 ms- 流程 skill（覆盖 PRD → 需求 → 设计 → 测试 → 开发 → 验证全链路）和 9 个独立工具 skill。
+包含 21 个 ms- 流程 skill（覆盖 PRD → 需求 → 设计 → 测试 → 开发 → 验证全链路，含 1 个 internal-only 横切 skill）和 10 个独立工具 skill。
 
 > ℹ️ 本 README 中提及的 `@satisfies` / `@verifies` 代码注释属于 **layout.v1 legacy**（layout.v2 起改读 `traceability.yml`；详见 [skills/pipeline/references/layout/docs-layout-migration.md § 执行接口落地状态](skills/pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
 
@@ -44,7 +44,7 @@ bash skills/scripts/deploy-skills.sh
 | 有明确需求，全新项目 | `/ms-pipeline init` |
 | 已有项目，加新功能 | `/ms-pipeline feature` |
 | 修 Bug | `/ms-pipeline bugfix` |
-| 写完代码，文档没跟上 | `/ms-sync --absorb` |
+| 写完代码，文档没跟上 | `/ms-sync` |
 | 接手项目，快速了解 | `/ms-onboard --read` |
 | 已有项目，想规范化 | `/ms-retrofit` |
 | 检查质量 | `/ms-verify` |
@@ -449,21 +449,25 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 
 ### 治理工具命令
 
-> ⚠️ 当前阶段 spec 已完整，**runtime 接口处于 [FUTURE] 状态**（spec 先行落地、执行接口逐步实现）。`mic-en` 等 layout.v1 历史项目不主动迁移；用户主动调用才触发。
->
-> 完整命令实现状态见 [docs-layout-migration.md § 执行接口落地状态](skills/pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)。
+#### 统一升级入口（综合方案落地）
 
-| 命令 | 用途 | 状态 |
-|------|------|------|
-| `/ms-pipeline realign --docs-layout` | layout.v1 → v2 迁移（dry-run + apply）| [FUTURE] |
-| `/ms-verify --layout-drift` | 检测项目 layout 与 skill 兼容性 | [FUTURE] |
-| `/ms-verify --ssot-lint` | 跑 12 条 SSOT lint 规则 | [FUTURE] |
-| `/ms-sync --extract-trace` | 从代码 `@satisfies` / `@verifies` 注释抽取 traceability.yml | [FUTURE] |
-| `/ms-sync --refresh-traceability` | 刷新过期 trace link | [FUTURE] |
-| `/ms-pipeline distill` | 迭代蒸馏（13 类动作）| [FUTURE] |
-| `/ms-iteration-policy` | 横切：研发阶段命名策略（防 semver 形式主义）| [FUTURE] |
+所有文档体系升级动作统一通过单一入口，不再以散落 flag 形式暴露：
 
-#### 相关验证工具（skill 级治理，非 layout 6 阶段 spec）
+```bash
+/ms-pipeline realign [--scope=<spec|layout|prd-mapping>] [--target=<path>] [--dry-run|--apply]
+```
+
+| scope | 用途 | 状态 |
+|-------|------|------|
+| `spec`（默认）| 产物 `spec_version` drift（schema 维度）| ✅ 部分可用 |
+| `layout` | layout.v1 → v2 迁移（含编号/目录/追溯重组）| ✅ **执行接口已落地**（详见 [realign-scope-layout.md](skills/pipeline/references/realign-scope-layout.md)）|
+| `prd-mapping` | PRD mapping_status 扫描 + 报告 | [FUTURE] |
+
+**Apply 6 Phase**：checkpoint → file_ops → id_map → trace → frontmatter → post-validation；每 Phase 单独 commit；失败 ⛔ + `git reset --hard <checkpoint_commit>` 回滚；plan_hash 校验中断恢复一致性。
+
+**deprecated alias**：`--docs-layout` 等价于 `--scope=layout`，保留 1 版本后移除。
+
+#### 验证工具
 
 | 命令 | 用途 | 状态 |
 |------|------|------|
@@ -471,8 +475,59 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | `/ms-verify --docs` | 文档层间对齐验证 | ✅ 可用 |
 | `/ms-verify --ui` | UI 与设计稿对齐 | ✅ 可用 |
 | `/ms-verify --readiness` | 开发前就绪检查 | ✅ 可用 |
+| `/ms-verify --schema-drift` | drift 三态报告（schema + layout 两段呈现）| ✅ 可用 |
+| `/ms-verify --ssot-lint` | 跑 12 条 SSOT lint 规则 | [FUTURE] |
 
-这些是 `ms-verify` skill 提供的运行时验证（非 layout 治理 spec 范畴，但与治理框架协同；如盲区 7 暴露的追溯断裂问题需配合 #4 traceability.yml 落地后才彻底解决）。
+#### 已收敛 / internal-only（不再用户面暴露）
+
+| 命令 | 处理 |
+|------|------|
+| `/ms-pipeline realign --docs-layout` | → `--scope=layout`（deprecated alias 1 版本）|
+| `/ms-pipeline realign --classify-ins/--rename-id/--archive-v1` | → 由 `--scope=layout` Phase 自动处理 |
+| `/ms-verify --layout-drift` | → 合并到 `--schema-drift`（报告含 layout drift 段）|
+| `/ms-sync --extract-trace/--refresh-traceability` | → 由 `realign --scope=layout` Phase 4 编排，不暴露 |
+| `/ms-sync --schema-drift` | → 迁移到 `/ms-verify --schema-drift`，统一 drift 报告 |
+| `/ms-sync --check/--absorb` | → 合入 `/ms-sync` 默认流程 |
+| `/ms-iteration-policy` | → internal-only，由 `/ms-pipeline realign --scope=layout` 编排调度 |
+
+> ℹ️ `/ms-pipeline distill`（迭代蒸馏，13 类动作）是独立的治疗型治理命令，**不属于 realign 入口**；当前状态 [FUTURE]。
+
+### 综合方案落地（单一入口 + flag 收敛）
+
+针对"已膨胀 DevDocs 项目（如 mic-en）需要规范化升级 + skill 子命令膨胀给用户/作者带来认知成本"两个痛点，综合方案落地 5 步：
+
+| 步骤 | 内容 | 状态 |
+|------|------|------|
+| 1 | `/ms-pipeline realign --scope=layout` 执行接口（6 Phase + plan_hash + git reset 回滚）| ✅ |
+| 2 | SKILL.md 移除 deprecated flag | ✅ |
+| 3 | 各 skill SKILL.md 收敛 ≤5 外露 flag | ✅ |
+| 4 | `shared-constraints.md § 8` 新增 single-entry 规则族 | ✅ |
+| 5 | `ms-iteration-policy` 标 internal-only | ✅ |
+
+**用户面 flag 总收敛 49 → 20（-59%）**：
+
+| Skill | 原 | 新 |
+|-------|---:|---:|
+| ms-pipeline | 19+ | 8 入口 |
+| ms-verify | 14 | 5 |
+| ms-sync | 8 | 3 |
+| ms-requirements | 8 | 4 |
+| ms-iteration-policy | 10 | 0（internal-only）|
+
+### 共享约束 SSOT
+
+[`skills/_shared/constraints.md`](skills/_shared/constraints.md) 是跨 skill 协议层共性的单一权威源（274 行 / 99 rule_id），覆盖：
+
+- § 1 门控标记 SSOT（⛔/⚠️/ℹ️ 语义 + 恢复方式格式）
+- § 2 yaml-summary-v1 envelope（4 status 值域 + 保留字段）
+- § 3 Task 委托规则（最小握手协议）
+- § 4 FUTURE 状态三态（[现状]/[新增]/[FUTURE]）
+- § 5 用户确认 / AskUserQuestion
+- § 6 只读 / dry-run 命名
+- § 7 Recovery 格式（4 字段模板）
+- § 8 realign / spec_version + **single-entry 规则族**
+
+各 ms- skill 顶部通过聚合声明引用，不复制规则，避免散落 drift。
 
 ### 治理设计的关键选择
 
@@ -522,6 +577,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | 文档同步 | `/ms-sync` | trace + audit + archive | 更新追溯矩阵 |
 | 洞察收集 | `/ms-insights` | 审查/调研结果 → 需求 | `05-insights.md` |
 | 知识沉淀 | `/ms-compound` | 提取经验模式 | `patterns/*.md` |
+| 暂缓任务池 | `/ms-backlog` | dev-tasks / verify / insights / prd 产生的"暂缓不阻塞"项集中索引 | `docs/devdocs/backlog.md` |
 | 项目上下文 | `/ms-onboard` | AI 工具切换时的上下文传递 | `00-context.md` |
 | 项目改造 | `/ms-retrofit` | 已有项目适配 DevDocs | 逆向生成文档 |
 | 代码盘点 | `/ms-codebase-insight` | 只读分析现有代码库 | `codebase-insight.md` |
@@ -580,6 +636,8 @@ F-001 (功能点)
 | T-XX | 开发任务 | `/ms-dev-tasks` |
 | INS-XXX | 洞察建议 | `/ms-insights` |
 | BUG-XXX | Bug 记录 | `/ms-bugfix` |
+
+> ℹ️ **`ms-backlog` 复用现有编号，不新增 B-XXX**。暂缓条目在 `docs/devdocs/backlog.md` 中用 `source_id + entry_no` 作局部锚点（如 `F-01#1`），状态机仅 `parked → reactivated|closed|superseded`。详见 [ms-backlog SKILL.md](skills/backlog/SKILL.md)。
 
 ---
 
