@@ -27,6 +27,10 @@
 
 底层 `--realign` 仅用于调试或编排层内部调用：`/ms-system-design --realign=layer3-only`、`/ms-dev-workflow T-03 --realign`。
 
+### scope 专用执行接口
+
+`/ms-pipeline realign --scope=layout [--target=<path>] [--dry-run|--apply]` 的 layout.v1 → layout.v2 执行接口见 [realign-scope-layout.md](realign-scope-layout.md)。旧入口 `/ms-pipeline realign --docs-layout` 保留一个版本作为 deprecated alias。
+
 ## 编排层职责（`ms-pipeline realign`）
 
 1. **扫描**：读取 `docs/devdocs/` 所有产物 frontmatter 的 `spec_version`（阶段 2 后生效）；阶段 1 无元数据时视为"用户显式触发即视为需对齐"。
