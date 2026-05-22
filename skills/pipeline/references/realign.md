@@ -29,7 +29,14 @@
 
 ### scope 专用执行接口
 
-`/ms-pipeline realign --scope=layout [--target=<path>] [--dry-run|--apply]` 的 layout.v1 → layout.v2 执行接口见 [realign-scope-layout.md](realign-scope-layout.md)。旧入口 `/ms-pipeline realign --docs-layout` 保留一个版本作为 deprecated alias。
+| scope | 入口 | 执行接口文件 | 定位 |
+|-------|------|-------------|------|
+| `spec` | `/ms-pipeline realign --scope=spec` | 沿用本文 § "编排层职责" + 各 skill `references/realign.md` | spec_version 差距补齐 |
+| `layout` | `/ms-pipeline realign --scope=layout` | [realign-scope-layout.md](realign-scope-layout.md) | layout.v1 → layout.v2 迁移 |
+| `prd-mapping` | `/ms-pipeline realign --scope=prd-mapping` | 沿用 `skills/prd/references/governance/prd-devdocs-mapping.md` | PRD ↔ DevDocs 映射对齐 |
+| `health` | `/ms-pipeline realign --scope=health` | [realign-scope-health.md](realign-scope-health.md) | 文档健康度主动审查（结构 / 索引 / 过大 / SSOT / 三层分离）|
+
+旧入口 `/ms-pipeline realign --docs-layout` 保留一个版本作为 deprecated alias，等价于 `--scope=layout`。
 
 ## 编排层职责（`ms-pipeline realign`）
 
