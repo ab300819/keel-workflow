@@ -14,7 +14,8 @@
 | 文件 | 本 spec 的使用方式 |
 |------|-------------------|
 | [realign.md](realign.md) | 继承 realign 安全不变量、yaml-summary-v1 汇总方式 |
-| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) | 调用 4 条 [新增] lint rule（size-cap / no-restatement / dead-link / state-size） |
+| [health-lint-implementation.md](health-lint-implementation.md) | 调用 4 条 [新增] lint rule（state/total-size-cap / state/line-length-cap / state/forbidden-content / health/dead-link），layout.v1+v2 通用 |
+| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) | layout.v2 启用后追加 `ssot/no-restatement` 等 8 条 [FUTURE] rule 到维度 d；v1 项目跳过 |
 | `../../sync/references/health-scoring.md` | 6 类偏差评分（layout.v1 legacy）作为子项 |
 | `../../verify/SKILL.md` | 调用 `--schema-drift` / `--docs` / `--impl` 已有能力 |
 | `../../agent-memory/templates/devdocs-state-template.md` | 占位 prose 边界约束（forbidden 字段） |
@@ -25,12 +26,14 @@
 | 维度 | 检查内容 | 依赖能力 | 状态 |
 |------|----------|----------|------|
 | a 结构正确性 | frontmatter 必填字段、spec_version 当前性 | ms-verify --schema-drift | [现状] |
-| b 索引/链接正确性 | 编号引用文件存在性、追溯矩阵完整性 | ms-sync trace + 新增死链扫描 | 部分 [现状] / 部分 [新增] |
-| c 过大文档识别 | 单文件 size-cap / 单行长度 / state-size | ssot-lint 4 条 [新增] rule | [新增] |
-| d SSOT 遵从 | 占位/索引不复制权威源内容 | ssot-lint `no-restatement` | [新增] |
+| b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
+| c 过大文档识别 | devdocs-state.md byte 阈值 / 单行长度 / 内嵌禁用模式 | `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
+| d SSOT 遵从 | 占位/索引不复制权威源内容 | `ssot/no-restatement` | [FUTURE] (layout.v2 才启用) |
 | e 三层分离 | 决策（ADR）/ 执行（设计/代码）/ 数据（DTO/Schema）章节关键词混杂检测 | 启发式正则扫描 | [FUTURE] |
 
-> 维度 e 本轮保留 [FUTURE]，仅在报告中输出 "skipped: keyword baseline 待定义"，不计入评分。维度 a-d 实装由本 scope + commit 2 落地。
+> 本轮（layout.v1 项目可立即用）：维度 a/b/c 实装。维度 d 在 layout.v1 下报 `skipped: requires layout.v2 ssot-lint`；layout.v2 启用后自动激活。维度 e 待 keyword baseline 定义后启用。
+>
+> 维度 b/c 的 4 条 [新增] rule 算法与输出 schema 见 [health-lint-implementation.md](health-lint-implementation.md)。
 
 ## CLI 兼容
 
@@ -70,9 +73,11 @@ docs/devdocs/.health-report.md
 
 1. 归一化 `repo_root` 与 `docs_root`。
 2. 调用 `/ms-verify --schema-drift`（只读），获取维度 a 数据。
-3. 调用 `/ms-sync` audit 计算（只读复用 `health-scoring.md`），获取既有 6 类偏差。
-4. 执行 ssot-lint 4 条 [新增] rule（详见 [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md)），获取维度 c+d 数据。
-5. 维度 b 死链扫描：解析 docs 内所有 `F-NNN` / `US-NNN` / `AC-NNN` / `T-NNN` / `ADR-NNN` / `INS-NNN` / `BUG-NNN` 引用，核对目标文件 / 目标章节是否存在。
+3. 调用 `/ms-sync` audit 计算（只读复用 `health-scoring.md`），获取既有 6 类偏差作为维度 b 子项。
+4. 执行 health-lint 4 条 [新增] rule（详见 [health-lint-implementation.md](health-lint-implementation.md)）：
+   - `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` → 维度 c
+   - `health/dead-link` → 维度 b
+5. 若项目为 layout.v2 → 追加 ssot-lint 调用获取维度 d 数据；layout.v1 → 维度 d 报 `skipped: requires layout.v2`。
 6. 维度 e 当前 skipped（输出 `pending: keyword baseline 待 P2 落地`）。
 7. 加权评分输出（见下方"评分契约"）。
 8. 写入 `.health-report.md`，stdout 打印摘要 + 下一步建议命令。
@@ -137,15 +142,16 @@ manual_decisions:
 
 ### 评分契约
 
-| 维度 | 权重（无 e） | 权重（e 启用 [FUTURE]）|
-|------|-------------|------------------------|
-| a 结构 | 0.25 | 0.20 |
-| b 索引/链接 | 0.30 | 0.25 |
-| c 过大 | 0.25 | 0.20 |
-| d SSOT | 0.20 | 0.15 |
-| e 三层 | — | 0.20 |
+权重随激活维度自动归一：
+
+| 场景 | a | b | c | d | e |
+|------|---|---|---|---|---|
+| layout.v1（本轮可用）| 0.30 | 0.40 | 0.30 | — | — |
+| layout.v2（d 启用）| 0.25 | 0.30 | 0.25 | 0.20 | — |
+| layout.v2 + e [FUTURE] | 0.20 | 0.25 | 0.20 | 0.15 | 0.20 |
 
 - 单维度评分 = (1 - violations_count / total_checks) × 100；无 violations 时为 100。
+- 跳过维度（status: skipped）权重不分摊到其他维度，从总和中剔除；其余维度按比例归一。
 - `total_score` < 60 时报告头部以 ⚠️ 提示"建议立即处理"；< 40 时 ⛔ 提示"健康度不达标"。
 
 ## AskUserQuestion 触发点
