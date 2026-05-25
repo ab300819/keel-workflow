@@ -124,36 +124,83 @@
 
 **检测对象**：`<repo_root>/.claude/rules/devdocs-state.md` 全文。
 
-**禁止模式**（regex，按出现频率排序）：
+**禁止模式**（canonical regex，PCRE / grep -P 兼容）：
 
-| pattern_id | regex | 命中含义 |
-|-----------|-------|---------|
-| `commit-hash` | `` `\b[0-9a-f]{7,40}\b` `` | git commit short/full hash（命中需文本上下文含 "commit" / "@" / "shipped" 关键词，避免误报 AC 编号末位数字）|
-| `loc-count` | `\b[+-]?\d+(\.\d+)?\s*(LOC\|loc\|lines?\|行)\b` | LOC 净增减（如 `+184/-5`、`732 LOC`）|
-| `codex-score` | `\bR\d\b.*\bhealth\s*=\s*\d+\b` 或 `\bR\d\s*\d{2,3}\s*→\s*R\d\s*\d{2,3}\b` | codex review 分数（R1 88 → R2 92）|
-| `diff-net` | `\b[+-]\d+/[+-]\d+\b` | diff 净增减 (+184/-5)|
-| `file-path` | `\b[\w./-]+\.(java\|ts\|tsx\|js\|jsx\|py\|go\|kt\|swift)\b` | 源码文件路径 |
-| `submodule-ref` | `\b(trade\|envo\|app\|mstatic\|trade-oss)@\b` | 跨仓 submodule + commit 引用 |
+#### `commit-hash`
+
+```regex
+(?:^|[@\s(\[])[0-9a-f]{7,40}(?=[\s.,;:)\]'"`]|$)
+```
+
+命中：`trade@0c263bf4d4` / `commit 51593927ee` / ``` `abc1234` ```
+不命中：`AC-1234567`（前置是 `-` 而非 `@`/空白）/ `2026-05-22`（hex 但有非 hex 上下文 `-`）
+
+#### `loc-count`
+
+```regex
+(?:[+-]?\d+(?:\.\d+)?\s*(?:LOC|loc|lines?|行)\b|净\s*[+-]\d+\s*LOC)
+```
+
+命中：`732 LOC` / `净 -85 LOC` / `+184 lines`
+不命中：`AC-148` / `第 3 行`（"行" 前无数字且无 + /-）
+
+#### `codex-score`
+
+```regex
+(?:\bR\d+\s*(?:health\s*=)?\s*\d{2,3}(?:\s*PASS)?\b|\bR\d+\s+\d{2,3}\s*[→\->]+\s*R\d+\s+\d{2,3}\b|双\s*\d{2,3}\s*分)
+```
+
+命中：`R1 88 → R2 92` / `R2 health=92 PASS` / `双 96 分`
+不命中：`R1`（仅版本号无分数）
+
+#### `diff-net`
+
+```regex
+(?<![\w\-])[+\-]\d+\s*/\s*[+\-]\d+(?![\w])
+```
+
+命中：`+184/-5` / `+2501/-39` / `2 files +184/-5`
+不命中：`2026/05/22`（日期）/ `1/2`（无 +/- 前缀）
+
+#### `file-path`
+
+```regex
+\b[\w./\-]*\.(?:java|ts|tsx|js|jsx|py|go|kt|swift|md)(?::L?\d+)?\b
+```
+
+命中：`OssFundTraceProviderImpl.java:L54` / `src/foo.ts` / `04-dev-tasks-p19.md`
+不命中：`https://example.com`（无 `.<ext>` 段）
+
+#### `submodule-ref`
+
+```regex
+\b(?:trade|envo|app|mstatic|trade-oss)@[0-9a-f]{7,40}\b
+```
+
+命中：`trade@0c263bf4d4` / `envo@0a22d80eb0`
+不命中：`trade@` 单独（无 hash 跟随）
+
+> ⚠️ 上述 regex 经验证：对 mic-en 实物 `devdocs-state.md` line 50 的 `trade@0c263bf4d4` / `+184/-5` / `R1 88 → R2 92` 均能命中。
 
 **算法**：
 
 ```text
-1. 跳过文件前 50 行的"规则声明"区域（line 1-30 通常是约定表格 + 规则文本，允许出现 commit/path 示例）
-   实现：找到第一个 "## 编号状态" heading 之后才开始扫描
+1. 定位扫描起始行：找到第一个 "## 编号状态" heading 行号 header_end_line（前序"## 单一事实源约定" + 边界声明段落豁免）
+   fallback：若文件无 "## 编号状态"，从 line 51 开始扫描
 
-2. 对每个 pattern_id 在剩余正文做 regex 全匹配：
-   matches = Bash: grep -nP "<regex>" "$path" | tail -n +<header_end_line>
+2. 对每个 pattern_id 在 header_end_line 之后做 PCRE 全匹配：
+   matches = Bash: awk "NR > $header_end_line" "$path" | grep -nP --line-number "<regex>"
 
 3. 对每个 match 记录 finding：
    {
-     line: <line_num>,
-     pattern_id: commit-hash | loc-count | codex-score | diff-net | file-path | submodule-ref,
+     line: <line_num + header_end_line>,
+     pattern_id: <id>,
      matched_text: "<最多 80 字符截断>",
      surrounding_context: "<该行前后 ±30 字符>"
    }
 
 4. severity = warning（不阻断，但建议清理）
-5. 汇总 findings，按 line 升序输出
+5. 汇总 findings，按 line 升序输出；同行多 pattern 合并为一条 finding（patterns 字段为数组）
 ```
 
 **修复路径**：
@@ -182,28 +229,46 @@
 
 ```text
 Phase A：构建编号定义索引（definition index）
-  1. 遍历所有产物文件 + .claude/rules/devdocs-state.md
-  2. 在每个文件中识别"定义位置"模式：
+  1. 遍历定义源文件（**注意：devdocs-state.md 不是定义源**）：
+       - docs/devdocs/**/*.md（排除 _archived/、.realign-plan.md、.health-report.md）
+       - .claude/rules/devdocs-state.md 仅扫"## 编号状态"表的"当前最大"列，
+         视为"编号空间上限"约束，**不视为单点定义**（state 是占位引用源，权威定义在资源文件）
+  2. 在每个定义源文件中识别"定义位置"模式：
        - heading：^(#{1,4})\s+(F|US|AC|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b
-       - 表格行：^\|\s*(F|US|AC|...)-\d+[a-z]?\s*\|
+       - 表格行（首列）：^\|\s*(F|US|AC|...)-\d+[a-z]?\s*\|
        - 列表项 + 状态：^[-*]\s+\*?\*?(F|US|...)-\d+[a-z]?\b
        - frontmatter id 字段（layout.v2）：^id:\s+(F|US|...)-\d+
   3. 收集为 index：{ id: <编号>, defined_in: [<file>:<line>, ...] }
+  4. 从 state.md 的"当前最大"列收集 max_caps：{ F: F-028, AC: AC-210, ... }（仅用于 phase B 的 "out-of-range" 区分）
 
-Phase B：扫描引用
+Phase B：扫描引用 + 范围编号展开
   1. 遍历同一批文件
-  2. 用 regex `\b(F|US|AC|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b` 提取所有引用
-  3. 排除"定义位置"自身（一个 occurrence 在 Phase A 中已记为 definition）
+  2. 提取所有引用 occurrence：
+       a. 单点 regex：`\b(F|US|AC|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b`
+       b. 范围 regex（先 match 展开为单点列表）：
+          `\b(F|US|AC|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-(\d+)~(?:\1-)?(\d+)\b`
+          示例：AC-148~152 → [AC-148, AC-149, AC-150, AC-151, AC-152]
+                AC-006~AC-008 → [AC-006, AC-007, AC-008]
+                AC-148~AC-152（带前缀重复）→ 同上展开
+       c. 代码块 ``` ``` 内的 occurrence 跳过（不视为有效引用）
+       d. _archived/ 内的引用打 low-priority 标记
+  3. 排除"定义位置"自身（Phase A 中已记为 definition 的 occurrence 不计为引用）
   4. 对剩余引用查 index：
        - 命中 → 跳过
-       - 未命中 → finding {
-           ref_id: <编号>,
-           file: <file>,
-           line: <line>,
-           context: <±60 字符>,
-           hint: "可能拼写错误 / 未创建 / 已删除"
-         }
-  5. severity = blocker
+       - 未命中 → 查 max_caps：
+           a. 若 ref_id 数值部分 > max_caps[<type>] → finding sub_type = "out-of-range"
+              hint: "超出 devdocs-state.md 声明的当前最大编号，可能是未来引用或拼写错误"
+           b. 若 ref_id ≤ max_caps[<type>] 但定义索引未命中 → finding sub_type = "missing-definition"
+              hint: "编号在声明范围内但找不到定义；可能拼写错误 / 未创建 / 已删除"
+           c. finding {
+                ref_id: <编号>,
+                file: <file>,
+                line: <line>,
+                context: <±60 字符>,
+                sub_type: out-of-range | missing-definition,
+                hint: <按上述>
+              }
+  5. severity = blocker（low-priority 标记的不阻断主流程）
 ```
 
 **修复路径**（auto_fixable 部分）：
@@ -231,39 +296,46 @@ Phase B：扫描引用
 - `docs/devdocs/02-system-design-api.md` / `02-system-design-data.md`（v1 拆分文件）
 - `docs/devdocs/design/current.md`（layout.v2 [FUTURE]）
 
-**算法**（基于 git 历史扫描）：
+**算法**（基于 line-range × heading-map，不依赖 git diff hunk header — 仓库无 markdown diff driver，hunk header 通常仅为 `@@ -x,y +x,y @@`）：
 
 ```text
-1. 列出最近 N 个 commit（N=20，可通过 --since=<date> 收窄）
-   commits = Bash: git log --oneline --since="<window>" -- <design_files>
+1. 列出最近 N 个 commit
+   commits = Bash: git log --format="%H" --since="<window>" -- <design_files>
+   默认 --since="30 days ago"，可通过 --since=<date> 覆盖
 
-2. 对每个 commit：
-   a. 取 commit diff：
-      diff = Bash: git diff <commit>^ <commit> -- <design_files>
-   b. 分类 hunk：
-      adr_hunks = diff 中命中以下模式的 hunk：
-        - hunk header 含 "## 16." / "## 设计变更记录" / "## ADR" / "### ADR-"
-        - 新增/修改行含 "ADR-NNN" 或 "ADR-NNN.vN" 标记
-      body_hunks = diff 中除 adr_hunks 外的所有 hunk：
-        - 命中正文章节标识：## 1.~## 15. 或 § 4 模块设计 / § 5 核心接口 / § 9 API 设计 等
-   c. 判定：
-      if adr_hunks 非空 AND body_hunks 为空:
-        → 候选违规 commit
+2. 对每个 commit C 和每个 design_file F：
+   a. 取 F 在 C 时刻的内容：
+      content_at_C = Bash: git show "$C:$F"
+   b. 构建该时刻的 heading map（line_number → section_name）：
+      headings = grep -nP '^#{1,4}\s+' content_at_C
+      sections = [(start_line, end_line, heading_text), ...]
+        ├─ ADR section 判定：heading_text 匹配 /^##\s+(\d+\.\s+)?(设计变更记录|ADR)/i
+        │                      或 /^###\s+ADR-\d+/
+        └─ body section 判定：其他所有 heading（## 1.~## 15.，或 ## + 中文章节名）
+   c. 取 C 对 F 的 changed line ranges：
+      ranges = Bash: git diff "$C^..$C" --unified=0 -- "$F" | parse @@ headers
+      （unified=0 拿到精确行号范围；hunk header 仅用于行号，**不用于章节判定**）
+   d. 对每个 changed range (start, end)：
+      映射到 sections，得到 changed_in_adr / changed_in_body 两个集合
+   e. 判定：
+      if changed_in_adr 非空 AND changed_in_body 为空:
+        → 候选违规 (C, F)
 
 3. 候选 commit 进一步过滤（降假阳性）：
-   a. commit message 含以下关键词 → 跳过：
-      - "typo" / "format" / "措辞" / "排版" / "rename ADR" / "ADR 编号调整"
-   b. ADR 内容含 "无影响范围" / "仅记录原因" / "不涉及正文修改" → 跳过
+   a. commit message 含关键词跳过：
+      - "typo" / "format" / "措辞" / "排版" / "rename ADR" / "ADR 编号调整" / "[adr-only-ok]" / "[skip-revision-check]"
+   b. ADR 内容含字段跳过：
+      - "影响范围：无" / "仅记录原因" / "不涉及正文修改"
    c. ADR 字数 < 100（短笔记类 ADR）→ 跳过
 
-4. 对剩余候选 commit：
-   - 提取 ADR 编号
-   - 提取 ADR 中声明的"影响范围"字段内容（如 `影响范围：§4 模块设计、§5 核心接口`）
-   - 输出 finding（见下方 schema）
+4. 跨多 commit / 多文件聚合：
+   - 同一 ADR 编号在多 commit 出现时，只要任一 commit 有正文同期更新 → 整条 ADR 视为已对齐
+   - 一个 ADR 横跨 02-system-design.md + 02-system-design-api.md：任一文件有正文修改即视为有正文同期更新
 
-5. 时间窗口配置：
-   - 默认 --since="30 days ago"
-   - 用户可传 --since=<date> 覆盖（如全量扫 --since="1970-01-01"）
+5. 对剩余真违规候选：
+   - 提取 ADR 编号
+   - 提取 ADR 中声明的"影响范围"字段（如 `影响范围：§4 模块设计、§5 核心接口`）
+   - 输出 finding（见下方 schema）
 ```
 
 **严重度**：⚠️ warning（不阻断 health 评分 < 60 直接挂掉，但要求用户回看）。
