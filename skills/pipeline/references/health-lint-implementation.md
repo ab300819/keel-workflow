@@ -13,7 +13,7 @@
 | layout.v2 专属 SSOT 强约束（12 条）| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) |
 | 既有偏差评分（layout.v1 legacy）| `../../sync/references/health-scoring.md` |
 
-## Rule 集（[新增] 4 条）
+## Rule 集（[新增] 5 条）
 
 | rule_id | 严重度 | 维度 | 适用 | 自动修复 |
 |---------|--------|------|------|---------|
@@ -21,8 +21,9 @@
 | `state/line-length-cap` | ⛔ | c 过大 | v1+v2 | ❌（manual_decision）|
 | `state/forbidden-content` | ⚠️ | c 过大 + d SSOT | v1+v2 | ❌（manual_decision）|
 | `health/dead-link` | ⛔ | b 索引/链接 | v1+v2 | ⚠️ 部分（删除引用可自动；补建定义需 manual）|
+| `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
 
-> 4 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。
+> 5 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。
 
 ---
 
@@ -218,6 +219,96 @@ Phase B：扫描引用
 
 ---
 
+### `design/adr-only-revision`
+
+**目的**：检测系统设计文档（`02-system-design*.md` 或 layout.v2 `design/current.md`）的增量修订中，**ADR 章节有新增/修改但正文相关章节无同期更新**的反模式，对应 system-design/SKILL.md:336 的硬约束 `⛔ 禁止继续（增量设计）：仅追加 ADR 而正文相关章节未更新`。
+
+**背景**：用户实战反馈"每次修订只加增量修订记录、不改正文，正文偏差越来越大"。原硬约束依赖人工/Agent 自检，本 rule 把它落地为可自动扫描的检测。
+
+**检测对象**：
+
+- `docs/devdocs/02-system-design.md` 主文档
+- `docs/devdocs/02-system-design-api.md` / `02-system-design-data.md`（v1 拆分文件）
+- `docs/devdocs/design/current.md`（layout.v2 [FUTURE]）
+
+**算法**（基于 git 历史扫描）：
+
+```text
+1. 列出最近 N 个 commit（N=20，可通过 --since=<date> 收窄）
+   commits = Bash: git log --oneline --since="<window>" -- <design_files>
+
+2. 对每个 commit：
+   a. 取 commit diff：
+      diff = Bash: git diff <commit>^ <commit> -- <design_files>
+   b. 分类 hunk：
+      adr_hunks = diff 中命中以下模式的 hunk：
+        - hunk header 含 "## 16." / "## 设计变更记录" / "## ADR" / "### ADR-"
+        - 新增/修改行含 "ADR-NNN" 或 "ADR-NNN.vN" 标记
+      body_hunks = diff 中除 adr_hunks 外的所有 hunk：
+        - 命中正文章节标识：## 1.~## 15. 或 § 4 模块设计 / § 5 核心接口 / § 9 API 设计 等
+   c. 判定：
+      if adr_hunks 非空 AND body_hunks 为空:
+        → 候选违规 commit
+
+3. 候选 commit 进一步过滤（降假阳性）：
+   a. commit message 含以下关键词 → 跳过：
+      - "typo" / "format" / "措辞" / "排版" / "rename ADR" / "ADR 编号调整"
+   b. ADR 内容含 "无影响范围" / "仅记录原因" / "不涉及正文修改" → 跳过
+   c. ADR 字数 < 100（短笔记类 ADR）→ 跳过
+
+4. 对剩余候选 commit：
+   - 提取 ADR 编号
+   - 提取 ADR 中声明的"影响范围"字段内容（如 `影响范围：§4 模块设计、§5 核心接口`）
+   - 输出 finding（见下方 schema）
+
+5. 时间窗口配置：
+   - 默认 --since="30 days ago"
+   - 用户可传 --since=<date> 覆盖（如全量扫 --since="1970-01-01"）
+```
+
+**严重度**：⚠️ warning（不阻断 health 评分 < 60 直接挂掉，但要求用户回看）。
+
+> 不设为 ⛔ 的理由：纯文本启发式有一定假阳性可能性（如 ADR 描述本身复述了模块结构图 → 误判为"未改正文"）。warning 让用户复核而非强阻塞，比 ⛔ 更稳妥。已经在 system-design/SKILL.md:336 有 ⛔ 人工自检兜底。
+
+**修复路径**：
+
+- **不可自动修复**。每条违规 commit 必须用户判断：
+  - 是真实遗漏 → 补充正文相关章节修改（独立 commit）
+  - 是 ADR 不需要正文同步 → 在 ADR 内显式补 "影响范围：无（仅记录原因）" 字样，下次扫描跳过
+
+**Finding 示例**：
+
+```yaml
+- rule_id: design/adr-only-revision
+  severity: warning
+  file: docs/devdocs/02-system-design.md
+  line: null  # commit 级别，非行级别
+  commit: abc1234
+  commit_subject: "feat(design): 新增 ADR-023 v2 数据流极简化决策"
+  commit_date: 2026-05-19T10:30:00+08:00
+  adr_ids: [ADR-023]
+  declared_impact: "§4 模块设计、§5 核心接口"
+  message: "commit 仅修改 ADR 章节（行 480-520），正文 §4/§5 同期无更新"
+  hint: "确认 ADR-023 是否需要同步修订 §4/§5；若不需要，在 ADR 内补 '影响范围：无（仅记录原因）'"
+  auto_fixable: false
+```
+
+**误报与边界**：
+
+- 文档拆分模式（02-system-design-api.md / -data.md）：跨多文件 commit 时聚合判定（任一文件含正文修改即视为"有正文同期更新"）。
+- 初始设计模式（首次创建 02-system-design.md，整文件新建）→ 跳过（不区分 ADR vs 正文）。
+- ADR 章节位置识别基于 SKILL.md § 文档结构 第 16 章定义；项目使用其他章节号时，rule 通过 markdown heading 内"设计变更记录" / "ADR" 关键字识别。
+- 用户主动豁免：在 commit message 加 `[adr-only-ok]` 或 `[skip-revision-check]` 标记 → 跳过该 commit。
+
+**与 ms-verify --docs 层 2 的关系**：
+
+- ms-verify --docs 层 2（需求文档 → 系统设计）检查"需求 vs 设计"一致性。
+- 本 rule 检查"设计文档内部 ADR vs 正文"一致性。
+- 二者互补：层 2 跨文档；本 rule 文档内。
+- ms-verify --docs 调用本 rule 实现需在 verify/SKILL.md 维度 A 加引用（不重复实现算法）。
+
+---
+
 ## Finding 输出 schema
 
 所有 4 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
@@ -268,3 +359,4 @@ Phase B：扫描引用
 | 日期 | 变更 |
 |------|------|
 | 2026-05-22 | 初始版本（health scope 4 条 [新增] rule 落地）|
+| 2026-05-25 | 新增 `design/adr-only-revision`（维度 a 结构正确性），落地 system-design 增量修订正文偏差检测 |

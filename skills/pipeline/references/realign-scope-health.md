@@ -25,7 +25,7 @@
 
 | 维度 | 检查内容 | 依赖能力 | 状态 |
 |------|----------|----------|------|
-| a 结构正确性 | frontmatter 必填字段、spec_version 当前性 | ms-verify --schema-drift | [现状] |
+| a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订 | ms-verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）| [新增] |
 | b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
 | c 过大文档识别 | devdocs-state.md byte 阈值 / 单行长度 / 内嵌禁用模式 | `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
 | d SSOT 遵从 | 占位/索引不复制权威源内容 | `ssot/no-restatement` | [FUTURE] (layout.v2 才启用) |
@@ -74,9 +74,10 @@ docs/devdocs/.health-report.md
 1. 归一化 `repo_root` 与 `docs_root`。
 2. 调用 `/ms-verify --schema-drift`（只读），获取维度 a 数据。
 3. 调用 `/ms-sync` audit 计算（只读复用 `health-scoring.md`），获取既有 6 类偏差作为维度 b 子项。
-4. 执行 health-lint 4 条 [新增] rule（详见 [health-lint-implementation.md](health-lint-implementation.md)）：
+4. 执行 health-lint 5 条 [新增] rule（详见 [health-lint-implementation.md](health-lint-implementation.md)）：
    - `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` → 维度 c
    - `health/dead-link` → 维度 b
+   - `design/adr-only-revision` → 维度 a（基于 git 历史扫描最近 30 天 commit）
 5. 若项目为 layout.v2 → 追加 ssot-lint 调用获取维度 d 数据；layout.v1 → 维度 d 报 `skipped: requires layout.v2`。
 6. 维度 e 当前 skipped（输出 `pending: keyword baseline 待 P2 落地`）。
 7. 加权评分输出（见下方"评分契约"）。
@@ -100,6 +101,7 @@ dimensions:
     score: <0-100>
     schema_drift_count: <N>
     legacy_count: <N>
+    adr_only_revision_commits: []  # design/adr-only-revision 命中的 commit 列表
     findings: []
   b_index_links:
     score: <0-100>

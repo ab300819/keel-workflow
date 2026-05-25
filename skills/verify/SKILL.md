@@ -109,6 +109,8 @@ metadata:
 
 检查 F → 设计模块映射、AC → 实现路径、设计孤立项。
 
+**设计文档内部一致性**（ADR ↔ 正文同期修订）：委托 health-lint `design/adr-only-revision` 同款算法（详见 [pipeline/references/health-lint-implementation.md](../pipeline/references/health-lint-implementation.md#designadr-only-revision)），扫描最近 30 天内"仅修改 ADR 不改正文"的 commit，输出 warning 级 finding，不阻断主流程。
+
 ### 层 3：需求文档 → 测试用例
 
 检查 AC → 测试用例映射、正向路径覆盖、异常路径覆盖。**复用 ms-sync --check 的孤立编号检测能力**（只读模式，不修改文档）。
