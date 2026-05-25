@@ -381,6 +381,86 @@ Phase B：扫描引用 + 范围编号展开
 
 ---
 
+## Baseline 与增量扫描
+
+### Baseline 文件
+
+存量项目首次扫描违规量大，全量 ⛔ 阻断不可用。引入 baseline 机制（参考 ssot-lint baseline 设计但更轻量）：
+
+位置：`<repo_root>/.claude/rules/.health-baseline.yml`（推荐 gitignore）
+
+```yaml
+schema: health-baseline.v1
+generated_at: <iso-ts>
+source_git_commit: <sha>
+baseline_findings:
+  state/total-size-cap:
+    devdocs_state_size_bytes: 250574
+  state/forbidden-content:
+    count: 1247
+    files: [".claude/rules/devdocs-state.md"]
+  health/dead-link:
+    count: 0
+    refs: []
+notes: |
+  首次扫描快照；新增违规以此为基线计算 delta。
+```
+
+### CLI 触发
+
+| 命令 | 行为 |
+|------|------|
+| `/ms-pipeline realign --scope=health --baseline-init` | 创建 baseline（不报告违规，记录当前状态）|
+| `/ms-pipeline realign --scope=health --changed-only` | 仅扫 `git diff HEAD` 新增/变更行（增量模式）|
+| `/ms-pipeline realign --scope=health --since-baseline` | 与 baseline 比对，只报告新增违规 |
+
+### Delta 计算规则
+
+- `state/total-size-cap`：报告 `delta = current_size - baseline_size`；delta < 2 KiB 视为可忽略小增长
+- `state/forbidden-content`：按 (file, line) 元组 hash；baseline 中存在的视为存量，新增的报告为 violation
+- `health/dead-link`：baseline 中已知死链不重复报；新增死链一律 ⛔
+- `design/adr-only-revision`：baseline 不适用（按 commit 时间窗判定，本身就是增量语义）
+
+## 退出码（CLI 集成）
+
+| 退出码 | 含义 |
+|--------|------|
+| 0 | 无违规（或全部在 baseline 内）|
+| 1 | 仅 warning 违规（state/forbidden-content / design/adr-only-revision）|
+| 2 | 有 blocker 违规（state/total-size-cap / state/line-length-cap / health/dead-link 新增）|
+| 3 | lint 自身错误（git 不可用 / baseline 文件损坏 / report stale）|
+
+错误码（细分诊断，写入 finding.error_code）：
+
+| error_code | 触发 |
+|------------|------|
+| `health/report-stale` | report_hash 校验失败或 source_git_commit 与 HEAD 不一致 |
+| `health/baseline-missing` | `--since-baseline` 但 `.health-baseline.yml` 不存在 |
+| `health/baseline-corrupt` | baseline schema 不匹配或 YAML 解析失败 |
+| `health/manual-pending` | `--apply` 时存在 `status: pending` 的 manual_decision |
+| `health/git-unavailable` | git 命令失败或 repo 不在 git 控制下（影响 dead-link / adr-only-revision）|
+| `health/scan-timeout` | 扫描超过性能阈值（见下表）|
+
+## 性能预期
+
+| Repo 规模（docs/devdocs/**/*.md 数）| 全量扫 | --changed-only | 备注 |
+|----|----|----|----|
+| < 50 文件 | < 1 s | < 200 ms | mic-en 当前规模 |
+| 50-200 文件 | < 3 s | < 500 ms | |
+| 200-500 文件 | < 10 s | < 1 s | dead-link Phase B 是 O(N×M)，N 文件数 M 平均引用密度 |
+| > 500 文件 | 推荐 `--changed-only` | < 2 s | 全量扫触发 `health/scan-timeout`（默认 30 s）|
+
+性能瓶颈：
+
+- `health/dead-link` 两遍扫描：O(N×M)，500 文件 + 平均 20 引用/文件 ≈ 10k 查询
+- `design/adr-only-revision`：依赖 `git log` + `git show` + `git diff`，30 天窗口 commit 数为主导
+- `state/forbidden-content`：单文件 PCRE，几乎与文件大小线性
+
+降级策略：
+
+- `--changed-only` 默认仅扫 `git diff HEAD~1..HEAD` 变更行 + 受影响文件
+- `health/dead-link` 在 > 500 文件时建议加 `--skip-rule health/dead-link`，按需单独触发
+
 ## Finding 输出 schema
 
 所有 5 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：

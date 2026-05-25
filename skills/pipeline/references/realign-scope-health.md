@@ -44,6 +44,10 @@
 | `/ms-pipeline realign --scope=health --fix=<rule_id> --dry-run` | 仅扫描指定 rule，不修复 |
 | `/ms-pipeline realign --scope=health --fix=<rule_id> --apply` | 仅修复指定 rule 的违规项（例：`--fix=state/total-size-cap`）|
 | `/ms-pipeline realign --scope=health --target=<path>` | 指定项目根或 `docs/devdocs/` |
+| `/ms-pipeline realign --scope=health --baseline-init` | 初始化 baseline（存量项目首次落地用）|
+| `/ms-pipeline realign --scope=health --changed-only` | 仅扫 `git diff HEAD` 变更行（增量模式，大仓推荐）|
+| `/ms-pipeline realign --scope=health --since-baseline` | 与 baseline 比对，只报告新增违规 |
+| `/ms-pipeline realign --scope=health --no-report-file` | 严格 dry-run；不写 `.health-report.md`，只输出 stdout |
 
 **语义规则**：
 - 未传 `--dry-run` 也未传 `--apply` → 一律视为 `--dry-run`（安全默认）。

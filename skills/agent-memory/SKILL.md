@@ -136,9 +136,28 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
    ▼
 6. 健康度自检（仅 DevDocs 项目）
    ├── Bash: wc -c .claude/rules/devdocs-state.md
-   ├── > 10 KiB → ⚠️ 提示 `/ms-pipeline realign --scope=health --dry-run` 查看
-   └── > 40 KiB → ⛔ 阻断本次 update；要求先 `--scope=health --apply` 修复
+   ├── 读取 .claude/rules/.health-baseline.yml（若存在）→ 拿到 baseline 大小
+   ├── 计算 delta = current_size - baseline_size
+   ├── delta < 0（缩小）→ 不阻断，更新 baseline
+   ├── 0 ≤ delta < 2 KiB（小幅增长）→ 不阻断，更新 baseline
+   ├── delta ≥ 2 KiB 且 size > 10 KiB → ⚠️ 提示 `/ms-pipeline realign --scope=health --dry-run`
+   ├── size > 40 KiB AND 无 baseline → ⛔ 阻断；用户两种恢复方式：
+   │     a. /ms-pipeline realign --scope=health --apply 修复后重跑 update
+   │     b. /agent-memory --update --bypass-state-check="<原因>" 一次性豁免（≥10 字符）+ 自动 init baseline
+   └── size > 40 KiB AND 已有 baseline AND delta < 2 KiB → ⚠️ 提示但不阻断（存量项目逐步收敛）
 ```
+
+**baseline 文件**：`.claude/rules/.health-baseline.yml`（gitignore 推荐加入；首次 bypass 时自动生成）
+
+```yaml
+schema: health-baseline.v1
+devdocs_state_size_bytes: <int>
+created_at: <iso-ts>
+created_by: /agent-memory --update --bypass-state-check
+bypass_reason: <用户提供的原因>
+```
+
+设计意图：避免 mic-en 等存量项目（245k）立即被 ⛔ 卡死；首次 bypass 锚定 baseline，之后只阻断"新增膨胀"。
 
 ### 分流规则
 
