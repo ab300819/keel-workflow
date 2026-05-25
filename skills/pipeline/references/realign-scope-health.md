@@ -39,12 +39,16 @@
 
 | 命令 | 行为 |
 |------|------|
-| `/ms-pipeline realign --scope=health --dry-run` | 默认。扫描 + 评分 + 报告，零写入 |
-| `/ms-pipeline realign --scope=health --apply` | 仅执行**可自动修复**项；不可自动项以 ⚠️ 列出，等待 AskUserQuestion |
-| `/ms-pipeline realign --scope=health --fix=<rule_id>` | 仅修复指定 rule 的违规项（例：`--fix=state/total-size-cap`） |
+| `/ms-pipeline realign --scope=health --dry-run` | 默认。扫描 + 评分，**业务产物零写入**，报告写入 `.health-report.md`（唯一例外）|
+| `/ms-pipeline realign --scope=health --apply` | 执行可自动修复项；不可自动项以 ⚠️ 列出，等待 AskUserQuestion |
+| `/ms-pipeline realign --scope=health --fix=<rule_id> --dry-run` | 仅扫描指定 rule，不修复 |
+| `/ms-pipeline realign --scope=health --fix=<rule_id> --apply` | 仅修复指定 rule 的违规项（例：`--fix=state/total-size-cap`）|
 | `/ms-pipeline realign --scope=health --target=<path>` | 指定项目根或 `docs/devdocs/` |
 
-未传 `--apply` 时一律视为 dry-run。
+**语义规则**：
+- 未传 `--dry-run` 也未传 `--apply` → 一律视为 `--dry-run`（安全默认）。
+- `--fix=<rule_id>` 必须配 `--dry-run` 或 `--apply`；单独 `--fix=` 视为 `--fix --dry-run`。
+- `--dry-run` 的"零写入"指**业务产物零写入**；`.health-report.md`、`stdout` 输出不算业务产物。
 
 `--target` 归一化沿用 `--scope=layout` 同款规则（详见 [realign-scope-layout.md](realign-scope-layout.md) § "--target 归一化"）。
 
@@ -52,13 +56,13 @@
 
 ### 只读边界
 
-dry-run 不写入任何业务产物。唯一允许写入的文件是：
+dry-run **不写入任何业务产物**（不动 docs/devdocs/*.md、不动 traceability.yml、不动 aliases.yml、不动 git）。唯一允许写入的文件是：
 
 ```text
 docs/devdocs/.health-report.md
 ```
 
-若用户要求严格零写入，可只输出报告到 stdout；后续 `--apply` 必须重新生成 `.health-report.md`。
+若用户要求严格零写入（如 CI dry-run-strict 模式），可加 `--no-report-file`，只输出报告到 stdout；后续 `--apply` 必须重新生成 `.health-report.md`。
 
 ### 扫描范围
 
@@ -94,6 +98,9 @@ target_layout: layout.v1 | layout.v2
 repo_root: <absolute-or-relative-path>
 docs_root: docs/devdocs
 generated_at: <iso-timestamp>
+source_git_commit: <sha>           # 生成报告时 HEAD commit
+generated_from_dirty_state: <bool> # 生成时工作区是否有未提交变更
+report_hash: <sha256>              # 上述全部字段（除 report_hash 本身）的序列化 sha256
 total_score: <0.00-100.00>
 
 dimensions:
@@ -175,9 +182,13 @@ manual_decisions:
 
 1. 工作区洁净。
 2. 存在 `.health-report.md` 且 `report_schema=realign-health-report.v1`。
-3. `manual_decisions` 中 `status=pending` 项已全部解答（或显式 `--skip-manual`，仅修复 `auto_fixable`）。
+3. **report 防 stale**（参考 `.realign-plan.md` 的 `plan_hash` 设计）：
+   - `report_hash` 校验通过（重算 sha256 与文件中存储值一致）。
+   - `source_git_commit` 等于当前 HEAD（或差距 ≤ 由 `--max-commits-drift=N` 控制，默认 0）。
+   - `generated_from_dirty_state=true` 时必须 `⚠️ 必须确认`，提示用户报告基于未提交变更，可能与当前状态不一致。
+4. `manual_decisions` 中 `status=pending` 项已全部解答（或显式 `--skip-manual`，仅修复 `auto_fixable`）。
 
-任一失败 → `⛔ 禁止继续`，恢复方式：重新 dry-run 或补齐决策。
+任一失败 → `⛔ 禁止继续`，错误码 `health/report-stale`。恢复方式：重新 dry-run（生成新 report）或补齐决策。
 
 ### 修复路径
 

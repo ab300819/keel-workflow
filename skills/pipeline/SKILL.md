@@ -62,7 +62,7 @@ user-invocable: true
 ### realign 参数语法
 
 ```bash
-/ms-pipeline realign [--scope=<spec|layout|prd-mapping>] [--target=<path>] [--dry-run|--apply]
+/ms-pipeline realign [--scope=<spec|layout|prd-mapping|health>] [--target=<path>] [--dry-run|--apply] [--fix=<rule_id>]
 /ms-pipeline realign --no-realign
 ```
 
@@ -71,9 +71,11 @@ user-invocable: true
 | `--scope=spec` | 默认值；处理 spec_version 维度 |
 | `--scope=layout` | 文档体系版本升级（layout.v1→v2，含编号/目录/追溯重组），执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md) |
 | `--scope=prd-mapping` | 处理 PRD 映射维度 |
+| `--scope=health` | 文档健康度主动审查（5 维度 / health-lint 5 条 rule，layout.v1+v2 通用），执行接口见 [references/realign-scope-health.md](references/realign-scope-health.md) |
 | `--target=<path>` | 限定回扫目标路径 |
-| `--dry-run` | 只出差距报告，不修改文件 |
+| `--dry-run` | 只出差距报告，**业务产物零写入**；scope=health 允许写 `.health-report.md` 作报告载体 |
 | `--apply` | 执行已确认的迁移 / 补齐动作 |
+| `--fix=<rule_id>` | 仅 scope=health；仅修复指定 rule 的违规（须配 `--dry-run` 或 `--apply`，未配视为 `--dry-run`）|
 | `--no-realign` | 拒绝升级提示，写入 `.devdocs-realign-ack`（`--headless` 时必需） |
 | `--docs-layout` | deprecated alias，等价于 `--scope=layout`，下一版本移除 |
 

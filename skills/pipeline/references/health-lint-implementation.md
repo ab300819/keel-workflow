@@ -2,14 +2,14 @@
 
 > 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
 >
-> 与 [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) 的区别：ssot-lint 治理 layout.v2 的 SSOT 强约束（v1 报 `not_applicable`）；本文件 4 条 rule **layout.v1+v2 通用**，专门解决 devdocs-state 膨胀 + 死链两类痛点。
+> 与 [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) 的区别：ssot-lint 治理 layout.v2 的 SSOT 强约束（v1 报 `not_applicable`）；本文件 5 条 rule **layout.v1+v2 通用**，专门解决 devdocs-state 膨胀 + 死链两类痛点。
 
 ## 定位
 
 | 治理对象 | 文件 |
 |---------|------|
 | health scope 入口与执行接口 | [realign-scope-health.md](realign-scope-health.md) |
-| **本文件**：4 条 [新增] rule 的检测算法、严重度、修复路径 | health-lint-implementation.md |
+| **本文件**：5 条 [新增] rule 的检测算法、严重度、修复路径 | health-lint-implementation.md |
 | layout.v2 专属 SSOT 强约束（12 条）| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) |
 | 既有偏差评分（layout.v1 legacy）| `../../sync/references/health-scoring.md` |
 
@@ -311,7 +311,7 @@ Phase B：扫描引用
 
 ## Finding 输出 schema
 
-所有 4 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
+所有 5 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
 
 ```yaml
 - rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link
@@ -330,7 +330,7 @@ Phase B：扫描引用
 
 | 命令 | 执行的 rule |
 |------|------------|
-| `/ms-pipeline realign --scope=health --dry-run` | 全部 4 条 |
+| `/ms-pipeline realign --scope=health --dry-run` | 全部 5 条 |
 | `/ms-pipeline realign --scope=health --fix=state/total-size-cap` | 仅该 rule |
 | `/ms-pipeline realign --scope=health --apply` | 修复 auto_fixable + 已 AskUserQuestion 的 manual_decision |
 
@@ -350,7 +350,7 @@ Phase B：扫描引用
 
 ## 历史项目兼容
 
-- **mic-en 等 layout.v1 项目**：本 4 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
+- **mic-en 等 layout.v1 项目**：本 5 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
 - 不依赖 `aliases.yml` / `traceability.yml`（这两个文件是 layout.v2 产物）。
 - 不依赖 `agents.md devdocs.docs_layout_version` 字段。
 
@@ -358,5 +358,5 @@ Phase B：扫描引用
 
 | 日期 | 变更 |
 |------|------|
-| 2026-05-22 | 初始版本（health scope 4 条 [新增] rule 落地）|
+| 2026-05-22 | 初始版本（health scope 4 条 [新增] rule 落地：state/* + dead-link）|
 | 2026-05-25 | 新增 `design/adr-only-revision`（维度 a 结构正确性），落地 system-design 增量修订正文偏差检测 |
