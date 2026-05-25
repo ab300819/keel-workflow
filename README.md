@@ -435,6 +435,25 @@ devdocs:
 | **#4 代码解耦**| [code-decoupling-implementation.md](skills/pipeline/references/layout/code-decoupling-implementation.md) | trace.v1 写入 API + legacy 注释保留窗口 + 多仓聚合 |
 | **#5 迭代蒸馏**| [distillation-implementation.md](skills/pipeline/references/layout/distillation-implementation.md) | 13 类蒸馏动作 + 4 级安全门 + rollback + git hook 反循环 |
 
+### 治理盲区主动审查（scope=health）
+
+6 阶段 spec 治理"如何升级文档体系"，health scope 治理"已有文档体系是否健康"。两者正交：
+
+| 维度 | 检查内容 | 实装 rule |
+|------|----------|----------|
+| a 结构正确性 | frontmatter + spec_version + 设计文档 ADR ↔ 正文同期修订 | schema-drift + `design/adr-only-revision` |
+| b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace + `health/dead-link` |
+| c 过大文档识别 | devdocs-state.md byte 阈值 / 单行长度 / 内嵌禁用模式 | `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` |
+| d SSOT 遵从（layout.v2 only）| 占位/索引不复制权威源内容 | `ssot/no-restatement` [FUTURE] |
+| e 三层分离 [FUTURE] | 决策/执行/数据章节关键词混杂 | 待 keyword baseline 定义 |
+
+**关键设计**：
+- health-lint 5 条 [新增] rule 与 layout.v2 的 ssot-lint 12 条 rule **独立**，layout.v1 项目（mic-en）可直接使用
+- `devdocs-state.md` 模板硬化（forbidden 6 类内嵌模式 + 200/500/40K 三档阈值）+ `agent-memory --update` 健康度自检（双重保险）
+- `design/adr-only-revision` 把 system-design 既有 ⛔ 硬约束（仅追加 ADR 不改正文）从人工自检升级为 git 历史自动扫描
+
+详见 [realign-scope-health.md](skills/pipeline/references/realign-scope-health.md) + [health-lint-implementation.md](skills/pipeline/references/health-lint-implementation.md)。
+
 ### PRD 流程治理 Spec（轻量同类，已显性化）
 
 PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**的耦合（数据库 + 修订边界），但**不直接面对代码追溯**（通过 DevDocs 间接）。治理机制已齐备但散落在 4 个文件，需收纳显性化而非重建 6 阶段框架。
@@ -451,10 +470,10 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 
 #### 统一升级入口（综合方案落地）
 
-所有文档体系升级动作统一通过单一入口，不再以散落 flag 形式暴露：
+所有文档体系升级 + 健康度审查动作统一通过单一入口，不再以散落 flag 形式暴露：
 
 ```bash
-/ms-pipeline realign [--scope=<spec|layout|prd-mapping>] [--target=<path>] [--dry-run|--apply]
+/ms-pipeline realign [--scope=<spec|layout|prd-mapping|health>] [--target=<path>] [--dry-run|--apply]
 ```
 
 | scope | 用途 | 状态 |
@@ -462,6 +481,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | `spec`（默认）| 产物 `spec_version` drift（schema 维度）| ✅ 部分可用 |
 | `layout` | layout.v1 → v2 迁移（含编号/目录/追溯重组）| ✅ **执行接口已落地**（详见 [realign-scope-layout.md](skills/pipeline/references/realign-scope-layout.md)）|
 | `prd-mapping` | PRD mapping_status 扫描 + 报告 | [FUTURE] |
+| `health` | 文档健康度主动审查（5 维度 / health-lint 5 条 rule）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](skills/pipeline/references/realign-scope-health.md)）|
 
 **Apply 6 Phase**：checkpoint → file_ops → id_map → trace → frontmatter → post-validation；每 Phase 单独 commit；失败 ⛔ + `git reset --hard <checkpoint_commit>` 回滚；plan_hash 校验中断恢复一致性。
 
@@ -476,7 +496,8 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | `/ms-verify --ui` | UI 与设计稿对齐 | ✅ 可用 |
 | `/ms-verify --readiness` | 开发前就绪检查 | ✅ 可用 |
 | `/ms-verify --schema-drift` | drift 三态报告（schema + layout 两段呈现）| ✅ 可用 |
-| `/ms-verify --ssot-lint` | 跑 12 条 SSOT lint 规则 | [FUTURE] |
+| `/ms-verify --ssot-lint` | 跑 12 条 SSOT lint 规则（layout.v2 专属，v1 报 not_applicable）| [FUTURE] |
+| `/ms-pipeline realign --scope=health` | 健康度主动审查（5 条 [新增] rule，layout.v1+v2 通用）| ✅ 可用 |
 
 #### 已收敛 / internal-only（不再用户面暴露）
 
@@ -503,6 +524,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | 3 | 各 skill SKILL.md 收敛 ≤5 外露 flag | ✅ |
 | 4 | `shared-constraints.md § 8` 新增 single-entry 规则族 | ✅ |
 | 5 | `ms-iteration-policy` 标 internal-only | ✅ |
+| 6 | `--scope=health` 健康度主动审查（health-lint 5 条 rule + devdocs-state 模板硬化 + ADR↔正文同期修订检测）| ✅ |
 
 **用户面 flag 总收敛 49 → 20（-59%）**：
 

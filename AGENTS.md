@@ -15,7 +15,7 @@
 - `templates/` 子目录存输出模板，`references/` 子目录存评估标准 / rubric / 规则
 - 编排层（ms-pipeline / ms-feature / ms-bugfix）通过 Task tool 调度原子 skill 作为子代理
 - 跨 skill 协议级 SSOT：[skills/_shared/constraints.md](skills/_shared/constraints.md)（门控标记 / yaml-summary-v1 / Recovery 格式 / FUTURE 三态 / realign / spec_version）
-- 统一升级入口：`/ms-pipeline realign --scope=<spec|layout|prd-mapping>`
+- 统一升级 + 健康度入口：`/ms-pipeline realign --scope=<spec|layout|prd-mapping|health>`
 
 ## 领域术语
 
@@ -33,15 +33,16 @@
 
 ## 当前状态
 
-- 综合方案落地：flag 收敛 49→20、shared-constraints SSOT、realign --scope 三入口
-- 新增 skill：ms-backlog（暂缓任务池，复用现有编号 + `source_id+entry_no` 局部锚点）
-- internal-only：ms-iteration-policy（仅由 `/ms-pipeline realign --scope=layout` 编排调度）
+- 综合方案落地：flag 收敛 49→20、shared-constraints SSOT、realign --scope 四入口
+- 治理盲区收敛：scope=health（结构/索引/过大/SSOT/三层分离 5 维）+ health-lint 5 条 [新增] rule（state/* + dead-link + adr-only-revision），layout.v1+v2 通用
+- 新增 skill：ms-backlog（暂缓任务池）
+- internal-only：ms-iteration-policy（由 realign --scope=layout 调度）
 
 ## 命令
 
 - 无 build/test/lint 命令
 - 发现 skill：读取 `skills/*/SKILL.md` 的 `name` 字段
-- 升级文档体系：`/ms-pipeline realign --scope=<spec|layout|prd-mapping>`
+- 升级 + 健康度：`/ms-pipeline realign --scope=<spec|layout|prd-mapping|health>`
 
 ## 约定
 
