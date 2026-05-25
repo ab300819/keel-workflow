@@ -129,6 +129,15 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
    │
    ▼
 5. 生成/更新 .claude/rules/devdocs-state.md（仅 DevDocs 项目）
+   ├── 写入前按 [devdocs-state-template.md](templates/devdocs-state-template.md) § Forbidden 校验
+   │   ├── 占位 prose ≤ 200 字符
+   │   ├── 禁止内嵌 commit hash / LOC / 测试结果 / codex 分数 / 文件路径 / submodule 引用 / 工时
+   │   └── 违反时改写为简洁占位 + 明细去对应资源文件
+   ▼
+6. 健康度自检（仅 DevDocs 项目）
+   ├── Bash: wc -c .claude/rules/devdocs-state.md
+   ├── > 10 KiB → ⚠️ 提示 `/ms-pipeline realign --scope=health --dry-run` 查看
+   └── > 40 KiB → ⛔ 阻断本次 update；要求先 `--scope=health --apply` 修复
 ```
 
 ### 分流规则
@@ -195,6 +204,8 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
 - [ ] **AGENTS.md 不包含特定 AI 工具的专属语法**
 - [ ] **CLAUDE.md 通过 @AGENTS.md 导入通用信息**（首次创建后不覆盖）
 - [ ] **编号状态仅写入 `.claude/rules/devdocs-state.md`**
+- [ ] **devdocs-state.md 占位 prose ≤ 200 字符 / 单行 ≤ 500 字符 / 文件 ≤ 40 KiB**（违反由 health-lint 检测）
+- [ ] **devdocs-state.md 禁止内嵌 commit hash / LOC / 测试结果 / codex 分数 / 文件路径 / 工时统计**（明细去资源文件）
 
 ### 质量守则
 
