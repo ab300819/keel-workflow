@@ -19,7 +19,7 @@
 |---------|--------|------|------|---------|
 | `state/total-size-cap` | ⛔ / ⚠️ | c 过大 | v1+v2 | ❌（manual_decision）|
 | `state/line-length-cap` | ⛔ | c 过大 | v1+v2 | ❌（manual_decision）|
-| `state/forbidden-content` | ⚠️ | c 过大 + d SSOT | v1+v2 | ❌（manual_decision）|
+| `state/forbidden-content` | ⚠️ | c/state-hygiene（c 维度子项）| v1+v2 | ❌（manual_decision）|
 | `health/dead-link` | ⛔ | b 索引/链接 | v1+v2 | ⚠️ 部分（删除引用可自动；补建定义需 manual）|
 | `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
 

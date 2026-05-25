@@ -27,7 +27,7 @@
 |------|----------|----------|------|
 | a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订 | ms-verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）| [新增] |
 | b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
-| c 过大文档识别 | devdocs-state.md byte 阈值 / 单行长度 / 内嵌禁用模式 | `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
+| c 过大文档识别（含 state-hygiene 子项）| size 三档（byte 阈值 / 单行长度）+ state-hygiene（内嵌禁用模式）| `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
 | d SSOT 遵从 | 占位/索引不复制权威源内容 | `ssot/no-restatement` | [FUTURE] (layout.v2 才启用) |
 | e 三层分离 | 决策（ADR）/ 执行（设计/代码）/ 数据（DTO/Schema）章节关键词混杂检测 | 启发式正则扫描 | [FUTURE] |
 
@@ -127,6 +127,9 @@ dimensions:
         actual: <value>
         threshold: <value>
         severity: blocker | warning
+        route_to_scope: health | spec | layout | prd-mapping  # health scope 是否能直接修复
+        route_recommended: <next 命令字符串，如 "/ms-pipeline realign --scope=layout --apply">
+        route_note: <可选；解释为何跨 scope，如 "current.md >1500 拆分由 layout scope 处理">
   d_ssot:
     score: <0-100>
     restatement_findings: []
@@ -152,6 +155,16 @@ manual_decisions:
 - `auto_fixable` 列出 `--apply` 可直接处理的项。
 - `manual_decisions` 必须在 `--apply` 前完成 AskUserQuestion，否则 ⛔。
 - `total_score` 保留两位小数；权重见下。
+- 每条 violation 必须含 `route_to_scope`；非 `health` 路由的违规由 health 仅报告、不修复，由 `next_recommended` 引导对应 scope。
+
+`route_to_scope` 取值规则：
+
+| 违规 rule | route_to_scope | 修复路径 |
+|----|----|----|
+| `state/*`（3 条）/ `health/dead-link`（手动修复）/ `design/adr-only-revision` | `health` | health scope `--apply` 直接处理 |
+| `ssot/*` (`current-md-size` / `file-size-cap` / `modules-size-cap`) | `layout` | 拆分走 layout scope |
+| `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
+| 跨 PRD 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |
 
 ### 评分契约
 
@@ -249,8 +262,17 @@ output_files:
 new_ids: {}
 next_recommended:
   skill: ms-pipeline
-  args: "realign --scope=health --apply"
+  args: <按违规分布动态生成，规则见下>
 ```
+
+**`next_recommended` 生成规则**（避免误导用户以为 health 能修复跨 scope 违规）：
+
+| 违规分布 | next_recommended.args |
+|---|---|
+| 仅 health 路由违规 | `"realign --scope=health --apply"` |
+| 仅跨 scope 违规（无 health 路由） | 取占比最高的 scope，如 `"realign --scope=layout --apply"` |
+| 混杂 health + 跨 scope | 数组形式：`["realign --scope=health --apply", "realign --scope=<跨 scope> --apply"]`，按拓扑顺序（spec → layout → prd-mapping → health）排序 |
+| 0 违规 | `null` |
 
 状态语义：
 

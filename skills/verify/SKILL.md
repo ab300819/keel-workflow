@@ -109,7 +109,16 @@ metadata:
 
 检查 F → 设计模块映射、AC → 实现路径、设计孤立项。
 
-**设计文档内部一致性**（ADR ↔ 正文同期修订）：委托 health-lint `design/adr-only-revision` 同款算法（详见 [pipeline/references/health-lint-implementation.md](../pipeline/references/health-lint-implementation.md#designadr-only-revision)），扫描最近 30 天内"仅修改 ADR 不改正文"的 commit，输出 warning 级 finding，不阻断主流程。
+**设计文档内部一致性**（ADR ↔ 正文同期修订）：委托 health-lint `design/adr-only-revision` 同款算法（详见 [pipeline/references/health-lint-implementation.md](../pipeline/references/health-lint-implementation.md#designadr-only-revision)）。
+
+| 维度 | 说明 |
+|------|------|
+| 触发条件 | `--docs` 默认启用；git 不可用时自动 fallback skip（标 `health/git-unavailable` 写入 verify-report，不引入用户面新 flag）|
+| 时间窗 | 默认最近 30 天 commit；与 `--scope=health` 共享窗口配置 |
+| 输出字段 | 复用 health-lint Finding schema（rule_id / severity / commit / adr_ids / declared_impact / hint）|
+| 严重度 | warning（不阻断 `--docs` 主流程；如需阻断走 `--scope=health` 评分）|
+| 写入位置 | verify-report.md 的"层 2"小节，独立子标题"设计文档内部一致性"|
+| **去重规则** | verify-report 与 `.health-report.md` 用 `(rule_id, source_git_commit, ref_commit_sha)` 三元组互斥消费；若同 commit 在 `.health-report.md` 中 manual_decision 已 answered → verify 不重复报，仅标"已在 health-report 处理"|
 
 ### 层 3：需求文档 → 测试用例
 
