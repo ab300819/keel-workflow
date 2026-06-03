@@ -69,7 +69,7 @@ describe('UserService', () => {
 });
 ```
 
-## 完整实现示例（Step 3-4）
+## 骨架填充示意（Step 3-4 最小形式）
 
 > ⚠️ 仅展示骨架→实现的最小过渡。完整业务实现示例不再保留于本 skill；追溯标注请参考所在项目的 `traceability.yml`（layout.v2）或保留的 `@satisfies/@verifies` 注释（layout.v1 legacy，不新增）。
 
@@ -162,8 +162,8 @@ describe('UserService.createUser', () => {
 ## 骨架生成约束
 
 - [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）
-- [ ] **接口骨架必须添加追溯标注**
+- [ ] **接口骨架必须添加追溯标注**（layout.v1 legacy；layout.v2 改用 traceability.yml，骨架不写注释）
 - [ ] **未实现方法必须抛出 Error 并注明任务编号**
 - [ ] **测试骨架必须使用 skip/todo 标记**
-- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**
+- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**（layout.v1 legacy；layout.v2 改用 traceability.yml，骨架不写注释）
 - [ ] **测试骨架必须包含 AAA 结构注释提示**
