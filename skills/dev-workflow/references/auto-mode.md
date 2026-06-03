@@ -101,10 +101,11 @@
 | 7 | Blocker 修复循环 | ≤N 次修复-验证循环，耗尽则 fail-fast |
 | 8 | 自动补充依赖 | 静默记录（不变） |
 | 9 | 全量测试失败 | 记录到交付报告，标记 ⚠️ 警告（不 fail-fast，任务已提交） |
-| 10 | Phase 4 外部对抗审查 Blocker | 任务内重试 ≤`max_rounds`（默认 3）次，耗尽则 `EXT_BLOCKED` → fail-fast 终止批量 |
-| 11 | Phase 4 T1/T2 全失败（codex CLI / codex-mcp 均不可用或 status=failed） | `EXT_UNRESOLVED` → fail-fast，交付报告提示"检查 codex 环境（codex CLI / codex-mcp 可用性）" |
-| 12 | Phase 4 breaker_reason=safety_limit | `EXT_BLOCKED` → fail-fast |
-| 14 | 🔴 `--skip-external-review-reason` 登记 | **--headless 下禁止使用**（`--skip-external-review-reason` 只作用于交互模式；--headless 下传入该参数视为非法并 fail-fast）。交互模式：`EXT_PENDING` + 记录到交付报告"待补跑 Phase 4"清单 |
+| 10 | Phase 4 外部对抗审查（全场景） | 见下方 Phase 4 状态机指针 |
+
+### Phase 4 在 headless 下的状态机
+
+> Phase 4 状态字段（`ext_review_state` / `EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED`）、轮次控制（`max_rounds`）、降级链（T1 → T2）、真值表全部由 [verification-flow.md Phase 4 章节](verification-flow.md#phase-4-外部对抗审查) 权威定义。本文件不再重复转述。Headless 下仅追加：任一 `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED` → fail-fast，输出 `resume_command`。
 
 ## 安全不变量
 
@@ -117,8 +118,7 @@
 7. **断言数量不减** — 修复后断言总数 ≥ 修复前
 8. **工作区洁净校验** — 每任务 Commit 2 后 `git status --porcelain` 必须为空，非空则 fail-fast
 9. **漂移防护** — 禁止自动猜测补齐缺失内容，统一 fail 并记录
-10. **Phase 4 外部对抗审查**（🔴 任务必须）— `ext_review_state` ≠ `EXT_REVIEWED` → fail-fast 不提交；`--headless` 下任何 `EXT_PENDING`/`EXT_UNRESOLVED`/`EXT_BLOCKED` 均触发 fail-fast
-11. **Phase 4 证据（L2 权威）** — Phase 4 必须产出 L2 yaml（`docs/devdocs/audit/<T-XX>-external-review.yaml`）；L2 缺失或不可读 → `EXT_UNRESOLVED` → fail-fast。L1 尾注由 L2 派生（Commit 1 生成时读 L2 填充），L3 原始输出为可选调试 artifact 不参与门禁
+10. **Phase 4 外部对抗审查**（🔴 任务必须）— 状态机见上方指针；`--headless` 下任何非 `EXT_REVIEWED` → fail-fast
 
 ## 重试规范
 
@@ -163,109 +163,31 @@ if not all_passed:
 - fail-fast 后提供精确续做命令
 - 批量完成后作为交付报告的数据源
 
-## 交付报告模板
+## 交付报告（批量末尾）
 
-### 成功
+批量结束时输出单一交付报告，字段如下（成功/失败共用 schema）：
 
-```markdown
-# 交付报告
+| 字段 | 含义 |
+|------|------|
+| `batch_id` | 本次批量的 Batch-Id 标识（Phase 2 引入后强制；Phase 1 期间为空）|
+| `tasks_done` | 已完成任务列表（含 Commit 1 sha）|
+| `tasks_pending` | 未完成任务 + 失败原因（中断/Blocker/超时）|
+| `phase_4_summary` | Phase 4 外审 verdict 汇总（EXT_REVIEWED / EXT_PENDING / EXT_UNRESOLVED / EXT_BLOCKED）|
+| `resume_command` | 续做命令（完整 CLI，可复制执行）|
 
-## 批量执行结果: ✅ 全部成功
-
-| 任务 | 状态 | Commit 1 | Commit 2 | int_review_state | ext_review_state | 通道 | 测试摘要 |
-|------|------|----------|----------|------------------|------------------|------|----------|
-| T-01 | ✅ | abc1234 | def5678 | INT_REVIEWED | EXT_REVIEWED | T1 | UT-001~003 通过, 覆盖率 85% |
-| T-02 | ✅ | 111aaaa | 222bbbb | INT_REVIEWED | EXT_REVIEWED | T2 | UT-004~006 通过, 覆盖率 82% |
-
-## 统计
-- 总任务数: 2
-- Blocker 已修复: 3
-- Suggestion 已跳过: 5
-- Phase 4 外部对抗调用次数: 2（T1: 1, T2: 1）
-- EXT_PENDING 待补跑: 0（`--skip-external-review-reason` 单列统计）
-- EXT_UNRESOLVED: 0 | EXT_BLOCKED: 0
-- 总耗时: 由编排器记录
-
-## 决策日志
-
-> 记录关键决策点，便于 /ms-compound 消费和执行 Trace 分析。
+极简示例：
 
 ```yaml
-decision_log:
-  - task: T-01
-    events:
-      - step: S1.5_contract
-        action: "Contract 审核通过，裁剪 1 个过度断言"
-      - step: S5_red
-        action: "红色验证通过，3 个新测试全部失败"
-      - step: S9_review
-        action: "对抗式验证：1 Blocker 已修复（缺失边界检查）"
-  - task: T-02
-    events:
-      - step: S4_red_assertions
-        action: "Test Agent 重试 1 次（首次断言不完整）"
-      - step: S6_green
-        action: "Impl Agent 一次通过"
+delivery_report:
+  batch_id: ""              # Phase 2 引入后填充 B-<timestamp>-<seq>
+  tasks_done: [T-01, T-02]
+  tasks_pending:
+    - id: T-03
+      reason: "Phase 4 EXT_UNRESOLVED after 3 rounds"
+  resume_command: "/ms-dev-workflow T-03~T-05 --headless"
 ```
 
-## 全量测试结果
-
-> 由 /ms-test-run --trace 生成
-
-| 类型 | 通过 | 失败 | 跳过 | 通过率 |
-|------|------|------|------|--------|
-| UT | X | 0 | 0 | 100% |
-| IT | X | 0 | 0 | 100% |
-| E2E | X | 0 | 0 | 100% |
-
-### 追溯验证
-- AC 总数: X
-- 已覆盖（测试通过）: X
-- 未覆盖: 0
-- AC 覆盖率: 100%
-
-> 详细报告见 docs/devdocs/05-test-report.md
-```
-
-### 失败
-
-```markdown
-# 交付报告
-
-## 批量执行结果: ❌ 中断于 T-03
-
-| 任务 | 状态 | Commit 1 | Commit 2 | 说明 |
-|------|------|----------|----------|------|
-| T-01 | ✅ | abc1234 | def5678 | 正常完成 |
-| T-02 | ✅ | 111aaaa | 222bbbb | 正常完成 |
-| T-03 | ❌ | — | — | 测试失败（重试 3/3） |
-
-## 失败详情
-- 失败原因: tests/user.test.ts:45 断言失败
-- 已重试: 3 次
-
-## 决策日志
-
-```yaml
-decision_log:
-  - task: T-01
-    events:
-      - step: S6_green
-        action: "Impl Agent 一次通过"
-  - task: T-03
-    events:
-      - step: S6_green
-        action: "测试失败，重试 3/3 后终止"
-        failure: "tests/user.test.ts:45 断言失败"
-```
-
-## 全量测试结果: ⚠️ 未执行（批量中断）
-
-> 批量中断时全量测试不执行，仅在所有任务完成后触发。
-
-## 续做命令
-/ms-dev-workflow T-03~T-05 --headless
-```
+> 完整字段语义见 [SKILL.md 子 Agent 摘要格式章节](../SKILL.md#子-agent-摘要格式) + yaml-summary-v1（[shared constraints §2](../../_shared/constraints.md)）。
 
 ## 失败续做
 
