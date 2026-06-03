@@ -134,18 +134,11 @@ Step 5: 工作区决策
 | 任务状态=已完成但 trace 未同步（`trace_pending`） | 代码/文档均已提交 | `/ms-sync` 重跑 + trace 校验 | 编排器 |
 | 🔴 任务跳过 S9 Phase 1~3 后未补跑（`INT_PENDING`，Skip-Review-Reason 已登记但审查窗未闭） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
 | 单任务 `--skip-trace` 后未补跑后置测试（`postcheck_pending`） | 代码/文档均已提交 | `/ms-test-run --affected` 或 `--trace` 补跑 | 编排器 |
-| Phase 4 外部对抗审查通过（`EXT_REVIEWED`） | 代码/文档/外审均已完成 | —（终态，直接放行） | —（不进入续做） |
-| 🔴 任务跳过 Phase 4 或证据未落（`EXT_PENDING`） | 代码/文档已提交，L2 yaml 未产出 | Phase 4 补跑（T1 或 T2 通道），产出 L2 yaml | 编排器调度 Phase 4 |
-| Phase 4 T1/T2 全失败 / L2 yaml 不可读（`EXT_UNRESOLVED`） | 代码/文档已提交，Phase 4 未落到 T1/T2 成功态 | 交互模式 AskUserQuestion 手动补跑 T1/T2；headless fail-fast | 编排器 |
-| Phase 4 熔断（`EXT_BLOCKED`） | 代码/文档已提交，Phase 4 达 max_rounds 未收敛 | 交互模式解除 max_rounds 重跑；headless fail-fast | 编排器 |
 | 旧任务（AC 表不存在，前版本完成） | 全量历史 | AskUserQuestion：复核 / 豁免 / 终止 | 编排器 |
 
-**状态优先级（并存时取高）**：`EXT_BLOCKED` (1) > `EXT_UNRESOLVED` (2) > `EXT_PENDING` (3) > `EXT_REVIEWED` (4)；`INT_*` 优先级与 `EXT_*` 独立判定，各自维护。详见 [verification-flow.md Phase 4 章节](verification-flow.md)。
+### Phase 4 状态在批量编排中的处理
 
-**术语迁移**（本版规范完成）：
-- 原名 `review_pending` → 现名 `INT_PENDING`（对应 Phase 1~3 内置审查）
-- 新增 `EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED`（对应 Phase 4 外部审查）
-- 其他 `*_pending` 信号（`docs_only_pending` / `verification_pending` / `trace_pending` / `postcheck_pending`）保持原名（语义独立，不纳入 INT_/EXT_ canonical enum）
+批量编排器在每任务完成 S9 后读取 `ext_review_state`，任一非 `EXT_REVIEWED` 状态导致该任务进入 `Step 1.5 [D2]` 拦截（详见本文件 Step 1.5 章节）。Phase 4 状态字段定义、真值表见 [verification-flow.md](verification-flow.md)。
 
 ### Realign 与续做的边界（重要）
 
