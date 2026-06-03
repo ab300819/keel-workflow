@@ -105,34 +105,7 @@
 
 ### 🟢 UI 层旁路补充
 
-🟢 UI 层的核心差异不是"少做步骤"，而是"补充 UI 维度"。
-
-**S3 旁路产物**（与测试骨架并行，非替代）：
-🟢 任务的 Test Agent 在 S3 结束时**必须**产出 UI 验收清单，无论后续是否执行 S4。
-S4 执行时，在清单基础上补全可运行断言。S4 跳过时，清单仍作为 S9 Phase 2-UI 的输入。
-
-清单生成优先级链：
-1. AC 中显式描述的视觉/交互要求 → 直接提取
-2. 项目设计 token / 设计系统约束 → 引用已有规范
-3. 以上均无 → 色值/字体/资源项标记 N/A，仅保留交互状态和结构类检查
-
-清单内容：
-- 视觉验收点：布局结构、色值（引用 token）、字体、图标资源
-- 交互验收点：状态覆盖（hover/active/disabled/error/loading）、表单反馈、空状态
-- 清单中 **Blocker 项**必须在 S8 AC 完备性表中对应三类证据之一（详见 [ui-quality-checklist.md](ui-quality-checklist.md#blocker-项证据要求)）。仅"Suggestion"级别不硬性要求可执行证据。
-
-**S9 扩展（Phase 2-UI，仅 🟢）**：
-🟢 UI 任务触发 S9 时，在 Phase 2 之后、Phase 3（综合报告）之前增加：
-- Phase 2-UI: UI 质量自查（基于 S3 产出的 UI 验收清单）
-  - 设计还原度：布局结构与 AC 一致(Blocker)、间距/色值/字体使用 token(Suggestion)
-  - 交互完整性：状态覆盖完整(Blocker)、定义动画时长/缓动参数(Suggestion)、空状态处理(Blocker)
-  - 基础质量：语义 HTML/组件层级(Suggestion)、触摸目标尺寸(Suggestion)、响应式约束(Suggestion)
-- 分级规则：与 Phase 1/2 一致，使用 Blocker / Suggestion
-- Phase 3 综合报告汇总 Phase 1 + Phase 2 + Phase 2-UI 的结果
-- 所有检查项为静态可判定的代理指标；运行态/感知类判断归 `/ms-verify --ui` 或 `--live`
-- 详细审查清单见 [ui-quality-checklist.md](ui-quality-checklist.md)
-
-平台特定检查（SwiftUI 安全区、Android 导航栏等）不在此列，引用对应外部 skill。
+🟢 UI 层在统一 11 步流程之上追加 Phase 2-UI（UI 质量自查），完整审查清单 + 与 `/ms-verify --ui` 边界 + UI 验收清单生成规则见 [ui-quality-checklist.md](ui-quality-checklist.md)。本文件不重复转述。
 
 ### 执行流程图
 
@@ -251,12 +224,11 @@ S4 执行时，在清单基础上补全可运行断言。S4 跳过时，清单�
    - Phase 2-UI: UI 质量自查（仅 🟢，ui-quality-checklist）
    - Phase 3: 综合报告，处理 Blocker
 6.5. **对抗式验证 Phase 4：外部对抗审查**（■🔴 默认自动 / □🟡🟢--external-review / ○⚪--external-review；产出 `ext_review_state`）：
-   - 调度器调用双通道 T1 codex CLI → T2 codex-mcp（T1/T2 全失败 → `EXT_UNRESOLVED` → --headless fail-fast，不设子 Agent 兜底）
-   - 自动收敛循环（`max_rounds=3`，`--external-rounds N` 覆盖上限 5）
-   - 按状态真值表映射到 `EXT_REVIEWED / EXT_PENDING / EXT_UNRESOLVED / EXT_BLOCKED`
-   - 🔴 任务必须落 T1/T2 + L2 yaml 可读 + `EXT_REVIEWED` 才放行
-   - 非 `EXT_REVIEWED`（任何状态）→ ⛔ 阻塞 Commit 1
-   - 详细契约、真值表、证据协议（L2 权威） 见 [verification-flow.md Phase 4 章节](verification-flow.md)
+
+### Phase 4 外部对抗审查在 S9 中的位置
+
+S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控制（`max_rounds`/`--external-rounds`）、降级链（T1 codex CLI → T2 codex-mcp）、真值表与 L2 证据协议均由 [verification-flow.md](verification-flow.md) 权威定义。本文件不重复。
+
 7. **更新自描述**：运行 /code-self-describe --update
 8. **提交决策**：
    - **前置门禁**：`int_review_state=INT_REVIEWED`（或未触发时为空）∧ `ext_review_state=EXT_REVIEWED`（或未触发时为空）才允许进入下面任一模式；任一为 `*_PENDING` / `*_UNRESOLVED` / `*_BLOCKED` → ⛔ 阻塞提交（恢复动作见各自 canonical state 定义）
