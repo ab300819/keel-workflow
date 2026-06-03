@@ -71,111 +71,32 @@ describe('UserService', () => {
 
 ## 完整实现示例（Step 3-4）
 
-### 接口实现
+> ⚠️ 仅展示骨架→实现的最小过渡。完整业务实现示例不再保留于本 skill；追溯标注请参考所在项目的 `traceability.yml`（layout.v2）或保留的 `@satisfies/@verifies` 注释（layout.v1 legacy，不新增）。
+
+### 接口实现（最小骨架填充示意）
 
 ```typescript
-// src/services/user.service.ts
-
-/**
- * 用户服务
- * @requirement F-001 - 用户注册
- */
-export class UserService {
-  constructor(private readonly userRepo: IUserRepository) {}
-
-  /**
-   * 创建用户
-   * @satisfies AC-001 - 邮箱格式校验
-   * @satisfies AC-002 - 密码强度校验
-   * @satisfies AC-003 - 用户名唯一性
-   */
-  async createUser(dto: CreateUserDTO): Promise<User> {
-    // AC-001: 邮箱格式校验
-    if (!this.isValidEmail(dto.email)) {
-      throw new ValidationError('Invalid email format');
-    }
-
-    // AC-002: 密码强度校验
-    if (!this.isStrongPassword(dto.password)) {
-      throw new ValidationError('Password too weak');
-    }
-
-    // AC-003: 用户名唯一性
-    const existing = await this.userRepo.findByUsername(dto.username);
-    if (existing) {
-      throw new ConflictError('Username already exists');
-    }
-
-    return this.userRepo.create(dto);
-  }
-
-  private isValidEmail(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  }
-
-  private isStrongPassword(password: string): boolean {
-    return password.length >= 8 && /[A-Z]/.test(password) && /\d/.test(password);
+// layout.v2：不写 @satisfies 注释，追溯统一通过 traceability.yml
+export class CreateOrderService {
+  async execute(input: CreateOrderInput): Promise<Order> {
+    // Impl Agent 在此填充最小实现以让 Test Agent 写的测试转绿
+    // 业务逻辑 / 边界 / 异常，由测试断言驱动
+    throw new Error('TODO(T-XX): replace with minimal implementation');
   }
 }
 ```
 
-### 测试实现
+### 测试骨架填充（Test Agent 产出）
 
 ```typescript
-// tests/user.service.test.ts
-
-describe('UserService', () => {
-  let service: UserService;
-  let mockRepo: jest.Mocked<IUserRepository>;
-
-  beforeEach(() => {
-    mockRepo = {
-      findByUsername: jest.fn(),
-      create: jest.fn(),
-    };
-    service = new UserService(mockRepo);
-  });
-
-  /**
-   * @verifies AC-001 - 邮箱格式校验
-   * @testcase UT-001
-   */
-  test('createUser 应该拒绝无效邮箱格式', async () => {
-    // Arrange
-    const dto = { email: 'invalid', password: 'Strong1234', username: 'test' };
-
-    // Act & Assert
-    await expect(service.createUser(dto)).rejects.toThrow(ValidationError);
-    await expect(service.createUser(dto)).rejects.toThrow('Invalid email format');
-  });
-
-  /**
-   * @verifies AC-002 - 密码强度校验
-   * @testcase UT-002
-   */
-  test('createUser 应该拒绝弱密码', async () => {
-    // Arrange
-    const dto = { email: 'test@example.com', password: 'weak', username: 'test' };
-
-    // Act & Assert
-    await expect(service.createUser(dto)).rejects.toThrow(ValidationError);
-    await expect(service.createUser(dto)).rejects.toThrow('Password too weak');
-  });
-
-  /**
-   * @verifies AC-003 - 用户名唯一性
-   * @testcase UT-003
-   */
-  test('createUser 应该拒绝重复用户名', async () => {
-    // Arrange
-    const dto = { email: 'test@example.com', password: 'Strong1234', username: 'existing' };
-    mockRepo.findByUsername.mockResolvedValue({ id: '1', username: 'existing' });
-
-    // Act & Assert
-    await expect(service.createUser(dto)).rejects.toThrow(ConflictError);
-  });
+describe('CreateOrderService', () => {
+  // skip/todo 标记仅用于 S3 骨架阶段；S4 写完断言后必须移除
+  it.todo('should create order with valid input (AC-001)');
+  it.todo('should reject input with missing customer (AC-002)');
 });
 ```
+
+> 实战场景请参考 layout.v2 项目的 `traceability.yml` schema 与对应测试文件命名约定。
 
 ## 行为契约 → Test Agent 断言示例
 
