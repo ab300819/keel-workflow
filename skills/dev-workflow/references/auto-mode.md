@@ -188,18 +188,3 @@ delivery_report:
 ```
 
 > 完整字段语义见 [SKILL.md 子 Agent 摘要格式章节](../SKILL.md#子-agent-摘要格式) + yaml-summary-v1（[shared constraints §2](../../_shared/constraints.md)）。
-
-## 失败续做
-
-fail-fast 后输出的续做命令格式：
-
-```
-⚠️ 批量执行中断于 T-XX
-
-已完成: T-01, T-02（已 commit）
-失败: T-XX — [失败原因]
-未执行: T-YY, T-ZZ
-
-续做命令:
-/ms-dev-workflow T-XX~T-ZZ --headless
-```
