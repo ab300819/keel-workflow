@@ -14,6 +14,10 @@ reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: block
 migration: /ms-pipeline realign --docs-layout
+spec_version: 1.1
+spec_version_notes: |
+  1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
+        P1 S9 并行化、P2 批量 Batch-Id trailer 标记 [FUTURE]，待 Phase 2 实施
 ---
 
 # 开发工作流
@@ -25,6 +29,12 @@ migration: /ms-pipeline realign --docs-layout
 > ℹ️ 编号双轨：v1 项目用 `T-XX`，v2 项目 [FUTURE] 用 `TASK-XX`。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
 > ℹ️ 输入路径双轨：v1 读 `04-dev-tasks.md` 找任务；v2 [FUTURE] 读 `tasks/<ID>.md` + 写回状态到该文件。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
+
+> **权威文件唯一原则**（spec_version 1.1 起强制）：
+> - Phase 4 / 并行调度 / `diff_hash` / 重跑机制 → [verification-flow.md](references/verification-flow.md) 唯一权威
+> - Step 1.5 各分支 / `sync_pending` / Batch-Id 识别 → [task-orchestration.md](references/task-orchestration.md) 唯一权威
+> - Phase 2-UI 审查清单 → [ui-quality-checklist.md](references/ui-quality-checklist.md) 唯一权威
+> - 其他文件（SKILL.md / auto-mode.md / execution-flow.md）**仅允许 2-3 行指针引用**，严禁重复转述。违反此原则视为复杂度退化，必须 revert。
 
 > 视角：资深开发者 — 务实优先，不过度设计，测试先行，提交原子化。
 
@@ -60,11 +70,12 @@ migration: /ms-pipeline realign --docs-layout
 | 全部 | `--all` | 所有 `状态≠已完成` 的任务 |
 | 无人值守 | `--headless` | 批量模式 + 全自动决策（fail-fast） |
 | 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停（与 `--headless` 互斥） |
+| 单次提交 | `--single-commit` | 代码+文档合并为单次提交；适合无文档变更或后续 `/ms-sync` 已合并 |
 | 上下文重置 | `--context-reset N` | 每 N 个任务后编排器重置上下文（默认 3，仅批量模式） |
 | 跳过审查（🔴 限定） | `--skip-review-reason="<原因>"` | 仅 🔴 任务可用；必须带 reason，否则视为非法参数（详见[对抗式验证](#对抗式验证可选)） |
 | 跳过 trace 校验 | `--skip-trace="<原因>"` | 单任务模式关闭 `--affected` 后置校验；必须带 reason，写入 `Skip-Trace-Reason:` 尾注 |
 | 外部对抗审查（Phase 4） | `--external-review` | 🟡/🟢/⚪ 层级显式启用 Phase 4 外部对抗审查（🔴 默认开启，无需此 flag） |
-| 外部对抗审查跳过（🔴 限定） | `--skip-external-review-reason="<原因>"` | **仅交互模式 + 🔴 任务可用**；跳过 Phase 4 并登记原因；自动标 `EXT_PENDING`，Step 1.5 [D2] 会拦截。`--headless` 下传入此参数视为非法参数 |
+| 外部对抗审查跳过（🔴 限定） | `--skip-external-review-reason="<原因>"` | **仅交互模式 + 🔴 任务可用**；跳过 Phase 4 并登记原因；自动标 `EXT_PENDING`，Step 1.5 [D2] 会拦截。`--headless` 下传入此参数视为非法参数 ⚠️ 不构成 Commit 1 放行，需后续补跑 Phase 4 达成 `EXT_REVIEWED` 才能完成任务（详见 [对抗式验证 §Skip 参数](#对抗式验证可选)）。 |
 | 外部对抗审查轮次 | `--external-rounds N` | 覆盖 Phase 4 默认 `max_rounds=3`；上限 5（对齐 /adversarial-review skill 的 max_rounds） |
 | 规范升级回扫 | `--realign` | 已完成任务按新 spec_version 查漏补缺；**独立于 12 种续做信号**，不覆盖原证据，仅追加补齐+`Realigned-From` 尾注。详见 [references/realign.md](references/realign.md)。推荐用户入口：`/ms-pipeline realign`。 |
 
@@ -212,7 +223,7 @@ migration: /ms-pipeline realign --docs-layout
 
 - [ ] **S8 必须产出 AC 完备性表**（逐条 AC：编号/**AC 类型**（行为型/视觉型/结构型，必填）/证据类型/代码或测试位置/判定）
 - [ ] **任一 AC 缺失有效证据 / 违反 AC 类型×证据类型分级矩阵 → ⛔ 禁止继续**（恢复方式：补实现或补测试后重新生成证据表）
-- [ ] **Phase 4 `ext_review_state` 必须为 `EXT_REVIEWED`（🔴 任务）或非 🔴 任务未触发 Phase 4 时 `EXT_REVIEWED`/空** 才能进入 Commit 1；`EXT_UNRESOLVED` / `EXT_BLOCKED` ⛔ 阻塞（恢复方式见 [verification-flow.md 真值表](references/verification-flow.md)）
+- [ ] **Phase 4 `ext_review_state` 必须为 `EXT_REVIEWED`（🔴 任务）或非 🔴 任务未触发 Phase 4 时 `EXT_REVIEWED`/空** 才能进入 Commit 1；`EXT_UNRESOLVED` / `EXT_BLOCKED` ⛔ 阻塞（恢复方式见 [verification-flow.md 真值表](references/verification-flow.md)）（语义详见 [对抗式验证 §Skip 参数收紧](#对抗式验证可选)）
 - [ ] **声称 vs 实际 diff 交叉验证必做**（所有层级 S8 必做，不再是 --review 才触发）
 - [ ] **测试通过判定排除 skipped / todo**（skipped/todo 计数 > 0 → ⛔ 禁止继续，除非任务文档显式豁免并记录原因）
 - [ ] **Review 要点自查完成**
@@ -247,7 +258,7 @@ migration: /ms-pipeline realign --docs-layout
 | 参数 | 作用对象 | 约束 | 自动标记 |
 |------|---------|------|---------|
 | `--skip-review-reason="<原因>"` | Phase 1~3 | 必须带 reason；写入 Commit 1 `Skip-Review-Reason:` 尾注 | `INT_PENDING`，Step 1.5 [D1] 拦截至补跑 |
-| `--skip-external-review-reason="<原因>"` | Phase 4 | 必须带 reason；**仅交互模式**（`--headless` 下视为非法）；写入 `Skip-External-Review-Reason:` 尾注 | `EXT_PENDING`，Step 1.5 [D2] 拦截至补跑 |
+| `--skip-external-review-reason="<原因>"` | Phase 4 | 必须带 reason；**仅交互模式**（`--headless` 下视为非法）；写入 `Skip-External-Review-Reason:` 尾注；⚠️ 仅登记 pending，不构成放行 | `EXT_PENDING`，Step 1.5 [D2] 拦截至补跑 |
 | 双 skip 同时 | 双 | ⛔ **非法参数组合**（不设例外通道） | — |
 
 > Phase 4 详细调用契约（T1/T2 双通道、max_rounds、真值表、L2 权威证据协议）见 [verification-flow.md Phase 4 章节](references/verification-flow.md)。Phase 1~3 验证流程（代码质量/测试完备/UI 自查/综合报告/AC↔diff 交叉验证）同文件。
@@ -359,7 +370,7 @@ Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）�
 External-Review-Verdict: <EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED>（Phase 4 触发时必填，含 rounds 和 health_scores）
 External-Review-Channel: <T1 | T2 | none>（非状态字段，Phase 4 触发时记录实际通道）
 Skip-Review-Reason: <仅 🔴 任务使用 --skip-review-reason 时填写；其他情况省略此行>
-Skip-External-Review-Reason: <仅 🔴 任务使用 --skip-external-review-reason 时填写>
+Skip-External-Review-Reason: <仅 🔴 任务使用 --skip-external-review-reason 时填写；留作补跑追溯，Commit 1 仍要求 ext_review_state=EXT_REVIEWED>
 Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
 Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
 ```
