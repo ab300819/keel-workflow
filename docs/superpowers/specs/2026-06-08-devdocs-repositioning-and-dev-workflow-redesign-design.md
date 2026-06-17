@@ -218,3 +218,78 @@ codex_review: [T-131, T-132, T-133]
 
 - **Plan A(本轮)**:§1~§4 核心执行模型 + §10.1~10.6 执行语义 + §5.1 防仪式规则中与 review_profile/状态机相关者。
 - **Plan B(下一轮)**:§5 四类卡片视图落地 + §8.6 Evidence Ledger 最小格式 + §8.7 ADR 同步规则。
+
+## 11. Plan B 执行语义决议(记忆卡片层;§8.6-7 闭合 + §5 视图落地)
+
+> **状态**:brainstorm 三决议闭合(Evidence→trace.v1 字段 / ADR 透镜走 adr-only-revision / 四卡片零新文件纯视图)。本节为 Plan B 方向闭合,**实现计划前必修见 §11.4**。
+
+### 11.0 总决议:四卡片 = 现有 owner 产物的渲染视图,零新文件族(§5 落地)
+
+四类卡片不落地为任何新文件/新编号。每张卡片是对一个**既有 owner 产物**的视图(view)或字段(field)投影,渲染时机由消费者按需拼装,不持久化为独立产物。逐卡映射见下表(对齐 §5.1 八条硬规则):
+
+| 卡片 | 落地形态 | owner 产物(权威) | 渲染者/消费者 | 防仪式锚点 |
+|------|---------|-----------------|--------------|-----------|
+| Context Card | **视图**:动态拼装,不落文件 | AGENTS.md `当前状态` + `ms-onboard`/`codebase-insight` 输出 + `design_context` | `ms-onboard --read` 拼装;dev-workflow 任务启动读 | §5.1#1,#7(只保留当前有效状态) |
+| Task Card | **字段子集视图**:20-40 行 | `04-dev-tasks.md` 任务条目(权威) | dev-workflow Test/Impl Agent 输入 | §5.1#7(硬上限 20-40 行,超限改链接) |
+| Evidence Ledger | **字段**:trace.v1 link 上的 `evidence`(§11.1) | `traceability.yml` link(指针) + S8 AC 表(权威完整源) | Step 1.5 [A] 证据复核 / `--review-drain` | §5.1#2,#3(永不替代 S8 表) |
+| ADR Decision Log | **透镜**:既有 ADR 章节投影 + 同步规则(§11.2) | `02-system-design` ADR 章节 / `design/decisions/`(权威) | `ms-verify` / health-lint `adr-only-revision` / 人工 | §5.1#4(只收不可逆/跨任务决策) |
+
+> 验收:任一卡片若需要"新建文件才能承载",即违反 §5.1#1,该卡片设计判失败回退。
+
+### 11.1 Evidence Ledger 最小可复核格式(§8.6 闭合)→ trace.v1 `evidence` 字段
+
+**决议**:Evidence Ledger 不是新 section,落为 `traceability.yml` 中 `kind: verifies` link 的**可选 `evidence` 字段**——把"本次实际验证的命令/结果/产物指针"压缩为索引,与既有 `tests:`(测试编号)互补:`tests` 记"哪些用例覆盖",`evidence` 记"非测试类证据 + 本轮实际跑出的结果指针"。
+
+```yaml
+links:
+  - id: AC-001
+    kind: verifies
+    repo: trade-fund-impl
+    path: tests/.../FundServiceTest.java
+    symbol: FundServiceTest#rejectsEmptyPassword
+    commit: 22cfb53f
+    tests: [UT-001]                  # 既有:覆盖该 AC 的用例编号(覆盖关系,非本轮执行结果)
+    evidence:                        # [新增,可选] Evidence Ledger 投影
+      - ac_type: behavioral          # behavioral | visual | structural(对齐 S8 AC 类型)
+        s8_evidence_type: "UT 断言"          # canonical:取 S8 矩阵证据类型枚举(见下)
+        locator: "UT-001"            # 测试编号 / artifact 路径 / 命令输出指针 / 外部票据
+        result: pass                 # pass | fail | n/a
+        at_commit: 22cfb53f          # 产出该证据时的 commit
+```
+
+**最小必需字段**:`ac_type` + `s8_evidence_type` + `locator` + `result` + `at_commit`(五者缺一不可复核——`locator`/`result`/`at_commit` 共同证明"本轮实际跑出"而非仅覆盖关系)。
+
+`s8_evidence_type` 取值为 S8 矩阵证据类型 canonical 枚举(**不自造**,与 [verification-flow.md 证据类型×AC类型分级矩阵](../../../skills/dev-workflow/references/verification-flow.md#ac-完备性s8-权威定义) 逐字一致):`UT 断言` / `IT 断言` / `E2E 断言` / `--ui --live 截图` / `--ui --live trace` / `UI 清单` / `实现代码` / `显式豁免（附原因）`。`locator` 是该证据的索引形态(测试编号 / artifact 路径 / CI run / 本地命令输出指针 / 外部票据),不改变 `s8_evidence_type` 的合法性判定。
+
+**硬约束(§5.1#3 落地)**:
+- `evidence` 字段是 S8 AC 完备性表的**压缩投影/指针**,**永不替代** S8 表本体;**每条 AC(行为型/视觉型/结构型三类均含)**至少保留一条 `evidence` 指针,合法性按 S8 矩阵判(行为型禁纯实现代码、视觉型需 live/断言等,同矩阵不另立);任一 AC 缺指针 → 与 Step 1.5 [A] 证据复核冲突 → 复核判 `verification_pending`。
+- 每条 `evidence` 必须指向"本轮执行结果"之一:S8 表对应行 / 测试运行 artifact / CI run / 本地命令输出;仅 `tests: [UT-001]`(覆盖关系)不构成 evidence。
+- 写入者:见 §11.4#2(唯一写入者归属待定),S8 通过后回填,dev-workflow Commit 2 触发同步。
+
+### 11.2 ADR Decision Log 同步规则(§8.7 闭合)→ 透镜 + adr-only-revision
+
+**决议**:ADR Decision Log 是既有 system-design ADR 章节(`02-system-design` §16 / layout.v2 `design/decisions/`)的**透镜投影**,不新建文件。同步规则**直接复用已实装的 health-lint `design/adr-only-revision`**(e1a6f13 → 现 [health-lint-implementation.md](../../../skills/pipeline/references/health-lint-implementation.md)),不另造规则:
+
+- **同步保障**:ADR 章节有增量(新增/改 ADR)但正文相关章节无同期更新 → `adr-only-revision` 告警(⚠️),对应 system-design SKILL.md:336 硬约束。Plan B 不新增检测逻辑,仅声明 ADR Decision Log 的"同步"语义 = 该 rule。
+- **§5 "带过期·复查条件"落地**:现有 ADR 模板(状态/背景/决策/替代方案/下游影响/关联)**新增可选字段 `复查条件`**——仅对"有时效假设的决策"(如"暂选 X 因当前 Y 限制")填写,记"何种信号下该 ADR 需重审"。无时效假设的决策(如选型)不填,避免 §5.1#4 仪式化。
+- **收录边界(§5.1#4)**:只收不可逆/跨任务/影响后续的决策;普通实现选择进 commit/任务摘要,不进 ADR Decision Log。dev-workflow 子 Agent 的 `decision_log` 字段(执行期决策)与本透镜**不同源**(§5 改名 2 已区分),不互相回填。
+
+### 11.3 范围与非目标(Plan B)
+
+- **落地范围**:trace.v1 schema 增 `evidence` 可选字段 + ADR 模板增 `复查条件` 可选字段 + 文档声明四卡片视图映射;**不动 dev-workflow runtime 的执行流**(卡片是读侧视图,写侧仍走既有 S8/trace/ADR 产出路径)。
+- **非目标**:不新增卡片持久化文件;不改 trace.v1 严格校验规则(`evidence` 走软校验);不把 Evidence Ledger 或 ADR Log 做成独立 skill;不动 §10 已闭合的 Plan A 执行语义。
+
+### 11.4 writing-plans 前必修(Plan B 动工前补死)
+
+实现计划拆任务前,以下落点必须确认(否则不动 trace schema / ADR 模板):
+
+1. **trace.v1 `evidence` 字段的版本影响 + schema 摘要更新**:[layout-versioning-policy.md](../../../skills/pipeline/references/layout/layout-versioning-policy.md) 明确"traceability.yml schema 字段变化触发 traceability_version 升级评估",故**必须走升级评估**(可选字段是否构成 breaking 由该评估裁定,不预设"不 bump");无论是否 bump,都须**同步更新 layout-versioning-policy 的 trace.v1 schema 摘要**(当前摘要不含 evidence)。
+2. **`evidence` 写入 API 契约打通**:现执行层声明 traceability.yml schema 严格、手动可编辑字段仅 `notes/confidence/tests`([code-decoupling-implementation.md](../../../skills/pipeline/references/layout/code-decoupling-implementation.md))——必须**把 `evidence` 加入可写字段白名单 + 明确 `generator` 枚举**,否则实现会被现有严格契约拦截或丢字段。
+3. **`evidence` 唯一写入者归属**:`ms-sync --extract-trace` vs `ms-verify` 谁是唯一写入者,避免双写冲突(对齐 trace.v1 `generator` 字段枚举)。
+4. **`evidence` 的 canonical 枚举/字段 schema 归属**:`s8_evidence_type` 枚举权威在 verification-flow S8 矩阵,trace.v1 schema 引用而非复制;`ac_type`/`result` 枚举归属(trace.v1 自有 vs 引用 S8)需定。
+5. **`evidence` 最小字段 + 指针有效性由谁校验**:扩 health-lint 新 rule,还是复用 trace.v1 软校验(`tests` 编号存在性那条扩到 `locator`);若不扩,须明确**哪个现有 validator 负责**(不能无主)。
+6. **ADR `复查条件` 字段是否触发 design.v1 模板 bump**:同 #1 升级评估判据。
+
+### 11.5 Codex 复核轨迹(Plan B)
+
+- 待补:本节(§11)起草后的 Codex 集中送审结论。
