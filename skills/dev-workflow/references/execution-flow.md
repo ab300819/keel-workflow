@@ -20,7 +20,7 @@
 | S7 | 重构优化 | Impl Agent | `refactored` |
 | S8 | 验证 AC 满足度（逐条完备性 + 声称 vs 实际 diff） | 编排器 | `ac_verified` |
 | S9 / Phase 1~3 | 对抗式验证（内置角色演绎） | 编排器 | `int_review_state` ∈ {INT_REVIEWED, INT_PENDING, INT_UNRESOLVED} |
-| S9 / Phase 4 | 外部对抗审查（🔴 默认；其他 `--external-review`） | 编排器（embedded-headless 调度器） | `ext_review_state` ∈ {EXT_REVIEWED, EXT_PENDING, EXT_UNRESOLVED, EXT_BLOCKED} |
+| S9 / Phase 4 | 外部对抗审查（audit inline；fast/guarded 延后到 `/ms-verify --review-drain`） | 编排器（embedded-headless 调度器） | `ext_review_state` ∈ {EXT_REVIEWED, EXT_PENDING, EXT_UNRESOLVED, EXT_BLOCKED} |
 | S10 | 更新自描述 | 编排器 | `self_describe_done` |
 | S11 | 提交代码 | 编排器 | `committed` |
 | S12 | 追溯同步 + 知识沉淀 | 编排器 | `synced` |
@@ -73,7 +73,7 @@
 
 ## 统一任务执行流程
 
-所有任务遵循相同步骤，层级标记决定各步骤的强制程度：
+所有任务遵循相同步骤，`review_profile`（fast / guarded / audit）决定各步骤的强制程度；层级标签 🔴🟡🟢⚪ 仅作风险分类器输入，用于决定 review_profile，不直接决定矩阵强制程度：
 
 | 符号 | 含义 |
 |------|------|
@@ -86,28 +86,29 @@
 
 ### 强制程度矩阵
 
-| 步骤 | 执行者 | 🔴 核心逻辑 | 🟡 接口层 | 🟢 UI 层 | ⚪ 基础设施 |
-|------|--------|------------|----------|---------|-----------|
-| 0.5 Sprint Contract | Test Agent + 编排器 | ■ | ■ | □ | ○ |
-| 1. 生成骨架（接口/组件） | Test Agent | ■ | ■ | ■ | ■ |
-| 2. 生成测试骨架 | Test Agent | ■ | ■ | ■ | □ |
-| 3. 编写测试断言 | Test Agent | ■ | ■* | ■* | ○ |
-| 4. 运行测试→确认失败（红） | 编排器 | ■ | ■* | ■* | ○ |
-| 5. 实现代码 | Impl Agent | ■ | ■ | ■ | ■ |
-| 6. 运行测试→确认通过（绿，skipped/todo=0） | Impl Agent | ■ | ■ | ■ | ■ |
-| 7. 重构优化（保持测试通过） | Impl Agent | ■ | □ | ○ | ○ |
-| 8. 检查验收标准（AC 完备性表） | 编排器 | ■ | ■ | ■ | ■ |
-| 9a. 前置验证（ms-verify） | 编排器 | ■ --impl | ■ --impl | ■ --impl + --ui --impl（有设计稿，两次调用）/ 无设计稿降级 | ■ --impl --trace |
-| 9 / Phase 1~3（内置角色演绎对抗式验证） | 编排器 | ■ 自动 | □ --review | □ --review | ○ --review |
-| 9 / Phase 4（外部对抗审查，embedded-headless） | 编排器调度 T1 → T2 | ■ 自动（必须落 T1/T2 + EXT_REVIEWED） | □ --external-review | □ --external-review | ○ --external-review |
-| 10. 更新自描述 | 编排器 | ■ | ■ | ■ | ■ |
-| 11. 提交决策+原子提交 | 编排器 | ■ | ■ | ■ | ■ |
+| 步骤 | fast | guarded | audit |
+|------|:---:|:---:|:---:|
+| S1 读任务 / S1.5 Contract | ■ | ■ | ■ |
+| S2/S3 骨架 + 测试骨架(双 Agent) | ■ | ■ | ■ |
+| S4-S7 红绿重构(测试冻结) | ■ | ■ | ■ |
+| 质量地板 5 条 | ■ | ■ | ■ |
+| S8 完成检查(AC 完备表) | ■(证据摘要) | ■ | ■(完整矩阵) |
+| S9 前置验证 `/ms-verify --impl` | ○ | ■ | ■ |
+| S9 Phase 1~3 内审 | ⏳ defer | ⏳ defer(风险触发则 ■) | ■ inline |
+| S9 Phase 4 外审 | ⏳ defer | ⏳ defer | ■ inline |
+| S10 自描述 / S11 Commit 1 | ■ | ■ | ■ |
+| UI Phase 2-UI 自查(仅 UI 任务) | 按 ui-quality-checklist.md(不随 profile 变) | 同 | 同 |
+
+> ⏳ defer = 延后到 `/ms-verify --review-drain`,任务期间标 `review_pending`。
+> 层级标签 🔴🟡🟢⚪ 仅作风险分类器输入决定 review_profile,不再直接决定本矩阵强制程度。
 
 ### 🟢 UI 层旁路补充
 
 🟢 UI 层在统一 11 步流程之上追加 Phase 2-UI（UI 质量自查），完整审查清单 + 与 `/ms-verify --ui` 边界 + UI 验收清单生成规则见 [ui-quality-checklist.md](ui-quality-checklist.md)。本文件不重复转述。
 
 ### 执行流程图
+
+> **与 review_profile 的关系**:下列按"层级"组织的流程图仅为**示意分类**(层级=风险输入)。实际 S1~S11 强制程度与独立审查时机以上文 review_profile 矩阵为准:audit inline 全套;fast/guarded 独立审查延后到 `/ms-verify --review-drain`(任务标 `review_pending`);质量地板 5 条与 `/ms-verify --impl`(guarded/audit)恒定 inline。层级标记(🔴🟡🟢⚪)读作 review_profile 风险输入,不再独立决定流程强度。
 
 ```
 ┌─ Test Agent（独立子 Agent）─────────────────────────────┐
@@ -202,46 +203,56 @@
 
 ## 任务完成流程
 
-所有层级遵循统一完成流程，对抗式验证的触发方式因层级而异：
+所有任务遵循统一完成流程，独立审查（Phase 1~3+4）的触发时机因 review_profile 而异：
 
 1. **确认测试状态**：检查 Impl Agent 测试结果（全部通过）
 2. **确认双 Agent 隔离**：Test Agent 产出测试文件未被 Impl Agent 修改（diff 校验）
-3. **检查重构**（■🔴 □🟡 ○🟢⚪）：代码是否经过优化
+3. **检查重构**（audit/guarded: ■；fast: □）：代码是否经过优化
 4. **验证验收标准（S8 完备性）**：
    - 输出 AC 检查表（编号/AC 类型/证据类型/代码或测试位置/判定），证据组合按 [SKILL.md 完成检查约束](../SKILL.md#完成检查约束) 中的 **AC 类型 × 证据类型分级矩阵**判定（不再使用单一白名单）
    - 执行声称 vs 实际 diff 交叉验证（对比 AC 列表与 `git diff`）
    - 任一 AC 缺证据 / 分级矩阵不满足 / 声称满足但 diff 无变更 / 未关联 AC 的大块变更 → ⛔ 回到对应步骤修复
-5. **前置验证（按层级默认必做）**：
-   - 🔴/🟡：`/ms-verify --impl`（AC 满足度 + 设计一致性 + 追溯）
-   - 🟢：
-     - 有设计稿 → `/ms-verify --impl` + `/ms-verify --ui --impl`（两次显式调用：前者覆盖 AC+追溯，后者覆盖设计稿↔实现）
-     - 无设计稿 → Phase 2-UI 自查 + `/ms-verify --impl`
-   - ⚪：`/ms-verify --impl --trace`（仅追溯子集，不要求完整 AC 语义对齐）
+5. **前置验证（按 review_profile 决定）**：
+   - guarded/audit：`/ms-verify --impl`（AC 满足度 + 设计一致性 + 追溯）；🟢 UI 任务额外：有设计稿 → 再跑 `/ms-verify --ui --impl`，无设计稿 → Phase 2-UI 自查 + `/ms-verify --impl`
+   - fast：仅质量地板（行为型 AC 独立证据 + `/ms-test-run --affected`），跳过 `/ms-verify --impl`
+   - 层级标签 🔴🟡🟢⚪ 仅作 review_profile 分档的风险输入，不直接决定本步强制程度
    - Blocker → ⛔ 回退修复，不因"未加 --review"而放行
-6. **对抗式验证 Phase 1~3**（■🔴自动 / □🟡🟢--review / ○⚪--review；`--review` 仅作增强叠加；产出 `int_review_state`）：
+6. **对抗式验证 Phase 1~3**（按 review_profile；产出 `int_review_state`）：
+   - **audit**：inline fail-fast，必须通过（INT_REVIEWED）才允许继续
+   - **fast/guarded**：⏳ 延后到 `/ms-verify --review-drain`（风险信号触发时 guarded 可升为 inline）
    - Phase 1: 代码质量审查（/code-quality 视角）
    - Phase 2: 测试完备性审查（/testing-guide 视角）
    - Phase 2-UI: UI 质量自查（仅 🟢，ui-quality-checklist）
    - Phase 3: 综合报告，处理 Blocker
-6.5. **对抗式验证 Phase 4：外部对抗审查**（■🔴 默认自动 / □🟡🟢--external-review / ○⚪--external-review；产出 `ext_review_state`）：
+6.5. **对抗式验证 Phase 4：外部对抗审查**（按 review_profile；产出 `ext_review_state`）：
+   - **audit**：inline fail-fast，必须通过（EXT_REVIEWED）才允许继续
+   - **fast/guarded**：⏳ 延后到 `/ms-verify --review-drain`
 
 ### Phase 4 外部对抗审查在 S9 中的位置
 
 S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控制（`max_rounds`/`--external-rounds`）、降级链（T1 codex CLI → T2 codex-mcp）、真值表与 L2 证据协议均由 [verification-flow.md](verification-flow.md) 权威定义。本文件不重复。
 
 7. **更新自描述**：运行 /code-self-describe --update
-8. **提交决策**：
-   - **前置门禁**：`int_review_state=INT_REVIEWED`（或未触发时为空）∧ `ext_review_state=EXT_REVIEWED`（或未触发时为空）才允许进入下面任一模式；任一为 `*_PENDING` / `*_UNRESOLVED` / `*_BLOCKED` → ⛔ 阻塞提交（恢复动作见各自 canonical state 定义）
+8. **提交决策（按 review_profile 分支）**：
+   - **audit**：前置门禁 `int_review_state=INT_REVIEWED` ∧ `ext_review_state=EXT_REVIEWED` 均满足才允许提交；任一为 `*_PENDING` / `*_UNRESOLVED` / `*_BLOCKED` → ⛔ 阻塞提交（恢复动作见各自 canonical state 定义）
+   - **fast/guarded**：独立审查（Phase 1~3+4）已延后，不等 INT/EXT_REVIEWED；质量地板 + `/ms-verify --impl`（guarded）无 Blocker 即可提交
    - `--headless` 模式：自动提交（安全不变量已在前置步骤保证）
    - `--auto-commit` 模式：测试通过 + 无 Blocker 时自动提交
    - 交互模式：AskUserQuestion："任务 T-XX 已完成，是否提交代码？"
      - 选项："提交" / "继续修改" / "跳过"
 9. **如提交**（原子提交）：
    - Commit 1: `git add [代码文件] && git commit -m "<type>(T-XX): <名称>"`
-   - 更新 04-dev-tasks*.md 状态为 `已完成`
+   - **audit**：提交后更新 04-dev-tasks*.md 状态为 `已完成`
+   - **fast/guarded**：提交后更新 04-dev-tasks*.md 状态为 `review_pending`（独立审查延后），在 Commit 1 尾注附加：
+     ```
+     Review-Batch-Id: <batch-id>
+     Review-Due: <YYYY-MM-DD>
+     Pending-Reason: deferred-fast | deferred-guarded
+     ```
+     `/ms-verify --review-drain` 通过后（无 Blocker）才转 `已完成`
    - 运行 /ms-sync
    - Commit 2: `git add [文档文件] && git commit -m "docs(T-XX): 更新任务状态并同步 trace"`
-10. **更新 TodoWrite**：将任务标记为已完成
+10. **更新 TodoWrite**：将任务标记为已完成（audit）或 review_pending（fast/guarded）
 
 ## 提交信息格式
 
@@ -255,10 +266,13 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
 
 关联: F-XXX, AC-XXX
 测试: UT-XXX, IT-XXX 通过
-External-Review-Verdict: <Phase 4 触发时必填：EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED；含 rounds 和 health_scores>
-External-Review-Channel: <Phase 4 触发时必填：T1 | T2 | none（非状态字段）>
-Skip-Review-Reason: <仅 🔴 任务使用 --skip-review-reason 时填写；其他情况省略此行>
-Skip-External-Review-Reason: <仅 🔴 任务使用 --skip-external-review-reason 时填写>
+External-Review-Verdict: <audit profile Phase 4 inline 时必填：EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED；含 rounds 和 health_scores>
+External-Review-Channel: <audit profile Phase 4 inline 时必填：T1 | T2 | none（非状态字段）>
+Review-Batch-Id: <fast/guarded profile 延后时必填；audit 省略>
+Review-Due: <fast/guarded profile 延后时必填（格式 YYYY-MM-DD）；audit 省略>
+Pending-Reason: <fast/guarded profile 延后时必填：deferred-fast | deferred-guarded；audit 省略>
+Skip-Review-Reason: <audit profile 使用 --skip-review-reason 时填写；其他情况省略此行>
+Skip-External-Review-Reason: <audit profile 使用 --skip-external-review-reason 时填写；其他情况省略此行>
 Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
 Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
 ```

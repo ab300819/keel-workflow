@@ -392,7 +392,7 @@ summary:
 | 头部 commit 限制 | `--headless` 模式禁用此 flag（仅交互模式允许）|
 
 **与 `--skip-review-reason` / `--skip-external-review-reason` 的差异**：
-- `--skip-review-reason` 仅 🔴 任务可用；`--skip-external-review-reason` 仅 🔴 + 交互模式可用；`--ssot-lint-skip-reason` 任何任务层级都可用，但**与 `--skip-external-review-reason` 一致：headless 模式禁用**（见上表"头部 commit 限制"），防 CI 跳过质量门
+- `--skip-review-reason` 仅 audit 档任务可用；`--skip-external-review-reason` 仅 audit 档 + 交互模式可用；`--ssot-lint-skip-reason` 任何 review_profile 都可用，但**与 `--skip-external-review-reason` 一致：headless 模式禁用**（见上表"头部 commit 限制"），防 CI 跳过质量门
 - `--skip-review-reason` 标 `INT_PENDING`（dev-workflow Step 1.5 [D1] 拦截至补跑）；`--skip-external-review-reason` 标 `EXT_PENDING`（[D2] 拦截至补跑）；`--ssot-lint-skip-reason` 标 `pending_ssot_recheck`（通过 `traceability.yml` 跟踪，由 `/ms-verify --ssot-lint --recheck-pending` 后续处理）
 
 ## 性能与边界

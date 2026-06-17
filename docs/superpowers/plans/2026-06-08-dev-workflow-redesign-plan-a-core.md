@@ -12,7 +12,7 @@
 
 **改动文件总览:**
 - Create: 无(全部为现有文件修改)
-- Modify: `skills/_shared/constraints.md`、`skills/dev-workflow/SKILL.md`、`skills/dev-workflow/references/{verification-flow,task-orchestration,execution-flow,auto-mode}.md`、`skills/ms-dev-tasks/SKILL.md`、`skills/ms-verify/SKILL.md`
+- Modify: `skills/_shared/constraints.md`、`skills/dev-workflow/SKILL.md`、`skills/dev-workflow/references/{verification-flow,task-orchestration,execution-flow,auto-mode}.md`、`skills/dev-tasks/SKILL.md`、`skills/verify/SKILL.md`
 
 **全局约束:** SKILL.md ≤ 500 行(硬约束),每个 commit 后核对。FUTURE 三态:本轮真正实装 runtime,不留 [FUTURE]。
 
@@ -306,7 +306,7 @@ git commit -m "feat(dev-workflow): task-orchestration Step1.5 加 [F] review_pen
 - 下游**仅允许低风险叶子任务(fast)**继续;
 - 下游一旦触及公共 API / schema / 迁移 / 权限 / 安全 / 跨模块契约 → **进入前强制先 `/ms-verify --review-drain`**;
 - 硬阈值:`pending ≤ 3`、`pending 依赖深度 ≤ 1`、`sprint 关闭前 pending = 0`;
-- 超数量 / 依赖深度 / `Review-Due` 超期 → **强制 drain**(不静默升 audit)。`Review-Due` 超期判定:有 sprint→sprint close 时;无 sprint→`当前日期 > due` 或 `pending 计数 ≥ 3` 任一。
+- 超数量 / 依赖深度 / `Review-Due` 超期 → **强制 drain**(不静默升 audit)。`Review-Due` 超期判定:有 sprint→sprint close 时;无 sprint→`当前日期 > due` 或 `pending 计数 > 3` 任一。
 ```
 
 - [ ] **Step 3: 验证**
@@ -453,7 +453,7 @@ git commit -m "feat(dev-workflow): auto-mode headless 自动 drain + 交付报�
 ### Task 12: ms-dev-tasks 输出 review_profile + 风险信号
 
 **Files:**
-- Modify: `skills/ms-dev-tasks/SKILL.md`(任务分层/任务字段章节)
+- Modify: `skills/dev-tasks/SKILL.md`(任务分层/任务字段章节)
 
 - [ ] **Step 1: 任务字段新增 review_profile 提议 + 风险信号**
 
@@ -471,13 +471,13 @@ git commit -m "feat(dev-workflow): auto-mode headless 自动 drain + 交付报�
 
 - [ ] **Step 2: 验证**
 
-Run: `rg -n "review_profile|audit 信号|反向依赖计数" skills/ms-dev-tasks/SKILL.md && wc -l skills/ms-dev-tasks/SKILL.md`
+Run: `rg -n "review_profile|audit 信号|反向依赖计数" skills/dev-tasks/SKILL.md && wc -l skills/dev-tasks/SKILL.md`
 Expected: 命中;行数 ≤ 500。
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add skills/ms-dev-tasks/SKILL.md
+git add skills/dev-tasks/SKILL.md
 git commit -m "feat(ms-dev-tasks): 拆分时提议 review_profile + 风险分类器 — Plan A Phase 7"
 ```
 
@@ -488,7 +488,7 @@ git commit -m "feat(ms-dev-tasks): 拆分时提议 review_profile + 风险分类
 ### Task 13: ms-verify 加 --review-drain flag
 
 **Files:**
-- Modify: `skills/ms-verify/SKILL.md`(flag 表 + 维度自动检测)
+- Modify: `skills/verify/SKILL.md`(flag 表 + 维度自动检测)
 
 - [ ] **Step 1: flag 表追加 --review-drain**
 
@@ -502,13 +502,13 @@ git commit -m "feat(ms-dev-tasks): 拆分时提议 review_profile + 风险分类
 
 - [ ] **Step 3: 验证**
 
-Run: `rg -n "review-drain" skills/ms-verify/SKILL.md && wc -l skills/ms-verify/SKILL.md`
+Run: `rg -n "review-drain" skills/verify/SKILL.md && wc -l skills/verify/SKILL.md`
 Expected: 命中;行数 ≤ 500。
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/ms-verify/SKILL.md
+git add skills/verify/SKILL.md
 git commit -m "feat(ms-verify): 新增 --review-drain 延后审查清算入口 — Plan A Phase 8"
 ```
 
@@ -534,7 +534,7 @@ SKILL.md frontmatter `spec_version: 1.1` → `2.0`,`spec_version_notes` 追加:`
 
 Run:
 ```bash
-rg -n "层级.*固定|层级=.*强度|🔴 自动触发" skills/dev-workflow/ skills/ms-dev-tasks/SKILL.md
+rg -n "层级.*固定|层级=.*强度|🔴 自动触发" skills/dev-workflow/ skills/dev-tasks/SKILL.md
 rg -n "EXT_PENDING" skills/dev-workflow/references/*.md   # 确认 review_pending 未误并入 EXT_PENDING 语义
 rg -no "references/[a-z-]+\.md" skills/dev-workflow/SKILL.md | sort -u   # 链接目标存在性人工核对
 wc -l skills/dev-workflow/SKILL.md   # ≤ 500

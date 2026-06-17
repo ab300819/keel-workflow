@@ -102,6 +102,7 @@
 | 8 | 自动补充依赖 | 静默记录（不变） |
 | 9 | 全量测试失败 | 记录到交付报告，标记 ⚠️ 警告（不 fail-fast，任务已提交） |
 | 10 | Phase 4 外部对抗审查（全场景） | 见下方 Phase 4 状态机指针 |
+| 11 | batch 完成 / pending 超阈值 / Review-Due 到期 | **自动 `/ms-verify --review-drain`**（不"告警"等人）；drain 失败 → fail-fast 输出续做命令 |
 
 ### Phase 4 在 headless 下的状态机
 
@@ -118,7 +119,7 @@
 7. **断言数量不减** — 修复后断言总数 ≥ 修复前
 8. **工作区洁净校验** — 每任务 Commit 2 后 `git status --porcelain` 必须为空，非空则 fail-fast
 9. **漂移防护** — 禁止自动猜测补齐缺失内容，统一 fail 并记录
-10. **Phase 4 外部对抗审查**（🔴 任务必须）— 状态机见上方指针；`--headless` 下任何非 `EXT_REVIEWED` → fail-fast
+10. **Phase 4 外部对抗审查**（audit profile inline；fast/guarded 延后 drain）— 状态机见上方指针；`--headless` 下任何非 `EXT_REVIEWED` → fail-fast
 
 ## 重试规范
 
@@ -185,6 +186,9 @@ delivery_report:
     - id: T-03
       reason: "Phase 4 EXT_UNRESOLVED after 3 rounds"
   resume_command: "/ms-dev-workflow T-03~T-05 --headless"
+  review_pending: [T-XX, ...]
+  drain_result: {passed, pending, blockers}
+  sprint_close_blocked: <bool>
 ```
 
 > 完整字段语义见 [SKILL.md 子 Agent 摘要格式章节](../SKILL.md#子-agent-摘要格式) + yaml-summary-v1（[shared constraints §2](../../_shared/constraints.md)）。

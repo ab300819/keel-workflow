@@ -25,7 +25,7 @@
    ├── T-XX,T-YY,... → 拆分为任务 ID 列表
    ├── F-XXX         → 扫描所有任务的 关联需求 字段，匹配 F-XXX
    ├── US-XXX        → 扫描所有任务的 关联需求 字段，匹配 US-XXX
-   └── --all         → 收集所有 状态≠已完成 的任务
+   └── --all         → 收集所有 状态∈{待开发,进行中} 的任务（dev 执行跳过 review_pending，不重跑；review_pending 由 /ms-verify --review-drain 专门收集）
 3. 返回去重后的任务 ID 列表
 ```
 
@@ -74,6 +74,17 @@
 提示用户: "T-05 依赖 T-03、T-04（未完成），已自动加入执行队列"
 ```
 
+### 累积风险传播闸(review_pending)
+
+上游任务处于 `review_pending` 时限制下游传播半径:
+- 下游**仅允许低风险叶子任务(fast)**继续;
+- 下游一旦触及公共 API / schema / 迁移 / 权限 / 安全 / 跨模块契约 → **进入前强制先 `/ms-verify --review-drain`**;
+- 硬阈值:`pending 数 ≤ 3 视为可接受;> 3(≥4)/ 依赖深度 > 1 / sprint 关闭前必须 = 0`;
+- 超数量 / 依赖深度 / `Review-Due` 超期 → **强制 drain**(不静默升 audit)。`Review-Due` 超期判定:有 sprint→sprint close 时;无 sprint→`当前日期 > due` 或 `pending 数 > 3` 任一。
+
+### 执行期 review_profile 复核(只升不降)
+dev-workflow 执行某任务前,按实际改动廉价复核风险信号(反向依赖计数 ≥ 5 / 实际 diff > 150 行 / 触及 > 5 文件 / 命中 audit 信号),据此**可升档**(fast→guarded→audit);**降档须显式 `--review-profile` 并写 `Profile-Downgrade-Reason:` 尾注**(该尾注由 Step 1.5 复核与 batch 报告消费,不得无人复核)。风险信号清单 SSOT 见 /ms-dev-tasks。
+
 ## 3. 断点续做状态机
 
 每个任务开始前执行以下 5 步检测流水线：
@@ -87,11 +98,12 @@ Step 1: 文档状态检测
 Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判为"已完成"或 Step 2 检出 code+doc 双提交）
         ├── [A] AC 完备性表可复核（S8 产物，存于任务记录或 Commit 1 附加信息）
         ├── [B] 关联测试存在且 skipped/todo=0（除显式豁免）
-        ├── [C] trace 矩阵已同步（ms-sync 产物 04-trace-matrix.md 存在并覆盖该任务）
-        ├── [D1] 对抗式验证 Phase 1~3 证据：🔴 任务须有 Phase 3 综合报告落地；若 Commit 1 带 `Skip-Review-Reason:` 尾注且补跑未完成 → `INT_PENDING`
-        ├── [D2] Phase 4 外部对抗审查证据：🔴 任务必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 尾注由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；若 Commit 1 带 `Skip-External-Review-Reason:` → `EXT_PENDING`
+        ├── [C] trace 矩阵作为索引按需维护——缺失不阻塞放行,记 trace_pending 供后续 /ms-sync 增量补齐(不再是提交前阻塞门)
+        ├── [D1] 对抗式验证 Phase 1~3 证据：**audit 任务**须有 Phase 1~3 综合报告；若 Commit 1 带 `Skip-Review-Reason:` 且补跑未完成 → `INT_PENDING`。fast/guarded 的延后内审由 [F] review_pending + drain 覆盖，不在 [D1] 判定。
+        ├── [D2] Phase 4 外部对抗审查证据：**audit 任务**必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 尾注由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；若 Commit 1 带 `Skip-External-Review-Reason:` → `EXT_PENDING`。fast/guarded 不在 [D2] 判定（其延后外审经 [F] review_pending + drain 闭合）。
         ├── [E] 后置测试证据（任一即可）：单任务为 `/ms-test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/ms-test-run --trace` 执行记录；若 Commit 1 带 `Skip-Trace-Reason:` 尾注且补跑未完成 → `postcheck_pending`
-        ├── A~E 全部可复核（[D1] `INT_REVIEWED` ∧ [D2] `EXT_REVIEWED` 或均未触发）→ 跳过该任务
+        ├── [F] review_pending 检测:Commit 1 带 `Pending-Reason: deferred-*` 且无对应 drain verdict → 任务为 `review_pending`,**非"已完成"**,不得跳过;须经 `/ms-verify --review-drain` 转 `已完成`
+        ├── A~F 全部可复核(含 [F] 无未清 review_pending)（[D1] `INT_REVIEWED` ∧ [D2] `EXT_REVIEWED` 或均未触发）→ 跳过该任务
         └── 任一不可复核 → 进入"复核续做"（续做信号表对应 pending/state 之一）
             └── 旧任务迁移（前版本完成，A/D1/D2/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
 
@@ -132,13 +144,14 @@ Step 5: 工作区决策
 | 代码提交完成 + 无文档提交（`docs_only_pending`） | 代码提交 | 文档同步 | 编排器 |
 | 任务状态=已完成但 AC 表不可复核（`verification_pending`） | 代码/文档均已提交 | S8 重跑 AC 完备性 | 编排器 |
 | 任务状态=已完成但 trace 未同步（`trace_pending`） | 代码/文档均已提交 | `/ms-sync` 重跑 + trace 校验 | 编排器 |
-| 🔴 任务跳过 S9 Phase 1~3 后未补跑（`INT_PENDING`，Skip-Review-Reason 已登记但审查窗未闭） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
+| audit 任务跳过 S9 Phase 1~3 后未补跑（`INT_PENDING`，Skip-Review-Reason 已登记但审查窗未闭） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
 | 单任务 `--skip-trace` 后未补跑后置测试（`postcheck_pending`） | 代码/文档均已提交 | `/ms-test-run --affected` 或 `--trace` 补跑 | 编排器 |
 | 旧任务（AC 表不存在，前版本完成） | 全量历史 | AskUserQuestion：复核 / 豁免 / 终止 | 编排器 |
+| fast/guarded 延后审查未 drain(`review_pending`,Commit 1 带 deferred-* 尾注) | 代码已提交 | `/ms-verify --review-drain` 集中清审 | ms-verify(编排器调度) |
 
 ### Phase 4 状态在批量编排中的处理
 
-批量编排器在每任务完成 S9 后读取 `ext_review_state`，任一非 `EXT_REVIEWED` 状态导致该任务进入 `Step 1.5 [D2]` 拦截（详见本文件 Step 1.5 章节）。Phase 4 状态字段定义、真值表见 [verification-flow.md](verification-flow.md)。
+批量编排器在每 audit 任务完成 inline Phase 4 后读取 `ext_review_state`，任一非 `EXT_REVIEWED` → 该 audit 任务进入 `Step 1.5 [D2]` 拦截。fast/guarded 任务不在此判定：它们 Commit 1 后为 `review_pending`，由 batch/sprint 边界 `/ms-verify --review-drain` 统一补跑 Phase 4，drain 结果经 [F] 闭合。Phase 4 状态字段定义、真值表见 [verification-flow.md](verification-flow.md)。
 
 ### Realign 与续做的边界（重要）
 
@@ -151,6 +164,9 @@ Step 5: 工作区决策
 - realign 子流程保留原完成证据（AC 表 / 内审 / Phase 4 外审 / 测试），仅追加差距补齐与 `Realigned-From` 尾注
 
 详见 [realign.md](realign.md)（policy re-evaluation 子流程）。
+
+### review_pending 被新需求覆盖
+**禁止原地覆盖**。新需求触及同一 `review_pending` 任务 → 要么先 `/ms-verify --review-drain`(转已完成或 fix-forward)再改,要么创建依赖/替代任务并保留原 pending 审查链路(原 `Review-Batch-Id` 不丢)。
 
 ### 续做模式行为
 
@@ -192,14 +208,12 @@ Step 5: 工作区决策
 │     ├── 成功 → 继续                            │
 │     ├── 测试缺陷 → AskUserQuestion 确认        │
 │     └── 失败 → 交互：询问 / headless：终止      │
-│  6. 完成检查 + 对抗式验证 Phase 1~3                │
-│  6.5 Phase 4 外部对抗审查（🔴 默认；其他 --external-review）│
-│     ├── embedded-headless 调度器按 T1 → T2 顺序调用 │
-│     ├── 收敛循环（max_rounds=3，--external-rounds 可覆盖）│
-│     ├── 产出 L2 yaml 权威证据 + ext_review_state     │
-│     └── ext_review_state ≠ EXT_REVIEWED（🔴 必须）→ ⛔ 不进入 Commit 1 │
-│  6.9 Commit 1（代码提交，前置：Phase 1~3 ∧ Phase 4 均已放行）│
-│  7. 更新 04-dev-tasks*.md 状态为 已完成         │
+│  6. 完成检查(S8)+ 质量地板 5 条 + 前置验证(guarded/audit 跑 /ms-verify --impl)│
+│  6.5 独立审查分支(按 review_profile):                       │
+│     ├── audit → Phase 1~3 + Phase 4 inline fail-fast,审过才提交 │
+│     └── fast/guarded → 跳过 inline 独立审查,标 review_pending  │
+│  6.9 Commit 1(代码;fast/guarded 带 Review-Batch-Id/Review-Due/Pending-Reason 尾注)│
+│  7. 更新 04-dev-tasks*.md 状态:audit→已完成;fast/guarded→review_pending(drain 通过后才转已完成)│
 │  8. /ms-sync                                │
 │  9. Commit 2: docs(T-XX): 更新任务状态+追踪      │
 │     └── git add [文档文件] && git commit        │
@@ -224,6 +238,14 @@ Step 5: 工作区决策
 │      └── --headless：记录警告到交付报告           │
 │  注意：不回滚已提交任务（已原子提交）             │
 └──────────────────────────────────────────────────┘
+          │
+          ▼
+┌─ batch/sprint review drain ─────────────────────────────────┐
+│  触发:批量跑完编排器宣告完成前自动 drain;或传播闸跳闸强制 drain │
+│  执行:/ms-verify --review-drain 收集本批 review_pending 集中清审 │
+│  结果:全通过→相关任务转已完成;有 Blocker→fix-forward+阻断 sprint close │
+│  headless:自动 drain(不"告警"等人);drain 失败→fail-fast 输出续做命令 │
+└──────────────────────────────────────────────────────────────┘
           │
           ▼
 ┌─ 完成汇总 ──────────────────────────────────┐

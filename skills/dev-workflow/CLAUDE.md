@@ -6,7 +6,7 @@ DevDocs 技能链的编码执行阶段，承接 `ms-dev-tasks` 输出的任务�
 
 ## 逻辑
 
-以 `04-dev-tasks*.md` 为输入，按任务层级（核心逻辑🔴/接口🟡/UI🟢/基础设施⚪）选择对应 TDD 强度执行开发。
+以 `04-dev-tasks*.md` 为输入，按 review_profile（fast/guarded/audit，由风险分类器据风险信号判定；层级标记为输入之一）决定独立审查时机与强度；质量地板 5 条恒定 inline；双 Agent 红绿对所有档保留。fast/guarded 独立审查延后到 /ms-verify --review-drain（任务标 review_pending），audit inline。
 每任务采用双 Agent 模型：Test Agent（写骨架+测试）→ 编排器红色验证 → Impl Agent（写实现+重构），物理隔离测试代码与实现代码的上下文。
 批量模式采用编排器-执行器架构（Task tool 子 Agent），实现每任务独立上下文隔离。
 断点续做状态机（5 步检测流水线）支持中断后精确续跑，含 Agent 类型判定。
@@ -17,7 +17,7 @@ DevDocs 技能链的编码执行阶段，承接 `ms-dev-tasks` 输出的任务�
 
 - 双 Agent 隔离：Test Agent 不看实现，Impl Agent 不看测试用例文档
 - 测试不可变：Impl Agent 严禁修改 Test Agent 产出的测试代码，疑似缺陷须用户确认
-- 核心逻辑任务（🔴）强制 TDD：红→绿→重构循环（跨 Test Agent → 编排器 → Impl Agent）
+- audit 档（高风险）inline 全套独立审查；测试冻结/信息屏障/质量地板对所有档恒定
 - 每任务原子提交：Commit 1（代码）+ Commit 2（文档状态 + trace 同步）
 - 安全不变量：测试未通过不提交、Blocker 未解决不提交、测试文件被修改不提交、绝不推送远程
 - 修复安全网：标注删减检测 + 断言数量不减检测 + 测试文件 diff 检测

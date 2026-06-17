@@ -1,3 +1,5 @@
+> ⚠️ **历史归档(SUPERSEDED)**:本计划属 2026-05-25 速度优化路线的 Phase 1,已被 2026-06-08 重新定位重构取代(见 [2026-06-08-devdocs-repositioning-and-dev-workflow-redesign-design.md](../specs/2026-06-08-devdocs-repositioning-and-dev-workflow-redesign-design.md))。本文档内的 🔴 层级语义为**当时**模型,不代表当前 review_profile 模型,不作活跃规范。
+
 # ms-dev-workflow Phase 1 实施计划:P0-A 文档收敛 + 累计删减审计
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

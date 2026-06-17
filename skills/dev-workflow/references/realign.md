@@ -28,7 +28,7 @@
 
 | 分级 | 变更项 | 修复动作 | 判据 |
 |---|---|---|---|
-| additive | （示例）新增"Phase 4 外审必填" 🟡 层级 | 对存量 🟡 任务补跑 Phase 4，登记 `EXT_REVIEWED` | 任务层级=🟡 + 无 EXT_* 状态 |
+| additive | （示例）新增"Phase 4 外审必填"：audit 任务 Phase 4 必填；fast/guarded 延后 drain | 对存量 audit 任务补跑 Phase 4，登记 `EXT_REVIEWED`；fast/guarded 任务标 `review_pending` 等待 drain | review_profile=audit + 无 EXT_* 状态 |
 | restructuring | （示例）AC 表列结构变更（新增"验收来源"列） | AskUserQuestion 呈现 before/after，逐任务确认后 Edit | AC 表列数 < 当前模板 |
 
 ## 入口

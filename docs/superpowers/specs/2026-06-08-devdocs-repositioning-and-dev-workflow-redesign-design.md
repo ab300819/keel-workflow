@@ -201,7 +201,7 @@ codex_review: [T-131, T-132, T-133]
 ### 10.4 `Review-Due` 序列化格式(§8.4)
 
 - 取值二选一:(a) sprint 符号值 `sprint:<id>`;(b) 无 sprint 时 ISO 日期 `due:YYYY-MM-DD`(默认 = 落盘日 + N,N 默认 3 个工作会话)。
-- **判超期**:有 sprint → sprint close 时;无 sprint → `当前日期 > due` **或** `pending 计数 ≥ 3` 任一命中。
+- **判超期**:有 sprint → sprint close 时;无 sprint → `当前日期 > due` **或** `pending 计数 > 3` 任一命中(与 §3.2 阈值一致:`≤ 3` 可接受,`> 3` 触发)。
 - **超期动作**:强制 drain(§10.1),不静默升 audit。
 
 ### 10.5 `review_pending` 被新需求覆盖(Codex T-135)

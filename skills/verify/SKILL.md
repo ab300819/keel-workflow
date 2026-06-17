@@ -31,7 +31,10 @@ metadata:
 | `--impl` | 代码是否做对 AC / 设计 / 追溯 | 原 review；在对抗式验证之前 |
 | `--ui` | UI 设计和实现是否对齐 | 原 ui-alignment |
 | `--readiness` | 能否进入开发 | pipeline 关卡 |
+| `--review-drain` | 收集所有 `review_pending` 任务,集中补跑延后的独立审查(Phase 1~3 + Phase 4),按 [dev-workflow verification-flow drain 失败矩阵](../dev-workflow/references/verification-flow.md) 出 verdict 并更新任务状态;全通过转已完成,有 Blocker 走 fix-forward 并阻断 sprint close |
 | 对抗式验证 | 代码质量是否合格 | dev-workflow 内置，互补而非替代 |
+
+> `--review-drain` 复用 dev-workflow S9 Phase 1~3/Phase 4 的 embedded-headless 通道,是 fast/guarded 延后审查的清算入口;单任务 inline 审查仍由 dev-workflow 内部触发。
 
 > 细分检查由 LLM 根据用户意图自动聚焦；只有高成本交互验证需显式追加 `--live`。
 
@@ -400,7 +403,8 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | 状态 | 含义 | verify 处理 |
 |------|------|-------------|
 | `EXT_REVIEWED` | T1 codex CLI 或 T2 codex-mcp 成功且无 blocker | 可继续后续同步/沉淀 |
-| `EXT_PENDING` | 需要外审但尚未执行 | `--impl` 通过后路由到对抗式验证 |
+| `EXT_PENDING` | audit 任务经 `--skip-external-review-reason` **主动跳过**外审后待补跑的**阻塞态**（≠ fast/guarded 的延后审查） | 阻塞;须补跑外审达 `EXT_REVIEWED` |
+| `review_pending` | fast/guarded 任务独立审查**延后**(非阻塞,已 Commit 1) | 由 `--review-drain` 集中清审转 `已完成`（不复用 `EXT_PENDING`） |
 | `EXT_UNRESOLVED` | T1/T2 全失败或环境不可用 | 标为 P2 环境风险，提示补跑外审 |
 | `EXT_BLOCKED` | 外审发现未解除 blocker | 保持阻塞，修复后重跑 `--impl` + 外审 |
 

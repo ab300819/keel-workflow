@@ -9,9 +9,9 @@
 开发者审查自己的代码容易产生盲区——"我写的时候觉得没问题"。对抗式验证通过**两种互补机制**缓解该盲区：
 
 1. **Phase 1~3（内置角色演绎）**：编排器切换到不同视角（/code-quality / /testing-guide / ui-quality-checklist），在**同进程**内审查。成本低、响应快，但本质仍是"同一个 agent 切视角自审"。
-2. **Phase 4（外部独立审查）**：调用**不同进程、不同模型**的外部审查者（codex CLI / codex-mcp），对 git diff 做真正的第三方审查。成本较高但独立性强，🔴 任务默认触发。
+2. **Phase 4（外部独立审查）**：调用**不同进程、不同模型**的外部审查者（codex CLI / codex-mcp），对 git diff 做真正的第三方审查。成本较高但独立性强，audit 默认 inline 触发；fast/guarded 延后到 `/ms-verify --review-drain`。
 
-两类机制并行运行、各自判定：Phase 1~3 产出 `INT_*` canonical state（`INT_REVIEWED` / `INT_PENDING` 等），Phase 4 产出 `EXT_*` canonical state（见下方真值表）。任务进入 Commit 1 需两类 state 同时"放行态"。
+两类机制并行运行、各自判定：Phase 1~3 产出 `INT_*` canonical state（`INT_REVIEWED` / `INT_PENDING` 等），Phase 4 产出 `EXT_*` canonical state（见下方真值表）。**进入 Commit 1 的放行条件按 review_profile 分**：**audit** 任务需 `INT_*` 与 `EXT_*` 同时为"放行态"才能 Commit 1（独立审查 inline）；**fast/guarded** 任务独立审查延后,Commit 1 不等 INT/EXT 放行,提交后落 `review_pending`,经 `/ms-verify --review-drain` 通过才转 `已完成`（质量地板与 `/ms-verify --impl` 前置验证仍 inline 阻塞,不在延后范围）。
 
 ### 核心原则
 
@@ -24,6 +24,8 @@
 ```
 
 ---
+
+> **延后语义**:Phase 1~3(内置角色演绎)+ Phase 4(外部对抗)是**独立审查**,在 `review_profile=fast/guarded` 时延后到 `/ms-verify --review-drain` 集中执行,任务期间任务标 `review_pending`。`audit` 档 inline fail-fast(同今天 🔴)。质量地板与 `/ms-verify --impl` 前置验证**不延后,始终 inline**。
 
 ## Phase 1: 代码质量审查
 
@@ -355,7 +357,7 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 
 ## Phase 4: 外部对抗审查（embedded-headless 模式）
 
-Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之前调用。**🔴 任务默认触发**；🟡/🟢/⚪ 通过 `--external-review` 显式启用。
+Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之前调用。**audit 默认 inline 触发 Phase 4**；fast/guarded 延后到 `/ms-verify --review-drain`；非 audit 可用 `--review/--external-review` 临时叠加 inline。
 
 ### 为什么不直接调用 /adversarial-review skill？
 
@@ -414,7 +416,7 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 | `T1` | codex CLI | 真正外部独立审查（不同进程/不同模型），首选 |
 | `T2` | codex-mcp | 真正外部独立审查，T1 不可用时降级 |
 
-🔴 任务 Phase 4 **必须落到 T1 或 T2 通道并达成 `EXT_REVIEWED`** 才能放行；T1/T2 全失败 → `EXT_UNRESOLVED`。
+audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `review_pending`，drain 达 `EXT_REVIEWED` 才转已完成。T1/T2 全失败 → `EXT_UNRESOLVED`。
 
 ### Canonical state enum `EXT_*`
 
@@ -490,3 +492,33 @@ fallback_events: []                                                           # 
 ### 双 skip 禁令
 
 `--skip-review-reason` + `--skip-external-review-reason` 同时使用 → ⛔ 非法参数组合（恢复方式：删除其中一个）。不设例外通道——实际遇到需要跳过 Phase 1~3 和 Phase 4 的场景极少，且任何"例外通道"都会被滥用为常规路径；与其用复杂的 Emergency-Mode 授权链软化禁令，不如让两个 skip 参数互斥，遇到真需要时手动在 diff 上跑一次 T1/T2 外审做证据补跑。
+
+---
+
+## 延后审查与 review_pending(fast/guarded)
+
+### review_pending 状态
+- fast/guarded 任务 Commit 1 落盘后,独立审查(Phase 1~3 + Phase 4)未做 → 任务标 `review_pending`(**全新状态,严禁复用 `EXT_PENDING`**——后者是 Phase 4 主动跳过的阻塞态,所有放行路径阻塞)。
+- Commit 1 尾注:`Review-Batch-Id` / `Review-Due`(格式 `sprint:<id>` 或 `due:YYYY-MM-DD`,默认落盘日+3 工作会话)/ `Pending-Reason: deferred-fast|deferred-guarded`。
+- 转移:`review_pending` --(drain 无 Blocker)--> `已完成`;有 Blocker → fix-forward(见下)。
+
+### `/ms-verify --review-drain` 集中清审
+收集所有 `review_pending` 任务,按延后档位补跑 Phase 1~3 + Phase 4(复用 embedded-headless T1→T2 通道),逐任务出 verdict。
+
+**drain 失败矩阵:**
+
+| 场景 | 任务状态 | 退出 | 报告字段 |
+|------|---------|:---:|---------|
+| 单任务 Blocker | 保持 `review_pending` + fix-forward 入队 | 非0 | `drain.blockers[]` |
+| 部分通过 | 过的转 `已完成`,未过保持 `review_pending` | 非0 | `drain.passed`/`drain.pending` |
+| T1/T2 全失败 | 保持 `review_pending`(EXT_UNRESOLVED) | 非0 | `drain.channel_failure` |
+| L2 yaml 无效 | 保持 `review_pending` | 非0 | `drain.invalid_evidence` |
+| 用户中断 | 已处理落定,余下保持 `review_pending` | 130 | `drain.interrupted_at` |
+| headless fail-fast | 保持 `review_pending` | 非0 | `drain.headless_halt` |
+
+> 共性:**任何非全通过 → 阻断 sprint close**。
+
+### post-commit Blocker 恢复
+- 默认 **fix-forward**:开修复任务追加新 commit,不 revert(原子提交已落盘)。
+- revert 仅限"已落盘代码主动有害且 fix-forward 无法快速处理",罕见,须 AskUserQuestion 确认。
+- 全部 fix-forward + 重新 drain 通过前,阻断 sprint close。

@@ -282,3 +282,27 @@ expected_output: yaml-summary-v1
 - `skip/layout-algorithm`：layout 拆分、aliases、traceability 写入、SSOT lint 算法不提升；理由是已有 `skills/pipeline/references/layout/*` 专门治理。
 - `skip/sprint-contract`：Sprint Contract 不提升；理由是 `ms-dev-workflow` 私有执行契约。
 - `skip/verify-scoring`：verify P 级评分、health score 不提升；理由是 `ms-verify` 私有评估模型。
+
+## review_profile 与 review_pending(dev-workflow 核心,跨 skill SSOT)
+
+### review_profile 三档
+| 档 | 双 Agent 红绿 | 质量地板 | 前置验证 `/ms-verify --impl` | 独立审查(Phase 1~3 + Phase 4) |
+|----|:---:|:---:|:---:|------|
+| fast(默认) | ✓ | ✓ | — | 延后到批/sprint drain |
+| guarded | ✓ | ✓ | inline 阻塞 | Phase 4 延后;Phase 1~3 风险触发则 inline |
+| audit | ✓ | ✓ | inline 阻塞 | inline fail-fast(不延后) |
+
+> review_profile 只改**独立审查的时机**,绝不降低质量地板。层级标签 🔴🟡🟢⚪ 降级为风险分类器的输入信号之一,不再是流程开关。
+
+### 质量地板(5 条,所有档恒定 inline,不可协商)
+1. 绿验 `skipped/todo=0`
+2. 测试写成红验通过即冻结(实现不得改测试,疑似缺陷须 AskUserQuestion)
+3. 声称 vs 实际 diff 一致
+4. 行为型 AC 至少 1 条独立行为证据(不能只靠实现代码自证;无则显式豁免)
+5. 受影响测试后置 `/ms-test-run --affected`
+
+### review_pending(全新任务状态,严禁复用 EXT_PENDING)
+- 含义:fast/guarded 任务代码已提交(Commit 1 已落盘),但延后的独立审查尚未做,**状态 ≠ 已完成**。
+- 与续做信号 `INT_PENDING`/`EXT_PENDING`/`postcheck_pending` 独立:后三者是"未放行阻塞态",`review_pending` 是"已提交待集中审"。
+- Commit 1 尾注:`Review-Batch-Id: <id>` / `Review-Due: <sprint:ID | due:YYYY-MM-DD>` / `Pending-Reason: deferred-fast | deferred-guarded`。
+- 清算入口:`/ms-verify --review-drain`(批/sprint 边界集中跑延后审查)。
