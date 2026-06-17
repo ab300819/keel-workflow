@@ -115,7 +115,7 @@
 3. **不推送远程** — 仅创建本地 commit，push 始终需要人工
 4. **原子提交不变** — 每任务独立 commit，不跨任务合并
 5. **循环依赖终止** — 报错终止（不变）
-6. **标注删减检测** — 修复中若 `@verifies`/`@testcase` 被移除，视为 Blocker
+6. **标注删减检测**（layout.v1 legacy only）— 修复中若 legacy retained 的 `@verifies`/`@testcase` 被移除，视为 Blocker；layout.v2 项目追溯在 traceability.yml，此检测不适用
 7. **断言数量不减** — 修复后断言总数 ≥ 修复前
 8. **工作区洁净校验** — 每任务 Commit 2 后 `git status --porcelain` 必须为空，非空则 fail-fast
 9. **漂移防护** — 禁止自动猜测补齐缺失内容，统一 fail 并记录

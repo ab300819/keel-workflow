@@ -1,6 +1,6 @@
 # 任务执行流程详解
 
-> ℹ️ 本文件提及的 `@satisfies` / `@verifies` / `@requirement` / `@testcase` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
+> ℹ️ 本文件提及的 `@satisfies` / `@verifies` / `@requirement` / `@testcase` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。Test/Impl Agent 的注释纪律（禁止变更日志式/来源记录式注释）见 [task-orchestration.md 子 Agent 协议](task-orchestration.md#子-agent-协议双-agent-模型) 与 [`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)。
 
 各层级任务的详细执行流程。**所有模式（含单任务）均通过双 Agent 模型执行：Test Agent 写骨架+测试 → 编排器红色验证 → Impl Agent 写实现+重构 → 编排器完成检查+提交**。文档同步（/ms-sync + Commit 2）由编排器调度。
 
@@ -170,7 +170,7 @@
 │                                                        │
 │  8. S8：AC 完备性 + 声称 vs 实际 diff ← ■ 全层级必须   │
 │     ├── 产出 AC 完备性表（编号/AC 类型/证据类型/位置/判定）│
-│     │   按 SKILL.md "AC 类型 × 证据类型分级矩阵" 判定   │
+│     │   按 verification-flow.md AC 完备性矩阵判定      │
 │     ├── 声称 vs 实际 diff 交叉验证                     │
 │     ├── 缺证据 / 违反分级矩阵 / 遗漏实现 / 大块 diff 无关联 │
 │     │      → ⛔ 回到 S6（补实现）或 S4（补测试）       │
@@ -209,7 +209,7 @@
 2. **确认双 Agent 隔离**：Test Agent 产出测试文件未被 Impl Agent 修改（diff 校验）
 3. **检查重构**（audit/guarded: ■；fast: □）：代码是否经过优化
 4. **验证验收标准（S8 完备性）**：
-   - 输出 AC 检查表（编号/AC 类型/证据类型/代码或测试位置/判定），证据组合按 [SKILL.md 完成检查约束](../SKILL.md#完成检查约束) 中的 **AC 类型 × 证据类型分级矩阵**判定（不再使用单一白名单）
+   - 输出 AC 检查表（编号/AC 类型/证据类型/代码或测试位置/判定），证据组合按 [verification-flow.md §AC 完备性](verification-flow.md#ac-完备性s8-权威定义) 的 **AC 类型 × 证据类型分级矩阵**判定（不再使用单一白名单；强制性约束见 [SKILL.md §完成检查约束](../SKILL.md#完成检查约束)）
    - 执行声称 vs 实际 diff 交叉验证（对比 AC 列表与 `git diff`）
    - 任一 AC 缺证据 / 分级矩阵不满足 / 声称满足但 diff 无变更 / 未关联 AC 的大块变更 → ⛔ 回到对应步骤修复
 5. **前置验证（按 review_profile 决定）**：
@@ -256,7 +256,7 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
 
 ## 提交信息格式
 
-遵循 `/commit-convention` 规范，格式如下：
+遵循 `/commit-convention` 规范（标题/type 权威）；trailer 字段语义权威见 [_shared/constraints.md §Commit trailers 协议](../../_shared/constraints.md)，本块为模板呈现与填写时机：
 
 ```
 <type>(T-XX): <任务名称>
@@ -277,7 +277,7 @@ Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略�
 Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
 ```
 
-**type 类型**：feat | fix | refactor | test | docs | chore
+**type 类型**：以 `/commit-convention` 为权威（feat/fix/refactor 等枚举不在此重述）；上方 `Review-Batch-Id` 等尾注为 DevDocs 专有 trailer 协议，归本文件管辖
 
 ## TodoWrite 集成
 

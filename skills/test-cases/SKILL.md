@@ -13,7 +13,7 @@ writes_id_scheme: id.v1
 reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: block
-migration: /ms-pipeline realign --docs-layout
+migration: /ms-pipeline realign --scope=layout
 ---
 
 # 测试用例设计
@@ -305,6 +305,8 @@ docs/devdocs/
 
 ## 覆盖率要求
 
+> 覆盖率阈值摘录自 [`/testing-guide` 核心阈值表](../testing-guide/SKILL.md#核心阈值表)，变更需同 commit 同步。
+
 | 测试类型 | 覆盖目标 | 覆盖要求 |
 |----------|----------|----------|
 | 单元测试 | 核心业务逻辑 | 行覆盖率 ≥ 80%，分支覆盖率 ≥ 80% |
@@ -337,9 +339,9 @@ docs/devdocs/
 
 AC 质量评估标准详见 [../requirements/references/ac-quality-rubric.md](../requirements/references/ac-quality-rubric.md)，验证 AC→测试覆盖时参照。
 
-- [ ] P0 验收标准必须 100% 测试覆盖
+- [ ] P0 验收标准必须 100% 测试覆盖（本 skill P0-P2 为**用例优先级**，与 ms-verify 问题严重度 P 级同名不同义）
 - [ ] P0 用户故事必须有 E2E 测试
-- [ ] 单元测试行覆盖率目标 ≥ 80%
+- [ ] 单元测试覆盖率目标按 [`/testing-guide` 核心阈值表](../testing-guide/SKILL.md#核心阈值表) 执行
 
 ### Generator 自检（用户确认前自动执行）
 
@@ -371,6 +373,8 @@ AC 质量评估标准详见 [../requirements/references/ac-quality-rubric.md](..
 ## 子 Agent 摘要格式
 
 当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+> envelope 字段定义（status 枚举 / blockers / output_files / new_ids 等保留字段）见 [_shared/constraints.md §yaml-summary-v1](../_shared/constraints.md)；下例重点为 `summary.details` 私有字段。
 
 ```yaml
 skill: ms-test-cases

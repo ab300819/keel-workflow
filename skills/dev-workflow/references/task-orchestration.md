@@ -392,6 +392,8 @@ docs(T-XX): 更新任务状态并同步 trace
 | 续做起点 | `null` 或 `skeleton_interface`/`skeleton_test`/`red_assertions` |
 
 > ⛔ 信息屏障：Test Agent 禁止读取任何 src/ 下的已有实现文件（骨架除外）
+>
+> 📝 注释纪律（[`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)）：S3 骨架可用纯 AAA 占位（`// Arrange` / `// Act` / `// Assert`，不带来源）；S4 写完断言后必须删除来源记录式注释（"来自 UT-XX / 后置条件 / 行为契约"等）——测试名 + 断言本身表达预期，过程来源归 traceability.yml
 
 **输出**（Test Agent → 编排器）：
 
@@ -442,6 +444,8 @@ Test Agent 成功后，编排器运行测试验证红色状态：
 
 > ⛔ 信息屏障：Impl Agent 禁止读取 03-test-*.md 和 01-requirements.md
 > 允许读取：系统设计文档、Test Agent 产出的代码文件、项目现有源码
+>
+> 📝 注释纪律（[`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)）：实现与所有修复循环（S6 绿验重试、S9 Blocker 修复、`/ms-verify --review-drain` fix-forward 修复）中，不得添加解释本轮修改的注释（变更日志式/对审查者说话）；必要注释只写面向未来读者的稳定事实（durable why），本轮变更说明归 commit message
 
 **输出**（Impl Agent → 编排器）：
 

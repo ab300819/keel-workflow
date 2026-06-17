@@ -1,6 +1,8 @@
 # SOLID + 迪米特六大原则指南
 
 > 配合 `/ms-system-design` 使用。本文把 SOLID+LoD 六大原则映射到设计文档的具体章节，给出启发式阈值和可验证特征，作为 MTE rubric 的**设计证据**（MTE 是上位目标，SOLID 是证据支撑）。
+>
+> 代码级/diff 级判定特征见 [`/code-quality` 设计原则（代码级）](../../code-quality/SKILL.md#设计原则代码级)；本文件聚焦设计文档级判定，两层各管一层。
 
 ## 核心关系
 

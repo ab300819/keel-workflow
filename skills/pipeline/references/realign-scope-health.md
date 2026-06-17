@@ -14,8 +14,8 @@
 | 文件 | 本 spec 的使用方式 |
 |------|-------------------|
 | [realign.md](realign.md) | 继承 realign 安全不变量、yaml-summary-v1 汇总方式 |
-| [health-lint-implementation.md](health-lint-implementation.md) | 调用 4 条 [新增] lint rule（state/total-size-cap / state/line-length-cap / state/forbidden-content / health/dead-link），layout.v1+v2 通用 |
-| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) | layout.v2 启用后追加 `ssot/no-restatement` 等 8 条 [FUTURE] rule 到维度 d；v1 项目跳过 |
+| [health-lint-implementation.md](health-lint-implementation.md) | 调用 5 条 [新增] lint rule（state/total-size-cap / state/line-length-cap / state/forbidden-content / health/dead-link / design/adr-only-revision）；rule 清单以该文件 Rule 集表为权威，layout.v1+v2 通用 |
+| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) | layout.v2 启用后追加 `ssot/no-restatement` 等 [FUTURE] rule 到维度 d（数量与清单以该文件 rule 表为权威，当前 12 条）；v1 项目跳过 |
 | `../../sync/references/health-scoring.md` | 6 类偏差评分（layout.v1 legacy）作为子项 |
 | `../../verify/SKILL.md` | 调用 `--schema-drift` / `--docs` / `--impl` 已有能力 |
 | `../../agent-memory/templates/devdocs-state-template.md` | 占位 prose 边界约束（forbidden 字段） |
@@ -33,7 +33,7 @@
 
 > 本轮（layout.v1 项目可立即用）：维度 a/b/c 实装。维度 d 在 layout.v1 下报 `skipped: requires layout.v2 ssot-lint`；layout.v2 启用后自动激活。维度 e 待 keyword baseline 定义后启用。
 >
-> 维度 b/c 的 4 条 [新增] rule 算法与输出 schema 见 [health-lint-implementation.md](health-lint-implementation.md)。
+> [新增] rule 的算法与输出 schema 见 [health-lint-implementation.md](health-lint-implementation.md)（rule 清单与维度归属以该文件 Rule 集表为权威）。
 
 ## CLI 兼容
 

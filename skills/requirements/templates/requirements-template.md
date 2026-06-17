@@ -6,7 +6,7 @@
 
 ---
 
-> **Frontmatter 必填**：生成文档时必须在正文最顶部插入以下 YAML frontmatter（供 realign 机制识别产物版本），之后才是 `# 需求文档：...` 标题。
+> **Frontmatter 必填**（字段语义权威见 `_shared/constraints.md` `realign/template-frontmatter-minimum`）：正文最顶部插入以下 YAML，之后才是 `# 需求文档：...` 标题。
 
 ```yaml
 ---

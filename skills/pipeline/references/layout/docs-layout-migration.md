@@ -2,17 +2,17 @@
 
 > DevDocs 布局升级的执行规范。本文件定义 `layout.v1 → layout.v2` 的迁移规则、dry-run 输出契约、不可逆操作清单。
 >
-> 被 [layout-versioning-policy.md](layout-versioning-policy.md) 与 `skills/pipeline/SKILL.md § realign --docs-layout` 引用。
+> 被 [layout-versioning-policy.md](layout-versioning-policy.md) 与 `skills/pipeline/SKILL.md § realign --scope=layout` 引用。
 
 ## ⚠️ 执行接口落地状态（FUTURE）
 
-> **本治理框架的所有 layout 文件（含本文件 + 同目录其他 references + `templates/layout-migration-log.md`）的执行接口当前状态以本节为权威源**。其他文件提及的命令默认按本节状态解读，**不重复标注 [FUTURE]**。
+> **入口命名与调用语义权威归 [../realign-scope-layout.md](../realign-scope-layout.md)（`--scope=layout`；`--docs-layout` 为 legacy alias，保留 1 版本）**。本节仅作为各 [FUTURE] 命令**落地状态矩阵**的权威源：本治理框架的所有 layout 文件（含本文件 + 同目录其他 references + `templates/layout-migration-log.md`）的执行接口当前状态以本节为准，其他文件提及的命令默认按本节状态解读，**不重复标注 [FUTURE]**。
 
 本治理框架定义了完整规范，**部分执行接口尚未实现**。当前框架处于"**仲裁层就绪 / 执行层待补**"阶段，可作为后续开发蓝图，但**不应直接调用未实现命令**。
 
 ### ✅ 已实现（治理框架声明完整）
 
-- `skills/pipeline/SKILL.md` 已声明 `realign --docs-layout` + layout drift 检测入口
+- `skills/pipeline/SKILL.md` 已声明 `realign --scope=layout`（legacy alias: `--docs-layout`）+ layout drift 检测入口
 - `skills/verify/SKILL.md` 已声明 `--layout-drift` 入口
 - 9 个 A/B skill SKILL.md frontmatter 已加 8 字段 layout 兼容性声明
 - 治理规范文件（本目录全部 references + `templates/layout-migration-log.md`）已完整
@@ -21,10 +21,10 @@
 
 | 命令 | 状态 | 计划交付阶段 |
 |------|------|------------|
-| `/ms-pipeline realign --docs-layout` (dry-run + apply) | [FUTURE] 入口已声明，执行逻辑待落地 | 本框架 #6 后续 |
+| `/ms-pipeline realign --scope=layout` (dry-run + apply 迁移执行逻辑；legacy alias `--docs-layout`) | [FUTURE] 入口已声明，迁移执行逻辑待落地 | 本框架 #6 后续 |
 | `/ms-pipeline realign --classify-ins` | [FUTURE] | 本框架 #6 后续 |
 | `/ms-pipeline realign --rename-id` | [FUTURE] | 本框架 #6 后续（单条编号迁移辅助命令）|
-| `/ms-pipeline realign --docs-layout --archive-v1` | [FUTURE] | 本框架 #6 后续 |
+| `/ms-pipeline realign --scope=layout --archive-v1` | [FUTURE] | 本框架 #6 后续 |
 | `/ms-verify --layout-drift` | [FUTURE] 入口已声明，扫描逻辑待落地 | 本框架 #6 后续 |
 | `/ms-verify --ssot-lint` | [FUTURE] | #3 SSOT lint 阶段交付（详见 [ssot-lint-implementation.md](ssot-lint-implementation.md)）|
 | `/ms-sync --extract-trace` | [FUTURE] | #4 代码解耦阶段交付（详见 [code-decoupling-implementation.md](code-decoupling-implementation.md)）|
@@ -45,7 +45,7 @@
 | 阅读治理规范作为开发蓝图 | ✅ |
 | 在 AGENTS.md 顶部手动添加 `devdocs:` frontmatter 声明 layout.v2 | ✅ |
 | 各 skill frontmatter 已声明 layout 兼容性字段（无运行时检查）| ✅ |
-| 实际执行 `/ms-pipeline realign --docs-layout` | ❌（命令实现待后续 sprint）|
+| 实际执行 `/ms-pipeline realign --scope=layout` 的迁移执行逻辑（legacy alias: `--docs-layout`）| ❌（命令实现待后续 sprint）|
 | 实际执行 mic-en 项目的 layout.v1 → v2 迁移 | ❌（需要 dry-run 命令实现）|
 
 ## 适用范围
@@ -119,7 +119,7 @@ Phase 3: 后置校验
 
 ## dry-run 5 项输出契约
 
-`/ms-pipeline realign --docs-layout --dry-run` 必须输出以下 5 项，缺一不可：
+`/ms-pipeline realign --scope=layout --dry-run`（legacy alias: `--docs-layout`）必须输出以下 5 项，缺一不可：
 
 ### 1. 计划变更（File Operations Plan）
 
@@ -221,7 +221,7 @@ manual_review: 55
 ### dry-run 报告输出位置
 
 - 默认：标准输出 + 写入 `docs/devdocs/.layout-migration-dryrun.md`（git ignored）
-- 用户审阅后通过 `/ms-pipeline realign --docs-layout --apply` 执行实际迁移
+- 用户审阅后通过 `/ms-pipeline realign --scope=layout --apply` 执行实际迁移
 
 ## 不可逆操作清单
 
@@ -253,7 +253,7 @@ manual_review: 55
 git checkout -b devdocs-layout-v2-migration
 
 # 2. 跑 dry-run（不修改文件）
-/ms-pipeline realign --docs-layout --dry-run
+/ms-pipeline realign --scope=layout --dry-run
 
 # 3. 审阅 .layout-migration-dryrun.md
 # 4. 处理 unmappable 项（人工归类 INS / merge 候选）
@@ -261,7 +261,7 @@ git checkout -b devdocs-layout-v2-migration
 # ... 重复直到 unmappable = 0
 
 # 5. 跑实际迁移
-/ms-pipeline realign --docs-layout --apply
+/ms-pipeline realign --scope=layout --apply
 
 # 6. 跑后置校验
 /ms-verify --layout-drift
@@ -379,7 +379,7 @@ DevDocs layout 迁移**强制依赖** `ms-iteration-policy` 检测：
 
 | 引用本文件的位置 | 引用目的 |
 |---------|----|
-| `skills/pipeline/SKILL.md` § `realign --docs-layout` | 主入口 |
+| `skills/pipeline/SKILL.md` § `realign --scope=layout` | 主入口（`--docs-layout` 为 legacy alias）|
 | `layout-versioning-policy.md` | 升级路径 |
 | `aliases-yml-schema.md` | alias 条目生成规则 |
 | `skill-compatibility-matrix.md` | 兼容性影响 |

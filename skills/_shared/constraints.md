@@ -232,6 +232,7 @@ expected_output: yaml-summary-v1
 
 - `recovery/no-vague-fix`：不得只写“修复后继续”“联系用户”等泛化恢复方式；必须让下一位 Agent 能执行或转述。
 - `recovery/link-to-source`：若 recovery 依赖详细规范，应链接到对应 `references/*.md`，不复制长篇内容。
+- `recovery/inline-shorthand`：**规范文件**（SKILL.md / `references/*.md` / `templates/*.md`）的短门控条目允许**行内或紧邻下一行**的 `恢复方式：<具体动作>` 单字段简写（动作仍须满足 `no-vague-fix`）；**运行时输出**（⛔/⚠️ 触发的阻塞报告、yaml-summary `blockers` 字段）禁用简写，必须使用上方完整模板（四字段）。两种形态不互替。
 
 ## 8. realign / spec_version SSOT 引用
 
@@ -247,6 +248,7 @@ expected_output: yaml-summary-v1
 ### spec_version bump
 
 - `realign/bump-required-structure`：修改模板必填章节、字段、结构或硬校验规则时，必须 bump `spec_version`。
+- `realign/template-frontmatter-minimum`：A/B 类产物模板的 frontmatter 最小字段为 `generated_by` / `spec_version` / `generated_at`（`updated_at` 等可选）；字段语义以本条为权威，各模板只保留 yaml 字段块 + 一行指针，不重复解释字段用途。
 - `realign/no-bump-copyedit`：仅改文案措辞、参考链接、交互步骤顺序时，不 bump。
 - `realign/bump-sync-three-places`：bump 时同步更新 `references/realign.md` 当前常量、Migration Matrix、模板 frontmatter 示例。
 - `realign/restructuring-confirm`：restructuring 级差距必须 AskUserQuestion 逐项确认。
@@ -306,3 +308,28 @@ expected_output: yaml-summary-v1
 - 与续做信号 `INT_PENDING`/`EXT_PENDING`/`postcheck_pending` 独立:后三者是"未放行阻塞态",`review_pending` 是"已提交待集中审"。
 - Commit 1 尾注:`Review-Batch-Id: <id>` / `Review-Due: <sprint:ID | due:YYYY-MM-DD>` / `Pending-Reason: deferred-fast | deferred-guarded`。
 - 清算入口:`/ms-verify --review-drain`(批/sprint 边界集中跑延后审查)。
+
+### 独立审查状态机枚举（canonical 值域；跨 skill 协议）
+
+| 枚举 | 值域 | 放行态 | 语义 |
+|------|------|--------|------|
+| `int_review_state` | `INT_REVIEWED` / `INT_PENDING` / `INT_UNRESOLVED` | `INT_REVIEWED` | Phase 1~3 内置角色演绎结果；PENDING=主动跳过待补跑，UNRESOLVED=审查未通过 |
+| `ext_review_state` | `EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED` | `EXT_REVIEWED` | Phase 4 外部对抗审查结果；PENDING=主动 skip 阻塞态（≠`review_pending`），UNRESOLVED=未通过或 L2 证据缺失，BLOCKED=熔断终态 |
+
+- `enum/no-extension`：消费方（ms-verify / adversarial-review / dev-workflow 全部 references）不得扩展枚举值或私有化语义。
+- `enum/non-pass-blocks`：非放行态一律 ⛔ 阻塞 audit 档 Commit 1；fast/guarded 延后语义见上方 review_pending。
+- 判定规则（真值表/优先级/L2 证据协议/T1→T2 降级链）为**执行细节**，权威见 [dev-workflow verification-flow.md](../dev-workflow/references/verification-flow.md)；本节只锁定值域与放行语义。
+
+### Commit trailers 协议（跨 skill 字段语义）
+
+| trailer | 适用 | 语义 |
+|---------|------|------|
+| `Review-Batch-Id` / `Review-Due` / `Pending-Reason` | fast/guarded 延后必填 | 见上方 review_pending |
+| `External-Review-Verdict` | audit Phase 4 inline 必填 | 值 = `ext_review_state`（由 L2 yaml 派生，L1 不作独立校验源） |
+| `External-Review-Channel` | audit Phase 4 inline 必填 | `T1` / `T2` / `none`（通道记录，非状态字段） |
+| `Skip-Review-Reason` / `Skip-External-Review-Reason` | audit 档使用 skip 参数时 | 登记原因 + 自动标 `*_PENDING`，**不构成放行** |
+| `Skip-Trace-Reason` | 单任务 `--skip-trace` | 跳过后置 trace 校验的原因 |
+| `Exploration-Mode` | 探索模式 | `true` + 证据/豁免原因登记 |
+| `Profile-Downgrade-Reason` | 带理由降档时 | 降档理由（升档不需要） |
+
+> 模板呈现与填写时机见 [execution-flow.md §提交信息格式](../dev-workflow/references/execution-flow.md)；消费方：`/ms-verify --review-drain`（按 Batch-Id/Due 清算）、断点续做 Step 1.5 证据复核。

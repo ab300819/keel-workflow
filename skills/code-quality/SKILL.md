@@ -1,12 +1,12 @@
 ---
 name: code-quality
-description: Opinionated constraints for writing maintainable, testable code. Apply MTE principles, avoid over-engineering, guide refactoring, and provide code review checklists. Use when users write code, refactor, or need code review. Triggers on keywords like "code quality", "refactor", "review", "MTE", "代码质量", "重构", "审查". NOT for systematic refactoring workflow with scope analysis and test gates (use refactor).
+description: Opinionated constraints for writing maintainable, testable code. Apply MTE principles, naming and comment standards, avoid over-engineering, guide refactoring, and provide code review checklists. Use when users write code, refactor, or need code review. Triggers on keywords like "code quality", "refactor", "review", "MTE", "naming", "代码质量", "重构", "审查", "命名", "注释". NOT for systematic refactoring workflow with scope analysis and test gates (use refactor).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 
 # Code Quality
 
-编码和重构时的质量约束，确保代码可维护、可测试、适度扩展。
+编码和重构时的质量约束（代码质量 SSOT），确保代码可维护、可测试、适度扩展。
 
 ## Language
 
@@ -15,10 +15,9 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## Trigger Conditions
 
-- 用户正在编写新代码
-- 用户需要重构现有代码
+- 用户正在编写新代码 / 重构现有代码
 - 用户需要 Code Review 检查清单
-- 用户提到 MTE 原则、代码质量、避免过度设计
+- 用户提到 MTE 原则、代码质量、命名、注释、避免过度设计
 
 ## 核心原则：MTE
 
@@ -26,436 +25,175 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 | 原则 | 说明 | 检查点 |
 |------|------|--------|
-| **Maintainability** | 可维护性 | 职责单一、依赖清晰、易于理解 |
+| **Maintainability** | 可维护性 | 职责单一、依赖清晰、命名与注释合规、易于理解 |
 | **Testability** | 可测试性 | 核心逻辑可单元测试、依赖可 Mock |
 | **Extensibility** | 可扩展性 | 预留合理扩展点、接口抽象 |
 
----
+## 核心阈值表
 
-# Part 1: 编码约束
+**全仓唯一权威阈值源**。谓词语义统一：**≤ 最大值 = 合规；> 建议值且 ≤ 最大值 = [Suggestion]；> 最大值 = [Blocker]**。镜像处（如 dev-workflow verification-flow Phase 1）须标注"摘录自本表，变更需同 commit 同步"。
+
+| 指标 | 建议值 | 最大值 | 超最大值的重构方向 |
+|------|-------:|-------:|--------------------|
+| 函数长度 | 30 行 | 50 行 | 提取函数 |
+| 参数数量 | 3 个 | 5 个 | 参数对象 |
+| 嵌套深度 | 2 层 | 3 层 | 早返回、提取函数 |
+| 重复代码 | — | 3 处（Rule of Three） | 提取公共逻辑（<3 处禁止提前抽象） |
+| 单类/单文件行数 | — | 500 行 | 拆分职责（上帝类） |
 
 ## 模块设计
 
-### 单一职责
+- **单一职责**：一个类/函数只做一件事（UserService 业务 / UserRepository 数据访问 / UserValidator 校验分开；反例：UserManager 全包）
+- **依赖方向**：外层依赖内层（Interface → Service → Domain → Infrastructure）；依赖接口，不依赖实现
+- 正反例代码见 [references/mte-examples.md](references/mte-examples.md)
 
-```
-✅ 正确：一个类/函数只做一件事
-- UserService: 用户业务逻辑
-- UserRepository: 用户数据访问
-- UserValidator: 用户数据校验
+## 命名规范
 
-❌ 错误：一个类做多件事
-- UserManager: 业务逻辑 + 数据访问 + 校验 + 发送邮件
-```
+**总原则**：
 
-### 依赖方向
+1. **精确优先**：减长度靠删冗词（不重复类型信息），禁止截短单词（实证：完整单词比缩写定位 bug 快 19%，名长 10-16 字符调试成本最低）
+2. **调用点清晰**：名字在调用处读起来像自然短语（clarity at the point of use）
+3. **项目一致性**：同概念同名；沿用项目既有大小写惯例而非语言默认；引入新名词前先 grep 项目既有词表
 
-```
-┌─────────────────────────────────────┐
-│           Interface Layer           │  ← 薄层，无业务逻辑
-├─────────────────────────────────────┤
-│           Service Layer             │  ← 业务逻辑（核心）
-├─────────────────────────────────────┤
-│           Domain Layer              │  ← 领域模型
-├─────────────────────────────────────┤
-│         Infrastructure Layer        │  ← 可替换
-└─────────────────────────────────────┘
+### 分类规则
 
-依赖规则：
-- 外层依赖内层 ✅
-- 内层依赖外层 ❌
-- 依赖接口，不依赖实现 ✅
-```
+| 类别 | 规则 |
+|------|------|
+| 类/接口 | 名词短语，描述角色而非实现；禁 `Manager/Helper/Util/Processor/Info/Data` 等空泛后缀收尾 |
+| 方法/函数 | 有副作用用动词短语、纯查询用名词；全库同一动作只用一个动词（get/fetch/retrieve 选一）；`get*` 禁副作用 |
+| 变量 | 长度与作用域成正比：循环/闭包 ≤10 行可用惯用单字母（i/j/k/err/ctx）；函数级 ≥1 完整词；导出符号默认 ≥2 词自含上下文* |
+| 布尔 | 读作断言（isEmpty/hasChildren/canEdit）；`is*/has*` 必须返回布尔；禁否定式名（isNotReady） |
+| 常量 | 魔法数字按含义命名（MAX_RETRIES 而非 FIVE） |
 
-## 函数设计
+> \* 调用点已有命名空间上下文时按语言惯例豁免（如 Go 包名 `http.Client`、Swift 类型命名空间）。
 
-### 函数长度
+### 命名黑名单（本次 diff 新增命中即 [Blocker]；存量未触碰为 [Suggestion]）
 
-- **建议**：单个函数不超过 30 行
-- **最大**：不超过 50 行
-- **超过时**：拆分为多个小函数
+| 反模式 | 分级 |
+|--------|------|
+| 误导名：名实不符（`accountList` 非 List、`is*` 返回非布尔、`get*` 带副作用） | [Blocker]（最高红线：误导名同样降低 agent 自身代码分析准确率） |
+| 泛化名作完整名：`data/info/temp/result/obj/item/thing/flag/val`（局部惯用语除外） | [Blocker] |
+| 同概念多名漂移：同一实体 user/account/customer 混用（引入新名词前必须先 grep 项目词表） | [Blocker] |
+| 类型编码（匈牙利前缀 `strName/m_x`）、不可发音自造缩写 | [Blocker] |
+| 无意义区分（`data1/data2`、`ProductInfo` 与 `ProductData` 并存）、大作用域单字母 | [Suggestion] |
 
-### 参数数量
+**边界**：本规范只判定结构合规（白/黑名单、词性、一致性），不裁决具体选词。正反例见 [references/naming-examples.md](references/naming-examples.md)。
 
-- **建议**：不超过 3 个参数
-- **最大**：不超过 5 个参数
-- **超过时**：使用参数对象
+## 注释规范
 
-```typescript
-// ❌ 参数过多
-function createUser(name, email, age, role, department, manager) {}
+**信息归宿三分法**：源码注释 = 面向未来读者的稳定事实；commit message = 本轮变更说明；traceability/任务文档 = 过程追溯。注释唯一合法用途是承载代码无法表达的信息——能用命名/重构表达的不写注释，后两类信息禁止写进源码注释。
 
-// ✅ 使用参数对象
-function createUser(params: CreateUserParams) {}
-```
+### 白名单（注释必须属于以下类别之一）
 
-### 嵌套深度
+| 类别 | 判定 |
+|------|------|
+| 公共契约 | exported API 上方，说明调用契约/错误/边界/不变量，不复述函数名和类型 |
+| 非显然 why | 外部协议、兼容性、性能、并发、安全、算法取舍；删掉后读者无法判断"为什么这样写" |
+| 不变量/风险约束 | 类型系统与测试名无法表达的业务约束，紧邻校验或状态转换 |
+| 复杂 what + 出处 | 复杂算法/正则/反惯用绕坑写法，说明不这样写会踩什么坑；出处仅限**外部稳定来源**（论文/RFC/issue 链接），项目内过程文档（设计/AC/UT）引用归 traceability，不入注释 |
+| 抑制类 | `eslint-disable` / `ts-ignore` 等必须附具体原因 |
+| 临时脚手架 | 仅限 S2/S3 骨架阶段（TODO / `test.skip`/`todo` / 纯 AAA 占位）；S4/S6/S7 后必须清除 |
 
-- **建议**：不超过 2 层嵌套
-- **最大**：不超过 3 层嵌套
-- **超过时**：提取函数或使用早返回
+> 文件头 INPUT/OUTPUT/POS 自描述由 `/code-self-describe` 独立管理，不受本规范约束。
 
-```typescript
-// ❌ 嵌套过深
-if (a) {
-  if (b) {
-    if (c) {
-      // ...
-    }
-  }
-}
+### 黑名单（本次 diff 新增/修改命中即 [Blocker]；按语义判定，关键词仅作信号）
 
-// ✅ 早返回
-if (!a) return;
-if (!b) return;
-if (!c) return;
-// ...
-```
+| 类别 | 判定 |
+|------|------|
+| 变更日志式 | 注释描述本轮变更过程而非代码当前状态（信号词：本次/新增/修改/修复/已按要求；描述业务规则的"新增用户走邀请码通道"合法） |
+| 对审查者说话 | "此处已修复""按要求处理"等面向 reviewer/agent 而非未来读者的话 |
+| 来源记录式/注释式追溯 | 记录"来自 UT-XX/AC-XX/后置条件/行为契约"等过程来源；layout.v2 新增 `@satisfies/@verifies/@testcase/@requirement` 追溯标注（layout.v1 legacy retained 注释除外） |
+| 复述代码 | 只是翻译紧邻代码（`// 校验邮箱` + `validateEmail(email)`） |
+| 注释掉的代码 | 整段旧实现注释保留且无 issue/迁移理由 |
+| 过量注释 | 同函数连续注释 >3 行，或变更块注释行 > 可执行代码行，且不属白名单 |
+
+### 分级
+
+- **[Blocker]**：本次 diff 新增/修改黑名单注释；抑制类注释无理由；S4/S6/S7 后残留骨架脚手架注释；注释与代码当前语义不符（改代码必须同步更新受影响注释，过期注释比没注释更糟）
+- **[Suggestion]**：存量坏注释（本次未触碰）；public API 缺契约注释（仅当缺失已造成安全/兼容/行为歧义时按对应风险升级）
+
+## 设计原则（代码级）
+
+SOLID + 迪米特六大原则的**代码级/diff 级可机械判定特征**。设计级判定（启发式阈值/三态结论表/ADR 联动）权威归 [system-design solid-principles-guide.md](../system-design/references/solid-principles-guide.md)，本节不替代。
+
+| 原则 | 代码级判定特征 |
+|------|---------------|
+| SRP 单一职责 | 类/函数职责描述含"和/并且"等多职责连接词 |
+| OCP 开闭 | 新增类型靠修改已有 switch/if-else 分支扩展 |
+| LSP 里氏替换 | 子类/实现抛出父类（接口）契约外异常，或强化前置条件/弱化后置条件 |
+| LoD 迪米特 | 链式跨层调用 `a.getB().getC().getD()`（跨 >2 层；fluent API/builder 除外） |
+| ISP 接口隔离 | 单接口方法数 >7，或消费方使用比例 <50%（胖接口） |
+| DIP 依赖倒置 | 跨模块依赖出现具体实现类名而非接口 |
+
+**分级**：DIP 违反为 [Blocker]（与设计级硬约束对齐）；其余五条为 [Suggestion]（启发式，违反须说明理由）。
 
 ## 可测试性设计
 
-> 详细的测试编写规范请参考 `/testing-guide`
+可测试代码三要素（详细测试编写规范见 `/testing-guide`）：
 
-### 核心原则
+1. **依赖可注入** —— 外部依赖通过参数/构造器传入，不硬编码
+2. **纯函数优先** —— 业务逻辑无副作用，相同输入相同输出
+3. **边界分离** —— 业务逻辑与 IO 分离
 
-```
-可测试代码的三个要素:
-1. 依赖可注入 - 外部依赖通过参数传入
-2. 纯函数优先 - 业务逻辑无副作用
-3. 边界分离 - 业务逻辑与 IO 分离
-```
-
-### 依赖注入
-
-```typescript
-// ❌ 硬编码依赖
-class UserService {
-  private db = new Database();
-  private mailer = new EmailService();
-}
-
-// ✅ 依赖注入
-class UserService {
-  constructor(
-    private db: IDatabase,
-    private mailer: IEmailService
-  ) {}
-}
-```
-
-### 纯函数优先
-
-```typescript
-// ❌ 有副作用，难测试
-function calculateTotal(items) {
-  const total = items.reduce((sum, item) => sum + item.price, 0);
-  console.log(`Total: ${total}`);  // 副作用
-  analytics.track('calculate');     // 副作用
-  return total;
-}
-
-// ✅ 纯函数，易测试
-function calculateTotal(items) {
-  return items.reduce((sum, item) => sum + item.price, 0);
-}
-```
-
-### 边界分离
-
-```typescript
-// ❌ 业务逻辑混合 IO
-async function processOrder(orderId) {
-  const order = await db.findOrder(orderId);  // IO
-  if (order.total > 1000) {                   // 业务逻辑
-    order.discount = 0.1;
-  }
-  await db.save(order);                       // IO
-  await email.send(order.user, 'confirmed');  // IO
-}
-
-// ✅ 分离业务逻辑
-function applyDiscount(order) {  // 纯业务逻辑，可测试
-  if (order.total > 1000) {
-    return { ...order, discount: 0.1 };
-  }
-  return order;
-}
-
-async function processOrder(orderId) {
-  const order = await db.findOrder(orderId);
-  const updated = applyDiscount(order);  // 调用纯函数
-  await db.save(updated);
-  await email.send(order.user, 'confirmed');
-}
-```
-
-> **编写测试时**：参考 `/testing-guide` 获取断言质量、Mock 策略、变异测试等详细指导
+正反例见 [references/mte-examples.md](references/mte-examples.md)。
 
 ## 避免过度设计
 
-### YAGNI 原则
-
-> You Aren't Gonna Need It - 你不会需要它
-
-```typescript
-// ❌ 过度设计：为假设需求添加配置
-const config = {
-  maxRetries: 3,
-  retryDelay: 1000,
-  enableCache: true,
-  cacheExpiry: 3600,
-  enableRateLimit: false,  // 从未使用
-  rateLimitWindow: 60000,  // 从未使用
-  enableMetrics: false,    // 从未使用
-  metricsEndpoint: '',     // 从未使用
-};
-
-// ✅ 只添加当前需要的配置
-const config = {
-  maxRetries: 3,
-  retryDelay: 1000,
-  cacheExpiry: 3600,
-};
-```
-
-### 抽象时机
-
-```
-❌ 过早抽象：
-- 只有一个实现就创建接口
-- 只有一处使用就提取函数
-- 只有两个相似场景就创建基类
-
-✅ 适时抽象（Rule of Three）：
-- 3 个以上实现时考虑接口
-- 3 处以上重复时考虑提取
-- 3 个以上相似场景时考虑基类
-```
-
-### 简单方案优先
-
-```typescript
-// ❌ 过度设计：简单场景用复杂模式
-class UserFactory {
-  createAdmin() { return new AdminUser(); }
-  createMember() { return new MemberUser(); }
-  createGuest() { return new GuestUser(); }
-}
-
-// ✅ 简单场景用简单方案
-function createUser(role: 'admin' | 'member' | 'guest') {
-  return { role, permissions: getPermissions(role) };
-}
-```
+- **YAGNI**：不为假设需求添加配置/扩展点
+- **Rule of Three**：3 个以上实现才建接口（除非为测试）、3 处以上重复才提取、3 个以上相似场景才建基类
+- **简单方案优先**：简单场景不套复杂模式
+- 正反例见 [references/mte-examples.md](references/mte-examples.md)
 
 ## 设计模式使用
-
-### 使用原则
 
 - **必要时才用**：解决实际问题，不为炫技
 - **说明理由**：为什么选择这个模式
 - **保持一致**：相同问题用相同模式
 
-### 推荐场景
+> 模式选择是设计时决策，场景→模式映射表权威见 [system-design design-patterns.md](../system-design/references/design-patterns.md)（由 02-system-design §6 设计模式章节消费），本文件不镜像。
 
-| 场景 | 推荐模式 | 使用条件 |
-|------|----------|----------|
-| 对象创建 | Factory / Builder | 创建逻辑复杂、多种类型 |
-| 行为扩展 | Strategy / Template | 算法可替换、流程步骤可变 |
-| 结构适配 | Facade / Adapter | 简化接口、适配第三方 |
-| 状态管理 | State / Observer | 状态驱动、事件通知 |
+## 重构指导
 
----
+安全约束（不可降）：
 
-# Part 2: 重构指导
-
-## 重构触发条件
-
-当代码出现以下 **Code Smells** 时考虑重构：
-
-### 必须重构
-
-| 问题 | 指标 | 重构方向 |
-|------|------|----------|
-| 函数过长 | > 50 行 | 提取函数 |
-| 参数过多 | > 5 个 | 参数对象 |
-| 嵌套过深 | > 3 层 | 早返回、提取函数 |
-| 重复代码 | 3+ 处 | 提取公共逻辑 |
-| 上帝类 | > 500 行 | 拆分职责 |
-
-### 建议重构
-
-| 问题 | 描述 | 重构方向 |
-|------|------|----------|
-| 特性依恋 | 频繁访问其他类数据 | 移动方法 |
-| 数据泥团 | 多个参数总是一起出现 | 提取类 |
-| 霰弹式修改 | 一个改动影响多处 | 集中逻辑 |
-| 平行继承 | 每次加子类要加配套类 | 合并层次 |
-
-## 重构流程
-
-```
-1. 确保测试覆盖
-   │
-   ├── 有测试 → 继续
-   └── 无测试 → 先补充测试
-   │
-   ▼
-2. 小步重构
-   │
-   ├── 每次只改一件事
-   ├── 每步都能运行
-   └── 每步都运行测试
-   │
-   ▼
-3. 验证行为不变
-   │
-   ├── 测试全部通过
-   └── 手动验证关键路径
-   │
-   ▼
-4. 提交代码
-```
-
-## 重构约束
-
-### 安全约束
-
-- [ ] **重构前必须有测试覆盖**
-- [ ] **每步重构后运行测试**
-- [ ] **不在重构中添加新功能**
-- [ ] **不在添加功能时重构**
-
-### 范围约束
-
+- [ ] **重构前必须有测试覆盖**（无测试先补测试）
+- [ ] **每步重构后运行测试**，小步前进
+- [ ] **不在重构中添加新功能**，不在添加功能时重构
 - [ ] 单次重构只改一类问题
-- [ ] 单次 PR 只包含一个重构主题
-- [ ] 大范围重构需要分阶段进行
 
-### 风险评估
+Code Smells 触发信号、风险评估、详细流程见 [references/refactor-signals.md](references/refactor-signals.md)；系统性重构工作流（范围分析 + 测试门禁）用 `/refactor`。
 
-| 风险等级 | 条件 | 策略 |
-|----------|------|------|
-| 低 | 有完善测试、改动局部 | 直接重构 |
-| 中 | 部分测试、影响多处 | 先补测试 |
-| 高 | 无测试、核心逻辑 | 逐步添加测试后重构 |
+## Code Review
 
----
+### 反馈分级
 
-# Part 3: Code Review 清单
-
-## Review 前置检查
-
-- [ ] PR 描述清晰说明改动内容和原因
-- [ ] CI 通过（测试、lint、build）
-- [ ] 改动范围合理（单一主题）
-
-## 代码质量检查
-
-### MTE 原则
-
-- [ ] **M - 可维护性**
-  - [ ] 函数职责单一
-  - [ ] 命名清晰准确
-  - [ ] 依赖关系清晰
-
-- [ ] **T - 可测试性**
-  - [ ] 核心逻辑有测试
-  - [ ] 依赖可以 Mock
-  - [ ] 边界条件覆盖
-
-- [ ] **E - 可扩展性**
-  - [ ] 预留合理扩展点
-  - [ ] 不为假设需求设计
-  - [ ] 配置合理
-
-### 代码规范
-
-- [ ] 函数长度 < 50 行
-- [ ] 参数数量 < 5 个
-- [ ] 嵌套深度 < 3 层
-- [ ] 无重复代码
-- [ ] 无硬编码敏感信息
-
-### 错误处理
-
-- [ ] 边界条件处理
-- [ ] 错误信息有意义
-- [ ] 不吞掉异常
-
-### 安全检查
-
-- [ ] 无 SQL 注入风险
-- [ ] 无 XSS 风险
-- [ ] 敏感数据加密/脱敏
-- [ ] 权限控制正确
-
-## Review 反馈分级
+> 全仓反馈分级**元语义**（Blocker/Suggestion/Question/Nice 的含义与处置要求）以本表为权威；各审查场景（verification-flow / ui-quality-checklist / adversarial-review 等）只定义领域特定判定条目，不重定义级别含义。
 
 | 级别 | 标记 | 含义 | 要求 |
 |------|------|------|------|
-| 阻塞 | `[Blocker]` | 必须修复才能合并 | 安全问题、逻辑错误 |
-| 建议 | `[Suggestion]` | 建议修改但不阻塞 | 代码风格、小优化 |
+| 阻塞 | `[Blocker]` | 必须修复才能合并 | 安全问题、逻辑错误、核心阈值表超最大值、命名/注释黑名单、DIP 违反 |
+| 建议 | `[Suggestion]` | 建议修改但不阻塞 | 超建议值、代码风格、小优化 |
 | 疑问 | `[Question]` | 需要作者解释 | 不理解的设计决策 |
 | 赞 | `[Nice]` | 写得好的地方 | 鼓励好的实践 |
 
----
+### 最小审查清单
 
-# Part 4: 应用场景
+- [ ] 核心阈值表全部合规（函数/参数/嵌套/重复/单类）
+- [ ] 命名无黑名单命中（误导名/泛化名/同概念漂移/类型编码）
+- [ ] 注释无黑名单命中（变更日志式/对审查者说话/来源记录式/复述代码）
+- [ ] 设计原则（代码级）六条无命中
+- [ ] 依赖可注入、业务逻辑与 IO 分离
+- [ ] 无过度设计（YAGNI / Rule of Three）
+- [ ] 错误处理：边界条件、错误信息有意义、不吞异常
+- [ ] 安全：无注入/XSS 风险、敏感数据不入日志、权限正确
 
-## 场景 1: 编写新代码
+反馈必须分级并说明理由；安全问题必须 [Blocker]。完整审查维度与输出格式见 [references/review-rubric.md](references/review-rubric.md)。
 
-当用户编写新代码时，自动应用以下约束：
+## 参考资料
 
-1. **模块设计**：检查职责是否单一
-2. **函数设计**：检查长度、参数、嵌套
-3. **可测试性**：检查依赖是否可注入
-4. **避免过度设计**：检查是否 YAGNI
-
-## 场景 2: 重构现有代码
-
-当用户要求重构时：
-
-1. **评估风险**：检查测试覆盖
-2. **识别问题**：找出 Code Smells
-3. **制定计划**：确定重构步骤
-4. **小步执行**：每步运行测试
-
-## 场景 3: Code Review
-
-当用户要求审查代码时：
-
-1. **使用清单**：逐项检查
-2. **分级反馈**：区分阻塞和建议
-3. **说明理由**：解释为什么这样建议
-
----
-
-## Constraints
-
-### 编码约束
-
-- [ ] **函数不超过 50 行**
-- [ ] **参数不超过 5 个**
-- [ ] **嵌套不超过 3 层**
-- [ ] **依赖通过注入，不硬编码**
-- [ ] **核心逻辑可单元测试**
-
-### 设计约束
-
-- [ ] **每个模块职责单一**
-- [ ] **依赖方向：外层依赖内层**
-- [ ] **不为假设需求设计**
-- [ ] **3 个以上相似场景才抽象**
-
-### 重构约束
-
-- [ ] **重构前必须有测试**
-- [ ] **每步重构后运行测试**
-- [ ] **不在重构中添加功能**
-
-### Review 约束
-
-- [ ] **区分阻塞和建议**
-- [ ] **反馈需要说明理由**
-- [ ] **安全问题必须阻塞**
+| 文件 | 内容 |
+|------|------|
+| [references/mte-examples.md](references/mte-examples.md) | 模块/函数/可测试性/YAGNI 正反例代码 |
+| [references/naming-examples.md](references/naming-examples.md) | 命名正反例、大小写惯例、命名空间例外 |
+| [references/refactor-signals.md](references/refactor-signals.md) | Code Smells 信号、重构流程、风险评估 |
+| [references/review-rubric.md](references/review-rubric.md) | Review 详细清单与输出格式 |

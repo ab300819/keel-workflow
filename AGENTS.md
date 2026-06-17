@@ -6,7 +6,7 @@
 
 - 规格库：Markdown + YAML skill 定义（非代码库）
 - 无 build/test/lint 命令
-- 21 个 ms- 流程 skill + 10 个独立工具 skill（含 3 个 internal-only）
+- 21 个 ms- 流程 skill + 11 个独立 skill（含 3 个 internal-only；dev-flow 为非 DevDocs 通用开发流程）
 
 ## 架构决策
 
@@ -22,7 +22,7 @@
 | 术语 | 含义 |
 |------|------|
 | Skill | 可复用的 SKILL.md 定义文件，扩展 AI agent 能力 |
-| ms- 前缀 | 流程 skill 命名空间，区分独立工具 skill |
+| ms- 前缀 | DevDocs 流程 skill 命名空间，区分独立 skill（非 ms-，如 dev-flow / code-quality） |
 | PRD 流程 | 模糊想法/大型 PRD → FR-XX/NFR-XX，支持多目录隔离（`docs/prd/<YYYYMMDD-slug>/`）|
 | DevDocs | 文档驱动开发工作流（需求→设计→测试→任务→开发→验证→同步）|
 | 编号体系 | F/US/AC/UT/IT/E2E/Journey/INS/BUG/T，链路 F→US→AC→测试 |
@@ -37,6 +37,8 @@
 - 治理盲区收敛：scope=health（结构/索引/过大/SSOT/三层分离 5 维）+ health-lint 5 条 [新增] rule（state/* + dead-link + adr-only-revision），layout.v1+v2 通用
 - 新增 skill：ms-backlog（暂缓任务池）
 - internal-only：ms-iteration-policy（由 realign --scope=layout 调度）
+- code-quality 重构为代码质量 SSOT：核心阈值表（统一谓词）+ 命名/注释规范 + 设计原则（代码级），示例拆 references/；deferred：health-lint 镜像一致性 rule（见 [plans/2026-06-12-code-quality-restructure-naming.md](docs/superpowers/plans/2026-06-12-code-quality-restructure-naming.md) §4）
+- 新增 skill：dev-flow（非 DevDocs 通用开发执行器：契约先行 + 红绿 + 质量地板 + fresh-context 契约审查；与 ms-dev-workflow 双向 NOT-for，方案见 [plans/2026-06-12-dev-flow-standalone-skill.md](docs/superpowers/plans/2026-06-12-dev-flow-standalone-skill.md)）
 
 ## 命令
 

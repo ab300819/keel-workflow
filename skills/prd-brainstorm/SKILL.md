@@ -13,7 +13,7 @@ writes_id_scheme: id.v1
 reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: block
-migration: /ms-pipeline realign --docs-layout
+migration: /ms-pipeline realign --scope=layout
 ---
 
 # 需求探索与澄清

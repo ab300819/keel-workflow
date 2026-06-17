@@ -290,10 +290,7 @@ next_recommended:                      # 顶层字段
   args: "--apply-migration --apply"
 ```
 
-**关键对齐点**（与其他 ms- skill 一致）：
-- `status` 只能是 4 个保留值（`success` / `failed` / `interrupted` / `partial`）；warn/info 等放 `summary.details.severity`
-- `blockers` / `output_files` / `new_ids` / `next_recommended` 均为顶层保留字段
-- skill 私有字段（signals_detected / counts / user_decision 等）放 `summary.details`
+**关键对齐点**：envelope 保留字段与 `status` 枚举以 [_shared/constraints.md §yaml-summary-v1](../_shared/constraints.md) 为权威，本文不重述；skill 私有字段（signals_detected / counts / user_decision 等）一律放 `summary.details`
 
 ## 迁移工作量参考
 

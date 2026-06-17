@@ -13,7 +13,7 @@ writes_id_scheme: id.v1
 reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: warn
-migration: /ms-pipeline realign --docs-layout
+migration: /ms-pipeline realign --scope=layout
 ---
 
 # 项目上下文
@@ -237,12 +237,14 @@ generated_at: 2026-04-23T10:30:00+08:00
 ## 6. 重要约定
 
 ### 6.1 编码规范
-- 遵循 MTE 原则（可维护、可测试、可扩展）
+<!-- 阈值摘录自 /code-quality 核心阈值表，变更需同步；按项目实际约定覆写 -->
+- 遵循 MTE 原则（可维护、可测试、可扩展），详见 `/code-quality`
 - 函数不超过 50 行
 - 参数不超过 5 个
 
 ### 6.2 测试要求
-- 单元测试覆盖率 ≥ 80%
+<!-- 阈值摘录自 /testing-guide 核心阈值表，变更需同步；按项目实际约定覆写 -->
+- 单元测试覆盖率 ≥ 80%（详见 `/testing-guide`）
 - 禁止弱断言
 
 ### 6.3 提交规范
@@ -410,6 +412,8 @@ Agent: [展示现有文档内容]
 ## 子 Agent 摘要格式
 
 当本 Skill 作为子 Agent 运行时，返回以下结构化摘要：
+
+> envelope 字段定义（status 枚举 / blockers / output_files / new_ids 等保留字段）见 [_shared/constraints.md §yaml-summary-v1](../_shared/constraints.md)；下例重点为 `summary.details` 私有字段。
 
 ```yaml
 skill: ms-onboard

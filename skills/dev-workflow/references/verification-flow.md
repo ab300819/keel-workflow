@@ -18,7 +18,7 @@
 ```
 1. 角色分离：Phase 1~3 在审查时切换到不同视角，应用不同 Skill 的约束
 2. 独立源验证：Phase 4 调用外部不同进程/模型的审查者，不被主编排器解释层污染
-3. 问题分级：区分必须修复（Blocker）和建议修复（Suggestion）
+3. 问题分级：区分必须修复（Blocker）和建议修复（Suggestion）——元语义以 /code-quality 反馈分级表为权威
 4. 闭环验证：修复后重新验证，确保问题真正解决
 5. 证据留痕：所有审查产出（角色演绎报告 / 外部 raw findings / yaml 摘要 / Commit trailer）三级协议存储
 ```
@@ -35,13 +35,14 @@
 
 ### 审查清单
 
+> 数字阈值摘录自 [`/code-quality` 核心阈值表](../../code-quality/SKILL.md#核心阈值表)，变更需同 commit 同步。
+
 #### M - 可维护性
 
 - [ ] 函数职责单一（一个函数只做一件事）
 - [ ] 函数长度 ≤ 50 行
 - [ ] 参数数量 ≤ 5 个（超过使用参数对象）
 - [ ] 嵌套深度 ≤ 3 层（使用早返回减少嵌套）
-- [ ] 命名清晰准确（不使用缩写）
 - [ ] 无重复代码（Rule of Three: 3 次以上才提取）
 
 #### T - 可测试性
@@ -62,6 +63,20 @@
 - [ ] 无 XSS 风险
 - [ ] 敏感数据正确处理（不 log 密码、Token 等）
 - [ ] 错误信息不泄露内部实现细节
+
+#### 注释卫生（依据 [`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)，仅审本次 diff 新增/修改的注释）
+
+- [ ] 无变更日志式注释（描述本轮变更过程而非代码当前状态；按语义判定）
+- [ ] 无对审查者说话的注释（"此处已修复""按要求处理"）
+- [ ] 无来源记录式注释（"来自 UT-XX/AC-XX/后置条件"；过程来源归 traceability.yml）
+- [ ] 无复述代码的注释、无注释掉的代码、无残留骨架脚手架（TODO / Not implemented）
+- [ ] 注释与代码当前语义一致（改代码须同步更新受影响注释）
+
+#### 命名卫生（依据 [`/code-quality` 命名规范](../../code-quality/SKILL.md#命名规范)，仅审本次 diff 新增标识符）
+
+- [ ] 无误导名（名实不符：`is*` 返回非布尔、`get*` 带副作用、`xxxList` 非 List）
+- [ ] 无泛化名作完整名（`data/info/temp/result/obj/item/thing/flag/val`；局部惯用语除外）
+- [ ] 无同概念多名漂移（引入新名词前先 grep 项目既有词表）、无类型编码/不可发音自造缩写
 
 ### Phase 1 输出格式
 
@@ -97,6 +112,8 @@
 **测试审查员**（依据 `/testing-guide` 约束）
 
 ### 审查清单
+
+> 数字阈值摘录自 [`/testing-guide` 核心阈值表](../../testing-guide/SKILL.md#核心阈值表)，变更需同 commit 同步。
 
 #### 覆盖率
 
@@ -243,9 +260,9 @@
 
 ## Phase 1~3 与 S8 AC 完备性表的关系
 
-S8 AC 完备性表 / 类型×证据矩阵 / 声称-vs-diff 交叉验证已是所有层级强制，见 [SKILL.md §完成检查约束](../SKILL.md)。Phase 1~3 不重复执行 AC 表，只在 Phase 3 综合报告中复用 S8 产出的判定结果。
+S8 AC 完备性表 / 类型×证据矩阵 / 声称-vs-diff 交叉验证已是所有层级强制，强制性约束见 [SKILL.md §完成检查约束](../SKILL.md#完成检查约束)。Phase 1~3 不重复执行 AC 表，只在 Phase 3 综合报告中复用 S8 产出的判定结果。
 
-详细 AC 类型分类、证据矩阵、可复核判据见 [SKILL.md 同章节末尾说明 + AC 完备性表模板](../SKILL.md)。
+详细 AC 类型分类、证据矩阵、可复核判据见 [本文件 §AC 完备性](#ac-完备性s8-权威定义)（S8 权威定义）；强制性约束见 [SKILL.md §完成检查约束](../SKILL.md#完成检查约束)。
 
 ### 最低发现数门槛
 
@@ -285,7 +302,7 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 | 3 | 依赖注入使用正确 | ✅ 确认 | 💬 解释 | 构造函数注入，符合 MTE |
 ```
 
-> 注：声称 vs 实际验证表已前移到 S8（见 [SKILL.md §完成检查约束](../SKILL.md)），Phase 3 直接引用 S8 产出，不再重复生成。
+> 注：声称 vs 实际验证表已前移到 S8（约束见 [SKILL.md §完成检查约束](../SKILL.md#完成检查约束)，表模板见 [§AC 完备性](#ac-完备性s8-权威定义)），Phase 3 直接引用 S8 产出，不再重复生成。
 
 ## Blocker 修复流程
 
@@ -334,22 +351,33 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 
 ### 代码质量 Blocker
 
+> 阈值摘录自 [`/code-quality` 核心阈值表](../../code-quality/SKILL.md#核心阈值表)（谓词统一：≤ 最大值合规；> 建议值且 ≤ 最大值 → Suggestion；> 最大值 → Blocker），变更需同 commit 同步。
+
 | 问题 | 阈值 | Blocker 判定 | 依据 |
 |------|------|-------------|------|
 | 函数长度 | > 50 行 | 🚫 Blocker | /code-quality 最大 50 行 |
-| 函数长度 | 30-50 行 | 💡 Suggestion | /code-quality 建议 30 行 |
+| 函数长度 | > 30 且 ≤ 50 行 | 💡 Suggestion | /code-quality 建议 30 行 |
+| 参数数量 | > 5 个 | 🚫 Blocker | /code-quality 最大 5 个 |
+| 参数数量 | > 3 且 ≤ 5 个 | 💡 Suggestion | /code-quality 建议 3 个 |
 | 嵌套深度 | > 3 层 | 🚫 Blocker | /code-quality 最大 3 层 |
-| 嵌套深度 | 2-3 层 | 💡 Suggestion | /code-quality 建议 2 层 |
-| 重复代码 | > 3 处相同 | 🚫 Blocker |
-| 安全漏洞 | 任何 | 🚫 Blocker |
+| 嵌套深度 | > 2 且 ≤ 3 层 | 💡 Suggestion | /code-quality 建议 2 层 |
+| 重复代码 | > 3 处相同 | 🚫 Blocker | /code-quality Rule of Three |
+| 单类/单文件行数 | > 500 行 | 🚫 Blocker | /code-quality 最大 500 行（上帝类） |
+| 安全漏洞 | 任何 | 🚫 Blocker | — |
+| 黑名单注释（变更日志式/对审查者说话/来源记录式等） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 注释规范 |
+| 注释与代码语义不符 | 本次 diff 涉及 | 🚫 Blocker | /code-quality 注释规范 |
+| 黑名单命名（误导名/泛化名/同概念漂移/类型编码） | 本次 diff 新增 | 🚫 Blocker | /code-quality 命名规范 |
+| 存量坏注释/坏命名（本次未触碰）、public API 缺契约注释 | 任何 | 💡 Suggestion | /code-quality 注释/命名规范 |
 
 ### 测试完备 Blocker
+
+> 阈值摘录自 [`/testing-guide` 核心阈值表](../../testing-guide/SKILL.md#核心阈值表)（谓词统一：≥ 达标值合规；≥ 最低值且 < 达标值 → Suggestion；< 最低值 → Blocker），变更需同 commit 同步。
 
 | 问题 | 阈值 | Blocker 判定 |
 |------|------|-------------|
 | 弱断言 | 作为唯一断言 | 🚫 Blocker |
 | 覆盖率 | < 60% | 🚫 Blocker |
-| 覆盖率 | 60-80% | 💡 Suggestion |
+| 覆盖率 | ≥ 60% 且 < 80% | 💡 Suggestion |
 | AC 无对应测试 | 任何 | 🚫 Blocker |
 | 缺少 @verifies 标注 | 核心逻辑 | 🚫 Blocker |
 
@@ -418,9 +446,9 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 
 audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `review_pending`，drain 达 `EXT_REVIEWED` 才转已完成。T1/T2 全失败 → `EXT_UNRESOLVED`。
 
-### Canonical state enum `EXT_*`
+### `EXT_*` 状态执行判定表
 
-**所有文档、约束、续做信号表、Step 1.5 [D2] 校验失败分支、Commit 1 尾注字段、场景回放描述必须仅使用下表常量**，禁用 `external_reviewed` / `external_review_pending` / `CONVERGED` / `DEGRADED` / `SKIPPED` / 单独的 `reviewed` 等非 canonical 词汇。
+**值域与放行语义权威见 [_shared/constraints.md §独立审查状态机枚举](../../_shared/constraints.md)，本表为执行判定摘要**。所有文档、约束、续做信号表、Step 1.5 [D2] 校验失败分支、Commit 1 尾注字段、场景回放描述必须仅使用该值域常量，禁用 `external_reviewed` / `external_review_pending` / `CONVERGED` / `DEGRADED` / `SKIPPED` / 单独的 `reviewed` 等非 canonical 词汇。
 
 | 状态 ID | 触发条件 | 优先级 | 唯一恢复动作 | 放行 |
 |---------|---------|--------|-------------|------|
@@ -437,6 +465,8 @@ audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `r
 此字段同时写入 L1 尾注（非状态字段区）和 L2 yaml 摘要的 `summary.details`。
 
 ### 状态判定真值表
+
+> 枚举值域与放行态语义（canonical）权威见 [_shared/constraints.md §独立审查状态机枚举](../../_shared/constraints.md)；本表为**判定规则执行细节**的权威，两层不互相覆盖。
 
 **按优先级从高到低执行，命中即返回，下游规则不再评估**：
 

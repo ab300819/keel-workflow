@@ -1,6 +1,6 @@
 # Layout Migration Log Template
 
-> `/ms-pipeline realign --docs-layout` 执行时的日志模板。
+> `/ms-pipeline realign --scope=layout`（legacy alias: `--docs-layout`）执行时的日志模板。
 >
 > 写入位置：`docs/devdocs/.layout-migration-dryrun.md`（dry-run 阶段）+ `docs/devdocs/.layout-migration-applied.md`（apply 阶段，自动 commit）
 >

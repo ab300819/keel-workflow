@@ -2,7 +2,7 @@
 
 > 适用于 🟢 UI 层 S9 对抗验证的 **Phase 2-UI**（Phase 2 之后、Phase 3 综合报告之前）。
 > 与 Phase 1(/code-quality)、Phase 2(/testing-guide) 并行，不替代。
-> 分级使用 Blocker/Suggestion，与 S9 闭环兼容。
+> 分级使用 Blocker/Suggestion，与 S9 闭环兼容；级别元语义以 [`/code-quality` 反馈分级表](../../code-quality/SKILL.md#反馈分级) 为权威。
 > Phase 3 综合报告汇总所有 Phase（含 Phase 2-UI）的结果。
 
 ## 与 ms-verify --ui 的边界
@@ -82,7 +82,7 @@ S8 AC 完备性表必须为**每个清单 Blocker 项**登记至少一类有效�
 |---------|---------|----------|
 | 可执行断言（UT / IT / E2E） | 状态切换、条件渲染、表单反馈等可代码化的行为 | 测试文件路径 + `it(...)` / `test(...)` 描述 |
 | `/ms-verify --ui --live` 证据 | 视觉状态（hover/disabled/色值/间距）、动画呈现 | 截图/trace artifact 路径 + `--live` 报告引用 |
-| 手动截图 + 显式豁免 | 自动化成本过高的感知类场景（SKILL.md 视觉型 AC 豁免枚举中的 UI 特例） | artifact 路径 + 任务文档登记的豁免原因（需对齐 SKILL.md 豁免白名单表述） |
+| 手动截图 + 显式豁免 | 自动化成本过高的感知类场景（[verification-flow.md §AC 完备性](verification-flow.md#ac-完备性s8-权威定义) 视觉型 AC 豁免枚举中的 UI 特例） | artifact 路径 + 任务文档登记的豁免原因（需对齐该章节豁免表述） |
 
 **门禁规则**：
 

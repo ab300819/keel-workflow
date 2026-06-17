@@ -1,2 +1,4 @@
 agents/
 .remember/
+.DS_Store
+.idea/

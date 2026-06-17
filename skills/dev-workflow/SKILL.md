@@ -1,6 +1,6 @@
 ---
 name: ms-dev-workflow
-description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and --headless unattended mode (无人值守). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "开始写代码", "开始开发", "--review", "--headless", "无人值守". NOT for task breakdown (use ms-dev-tasks) or bug fixes (use ms-bugfix).
+description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and --headless unattended mode (无人值守). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "开始写代码", "开始开发", "--review", "--headless", "无人值守". NOT for task breakdown (use ms-dev-tasks), bug fixes (use ms-bugfix), or non-DevDocs plan/prompt-driven development (use dev-flow).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, Task
 metadata:
   patterns: [pipeline, reviewer]
@@ -13,7 +13,7 @@ writes_id_scheme: id.v1
 reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: block
-migration: /ms-pipeline realign --docs-layout
+migration: /ms-pipeline realign --scope=layout
 spec_version: 2.0
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
@@ -102,7 +102,7 @@ spec_version_notes: |
 | S1 读取任务定义 | 从 `04-dev-tasks.md` 获取任务、F/AC/UT/IT/E2E 关联 |
 | S1.5 Sprint Contract | Test Agent 基于 AC + 当前代码上下文生成可执行验收契约（函数签名、返回值类型、边界条件、异常场景）；编排器裁剪过度契约、补足遗漏契约，确认后作为测试输入约束 |
 | S2-S3 骨架 | 接口骨架 + 测试骨架；layout.v1 legacy 使用 `@requirement`/`@satisfies`/`@verifies`/`@testcase`，layout.v2 改用 `traceability.yml` |
-| S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0` |
+| S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0`；注释遵循 [`/code-quality` 注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式/来源记录式注释，含修复循环） |
 | S8 完成检查 | 质量地板 5 条 + AC 完备性表（fast 证据摘要 / audit 完整 AC 类型×证据矩阵）+ 声称 vs 实际 diff 交叉验证；缺证据或未关联大块 diff → ⛔ 禁止继续 |
 | S9 前置验证 | guarded/audit `/ms-verify --impl`；fast 仅质量地板（不跑前置验证）；🟢 UI 任务有设计稿时另跑 `/ms-verify --ui --impl` 对齐设计稿（不随 profile 变） |
 | S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：**audit inline fail-fast**；**fast/guarded 延后**到 `/ms-verify --review-drain`，任务期间标 `review_pending`；`--review` 可临时叠加 inline |
@@ -191,7 +191,7 @@ spec_version_notes: |
 
 | 阶段 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 写业务代码 | `/code-quality` | MTE 原则、依赖注入、避免过度设计 |
+| 写业务代码 | `/code-quality` | MTE 原则、依赖注入、避免过度设计、注释规范 |
 | 写测试代码 | `/testing-guide` | 断言质量、变异测试、覆盖率 |
 | UI 实现 | `/ui-orchestrator` | 无障碍、动画、布局约束 |
 | 实现审查 | `/ms-verify --impl` | **guarded/audit 默认必做（全量 AC）；fast 不跑前置验证（仅质量地板）** |

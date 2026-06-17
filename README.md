@@ -2,7 +2,7 @@
 
 面向**个人开发者**的 AI Agent Skills 模板项目。
 
-包含 21 个 ms- 流程 skill（覆盖 PRD → 需求 → 设计 → 测试 → 开发 → 验证全链路，含 1 个 internal-only 横切 skill）和 10 个独立工具 skill。
+包含 21 个 ms- 流程 skill（覆盖 PRD → 需求 → 设计 → 测试 → 开发 → 验证全链路，含 1 个 internal-only 横切 skill）和 11 个独立 skill（含 dev-flow 非 DevDocs 通用开发流程）。
 
 > ℹ️ 本 README 中提及的 `@satisfies` / `@verifies` 代码注释属于 **layout.v1 legacy**（layout.v2 起改读 `traceability.yml`；详见 [skills/pipeline/references/layout/docs-layout-migration.md § 执行接口落地状态](skills/pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
 
@@ -411,7 +411,7 @@ devdocs:
 ---
 ```
 
-**强依赖**：`layout.v2` 要求 `id.v2` + `trace.v1`；违反 → skill 阻塞 + 推荐 `/ms-pipeline realign --docs-layout` 升级。
+**强依赖**：`layout.v2` 要求 `id.v2` + `trace.v1`；违反 → skill 阻塞 + 推荐 `/ms-pipeline realign --scope=layout` 升级。
 
 #### 用哪个版本？
 
@@ -479,7 +479,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | scope | 用途 | 状态 |
 |-------|------|------|
 | `spec`（默认）| 产物 `spec_version` drift（schema 维度）| ✅ 部分可用 |
-| `layout` | layout.v1 → v2 迁移（含编号/目录/追溯重组）| ✅ **执行接口已落地**（详见 [realign-scope-layout.md](skills/pipeline/references/realign-scope-layout.md)）|
+| `layout` | layout.v1 → v2 迁移（含编号/目录/追溯重组）| ⚠️ **入口与接口规范已落地，迁移执行逻辑分阶段交付**（接口见 [realign-scope-layout.md](skills/pipeline/references/realign-scope-layout.md)；落地状态权威见 [docs-layout-migration.md §执行接口落地状态](skills/pipeline/references/layout/docs-layout-migration.md)）|
 | `prd-mapping` | PRD mapping_status 扫描 + 报告 | [FUTURE] |
 | `health` | 文档健康度主动审查（5 维度 / health-lint 5 条 rule）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](skills/pipeline/references/realign-scope-health.md)）|
 
@@ -561,7 +561,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 
 4. **预防型 vs 治疗型**：`ms-iteration-policy` 是 **预防型**（源头治理 V<x.y.z> 形式主义），`ms-pipeline distill` 是 **治疗型**（已成型文档的压缩）。`init` 阶段先用 iteration-policy 立约 → 累积期用 distill 周期蒸馏。
 
-5. **历史项目兼容**：`mic-en` 等 layout.v1 项目维持现状，**不主动迁移**。任何升级必须用户显式调用 `/ms-pipeline realign --docs-layout`。
+5. **历史项目兼容**：`mic-en` 等 layout.v1 项目维持现状，**不主动迁移**。任何升级必须用户显式调用 `/ms-pipeline realign --scope=layout`。
 
 6. **PRD 治理走轻量同类，不复制 6 阶段**：PRD 不直接追代码（通过 DevDocs 间接），且核心机制已存在；治理目标是显性化已有规则而非发明新体系。具体落地见上文「PRD 流程治理 Spec」。
 
@@ -604,11 +604,13 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | 项目改造 | `/ms-retrofit` | 已有项目适配 DevDocs | 逆向生成文档 |
 | 代码盘点 | `/ms-codebase-insight` | 只读分析现有代码库 | `codebase-insight.md` |
 
-### 独立工具 Skill
+### 独立 Skill（非 ms- 命名空间）
 
 | Skill | 命令 | 用途 |
 |-------|------|------|
-| 代码质量 | `/code-quality` | MTE 原则、重构指导、Review 清单 |
+| 通用开发流程 | `/dev-flow` | 非 DevDocs 开发执行器：契约先行 + 红绿 + 质量地板 + fresh-context 审查 |
+| 对抗审查 | `/adversarial-review` | 外部 LLM 独立审查计划/设计/代码变更 |
+| 代码质量 | `/code-quality` | MTE 原则、核心阈值表、命名/注释规范、Review 清单 |
 | 测试指导 | `/testing-guide` | 断言质量、Mock 规范、变异测试 |
 | 重构 | `/refactor` | 系统化重构，测试驱动 |
 | 提交规范 | `/commit-convention` | 提交信息格式化 |
@@ -629,6 +631,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | 已有项目加功能 | `/ms-pipeline feature` | 增量更新全套文档 |
 | 已有代码无文档 | `/ms-retrofit` | 从代码逆向生成 DevDocs |
 | 探索性原型 | 先写代码 → `/ms-retrofit` | 代码稳定后补文档 |
+| 无 DevDocs 的轻量开发 | `/dev-flow` | 计划文档/任务描述驱动，三硬门控（契约/红绿/验证），后续可 `/ms-retrofit` 升级 |
 | Bug 修复 | `/ms-pipeline bugfix` | 写失败测试 → 修复 → 通过 |
 | 小改动 | 直接提交 | 遵循 `/commit-convention` |
 

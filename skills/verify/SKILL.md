@@ -60,7 +60,7 @@ metadata:
 /ms-verify T-01 T-02          → 指定任务范围（自动 --impl）
 ```
 
-> 除 `--live` 外，二级控制（`--layer1/2/3`、`--ac`、`--design`、`--trace`、UI 阶段选择）不作为顶部用户面入口暴露；用户用自然语言表达聚焦意图，执行细则按 references 内部说明。`--schema-drift` 为只读合并入口，输出 schema drift 与 layout drift 两段：前者扫产物 spec_version，详见 [references/schema-drift.md](references/schema-drift.md)；后者扫治理层 layout/id/trace 兼容性，对齐 `/ms-pipeline realign --docs-layout`，详见 [skills/pipeline/references/layout/](../pipeline/references/layout/)。
+> 除 `--live` 外，二级控制（`--layer1/2/3`、`--ac`、`--design`、`--trace`、UI 阶段选择）不作为顶部用户面入口暴露；用户用自然语言表达聚焦意图，执行细则按 references 内部说明。`--schema-drift` 为只读合并入口，输出 schema drift 与 layout drift 两段：前者扫产物 spec_version，详见 [references/schema-drift.md](references/schema-drift.md)；后者扫治理层 layout/id/trace 兼容性，对齐 `/ms-pipeline realign --scope=layout`，详见 [skills/pipeline/references/layout/](../pipeline/references/layout/)。
 
 ### 四维验证选择矩阵
 
