@@ -55,8 +55,11 @@
 
 ## 详细文档
 
-- 项目总览 + 流程分组：[README.md](README.md)
+> 本文是**维护者 / AI 架构备忘**（技术栈、架构决策、约定）。用户上手见 [README.md](README.md)。
+
+- 用户上手 + skill 索引：[README.md](README.md)
+- 各流程逐步走查：[docs/workflows.md](docs/workflows.md)
+- 治理体系 + 编号规则 + 文件结构：[docs/architecture.md](docs/architecture.md)
 - 跨 skill 共享约束：[skills/_shared/constraints.md](skills/_shared/constraints.md)
 - 编排层架构：[skills/pipeline/SKILL.md](skills/pipeline/SKILL.md)
-- PRD 流程架构：[skills/prd/SKILL.md](skills/prd/SKILL.md)
 - 经验模式库：`docs/devdocs/patterns/`（由 `/ms-compound` 生成）
