@@ -270,6 +270,23 @@ expected_output: yaml-summary-v1
 - `realign/health-execution-pointer`：`--scope=health` 执行接口见 `skills/pipeline/references/realign-scope-health.md`。
 - `realign/prd-index-pointer`：PRD 编号 SSOT 见 `skills/prd/references/governance/prd-index-ssot.md`。
 
+## 9. 分层记忆原则（决策 / 执行 / 数据三层分离）
+
+> 本节是对**既有文件结构 + 现役规则**的归并命名，不新增运行时强制（与本文件头部 `status: 现状提取，不引入新规则` 一致）。"不应混写"是**原则目标**，强制力来自现役 symptom rules（仅覆盖**部分**症状）+ 人工 review（**主要**承载）。
+
+DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**：
+
+| 层 | 内容 | v1 落点（权威位置） |
+|----|------|--------------------|
+| 决策层 | 为什么这么定（取舍、约束、ADR） | `02-system-design.md` 的 ADR / 设计决策 |
+| 执行层 | 现在做什么、做到哪（任务、状态） | `04-dev-tasks*.md` + `.claude/rules/devdocs-state.md` |
+| 数据层 | 可追溯的事实（编号、链路、矩阵） | 追溯矩阵 / traceability / 编号体系 |
+
+- `layered-memory/v1-structural`：layout.v1 已为三层提供各自的 owner 位置（上表），原则的**结构基础已存在**；但这是位置约定，**不等于自动强制**。
+- `layered-memory/symptom-rules`：现役 rule 只能捕捉**部分典型退化症状**——`state/total-size-cap`、`state/line-length-cap`（执行状态膨胀塞爆一个文件）、`design/adr-only-revision`（决策被就地改写、与正文混编）；**不能通用检测三层混写**（短决策理由塞进 state、数据明细塞进任务文件、非 ADR 章节混写都可能不触发）。把"抓文件膨胀"等同于"抓三层混写"是夸大。
+- `layered-memory/review-lens`：因此三层分离**主要靠人工 review lens 承载，不是自动兜底**。审查时发现某文件同时承载两层以上内容（典型：state 文件里塞决策理由或数据明细），即提示拆到对应层。
+- `layered-memory/no-auto-detection`：**不做**"关键词扫描自动判定章节混杂"——即原 health 维度 e / Plan B 检测面。该方向已**废弃**（`[废弃]`，原标 [FUTURE]）：复杂度不匹配收益，skill 宜简。**不再保留为 FUTURE 触发项**（区别于 trace.v1 / layout.v2 / 维度 d，后三者仍为封存 FUTURE）。
+
 ## 差异点与跳过项
 
 ### 已标注语义差异点

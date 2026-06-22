@@ -34,7 +34,7 @@
 | `spec` | `/ms-pipeline realign --scope=spec` | 沿用本文 § "编排层职责" + 各 skill `references/realign.md` | spec_version 差距补齐 |
 | `layout` | `/ms-pipeline realign --scope=layout` | [realign-scope-layout.md](realign-scope-layout.md) | layout.v1 → layout.v2 迁移 |
 | `prd-mapping` | `/ms-pipeline realign --scope=prd-mapping` | 沿用 `skills/prd/references/governance/prd-devdocs-mapping.md` | PRD ↔ DevDocs 映射对齐 |
-| `health` | `/ms-pipeline realign --scope=health` | [realign-scope-health.md](realign-scope-health.md) | 文档健康度主动审查（结构 / 索引 / 过大 / SSOT / 三层分离）|
+| `health` | `/ms-pipeline realign --scope=health` | [realign-scope-health.md](realign-scope-health.md) | 文档健康度主动审查（结构 / 索引 / 过大 / SSOT）|
 
 旧入口 `/ms-pipeline realign --docs-layout` 保留一个版本作为 deprecated alias，等价于 `--scope=layout`。
 
@@ -254,7 +254,7 @@ dev-workflow 的 realign 在任务正文追加一行：`Realigned-From: <old_spe
    （此提示按 baseline 重评估，修复后自动消失；非升级决策，不写 ack）
 ```
 
-> 全量 health 扫描（5 维度 / 死链 / ADR 漂移 / 所有文档）仍由显式 `/ms-pipeline realign --scope=health` 执行，见 [realign-scope-health.md](realign-scope-health.md)。探针只决定"要不要提示去跑全量"。
+> 全量 health 扫描（4 维度 / 死链 / ADR 漂移 / 所有文档）仍由显式 `/ms-pipeline realign --scope=health` 执行，见 [realign-scope-health.md](realign-scope-health.md)。探针只决定"要不要提示去跑全量"。
 
 ## 与 ms-retrofit 的边界
 

@@ -107,7 +107,8 @@ devdocs:
 | b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace + `health/dead-link` |
 | c 过大文档识别 | devdocs-state.md byte 阈值 / 单行长度 / 内嵌禁用模式 | `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` |
 | d SSOT 遵从（layout.v2 only）| 占位/索引不复制权威源内容 | `ssot/no-restatement` [FUTURE] |
-| e 三层分离 [FUTURE] | 决策/执行/数据章节关键词混杂 | 待 keyword baseline 定义 |
+
+> 原维度 e「三层分离自动检测」已废弃。三层分离作为**原则**在 layout.v1 已由编号文件结构 + `state/*` / `design/adr-only-revision` 症状规则承载，审查时作人工尺子用，不再做独立的关键词扫描维度。权威见 [constraints.md §9 分层记忆原则](../skills/_shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 
 **关键设计**：
 - health-lint 5 条 [新增] rule 与 layout.v2 的 ssot-lint 12 条 rule **独立**，layout.v1 项目（mic-en）可直接使用
@@ -143,7 +144,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | `spec`（默认）| 产物 `spec_version` drift（schema 维度）| ✅ 部分可用 |
 | `layout` | layout.v1 → v2 迁移（含编号/目录/追溯重组）| ⚠️ **入口与接口规范已落地，迁移执行逻辑分阶段交付**（接口见 [realign-scope-layout.md](../skills/pipeline/references/realign-scope-layout.md)；落地状态权威见 [docs-layout-migration.md §执行接口落地状态](../skills/pipeline/references/layout/docs-layout-migration.md)）|
 | `prd-mapping` | PRD mapping_status 扫描 + 报告 | [FUTURE] |
-| `health` | 文档健康度主动审查（5 维度 / health-lint 5 条 rule）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](../skills/pipeline/references/realign-scope-health.md)）|
+| `health` | 文档健康度主动审查（4 维度 / health-lint 5 条 rule）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](../skills/pipeline/references/realign-scope-health.md)）|
 
 **Apply 6 Phase**：checkpoint → file_ops → id_map → trace → frontmatter → post-validation；每 Phase 单独 commit；失败 ⛔ + `git reset --hard <checkpoint_commit>` 回滚；plan_hash 校验中断恢复一致性。
 

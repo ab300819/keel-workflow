@@ -223,7 +223,9 @@ codex_review: [T-131, T-132, T-133]
 
 > **状态**:brainstorm 三决议闭合(Evidence→trace.v1 字段 / ADR 透镜走 adr-only-revision / 四卡片零新文件纯视图)。本节为 Plan B 方向闭合,**实现计划前必修见 §11.4**。
 >
-> **同源声明 + 封存(2026-06-22)**:四卡片(ADR=决策/Task·Evidence=执行/trace=数据)与 health 维度 e「三层分离」是**同一条"分层记忆"原则**的结构面与检测面。其执行层(trace.v1/layout.v2/维度 d·e 扫描)依赖未部署的 FUTURE 底座,**封存为长期规划,暂不扩 spec**;触发=真实代码项目使用痛点。现役全跑 layout.v1,不执行对使用零影响。
+> **同源声明 + 封存(2026-06-22)**:四卡片(ADR=决策/Task·Evidence=执行/trace=数据)与原 health 维度 e「三层分离」是**同一条"分层记忆"原则**的结构面与检测面。其执行层(trace.v1/layout.v2/维度 d 扫描)依赖未部署的 FUTURE 底座,**封存为长期规划,暂不扩 spec**;触发=真实代码项目使用痛点。现役全跑 layout.v1,不执行对使用零影响。
+>
+> **更新(2026-06-22 后续):检测面(维度 e)废弃,原则面落地为 SSOT。** 分层记忆原则被提取为权威 [_shared/constraints.md §9](../../../skills/_shared/constraints.md),声明三层在 layout.v1 已由编号文件结构 + `state/*`/`adr-only-revision` 症状规则**结构性承载**;原计划的「维度 e 关键词自动检测」**废弃**(复杂度不匹配收益,skill 宜简),不再保留为 FUTURE。trace.v1/layout.v2/维度 d 不受影响,仍为封存 FUTURE。
 
 ### 11.0 总决议:四卡片 = 现有 owner 产物的渲染视图,零新文件族(§5 落地)
 

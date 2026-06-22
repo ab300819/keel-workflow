@@ -5,12 +5,12 @@
 
 ## 定位
 
-本文件定义 `--scope=health` 的执行接口，让 LLM 能按统一入口对 DevDocs 文档体系做**主动健康度审查**，覆盖五大维度并把分散在 ms-verify / ms-sync / ssot-lint 的检查能力收敛为单一报告。
+本文件定义 `--scope=health` 的执行接口，让 LLM 能按统一入口对 DevDocs 文档体系做**主动健康度审查**，覆盖四大维度并把分散在 ms-verify / ms-sync / ssot-lint 的检查能力收敛为单一报告。
 
 与 `--scope=spec`（spec_version 差距补齐）/ `--scope=layout`（layout.v1→v2 迁移）/ `--scope=prd-mapping`（PRD ↔ DevDocs 映射）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
 
 > **推/拉两个触发点**（解决"规则实装但没人跑"的断层）：
-> - **拉（全量）**：用户显式 `/ms-pipeline realign --scope=health` —— 本文件定义的完整 5 维扫描。
+> - **拉（全量）**：用户显式 `/ms-pipeline realign --scope=health` —— 本文件定义的完整 4 维扫描。
 > - **推（轻量探针）**：ms-pipeline 路由入口的 health drift 探针（≤2s，仅 stat `devdocs-state.md`），命中则一行非阻塞提示来跑全量。探针**不挂 `.devdocs-realign-ack`**（health 是持续监控信号非一次性升级决策），按 `.health-baseline.yml` 重评估。探针规则见 [realign.md § health drift 探针](realign.md#health-drift-探针阶段-3与-schema-drift-并列但语义不同)。
 > - **二级强化**：`/ms-pipeline close`（周期收尾）若探针命中 blocker 级，建议顺带跑一次全量 health。
 
@@ -26,7 +26,7 @@
 | `../../agent-memory/templates/devdocs-state-template.md` | 占位 prose 边界约束（forbidden 字段） |
 | `../../_shared/constraints.md` | 继承 `⛔` / `⚠️` 门控、AskUserQuestion、yaml-summary-v1 |
 
-## 五大健康维度
+## 四大健康维度
 
 | 维度 | 检查内容 | 依赖能力 | 状态 |
 |------|----------|----------|------|
@@ -34,9 +34,10 @@
 | b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
 | c 过大文档识别（含 state-hygiene 子项）| size 三档（byte 阈值 / 单行长度）+ state-hygiene（内嵌禁用模式）| `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
 | d SSOT 遵从 | 占位/索引不复制权威源内容 | `ssot/no-restatement` | [FUTURE] (layout.v2 才启用) |
-| e 三层分离 | 决策（ADR）/ 执行（设计/代码）/ 数据（DTO/Schema）章节关键词混杂检测；与 Plan B 四卡片同源（同一"分层记忆"原则，见 spec §11） | 启发式正则扫描 | [FUTURE]（执行层封存，触发=真实项目痛点）|
 
-> 本轮（layout.v1 项目可立即用）：维度 a/b/c 实装。维度 d 在 layout.v1 下报 `skipped: requires layout.v2 ssot-lint`；layout.v2 启用后自动激活。维度 e 待 keyword baseline 定义后启用。
+> 本轮（layout.v1 项目可立即用）：维度 a/b/c 实装。维度 d 在 layout.v1 下报 `skipped: requires layout.v2 ssot-lint`；layout.v2 启用后自动激活。
+>
+> **原维度 e「三层分离自动检测」已废弃**（不再保留为 FUTURE）：三层分离（决策/执行/数据）作为原则在 layout.v1 已由编号文件结构 + `state/*`、`design/adr-only-revision` 症状规则承载，无需独立的关键词扫描维度；审查时作**人工尺子**使用。权威见 [_shared/constraints.md §9 分层记忆原则](../../_shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 >
 > [新增] rule 的算法与输出 schema 见 [health-lint-implementation.md](health-lint-implementation.md)（rule 清单与维度归属以该文件 Rule 集表为权威）。
 
@@ -92,9 +93,8 @@ docs/devdocs/.health-report.md
    - `health/dead-link` → 维度 b
    - `design/adr-only-revision` → 维度 a（基于 git 历史扫描最近 30 天 commit）
 5. 若项目为 layout.v2 → 追加 ssot-lint 调用获取维度 d 数据；layout.v1 → 维度 d 报 `skipped: requires layout.v2`。
-6. 维度 e 当前 skipped（输出 `pending: keyword baseline 待 P2 落地`）。
-7. 加权评分输出（见下方"评分契约"）。
-8. 写入 `.health-report.md`，stdout 打印摘要 + 下一步建议命令。
+6. 加权评分输出（见下方"评分契约"）。
+7. 写入 `.health-report.md`，stdout 打印摘要 + 下一步建议命令。
 
 ### Health Report 文件契约
 
@@ -138,9 +138,6 @@ dimensions:
   d_ssot:
     score: <0-100>
     restatement_findings: []
-  e_layer_separation:
-    status: skipped
-    reason: "keyword baseline 待 P2 落地"
 
 auto_fixable:
   - rule_id: <rule>
@@ -175,11 +172,10 @@ manual_decisions:
 
 权重随激活维度自动归一：
 
-| 场景 | a | b | c | d | e |
-|------|---|---|---|---|---|
-| layout.v1（本轮可用）| 0.30 | 0.40 | 0.30 | — | — |
-| layout.v2（d 启用）| 0.25 | 0.30 | 0.25 | 0.20 | — |
-| layout.v2 + e [FUTURE] | 0.20 | 0.25 | 0.20 | 0.15 | 0.20 |
+| 场景 | a | b | c | d |
+|------|---|---|---|---|
+| layout.v1（本轮可用）| 0.30 | 0.40 | 0.30 | — |
+| layout.v2（d 启用）| 0.25 | 0.30 | 0.25 | 0.20 |
 
 - 单维度评分 = (1 - violations_count / total_checks) × 100；无 violations 时为 100。
 - 跳过维度（status: skipped）权重不分摊到其他维度，从总和中剔除；其余维度按比例归一。
@@ -253,8 +249,8 @@ summary:
   details:
     scope: health
     total_score: <0.00-100.00>
-    dimensions_scored: [a, b, c, d]
-    dimensions_skipped: [e]
+    dimensions_scored: [a, b, c]      # layout.v1；v2 追加 d
+    dimensions_skipped: [d]            # layout.v1 下 d 需 v2 ssot-lint
     violations_by_severity:
       blocker: <N>
       warning: <N>

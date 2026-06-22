@@ -34,12 +34,14 @@
 ## 当前状态
 
 - 综合方案落地：flag 收敛 49→20、shared-constraints SSOT、realign --scope 四入口
-- 治理盲区收敛：scope=health（结构/索引/过大/SSOT/三层分离 5 维）+ health-lint 5 条 [新增] rule（state/* + dead-link + adr-only-revision），layout.v1+v2 通用
+- 治理盲区收敛：scope=health（结构/索引/过大/SSOT 4 维）+ health-lint 5 条 [新增] rule（state/* + dead-link + adr-only-revision），layout.v1+v2 通用
 - 新增 skill：ms-backlog（暂缓任务池）
 - internal-only：ms-iteration-policy（由 realign --scope=layout 调度）
 - code-quality 重构为代码质量 SSOT：核心阈值表（统一谓词）+ 命名/注释规范 + 设计原则（代码级），示例拆 references/；deferred：health-lint 镜像一致性 rule（见 [plans/2026-06-12-code-quality-restructure-naming.md](docs/superpowers/plans/2026-06-12-code-quality-restructure-naming.md) §4）
 - 新增 skill：dev-flow（非 DevDocs 通用开发执行器：契约先行 + 红绿 + 质量地板 + fresh-context 契约审查；与 ms-dev-workflow 双向 NOT-for，方案见 [plans/2026-06-12-dev-flow-standalone-skill.md](docs/superpowers/plans/2026-06-12-dev-flow-standalone-skill.md)）
-- **分层记忆封存（长期规划）**：Plan B 四卡片 = health 维度 e 三层分离（决策/执行/数据），合并为一条"分层记忆"原则；其执行层（layout.v2/trace.v1/维度 d·e 扫描）**封存暂不扩 spec**，触发=真实项目使用痛点，登记册见 [docs-layout-migration.md 执行接口落地状态](skills/pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)。本仓现役全跑 layout.v1，不执行对使用零影响
+- **分层记忆原则（已落地为 SSOT）**：决策/执行/数据三层分离，权威在 [_shared/constraints.md §9](skills/_shared/constraints.md)。在 layout.v1 **结构基础已存在**（编号文件提供三层 owner 位置），现役 `state/*`、`adr-only-revision` 只兜**部分**退化症状，**主要靠人工 review lens 承载**（非自动兜底）。
+  - **维度 e「三层分离自动检测」已废弃**：关键词扫描复杂度不匹配收益，skill 宜简，不再保留为 FUTURE。
+  - 区别：layout.v2 / trace.v1 / 维度 d 仍为**封存 FUTURE**（触发=真实项目痛点），未废弃；登记册见 [docs-layout-migration.md 执行接口落地状态](skills/pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)。本仓现役全跑 layout.v1，不执行对使用零影响
 
 ## 命令
 
