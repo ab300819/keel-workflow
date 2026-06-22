@@ -4,7 +4,7 @@
 >
 > 本文件被 [layout-versioning-policy.md](layout-versioning-policy.md) 与 [layout-metadata-schema.md](layout-metadata-schema.md) 引用。
 >
-> ⚠️ **执行接口当前状态**：本文件提及的 `/ms-pipeline realign --docs-layout` 等命令落地状态见 [docs-layout-migration.md § 执行接口落地状态（FUTURE）](docs-layout-migration.md#-执行接口落地状态future)。
+> ⚠️ **执行接口当前状态**：本文件提及的 `/ms-pipeline realign --scope=layout` 等命令落地状态见 [docs-layout-migration.md § 执行接口落地状态（FUTURE）](docs-layout-migration.md#-执行接口落地状态future)。
 
 ## 定位
 
@@ -167,7 +167,7 @@ matches:
 
 | 触发场景 | 执行者 | 写入时机 |
 |---------|------|--------|
-| `/ms-pipeline realign --docs-layout` | pipeline | 升级时批量生成 |
+| `/ms-pipeline realign --scope=layout` | pipeline | 升级时批量生成 |
 | `/ms-pipeline realign --rename-id ID-OLD ID-NEW` | pipeline | 单条 rename |
 | 手工编辑 | 维护者 | 特殊修正（需要 git review）|
 
@@ -228,7 +228,7 @@ aliases.yml **不**解决以下场景：
 
 ### 升级路径
 
-`alias.v1 → alias.v2` 同样走 `/ms-pipeline realign --docs-layout`（aliases.yml schema 是 layout 治理的一部分）。
+`alias.v1 → alias.v2` 同样走 `/ms-pipeline realign --scope=layout`（aliases.yml schema 是 layout 治理的一部分）。
 
 ### 不可跳跃升级
 

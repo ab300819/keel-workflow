@@ -72,7 +72,7 @@ docs/devdocs/                          # ===== Core tree（layout-versioning-pol
 
 | 派生项 | 用途 | 触发条件 |
 |--------|------|---------|
-| `_archived/` | 迁移日志 + 归档原文件留痕（如 v1→v2 拆分后保留单文件大表）| `realign --docs-layout` 自动创建；任何归档操作时使用 |
+| `_archived/` | 迁移日志 + 归档原文件留痕（如 v1→v2 拆分后保留单文件大表）| `realign --scope=layout` 自动创建；任何归档操作时使用 |
 | `design/modules/` 子目录 + `modules/<name>.md` | `current.md` ≥ 1500 行时的拆分载体 | `current.md` 行数触发，见 § design/modules 拆分规则 |
 | `tests/index.md` | 三类（UT/IT/E2E）汇总（数量 + 覆盖率快照）| 可选；若存在则由 ms-test-cases 维护 |
 
@@ -458,7 +458,7 @@ last_updated: 2026-05-18T10:00:00+08:00
 ### 迁移命令（[FUTURE]）
 
 ```bash
-/ms-pipeline realign --docs-layout
+/ms-pipeline realign --scope=layout
 ```
 
 该命令必须：
@@ -471,7 +471,7 @@ last_updated: 2026-05-18T10:00:00+08:00
 
 ### 不强制立即迁移
 
-mic-en 等历史项目维持 layout.v1 不动；任何时候用户主动调用 `realign --docs-layout` 才触发。本阶段（#2）**只产出 spec**，不执行任何项目的迁移。
+mic-en 等历史项目维持 layout.v1 不动；任何时候用户主动调用 `realign --scope=layout` 才触发。本阶段（#2）**只产出 spec**，不执行任何项目的迁移。
 
 ## 9 个 skill 输出迁移矩阵
 
@@ -500,7 +500,7 @@ mic-en 等历史项目维持 layout.v1 不动；任何时候用户主动调用 `
 
 | Skill | 改造点 |
 |-------|--------|
-| `ms-pipeline` | `init` 模式下创建 v2 目录树骨架；`realign --docs-layout` 执行迁移 |
+| `ms-pipeline` | `init` 模式下创建 v2 目录树骨架；`realign --scope=layout` 执行迁移 |
 | `ms-feature` | 增量功能时调用 v2 路径写 FEAT/STORY/AC 文件 |
 | `ms-bugfix` | 写 `issues/ISSUE-NNN.md`（v1 写 `BUG-NNN.md`）|
 
@@ -525,7 +525,7 @@ mic-en 等历史项目维持 layout.v1 不动；任何时候用户主动调用 `
 
 ### baseline 机制（用于 `legacy-annotation-additions`）
 
-- `layout.v2` 升级时，`/ms-pipeline realign --docs-layout` 写入 `_archived/layout-v2-baseline-<commit>.yml`：记录升级时刻的 `git rev-parse HEAD`
+- `layout.v2` 升级时，`/ms-pipeline realign --scope=layout` 写入 `_archived/layout-v2-baseline-<commit>.yml`：记录升级时刻的 `git rev-parse HEAD`
 - lint 算法：`git diff <baseline-commit>..HEAD --unified=0 -- '*.{ts,tsx,js,jsx,py,go,java}'` 提取新增 `+` 行，grep `@satisfies` / `@verifies`
 - 删除 legacy 注释**不报**（diff 中的 `-` 行）；新增**报错**（diff 中的 `+` 行）
 
@@ -552,7 +552,7 @@ mic-en 等历史项目维持 layout.v1 不动；任何时候用户主动调用 `
 ## 历史项目兼容（mic-en 等）
 
 - **mic-en 等 layout.v1 项目**：维持 v1 单文件累积大表，**不动**现有 `01~05` 文件
-- 任何时候用户主动调用 `/ms-pipeline realign --docs-layout` [FUTURE] 才触发迁移
+- 任何时候用户主动调用 `/ms-pipeline realign --scope=layout` [FUTURE] 才触发迁移
 - 本阶段（#2）**不执行** mic-en 迁移；仅完成 skill spec 改造
 
 ## 与其他阶段的接口

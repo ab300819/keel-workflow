@@ -4,7 +4,7 @@
 >
 > 本文件被 `skills/pipeline/SKILL.md` 与所有 A/B 类 skill 的 `references/realign.md` 共同引用。
 >
-> ⚠️ **执行接口当前状态**：本文件提及的所有命令（`/ms-pipeline realign --docs-layout` / `/ms-verify --layout-drift` 等）落地状态见 [docs-layout-migration.md § 执行接口落地状态（FUTURE）](docs-layout-migration.md#-执行接口落地状态future)。当前框架处于"仲裁层就绪 / 执行层待补"阶段。
+> ⚠️ **执行接口当前状态**：本文件提及的所有命令（`/ms-pipeline realign --scope=layout` / `/ms-verify --layout-drift` 等）落地状态见 [docs-layout-migration.md § 执行接口落地状态（FUTURE）](docs-layout-migration.md#-执行接口落地状态future)。当前框架处于"仲裁层就绪 / 执行层待补"阶段。
 
 ## 定位
 
@@ -16,7 +16,7 @@
 | 粒度 | 项目级（整个 DevDocs）| 产物级（单个 markdown 文件）|
 | 触发频率 | 低（年/季度级别）| 高（每次模板小调）|
 | 影响面 | 全部 skill | 单个 skill |
-| 迁移命令 | `/ms-pipeline realign --docs-layout` | `/ms-pipeline realign` |
+| 迁移命令 | `/ms-pipeline realign --scope=layout` | `/ms-pipeline realign` |
 | 不兼容时行为 | 强阻塞（block）| 软提醒（一次性提示）|
 
 **两者不能混用**：layout 升级**不会**自动 bump spec_version，反之亦然。
@@ -80,7 +80,7 @@ id.v2  ── 弱依赖 ──→ aliases.yml 存在（兼容老编号）
 trace.v1 ── 独立演进（不强依赖 layout 或 id）
 ```
 
-**强依赖**：组合不合法，skill 必须 surface 阻塞 + 推荐 `/ms-pipeline realign --docs-layout`。
+**强依赖**：组合不合法，skill 必须 surface 阻塞 + 推荐 `/ms-pipeline realign --scope=layout`。
 **弱依赖**：组合可运行但功能受限，skill 应 surface 警告。
 
 ## 当前版本基线
@@ -212,7 +212,7 @@ forbidden:
 1. 更新本文件"当前版本基线"小节
 2. 更新 [docs-layout-migration.md](docs-layout-migration.md) 增加 `v(N) → v(N+1)` 迁移矩阵
 3. 更新所有 A/B 类 skill 的 `reads_layout` / `writes_layout` 字段
-4. 提供 `/ms-pipeline realign --docs-layout` 执行迁移
+4. 提供 `/ms-pipeline realign --scope=layout` 执行迁移
 5. 在 [skill-compatibility-matrix.md](skill-compatibility-matrix.md) 登记新版本对各 skill 的兼容性
 
 ### 不可跳跃升级
@@ -234,7 +234,7 @@ writes_id_scheme: id.v2
 reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v1
 on_incompatible: block                  # 遇到不兼容项目时的行为
-migration: /ms-pipeline realign --docs-layout
+migration: /ms-pipeline realign --scope=layout
 ```
 
 ### `on_incompatible` 行为枚举
@@ -251,7 +251,7 @@ migration: /ms-pipeline realign --docs-layout
 |------|------|------|
 | skill 首次调用 | 各 skill 自身 | 检查项目 layout 是否在 `reads_layout` 范围 |
 | `/ms-pipeline init` | pipeline | 写入 AGENTS.md devdocs frontmatter（layout.v2 初始化）|
-| `/ms-pipeline realign --docs-layout` | pipeline | 执行 layout 升级迁移 |
+| `/ms-pipeline realign --scope=layout` | pipeline | 执行 layout 升级迁移 |
 | `/ms-verify --layout-drift` | verify | 只读检测当前 layout 与 skill `writes_layout` 偏差 |
 | `/ms-onboard --read` | onboard | 报告项目当前 layout 版本作为 onboarding 信息 |
 

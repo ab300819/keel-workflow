@@ -14,7 +14,7 @@
 ---
 type: layout-migration-dryrun
 generated_at: "<ISO 时间戳>"
-generator: ms-pipeline realign --docs-layout --dry-run
+generator: ms-pipeline realign --scope=layout --dry-run
 project_layout_from: layout.v1
 project_layout_to: layout.v2
 id_scheme_from: id.v1
@@ -66,7 +66,7 @@ traceability_to: trace.v1
 
 ### 1.3 删除
 
-> ⚠️ 删除走 archive 外仓策略，本阶段不直接删除。所有 v1 文件迁移完成后，原文件由 `/ms-pipeline realign --docs-layout --archive-v1` 单独打包到外仓。
+> ⚠️ 删除走 archive 外仓策略，本阶段不直接删除。所有 v1 文件迁移完成后，原文件由 `/ms-pipeline realign --scope=layout --archive-v1` 单独打包到外仓。
 
 ## 2. aliases.yml 待写入条目（Alias Map）
 
@@ -182,7 +182,7 @@ apply 前必须确认：
 # ...
 
 # 实际迁移
-/ms-pipeline realign --docs-layout --apply
+/ms-pipeline realign --scope=layout --apply
 
 # 后置校验
 /ms-verify --layout-drift
@@ -202,7 +202,7 @@ apply 阶段额外记录：
 ---
 type: layout-migration-applied
 generated_at: "<ISO 时间戳>"
-generator: ms-pipeline realign --docs-layout --apply
+generator: ms-pipeline realign --scope=layout --apply
 based_on: docs/devdocs/.layout-migration-dryrun.md
 project_layout_from: layout.v1
 project_layout_to: layout.v2

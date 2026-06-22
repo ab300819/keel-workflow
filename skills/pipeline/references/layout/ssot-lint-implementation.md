@@ -33,7 +33,7 @@
 | `/ms-verify --ssot-lint --changed-only` | 只扫 git diff HEAD 的变更文件 |
 | `/ms-verify --ssot-lint --baseline <commit>` | 显式指定 baseline commit（覆盖 `_archived/layout-v2-baseline-*.yml`）|
 | `/ms-verify --ssot-lint --fix` [FUTURE] | 尝试自动修复（4 条全量支持 + 1 条部分支持，见 § 自动修复支持矩阵）|
-| `/ms-verify --ssot-lint --baseline-init` | **内部命令**，仅由 `ms-pipeline init`（layout.v2 初始化）与 `ms-pipeline realign --docs-layout`（升级迁移）调用：创建或更新 baseline 文件。用户直调报 `ssot/baseline-init-misuse`。|
+| `/ms-verify --ssot-lint --baseline-init` | **内部命令**，仅由 `ms-pipeline init`（layout.v2 初始化）与 `ms-pipeline realign --scope=layout`（升级迁移）调用：创建或更新 baseline 文件。用户直调报 `ssot/baseline-init-misuse`。|
 
 ### 退出码
 
@@ -53,12 +53,12 @@ CI 集成默认按退出码 0 / 1 / 2 区分通过 / 警告 / 失败。
 | 时机 | 行为 | 阻断/告警 |
 |------|------|----------|
 | `/ms-pipeline init` 直接以 layout.v2 初始化 | 内部调用 `--baseline-init` 创建初始 baseline + 全量 lint | 仅告警（init 后允许过渡态）|
-| `/ms-pipeline realign --docs-layout` 迁移完成 | 内部调用 `--baseline-init` 更新 baseline + 全量 lint | P0 违规阻断（迁移视为完成态）|
+| `/ms-pipeline realign --scope=layout` 迁移完成 | 内部调用 `--baseline-init` 更新 baseline + 全量 lint | P0 违规阻断（迁移视为完成态）|
 | `/ms-dev-workflow` Commit 2（doc commit）前 | `--changed-only` 增量 lint | P0 阻断 commit；P1 告警继续 |
 | `/ms-sync --archive` 后 | 全量 lint | P0 告警（archive 触发被动检测）|
 | `/ms-verify` 任意子命令调用时 | 顺带跑 `--ssot-lint --changed-only` | 报告中独立小节，不影响主子命令退出码 |
 
-> ⛔ **`--baseline-init` 调用边界**：仅由 `ms-pipeline init` 与 `ms-pipeline realign --docs-layout` 内部调用，**禁止**用户直接调用。若用户绕过 pipeline 直接调 `--baseline-init`，lint 报 `ssot/baseline-init-misuse`（恢复方式：删除 baseline 文件后通过 realign 重建）。
+> ⛔ **`--baseline-init` 调用边界**：仅由 `ms-pipeline init` 与 `ms-pipeline realign --scope=layout` 内部调用，**禁止**用户直接调用。若用户绕过 pipeline 直接调 `--baseline-init`，lint 报 `ssot/baseline-init-misuse`（恢复方式：删除 baseline 文件后通过 realign 重建）。
 
 ### 手动触发
 
@@ -124,7 +124,7 @@ CI 集成默认按退出码 0 / 1 / 2 区分通过 / 警告 / 失败。
 
 - **File**: docs/devdocs/aliases.yml
 - **Issue**: 文件缺失
-- **Fix**: 运行 `/ms-pipeline realign --docs-layout` 重新初始化
+- **Fix**: 运行 `/ms-pipeline realign --scope=layout` 重新初始化
 
 ## P1 违规（warn）
 
@@ -254,7 +254,7 @@ managed_by: ms-pipeline                             # 仅此 owner 可写
 generated_from: realign-docs-layout | init-v2       # 创建来源标识
 active: true                                        # 当前活跃 baseline 标记（多 baseline 共存时只有 1 个 true）
 created_at: 2026-05-18T10:00:00+08:00
-created_by: /ms-pipeline realign --docs-layout
+created_by: /ms-pipeline realign --scope=layout
 target_layout: layout.v2
 target_id_scheme: id.v2
 target_traceability: trace.v1
@@ -282,7 +282,7 @@ notes: |
 | git_commit 不可达 | `git cat-file -e <commit>` 检查 | commit 已被 force-push 删除 |
 
 **恢复方式**：
-- checksum/managed_by/schema_version 不匹配 → 删除 baseline 文件 + 重跑 `/ms-pipeline realign --docs-layout` 重建
+- checksum/managed_by/schema_version 不匹配 → 删除 baseline 文件 + 重跑 `/ms-pipeline realign --scope=layout` 重建
 - active 多 baseline 冲突 → AskUserQuestion 让用户选保留哪一个 active，其余降为历史
 - git_commit 不可达 → 找一个最接近的本地 commit 作为新 baseline，重跑 realign
 
@@ -292,7 +292,7 @@ notes: |
 
 | 操作 | 命令 | 时机 |
 |------|------|------|
-| 创建 | `/ms-verify --ssot-lint --baseline-init` | 由 `ms-pipeline init`（layout.v2 初始化）或 `ms-pipeline realign --docs-layout`（升级迁移）内部调用；用户禁止直调 |
+| 创建 | `/ms-verify --ssot-lint --baseline-init` | 由 `ms-pipeline init`（layout.v2 初始化）或 `ms-pipeline realign --scope=layout`（升级迁移）内部调用；用户禁止直调 |
 | 查询 | `/ms-verify --ssot-lint --baseline-show` [FUTURE] | 显示当前活跃 baseline 内容 |
 | 更新 | `/ms-verify --ssot-lint --baseline-refresh <commit>` [FUTURE] | 重置 baseline 到新 commit（如 batch legacy cleanup 后）|
 | 列出 | `/ms-verify --ssot-lint --baseline-list` [FUTURE] | 列出所有历史 baseline |
@@ -306,7 +306,7 @@ notes: |
 - batch cleanup 后产生新 baseline，旧 baseline 自动 archive 到 `_archived/baselines/`
 - 多分支并行开发，每分支可有独立 baseline（lint 读 `git rev-parse --abbrev-ref HEAD` 对应文件）
 
-跨分支 merge 时，baseline 冲突由 `realign --docs-layout` 自动 reconcile（取较旧 commit 作为合并基线）。
+跨分支 merge 时，baseline 冲突由 `realign --scope=layout` 自动 reconcile（取较旧 commit 作为合并基线）。
 
 ## 自动修复支持矩阵
 
@@ -375,7 +375,7 @@ summary:
 | 触发场景 | P0 行为 | P1 行为 |
 |----------|--------|--------|
 | `ms-dev-workflow` Commit 2 前 | ⛔ 阻断 commit；要求修复或显式 `--ssot-lint-skip-reason="<原因>"` | ⚠️ 告警继续，写入 commit 尾注 `SSOT-Lint-Warnings: N` |
-| `/ms-pipeline realign --docs-layout` 后 | ⛔ 阻断 realign 完成；要求修复 | ⚠️ 告警，realign 标记为 `partial_success` |
+| `/ms-pipeline realign --scope=layout` 后 | ⛔ 阻断 realign 完成；要求修复 | ⚠️ 告警，realign 标记为 `partial_success` |
 | `/ms-verify --all` | 报告中独立小节，不阻断 verify 主流程 | 同上 |
 | 手动 `/ms-verify --ssot-lint` | 退出码 2 | 退出码 1 |
 
@@ -431,7 +431,7 @@ summary:
 ## 历史项目兼容（mic-en 等）
 
 - **mic-en 等 layout.v1 项目**：`--ssot-lint` 报 `not_applicable`，不执行
-- 任何时候用户主动调用 `/ms-pipeline realign --docs-layout` [FUTURE] 升级到 layout.v2 后，`--ssot-lint` 自动可用
+- 任何时候用户主动调用 `/ms-pipeline realign --scope=layout` [FUTURE] 升级到 layout.v2 后，`--ssot-lint` 自动可用
 - 本阶段（#3）**不执行** mic-en 迁移或 lint；仅完成 spec 改造
 
 ## 与其他阶段的接口
@@ -448,7 +448,7 @@ summary:
 | 引用本文件的位置 | 引用目的 |
 |------------|---------|
 | `skills/verify/SKILL.md` § `--ssot-lint` | 子命令文档化（待 #3 落地后加）|
-| `skills/pipeline/SKILL.md` § realign | `realign --docs-layout` 后调用 lint 验证 |
+| `skills/pipeline/SKILL.md` § realign | `realign --scope=layout` 后调用 lint 验证 |
 | `skills/dev-workflow/SKILL.md` § Commit 2 | Commit 2 前 `--changed-only` lint |
 | `folder-organization-implementation.md` § SSOT 强约束 | 本文件执行声明的 rule |
 

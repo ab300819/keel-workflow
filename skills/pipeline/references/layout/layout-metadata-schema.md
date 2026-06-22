@@ -36,7 +36,7 @@ devdocs:
 - `docs_layout_version` ∈ [`layout.v1`, `layout.v2`]
 - 版本号依赖：`layout.v2` 要求 `id.v2` + `trace.v1`（强依赖，违反触发 skill 阻塞）
 - `initialized_at` 一旦写入不可修改
-- `upgraded_at` 每次执行 `/ms-pipeline realign --docs-layout` 后自动更新
+- `upgraded_at` 每次执行 `/ms-pipeline realign --scope=layout` 后自动更新
 - frontmatter 段必须紧贴文件起始（无 leading 空行 / heading）
 
 ### 缺失时的行为
@@ -70,7 +70,7 @@ writes_id_scheme: id.v2
 reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v1
 on_incompatible: block                     # 枚举 block / warn / skip
-migration: /ms-pipeline realign --docs-layout
+migration: /ms-pipeline realign --scope=layout
 ---
 ```
 
@@ -85,7 +85,7 @@ migration: /ms-pipeline realign --docs-layout
 | `reads_traceability` | list[str] | ✅ | - |
 | `writes_traceability` | str | ✅ | - |
 | `on_incompatible` | enum | ✅ | `block` |
-| `migration` | str | ✅ | `/ms-pipeline realign --docs-layout` |
+| `migration` | str | ✅ | `/ms-pipeline realign --scope=layout` |
 
 ### 校验规则
 

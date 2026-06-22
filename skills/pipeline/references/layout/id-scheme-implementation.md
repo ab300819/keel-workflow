@@ -171,7 +171,7 @@ skill 可基于内容关键词提示推荐分类，但**最终决策必须由用
 ## 历史项目兼容（mic-en 等）
 
 - **mic-en 等 layout.v1 项目**：维持 v1 行为，**不动**现有 F/US/AC/T/INS/BUG 编号
-- 任何时候若用户主动调用 `/ms-pipeline realign --docs-layout` [FUTURE] 才触发迁移
+- 任何时候若用户主动调用 `/ms-pipeline realign --scope=layout` [FUTURE] 才触发迁移
 - 本阶段（#1）**不执行** mic-en 迁移；仅完成 skill spec 改造
 
 ## 与 #2 文件夹组织的接口预留

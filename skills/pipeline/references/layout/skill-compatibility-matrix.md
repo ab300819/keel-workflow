@@ -109,7 +109,7 @@ AGENTS.md:
   id_scheme: id.v1                  # ❌ 强依赖冲突
 
 skill 检测：layout.v2 必须配 id.v2 + trace.v1
-  → 直接阻塞，建议运行 /ms-pipeline realign --docs-layout 同步升级三层
+  → 直接阻塞，建议运行 /ms-pipeline realign --scope=layout 同步升级三层
 ```
 
 ## 矩阵的维护责任
@@ -137,7 +137,7 @@ writes_id_scheme: id.v1
 reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: block
-migration: /ms-pipeline realign --docs-layout
+migration: /ms-pipeline realign --scope=layout
 ---
 ```
 

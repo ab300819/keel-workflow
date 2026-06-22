@@ -174,7 +174,7 @@ def bar(): pass
 | `ms-dev-workflow` Commit 2 | 任务完成 + Code Commit 完成后 | 写入当前任务关联的 link（id + kind + repo + path + symbol + commit） |
 | `ms-sync --extract-trace` | 一次性迁移 | 批量写入提取的 link |
 | `ms-sync --refresh-traceability` | 用户触发 / 定期任务 | 刷新 stale link 的 commit + lines |
-| `ms-pipeline realign --docs-layout` | layout 升级 | 初始化空 traceability.yml + frontmatter |
+| `ms-pipeline realign --scope=layout` | layout 升级 | 初始化空 traceability.yml + frontmatter |
 
 ### 2. 手动编辑（受限）
 
@@ -370,7 +370,7 @@ ssot/legacy-annotation-additions 修复流程（半自动）：
 典型 layout.v1 → v2 迁移序列：
 
 ```text
-1. /ms-pipeline realign --docs-layout
+1. /ms-pipeline realign --scope=layout
      ├── 创建 baseline (commit B0)
      ├── 调用 ms-sync --extract-trace --dry-run（全量扫描 B0 时刻代码）
      ├── AskUserQuestion 确认
@@ -418,7 +418,7 @@ ssot/legacy-annotation-additions 修复流程（半自动）：
 ## 历史项目兼容（mic-en 等）
 
 - **mic-en 等 layout.v1 项目**：维持代码注释追溯，**不动**现有 636 处 `@satisfies` / `@verifies`
-- 用户主动调用 `/ms-pipeline realign --docs-layout` [FUTURE] 时：
+- 用户主动调用 `/ms-pipeline realign --scope=layout` [FUTURE] 时：
   1. `realign` 内部调用 `/ms-sync --extract-trace --dry-run` 预览
   2. AskUserQuestion 用户确认
   3. `--apply` 写入 traceability.yml + 保留代码注释（layout.v2 期间）
@@ -455,7 +455,7 @@ ssot/legacy-annotation-additions 修复流程（半自动）：
 |------------|---------|
 | `skills/sync/SKILL.md` § `--extract-trace` / `--refresh-traceability` | 子命令文档化（待 #4 落地后加）|
 | `skills/dev-workflow/SKILL.md` § Commit 2 | 单 link 写入触发点 |
-| `skills/pipeline/SKILL.md` § realign | `--docs-layout` 内部调用 extract-trace |
+| `skills/pipeline/SKILL.md` § realign | `--scope=layout` 内部调用 extract-trace |
 | `ssot-lint-implementation.md` § ssot/legacy-annotation-additions | 修复流程引用本文件 |
 
 ## 变更日志

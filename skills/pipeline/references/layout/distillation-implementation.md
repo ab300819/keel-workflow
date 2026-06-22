@@ -227,7 +227,7 @@
 
 #### `ins-reclassify`（v2 升级后历史 INS 拆 3 类）
 
-**触发**：仅 layout.v1 → layout.v2 升级时由 `realign --docs-layout` 调用一次；后续 distill 默认跳过
+**触发**：仅 layout.v1 → layout.v2 升级时由 `realign --scope=layout` 调用一次；后续 distill 默认跳过
 
 **执行**：
 1. 扫描所有 v1 INS-XXX 编号
@@ -281,7 +281,7 @@
 |------|---------|----------|
 | 每个 sprint 完成（`tasks/index.md` `current_sprint` 切换时）| `sprint-fold` + `index-rebuild` + `cross-ref-validate` | 不阻断；写入 sprint summary commit |
 | `ssot-lint` 报 `ssot/current-md-size` / `ssot/modules-size-cap` / `ssot/file-size-cap` | surface 推荐对应动作（`current-md-split` / `module-size-split` / `file-size-split`）| 不自动执行（必须用户确认）|
-| `/ms-pipeline realign --docs-layout` 完成 | `ins-reclassify`（仅 v1→v2 时）| 阻断 realign 完成直至全部 INS 归类完成 |
+| `/ms-pipeline realign --scope=layout` 完成 | `ins-reclassify`（仅 v1→v2 时）| 阻断 realign 完成直至全部 INS 归类完成 |
 | 每月（CI 定时任务推荐）| `--dry-run` 报告 → stdout / CI artifact（**不写文件系统**）| 仅报告，不执行；只有 `--apply` 才写 `_archived/` |
 
 ### 手动触发
