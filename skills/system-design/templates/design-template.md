@@ -433,6 +433,7 @@ Order *──* Product
 
 > ADR 编号在项目内全局递增，不重复。状态可选：`已采纳` | `已废弃` | `已取代`。
 > 若某原则被显式违反（见 `references/solid-principles-guide.md` 原则校验表 ⚠️），必须在此节生成对应 ADR 说明"为何违反"。
+> `复查条件` 为可选字段（向后兼容，不改必填结构，不触发 design 模板 bump）：仅对"暂选 X 因当前 Y 限制"这类有时效假设的决策填写，便于未来按信号重审；普通选型决策留空。
 
 ## Split File Guidelines
 

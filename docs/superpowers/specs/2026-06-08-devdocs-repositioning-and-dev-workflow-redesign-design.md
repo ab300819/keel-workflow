@@ -250,7 +250,7 @@ links:
     commit: 22cfb53f
     tests: [UT-001]                  # 既有:覆盖该 AC 的用例编号(覆盖关系,非本轮执行结果)
     evidence:                        # [新增,可选] Evidence Ledger 投影
-      - ac_type: behavioral          # behavioral | visual | structural(对齐 S8 AC 类型)
+      - ac_type: 行为型              # 行为型 | 视觉型 | 结构型(引用 S8 AC 类型 canonical,逐字)
         s8_evidence_type: "UT 断言"          # canonical:取 S8 矩阵证据类型枚举(见下)
         locator: "UT-001"            # 测试编号 / artifact 路径 / 命令输出指针 / 外部票据
         result: pass                 # pass | fail | n/a
@@ -264,7 +264,7 @@ links:
 **硬约束(§5.1#3 落地)**:
 - `evidence` 字段是 S8 AC 完备性表的**压缩投影/指针**,**永不替代** S8 表本体;**每条 AC(行为型/视觉型/结构型三类均含)**至少保留一条 `evidence` 指针,合法性按 S8 矩阵判(行为型禁纯实现代码、视觉型需 live/断言等,同矩阵不另立);任一 AC 缺指针 → 与 Step 1.5 [A] 证据复核冲突 → 复核判 `verification_pending`。
 - 每条 `evidence` 必须指向"本轮执行结果"之一:S8 表对应行 / 测试运行 artifact / CI run / 本地命令输出;仅 `tests: [UT-001]`(覆盖关系)不构成 evidence。
-- 写入者:见 §11.4#2(唯一写入者归属待定),S8 通过后回填,dev-workflow Commit 2 触发同步。
+- 写入者:**ms-sync 为唯一 traceability.yml 写入者**(含 evidence),数据源自 ms-verify 的 S8 verdict;ms-verify 保持只读(不破坏其 compatibility 声明)。dev-workflow Commit 2 触发 ms-sync 回填(决议见 §11.6 Q3)。
 
 ### 11.2 ADR Decision Log 同步规则(§8.7 闭合)→ 透镜 + adr-only-revision
 
@@ -292,4 +292,20 @@ links:
 
 ### 11.5 Codex 复核轨迹(Plan B)
 
-- 待补:本节(§11)起草后的 Codex 集中送审结论。
+- §11 方向闭合:Codex 三轮送审通过(R1 4 Blocker/R2 1 Blocker/R3 PASS)。
+- §11.6 实施决议:Codex 集中送审(见 §11.6)。
+
+### 11.6 实施决议(§11.4 六问闭合 + 落地)
+
+> 状态:§11.4 六问已定调并落地到 schema/模板。落地范围 = trace.v1 schema 增 `evidence` 可选字段 + ADR 模板增 `复查条件` 可选字段 + 各处指针,**不动 runtime**。
+
+| # | 问题 | 决议 | 落点 |
+|---|------|------|------|
+| Q1 | evidence 版本 bump | **不 bump**:trace.v1 属 [FUTURE] 未部署,可选字段并入 trace.v1 定义;bump 评估仅对已部署 schema 改字段适用。同步更新 schema 摘要 | layout-metadata-schema §4 + layout-versioning-policy §trace.v1 摘要 |
+| Q2 | 写入 API 白名单 | evidence **自动回填**,加入自动写入入口;**不**进手编白名单(实际验证结果不可手填) | code-decoupling §写入入口 + §禁止手编 |
+| Q3 | 唯一写入者 | **ms-sync**(既有唯一 traceability.yml 写入者,evidence 含在内),数据源自 ms-verify S8 verdict;ms-verify 保持只读不破坏 compatibility 声明,无双写 | code-decoupling §写入入口(ms-sync 行注 evidence)+ §禁止手编 |
+| Q4 | canonical 枚举归属 | `s8_evidence_type`/`ac_type` **引用** verification-flow S8 矩阵(逐字不复制:`ac_type`=行为型/视觉型/结构型,`s8_evidence_type`=UT 断言等);`result`(pass/fail/n/a) trace.v1 本地枚举 | layout-metadata-schema §4 字段注释 |
+| Q5 | evidence 校验归属 | **复用 trace.v1 软校验**(新增软校验规则 8:locator 可解析 + 枚举命中 S8 + 仅 kind:verifies);**不新增 health-lint rule** | layout-metadata-schema §软校验 #8 |
+| Q6 | ADR 复查条件 bump | **不 bump**:可选字段向后兼容,不改必填结构 | design-template ADR 节 |
+
+> 四卡片视图映射(§11.0)无需新文件:Context/Task/Evidence/ADR 已分别落在 AGENTS.md/04-dev-tasks/trace.v1 `evidence`/system-design ADR 透镜上,本 spec §11 即声明。

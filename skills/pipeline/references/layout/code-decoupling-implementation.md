@@ -176,6 +176,8 @@ def bar(): pass
 | `ms-sync --refresh-traceability` | 用户触发 / 定期任务 | 刷新 stale link 的 commit + lines |
 | `ms-pipeline realign --scope=layout` | layout 升级 | 初始化空 traceability.yml + frontmatter |
 
+> `evidence`（Evidence Ledger 投影，仅 `kind: verifies`）由 **ms-sync** 在 S8 AC 完备性通过后回填，数据源自 `ms-verify` 的 S8 verdict（ms-verify 保持只读，不直接写 traceability.yml；ms-sync 仍是唯一写入者，无双写）。
+
 ### 2. 手动编辑（受限）
 
 仅允许编辑的字段：
@@ -185,6 +187,7 @@ def bar(): pass
 
 **禁止手编**：
 - `id` / `kind` / `repo` / `path` / `symbol` / `commit` — 由 API 维护，手编会导致 schema lint 不通过
+- `evidence` — 由 `ms-sync` 在 S8 通过后回填（数据源 ms-verify S8 verdict；实际验证结果指针，手编=伪造证据），不在手编白名单
 
 ### 写入冲突解决
 

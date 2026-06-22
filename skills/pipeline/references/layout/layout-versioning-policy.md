@@ -62,7 +62,7 @@
 - 多仓库聚合策略
 
 **升级触发**：
-- traceability.yml schema 字段变化
+- **已部署** schema 的字段变化（未部署的 [FUTURE] schema 新增**可选**字段可并入当前版本，不触发 bump）
 - 漂移检测算法变化
 - 多仓库支持方式调整
 
@@ -171,8 +171,9 @@ forbidden:
 
 简要：
 - `version: trace.v1`
-- `links: [{id, kind, repo, path, symbol, lines, commit, tests}]`
+- `links: [{id, kind, repo, path, symbol, lines, commit, tests, evidence?}]`（`evidence?` 可选 Evidence Ledger 投影，仅 `kind: verifies`）
 - 校验顺序：`symbol + path` 优先，`lines` 仅展示缓存，`commit` 用于过期检测
+- `evidence?` 为可选字段，并入 trace.v1 定义；trace.v1 尚属 [FUTURE] 未部署，新增可选字段不触发 `traceability_version` bump（bump 评估仅对已部署 schema 改字段适用）
 
 ## 历史版本
 

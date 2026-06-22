@@ -184,7 +184,7 @@ links:
 version: trace.v1
 project_layout: layout.v2
 generated_at: "2026-05-15T10:00:00Z"
-generator: "manual | ms-sync | ms-verify --extract-trace"
+generator: "manual | ms-sync | ms-sync --extract-trace"
 ---
 
 links:
@@ -202,6 +202,20 @@ links:
       - IT-005
     confidence: high                         # 可选，枚举 high / medium / low
     notes: "..."                             # 可选，人工备注
+
+  - id: AC-001                              # kind: verifies 示例 —— evidence 仅出现在 verifies link
+    kind: verifies
+    repo: trade-fund-impl
+    path: src/test/java/.../FundServiceTest.java
+    symbol: FundServiceTest#rejectsEmptySlip
+    commit: 22cfb53f49
+    tests: [UT-001]                          # 覆盖关系：哪些用例覆盖该 AC
+    evidence:                                # 可选，Evidence Ledger 投影（仅 kind: verifies）；由 ms-sync 在 S8 通过后回填（数据源 ms-verify S8 verdict），禁止手编
+      - ac_type: 行为型                       # 行为型|视觉型|结构型 —— 引用 verification-flow S8 AC 类型 canonical（逐字），不复制
+        s8_evidence_type: "UT 断言"          # 引用 verification-flow S8 证据矩阵 canonical 枚举（逐字），不复制
+        locator: "UT-001"                    # 证据索引：测试编号 / artifact 路径 / CI run / 命令输出指针
+        result: pass                         # trace.v1 本地枚举：pass | fail | n/a
+        at_commit: 22cfb53f49                # 产出该证据时的 commit
   
   - id: FEAT-001
     kind: implements
@@ -235,6 +249,7 @@ links:
 5. `symbol` 必须能在 `path` 中定位（grep `class\s+ClassName` / `function\s+funcName`）
 6. `lines.end > lines.start`
 7. `tests` 中的编号必须存在
+8. `evidence` 仅允许出现在 `kind: verifies` 的 link（其他 kind 出现 → warn）；`evidence[].locator` 必须可解析（测试编号存在 / artifact 路径存在 / CI run 可定位）；`s8_evidence_type`（UT 断言/IT 断言/E2E 断言/--ui --live 截图等）与 `ac_type`（行为型/视觉型/结构型）取值须命中 verification-flow S8 矩阵枚举（Evidence Ledger 校验复用本软校验，不新增 health-lint rule）
 
 ### 过期检测
 
