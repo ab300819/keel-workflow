@@ -29,7 +29,7 @@
 | b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
 | c 过大文档识别（含 state-hygiene 子项）| size 三档（byte 阈值 / 单行长度）+ state-hygiene（内嵌禁用模式）| `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
 | d SSOT 遵从 | 占位/索引不复制权威源内容 | `ssot/no-restatement` | [FUTURE] (layout.v2 才启用) |
-| e 三层分离 | 决策（ADR）/ 执行（设计/代码）/ 数据（DTO/Schema）章节关键词混杂检测 | 启发式正则扫描 | [FUTURE] |
+| e 三层分离 | 决策（ADR）/ 执行（设计/代码）/ 数据（DTO/Schema）章节关键词混杂检测；与 Plan B 四卡片同源（同一"分层记忆"原则，见 spec §11） | 启发式正则扫描 | [FUTURE]（执行层封存，触发=真实项目痛点）|
 
 > 本轮（layout.v1 项目可立即用）：维度 a/b/c 实装。维度 d 在 layout.v1 下报 `skipped: requires layout.v2 ssot-lint`；layout.v2 启用后自动激活。维度 e 待 keyword baseline 定义后启用。
 >
