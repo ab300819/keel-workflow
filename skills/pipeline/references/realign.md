@@ -211,6 +211,51 @@ dev-workflow 的 realign 在任务正文追加一行：`Realigned-From: <old_spe
 
 用户不需要手动删除 ack，机制自动处理。
 
+## health drift 探针（阶段 3，与 schema drift 并列但语义不同）
+
+> **语义分叉**：schema/layout drift 是一次性版本升级决策，受 `.devdocs-realign-ack` 控制（上文）。health drift 是**持续退化的监控信号**，**不读不写 `.devdocs-realign-ack`、不受 `--no-realign` 控制**；每次进入路由按 baseline 重评估。维护者勿把 health 接回 ack。
+
+### 廉价探针（路由时 ≤2s，不全量扫描）
+
+只 stat 一个文件，不碰 frontmatter / 死链 / ADR（那些留全量 `--scope=health`）：
+
+```text
+1. stat <repo_root>/.claude/rules/devdocs-state.md
+     ├── 不存在 → 跳过（无 health drift 信号）
+     └── 存在 → 读 size_bytes + 扫该文件单行最大长度 max_line
+2. 命中阈值判定（复用 state/total-size-cap + line-length-cap 阈值）：
+     ├── size > 40 KiB → blocker 级（state/total-size-cap）
+     ├── size > 10 KiB → warn 级（state/total-size-cap）
+     └── max_line > 500 字符 → blocker 级（state/line-length-cap，权威定义即 blocker）
+3. baseline 比对（见下）决定是否提示
+```
+
+### baseline-aware 静默（承认存量债、只报新增退化）
+
+读 `<repo_root>/.claude/rules/.health-baseline.yml`（若存在）：
+
+| baseline 状态 | 提示条件 |
+|--------------|---------|
+| 无 baseline | 命中即提示（尤其 size > 40 KiB blocker 级必提示） |
+| 有 baseline | 仅当 `delta = current_size − baseline_size ≥ 2 KiB` / warn→blocker 升级 / baseline 不可读 时才提示（与 [health-lint-implementation.md](health-lint-implementation.md) 的 state/total-size-cap delta 规则一致） |
+
+> **`state/line-length-cap`（max_line > 500）独立判定，不受 size baseline delta 静默**——baseline 仅记录 size delta（无 max_line 字段），故新增单行超长一律提示，避免 size delta < 2 KiB 时漏报。
+
+### 会话内去重（非持久，下会话重评估）
+
+同一 `repo + rule_id + severity_bucket` 在**单个会话内只提示一次**；不写任何持久标记（区别于 ack）。下个会话重新评估——这不是永久静默，是避免同一会话反复进出 pipeline 被同一条刷屏。
+
+### 提示格式
+
+```
+ℹ️ 健康度提示（不阻塞）
+   devdocs-state.md 已 <size> KiB（阈值 warn 10 / blocker 40）<，较 baseline +<delta> KiB>
+   建议：/ms-pipeline realign --scope=health    跑全量健康扫描
+   （此提示按 baseline 重评估，修复后自动消失；非升级决策，不写 ack）
+```
+
+> 全量 health 扫描（5 维度 / 死链 / ADR 漂移 / 所有文档）仍由显式 `/ms-pipeline realign --scope=health` 执行，见 [realign-scope-health.md](realign-scope-health.md)。探针只决定"要不要提示去跑全量"。
+
 ## 与 ms-retrofit 的边界
 
 > 本节与上方"向后兼容"章节自洽：**阶段 1**（当前，产物尚无 frontmatter 元数据）下，表格内"无 frontmatter"场景尚未触发；用户显式 `/ms-pipeline realign` 统一归 realign 的 legacy 全量扫描。**阶段 2 起**（产物引入 frontmatter 之后），下表规则生效。

@@ -9,6 +9,11 @@
 
 与 `--scope=spec`（spec_version 差距补齐）/ `--scope=layout`（layout.v1→v2 迁移）/ `--scope=prd-mapping`（PRD ↔ DevDocs 映射）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
 
+> **推/拉两个触发点**（解决"规则实装但没人跑"的断层）：
+> - **拉（全量）**：用户显式 `/ms-pipeline realign --scope=health` —— 本文件定义的完整 5 维扫描。
+> - **推（轻量探针）**：ms-pipeline 路由入口的 health drift 探针（≤2s，仅 stat `devdocs-state.md`），命中则一行非阻塞提示来跑全量。探针**不挂 `.devdocs-realign-ack`**（health 是持续监控信号非一次性升级决策），按 `.health-baseline.yml` 重评估。探针规则见 [realign.md § health drift 探针](realign.md#health-drift-探针阶段-3与-schema-drift-并列但语义不同)。
+> - **二级强化**：`/ms-pipeline close`（周期收尾）若探针命中 blocker 级，建议顺带跑一次全量 health。
+
 引用关系：
 
 | 文件 | 本 spec 的使用方式 |

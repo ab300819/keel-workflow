@@ -116,12 +116,20 @@ user-invocable: true
 
 ### 一次性升级提示（阶段检测后）
 
-阶段检测完成后、返回路由建议之前，执行两个维度的 drift 轻量检查：
+阶段检测完成后、返回路由建议之前，执行 drift 轻量检查。**两类语义不同，勿混**（维护者注意：health 永不接回 ack）：
+
+**A. 升级类 drift（一次性版本决策，受 `.devdocs-realign-ack` 控制）**
 
 1. **schema drift**（产物模板）：检测各产物 `spec_version` 与各 skill 当前常量差距 → 提示 `/ms-pipeline realign`
 2. **layout drift**（治理层）：检测 AGENTS.md devdocs frontmatter 是否存在 + `docs_layout_version` 是否在各 skill `reads_layout` 范围 → 提示 `/ms-pipeline realign --scope=layout`
 
 检测到 drift 且无 `.devdocs-realign-ack` 标记时，打印**一次性**轻量提示（不阻塞原路由）。**layout drift 强阻塞场景**（skill `on_incompatible: block` 触发）会直接拒绝执行，不走"一次性提示"软路径。schema drift 规则见 [references/realign.md](references/realign.md) § 一次性升级提示；layout scope 执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md)，检测时机见 [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md)。
+
+**B. 健康类 drift（持续监控信号，baseline-aware，*不*受 `.devdocs-realign-ack` / `--no-realign` 控制）**
+
+3. **health drift**（文档健康度）：路由时跑廉价探针（≤2s，仅 stat `.claude/rules/devdocs-state.md` 体积 + 该文件单行长度，**不**全量扫描、**不**碰 frontmatter/死链/ADR）→ 命中则一行非阻塞提示 `/ms-pipeline realign --scope=health`（跑全量扫描）。
+
+> **语义分叉（关键，勿退化）**：升级类是"版本落后→升级决策"，ack 后永久静默合理；健康类是"文档持续退化"的监控信号，**绝不挂 ack**——否则 state 文件涨到 209KiB 也只提醒一次就永久哑火。health 每次进入路由按 `.health-baseline.yml` 重评估：承认存量债、只报新增退化。探针信号、baseline 比对、会话内去重见 [references/realign.md](references/realign.md) § health drift 探针。
 
 **`.devdocs-realign-ack` 读写责任**：读取发生在阶段检测后；**写入仅由 `ms-pipeline realign` / `--no-realign` 执行完成时触发**（整仓决策）—— `ms-feature F-XX realign` / `ms-bugfix BUG-XX realign` 是定向局部对齐，**不写入 ack**（用户未对整仓做决策，下次进入 pipeline 若仍有 drift 仍应提示；若定向 realign 正好清空全部 drift，pipeline 入口自然 drift_count=0 不会提示）。失效条件见 [references/realign.md](references/realign.md)。标记文件入 git，协作者共享决策。
 
@@ -177,7 +185,7 @@ Q3（feature/bugfix 追加，可选）:
 | `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep | `ms-feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness + Step 6 dev-workflow）→ `ms-verify --docs --impl` → `ms-sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
 | `bugfix` | 修复 Bug；不改变 feature 入口语义 | 简单 Bug：`ms-bugfix` → `ms-verify --impl` → `ms-sync`；复杂 Bug：`ms-dev-tasks` → `ms-dev-workflow` → `ms-verify --impl` → `ms-sync` | Bug 范围、复杂度判定、修复文件、验证结果 |
 | `verify` | 任意阶段质量检查 | 有代码变更 → `ms-verify --impl`；有文档变更 → `ms-verify --docs`；有 UI 设计稿 → `ms-verify --ui`；不确定 → 询问用户；再路由到对应 skill 修复 | 检查维度、问题摘要、建议修复 skill |
-| `close` | 开发周期结束收尾 | `ms-sync`（trace + audit）→ `ms-compound`（知识沉淀）→ `ms-onboard --update` | 同步结果、沉淀文件、更新后的上下文摘要 |
+| `close` | 开发周期结束收尾 | `ms-sync`（trace + audit）→ `ms-compound`（知识沉淀）→ `ms-onboard --update`；health 探针命中 blocker 级时，二级强化：建议顺带 `realign --scope=health` 全量扫描 | 同步结果、沉淀文件、更新后的上下文摘要 |
 | `insights` | 外部洞察吸收 | `ms-insights`（收集 + 用户确认 + 追加 01）→ 有架构变更则 `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow` → `ms-verify` → `ms-sync`；简单改进则 `ms-dev-tasks` → `ms-dev-workflow` → `ms-verify` → `ms-sync` | 洞察确认结果、架构影响判定、变更链路 |
 | `design` | 用户主动推送设计资产；pipeline 只做阶段检测和收集 | no-prd → 收集并提示先 `/ms-prd` 或 `/ms-requirements`；prd-ready → `ms-requirements --update-design --target prd-index`；post-requirements/post-design → `ms-requirements --update-design`; in-dev → `ms-requirements --update-design` + 提示 `ms-verify --ui`; post-tasks → `ms-requirements --update-design` → `ms-dev-tasks --backfill-design` | `design_context`、目标阶段、委托目标、UI 验证提示 |
 | `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | spec_version：扫描 frontmatter → 比对各 skill 当前常量 → Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1；layout scope：扫描 AGENTS.md devdocs frontmatter → 比对 `writes_layout` → 三阶段迁移 | drift 数量、Phase 结果、确认项、layout/id/trace 差距 |
