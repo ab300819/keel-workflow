@@ -67,6 +67,19 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 > \* 调用点已有命名空间上下文时按语言惯例豁免（如 Go 包名 `http.Client`、Swift 类型命名空间）。
 
+### 接口 / 协议命名细则
+
+在"类/接口"通则（名词短语、描述角色不暴露实现）上补充，**在不破坏项目既有一致性的前提下，优先按语言/生态惯例命名**：
+
+| 类型 | 惯例 | 例 |
+|------|------|-----|
+| 能力型（"能做什么"）| `-able`/`-ible` 后缀 | `Comparable`、`Iterable`、`Closeable` |
+| 单方法接口（Go 惯例）| 动作 + `-er` | `Reader`、`Formatter` |
+| 角色型（"是什么角色"）| 名词短语 | `Repository`、`PaymentGateway` |
+
+- 禁 `I` 前缀（`IFoo`）等类型编码，除非项目既有惯例（如 .NET）——服从项目一致性。
+- **业务抽象接口**不暴露可替换实现技术（`UserRepository` 而非 `MySQLUserRepoInterface`，禁 `Impl` 后缀）；外部协议/技术边界接口（如 `HttpClient`、`KafkaConsumer`）技术名是契约的一部分，不在此限。
+
 ### 命名黑名单（本次 diff 新增命中即 [Blocker]；存量未触碰为 [Suggestion]）
 
 | 反模式 | 分级 |
@@ -74,7 +87,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 | 误导名：名实不符（`accountList` 非 List、`is*` 返回非布尔、`get*` 带副作用） | [Blocker]（最高红线：误导名同样降低 agent 自身代码分析准确率） |
 | 泛化名作完整名：`data/info/temp/result/obj/item/thing/flag/val`（局部惯用语除外） | [Blocker] |
 | 同概念多名漂移：同一实体 user/account/customer 混用（引入新名词前必须先 grep 项目词表） | [Blocker] |
-| 类型编码（匈牙利前缀 `strName/m_x`）、不可发音自造缩写 | [Blocker] |
+| 类型编码（匈牙利前缀 `strName/m_x`）、不可发音自造缩写 | [Blocker]（接口 `I` 前缀的语言/项目惯例例外见上节「接口/协议命名细则」）|
 | 无意义区分（`data1/data2`、`ProductInfo` 与 `ProductData` 并存）、大作用域单字母 | [Suggestion] |
 
 **边界**：本规范只判定结构合规（白/黑名单、词性、一致性），不裁决具体选词。正反例见 [references/naming-examples.md](references/naming-examples.md)。
