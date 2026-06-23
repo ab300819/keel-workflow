@@ -43,7 +43,7 @@
 - [ ] 函数长度 ≤ 50 行
 - [ ] 参数数量 ≤ 5 个（超过使用参数对象）
 - [ ] 嵌套深度 ≤ 3 层（使用早返回减少嵌套）
-- [ ] 无重复代码（Rule of Three: 3 次以上才提取）
+- [ ] 无重复代码（Rule of Three: ≤3 处合规，第 3 处建议提取、不阻塞；>3 处未提取 = Blocker；<3 禁止提前抽象）
 
 #### T - 可测试性
 
@@ -55,7 +55,7 @@
 
 - [ ] 不为假设需求设计（YAGNI）
 - [ ] 接口抽象合理（不过度抽象）
-- [ ] 只有 1 个实现时不创建接口（除非为了测试）
+- [ ] 只有 1 个实现时不创建接口（例外：跨模块边界 / 外部依赖 / 可测试性边界可先建接口）
 
 #### 安全检查
 
@@ -72,7 +72,7 @@
 - [ ] 无复述代码的注释、无注释掉的代码、无残留骨架脚手架（TODO / Not implemented）
 - [ ] 注释与代码当前语义一致（改代码须同步更新受影响注释）
 
-#### 命名卫生（依据 [`/code-quality` 命名规范](../../code-quality/SKILL.md#命名规范)，仅审本次 diff 新增标识符）
+#### 命名卫生（依据 [`/code-quality` 命名规范](../../code-quality/SKILL.md#命名规范)，仅审本次 diff 新增/修改标识符）
 
 - [ ] 无误导名（名实不符：`is*` 返回非布尔、`get*` 带副作用、`xxxList` 非 List）
 - [ ] 无泛化名作完整名（`data/info/temp/result/obj/item/thing/flag/val`；局部惯用语除外）
@@ -84,6 +84,12 @@
 - [ ] 无 log-and-throw（逐层 log 再抛造重复堆栈）、无吞异常只 log
 - [ ] 级别正确（ERROR=当前动作失败 / WARN=异常但已处理 / INFO=低频长期价值 / DEBUG·TRACE=默认关闭）
 - [ ] 含最小上下文（event + result + 关联 id + 组件 + 安全主对象 id；失败另加 error_code/异常类型 + 原因）；无 `here`/`step1` 占位日志；不把推测写成事实
+
+#### 错误处理（依据 [`/code-quality` 错误处理节](../../code-quality/SKILL.md#错误处理编码级)，仅审本次 diff 新增/修改）
+
+- [ ] 不吞异常（空 catch / 仅 log 后照常继续 → Blocker）；异常转换只在边界一次并保留 cause（丢 cause → Blocker）
+- [ ] 错误有语义（类型化错误/错误码，非裸字符串或布尔）；外部输入 / 不变量违反在边界 fail-fast
+- [ ] 对外错误不泄露堆栈 / SQL / 内部路径 / 实现细节（→ Blocker）
 
 ### Phase 1 输出格式
 
@@ -358,7 +364,7 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 
 ### 代码质量 Blocker
 
-> 阈值摘录自 [`/code-quality` 核心阈值表](../../code-quality/SKILL.md#核心阈值表)（谓词统一：≤ 最大值合规；> 建议值且 ≤ 最大值 → Suggestion；> 最大值 → Blocker），变更需同 commit 同步。
+> 阈值摘录自 [`/code-quality` 核心阈值表](../../code-quality/SKILL.md#核心阈值表)（谓词统一：≤ 建议值合规；> 建议值且 ≤ 最大值 → Suggestion；> 最大值 → Blocker；无建议值的指标 ≤ 最大值合规 / > 最大值 Blocker），变更需同 commit 同步。
 
 | 问题 | 阈值 | Blocker 判定 | 依据 |
 |------|------|-------------|------|
@@ -373,10 +379,12 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 | 安全漏洞 | 任何 | 🚫 Blocker | — |
 | 黑名单注释（变更日志式/对审查者说话/来源记录式等） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 注释规范 |
 | 注释与代码语义不符 | 本次 diff 涉及 | 🚫 Blocker | /code-quality 注释规范 |
-| 黑名单命名（误导名/泛化名/同概念漂移/类型编码） | 本次 diff 新增 | 🚫 Blocker | /code-quality 命名规范 |
+| 黑名单命名（误导名/泛化名/同概念漂移/类型编码） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 命名规范 |
 | 日志命中安全红线（密码/token/PII/支付等入日志） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 日志规范 |
 | log-and-throw 重复堆栈 / 吞异常只 log / 把推测写成事实 | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 日志规范 |
 | 日志级别误用 / 上下文不足 / 占位日志（here·step1） | 本次 diff 新增/修改 | 💡 Suggestion | /code-quality 日志规范 |
+| 错误吞异常 / 丢 cause / 对外泄露内部 | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 错误处理 |
+| 错误无语义（裸字符串/布尔）/ 边界未 fail-fast | 本次 diff 新增/修改 | 💡 Suggestion | /code-quality 错误处理 |
 | 存量坏注释/坏命名（本次未触碰）、public API 缺契约注释 | 任何 | 💡 Suggestion | /code-quality 注释/命名规范 |
 
 ### 测试完备 Blocker
