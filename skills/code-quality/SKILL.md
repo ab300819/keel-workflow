@@ -1,6 +1,6 @@
 ---
 name: code-quality
-description: Opinionated constraints for writing maintainable, testable code. Apply MTE principles, naming and comment standards, avoid over-engineering, guide refactoring, and provide code review checklists. Use when users write code, refactor, or need code review. Triggers on keywords like "code quality", "refactor", "review", "MTE", "naming", "代码质量", "重构", "审查", "命名", "注释". NOT for systematic refactoring workflow with scope analysis and test gates (use refactor).
+description: Opinionated constraints for writing maintainable, testable code. Apply MTE principles, naming, comment, and logging standards, avoid over-engineering, guide refactoring, and provide code review checklists. Use when users write code, refactor, or need code review. Triggers on keywords like "code quality", "refactor", "review", "MTE", "naming", "logging", "代码质量", "重构", "审查", "命名", "注释", "日志". NOT for systematic refactoring workflow with scope analysis and test gates (use refactor).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 
@@ -112,6 +112,39 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 - **[Blocker]**：本次 diff 新增/修改黑名单注释；抑制类注释无理由；S4/S6/S7 后残留骨架脚手架注释；注释与代码当前语义不符（改代码必须同步更新受影响注释，过期注释比没注释更糟）
 - **[Suggestion]**：存量坏注释（本次未触碰）；public API 缺契约注释（仅当缺失已造成安全/兼容/行为歧义时按对应风险升级）
 
+## 日志规范
+
+日志唯一目标是**让线上失败被快速排查 / 审计 / 观测**——价值在"对的级别 + 对的上下文 + 不泄密"，不在量；烂日志是烂注释的运行时版本（见上节），同样按本次 diff 新增/修改命中分级。设计阶段"在哪打日志点"见 [system-design log-design-guide.md](../system-design/templates/log-design-guide.md)，本节是**编码纪律 SSOT**。
+
+### 六条硬规则
+
+| 规则 | 判定要点 |
+|------|----------|
+| **目的门槛** | 每条日志须服务排查/审计/观测；禁 `here`/`step1`/进出方法/"执行完成"等无对象无结果的占位日志 |
+| **级别纪律** | ERROR/WARN/INFO/DEBUG·TRACE 准入见下表；最常见误用：所有异常都 ERROR、INFO 刷屏、WARN 当 INFO |
+| **最小上下文** | 业务日志含 event + result + 关联 id + 组件 + 一个**安全**主对象 id；失败日志另加 error_code/异常类型 + 原因 + 已采取动作；用结构化字段承载，禁纯文本拼接关键上下文（字段名沿用项目词表）|
+| **异常纪律** | 异常只在**处理边界**记一次完整堆栈；禁 log-and-throw（逐层 log 再抛 = 重复"根因"）；禁吞异常只 log（除非契约明确已降级/补偿并注明）|
+| **安全红线** | 禁入日志：密码、token、session/cookie、密钥、验证码、原始请求/响应体、原始 SQL/查询、PII、支付/银行/医疗数据、未脱敏的第三方或 LLM 原始响应 |
+| **事实优先** | 写不可变事实 + 系统动作；推测/风险/模型判断须带来源、规则名或置信度（禁 `payment service is broken`，写 `upstream_status=504, retry_scheduled=true`）|
+
+### 级别准入（规则「级别纪律」展开）
+
+| 级别 | 准入判据 |
+|------|----------|
+| ERROR | 当前请求/任务/事务失败，用户或系统可感知，需调查或可触发告警 |
+| WARN | 异常但已处理、系统可继续：降级、重试耗尽前兆、配置风险 |
+| INFO | **低频且长期有价值**的里程碑：启动/停止、配置版本、任务摘要、关键状态变更 |
+| DEBUG / TRACE | 默认**生产关闭**的诊断细节；必须排查的失败不得只放 DEBUG |
+
+### 分级
+
+- **[Blocker]**：本次 diff 新增/修改命中安全红线、log-and-throw 重复堆栈 / 吞异常只 log、把推测写成事实
+- **[Suggestion]**：本次 diff 新增/修改的级别误用、上下文不足、占位日志；存量坏日志（本次未触碰）
+
+### 不写死（留给项目规范）
+
+日志格式（JSON/logfmt）、字段大小写、每业务事件清单、采样率、保留周期、**脱敏或截断后**的 SQL/HTTP payload 策略——依赖运行平台与监管，写死有害。（注：**原始** SQL/请求/响应体始终属安全红线，禁入日志，不在"留给项目"之列。）
+
 ## 设计原则（代码级）
 
 SOLID + 迪米特六大原则的**代码级/diff 级可机械判定特征**。设计级判定（启发式阈值/三态结论表/ADR 联动）权威归 [system-design solid-principles-guide.md](../system-design/references/solid-principles-guide.md)，本节不替代。
@@ -185,6 +218,7 @@ Code Smells 触发信号、风险评估、详细流程见 [references/refactor-s
 - [ ] 依赖可注入、业务逻辑与 IO 分离
 - [ ] 无过度设计（YAGNI / Rule of Three）
 - [ ] 错误处理：边界条件、错误信息有意义、不吞异常
+- [ ] 日志：级别正确、含关联 id + 最小上下文、无 log-and-throw（命中安全红线即 Blocker，详见日志规范）
 - [ ] 安全：无注入/XSS 风险、敏感数据不入日志、权限正确
 
 反馈必须分级并说明理由；安全问题必须 [Blocker]。完整审查维度与输出格式见 [references/review-rubric.md](references/review-rubric.md)。

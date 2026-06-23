@@ -37,7 +37,7 @@
 - 治理盲区收敛：scope=health（结构/索引/过大/SSOT 4 维）+ health-lint 5 条 [新增] rule（state/* + dead-link + adr-only-revision），layout.v1+v2 通用
 - 新增 skill：ms-backlog（暂缓任务池）
 - internal-only：ms-iteration-policy（由 realign --scope=layout 调度）
-- code-quality 重构为代码质量 SSOT：核心阈值表（统一谓词）+ 命名/注释规范 + 设计原则（代码级），示例拆 references/；deferred：health-lint 镜像一致性 rule（见 [plans/2026-06-12-code-quality-restructure-naming.md](docs/superpowers/plans/2026-06-12-code-quality-restructure-naming.md) §4）
+- code-quality 重构为代码质量 SSOT：核心阈值表（统一谓词）+ 命名/注释/日志规范 + 设计原则（代码级），示例拆 references/；日志规范=编码纪律 SSOT（级别纪律/最小上下文/异常纪律/安全红线/事实优先 6 条），system-design log-design-guide 留设计阶段"在哪打点"并指针回此；dev-flow/dev-workflow 编码纪律 + verification-flow 日志卫生审查项已并列接入；deferred：health-lint 镜像一致性 rule（见 [plans/2026-06-12-code-quality-restructure-naming.md](docs/superpowers/plans/2026-06-12-code-quality-restructure-naming.md) §4）
 - 新增 skill：dev-flow（非 DevDocs 通用开发执行器：契约先行 + 红绿 + 质量地板 + fresh-context 契约审查；与 ms-dev-workflow 双向 NOT-for，方案见 [plans/2026-06-12-dev-flow-standalone-skill.md](docs/superpowers/plans/2026-06-12-dev-flow-standalone-skill.md)）
 - **分层记忆原则（已落地为 SSOT）**：决策/执行/数据三层分离，权威在 [_shared/constraints.md §9](skills/_shared/constraints.md)。在 layout.v1 **结构基础已存在**（编号文件提供三层 owner 位置），现役 `state/*`、`adr-only-revision` 只兜**部分**退化症状，**主要靠人工 review lens 承载**（非自动兜底）。
   - **维度 e「三层分离自动检测」已废弃**：关键词扫描复杂度不匹配收益，skill 宜简，不再保留为 FUTURE。

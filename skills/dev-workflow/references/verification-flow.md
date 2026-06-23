@@ -78,6 +78,13 @@
 - [ ] 无泛化名作完整名（`data/info/temp/result/obj/item/thing/flag/val`；局部惯用语除外）
 - [ ] 无同概念多名漂移（引入新名词前先 grep 项目既有词表）、无类型编码/不可发音自造缩写
 
+#### 日志卫生（依据 [`/code-quality` 日志规范](../../code-quality/SKILL.md#日志规范)，仅审本次 diff 新增/修改的日志）
+
+- [ ] 无安全红线泄露（密码/token/密钥/PII/支付·银行·医疗/原始 SQL·请求响应体等，**完整禁入清单以 [`/code-quality` 日志规范](../../code-quality/SKILL.md#日志规范)为准**）→ 命中即 Blocker
+- [ ] 无 log-and-throw（逐层 log 再抛造重复堆栈）、无吞异常只 log
+- [ ] 级别正确（ERROR=当前动作失败 / WARN=异常但已处理 / INFO=低频长期价值 / DEBUG·TRACE=默认关闭）
+- [ ] 含最小上下文（event + result + 关联 id + 组件 + 安全主对象 id；失败另加 error_code/异常类型 + 原因）；无 `here`/`step1` 占位日志；不把推测写成事实
+
 ### Phase 1 输出格式
 
 ```markdown
@@ -367,6 +374,9 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 | 黑名单注释（变更日志式/对审查者说话/来源记录式等） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 注释规范 |
 | 注释与代码语义不符 | 本次 diff 涉及 | 🚫 Blocker | /code-quality 注释规范 |
 | 黑名单命名（误导名/泛化名/同概念漂移/类型编码） | 本次 diff 新增 | 🚫 Blocker | /code-quality 命名规范 |
+| 日志命中安全红线（密码/token/PII/支付等入日志） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 日志规范 |
+| log-and-throw 重复堆栈 / 吞异常只 log / 把推测写成事实 | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 日志规范 |
+| 日志级别误用 / 上下文不足 / 占位日志（here·step1） | 本次 diff 新增/修改 | 💡 Suggestion | /code-quality 日志规范 |
 | 存量坏注释/坏命名（本次未触碰）、public API 缺契约注释 | 任何 | 💡 Suggestion | /code-quality 注释/命名规范 |
 
 ### 测试完备 Blocker

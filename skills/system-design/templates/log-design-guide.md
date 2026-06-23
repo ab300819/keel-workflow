@@ -2,42 +2,35 @@
 
 > 日志是调试和问题排查的关键工具，特别是对于手动测试和 E2E 测试场景。
 >
+> 🔑 **职责边界**：本文是**设计阶段**指南——在设计文档里规划"在哪些操作打日志点"。"怎么写好一条日志"的编码纪律（级别准入、最小上下文、异常纪律、安全红线、事实优先）权威在 [code-quality 日志规范](../../code-quality/SKILL.md#日志规范)，本文不重复，只在规划日志点时引用。
+>
 > ℹ️ 文中编号示例使用 v1 前缀；v2 项目 [FUTURE] 走双轨。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
+
+## 安全红线（规划日志点时即须标注）
+
+设计日志点时，对涉及敏感字段（密码 / token / 密钥 / PII / 支付·银行·医疗 / 原始请求响应体 / 原始 SQL 等）的操作必须显式标注"脱敏或不记录"。**完整禁入清单与分级权威见 [code-quality 日志规范](../../code-quality/SKILL.md#日志规范)**，本文不复制以免漂移。
 
 ## 日志级别
 
-| 级别 | 用途 | 示例场景 |
-|------|------|----------|
-| **ERROR** | 需要立即处理的错误 | 数据库连接失败、支付失败、关键服务不可用 |
-| **WARN** | 潜在问题但不影响核心功能 | 重试成功、降级处理、资源接近阈值 |
-| **INFO** | 关键业务操作 | 用户登录、订单创建、状态变更 |
-| **DEBUG** | 调试信息 | 函数入参、中间状态、性能指标 |
+级别准入判据（ERROR / WARN / INFO / DEBUG·TRACE）权威见 [code-quality 日志规范 § 级别准入](../../code-quality/SKILL.md#日志规范)；设计阶段为每个日志点选级别时直接套用，本文不另立标准。
 
 ## 关键日志点
 
 设计文档中应列出关键操作的日志点：
 
 ```markdown
-| 操作 | 日志级别 | 日志内容 | 关联编号 |
+| 操作 | 日志级别 | 日志内容（仅记安全字段，遵守上方安全红线）| 关联编号 |
 |------|----------|----------|----------|
-| 用户登录成功 | INFO | `[F-002] User login: userId={}, ip={}` | F-002, AC-006 |
+| 用户登录成功 | INFO | `[F-002] User login: userId={}` | F-002, AC-006 |
 | 用户登录失败 | WARN | `[F-002] Login failed: userId={}, reason={}` | F-002, AC-007 |
 | 密码验证失败 | WARN | `[F-002] Password mismatch: userId={}` | AC-007 |
-| 数据库异常 | ERROR | `[INFRA] DB error: {}, query={}` | - |
+| 数据库异常 | ERROR | `[INFRA] DB error: error_code={}, dependency={}`（禁记原始 SQL/参数）| - |
 | 订单创建 | INFO | `[F-003] Order created: orderId={}, userId={}` | F-003 |
 ```
 
 ## 日志格式
 
-```
-[时间] [级别] [追溯ID] [模块] 消息 {结构化数据}
-```
-
-**示例**：
-```
-2024-01-26 10:30:15 INFO [req-abc123] [UserService] User created {"userId": "u001", "email": "user@example.com"}
-2024-01-26 10:30:16 ERROR [req-abc123] [EmailService] Failed to send verification email {"userId": "u001", "error": "SMTP timeout"}
-```
+具体格式（字段集合、JSON / logfmt / 纯文本、字段大小写）由**项目规范**决定，本文不写死——见 [code-quality 日志规范 § 不写死](../../code-quality/SKILL.md#日志规范)。设计阶段只需保证每个日志点能承载：关联 id、组件、操作、结果，且敏感字段按上方安全红线脱敏或不记录。
 
 ## 追溯 ID (Correlation ID)
 

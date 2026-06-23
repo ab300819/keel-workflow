@@ -108,7 +108,7 @@ execution_contract:
 
 `--strict-tdd` 或 `risk_flags` 含 `auth/data-loss/schema/public-api` 时，升级为**物理双子 Agent**（Task tool）：Test Agent 不读已有实现，Impl Agent 不读契约推导过程、不可改测试——同 ms-dev-workflow 信息屏障语义。
 
-**编码纪律**（两种模式恒定）：遵循 [`/code-quality`](../code-quality/SKILL.md) 核心阈值表 / [命名规范](../code-quality/SKILL.md#命名规范) / [注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式、来源记录式、对审查者说话的注释，含修复循环）；测试断言质量遵循 `/testing-guide`。
+**编码纪律**（两种模式恒定）：遵循 [`/code-quality`](../code-quality/SKILL.md) 核心阈值表 / [命名规范](../code-quality/SKILL.md#命名规范) / [注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式、来源记录式、对审查者说话的注释，含修复循环）/ [日志规范](../code-quality/SKILL.md#日志规范)（级别纪律 + 最小上下文 + 安全红线 + 禁 log-and-throw）；测试断言质量遵循 `/testing-guide`。
 
 ## 批量模式（计划文档多项）
 
