@@ -75,7 +75,7 @@ docs/devdocs/.realign-plan.md
 4. 为每个 v1 文件生成目标动作：
    - 自动：确定性 move / rename / create / archive。
    - 半自动：可切分但需用户确认边界。
-   - 人工：INS 归类、编号歧义、跨 PRD 影响、文件名冲突。
+   - 人工：INS 归类、编号歧义、PRD 引用影响、文件名冲突。
 5. 根据 [layout/aliases-yml-schema.md](layout/aliases-yml-schema.md) 生成候选 alias，不修改现有文件。
 6. 根据 [layout/code-decoupling-implementation.md](layout/code-decoupling-implementation.md) 生成候选 trace 条目。
 7. 输出 `.realign-plan.md`，并在 stdout 打印 plan 摘要与下一步命令。
@@ -147,7 +147,7 @@ validation_probes:
 |------|----------|----------|
 | INS 归类 | 任意 `INS-NNN` 需要拆到 ADR / PATTERN / NOTE | 展示 INS 原文摘要、推荐归类、3 个固定选项 |
 | 编号映射歧义 | 旧编号可映射到多个新编号，例如 `F-01 → FEAT-001` 或 `FEAT-005` | 展示候选来源、引用次数、推荐理由 |
-| 跨 PRD 引用受影响 | PRD mapping 或 `docs/prd/**` 引用旧 DevDocs 编号/路径 | 展示受影响 PRD、旧引用、新引用候选 |
+| PRD 引用受影响 | PRD mapping 或 `docs/prd/**` 引用旧 DevDocs 编号/路径 | 展示受影响引用、旧引用、新引用候选 |
 | 文件名冲突 | 目标路径已存在且内容不是同一 owner | 展示两个文件摘要，提供改名/合并/停止选项 |
 
 `--apply` 遇到未确认决策时必须暂停并逐项问询。headless 场景不得跳过这些项；只能返回 `status: interrupted` 或 `partial`。
@@ -208,7 +208,7 @@ validation_probes:
 1. 写入或追加 `docs/devdocs/traceability.yml`。
 2. 从 legacy `@satisfies` / `@verifies` 注释生成 trace.v1 条目；legacy 注释在 layout.v2 期间保留，不在本 Phase 删除。
 3. 写入 layout.v2 baseline 元数据，供 `ssot/legacy-annotation-additions` 使用。
-4. 跨 PRD 引用受影响时必须 AskUserQuestion。
+4. PRD 引用受影响时必须 AskUserQuestion。
 5. 写入 `.realign-applied.log` Phase 4 记录并单独 commit。
 
 失败处理：`⛔ 停止`，提示 `git reset --hard <checkpoint_commit>`；不得把无法解析的 trace 静默丢弃，必须写入 unresolved 或停止。

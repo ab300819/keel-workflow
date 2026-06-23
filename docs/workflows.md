@@ -12,9 +12,7 @@
 |------|------|
 | `/ms-prd` | 自动检测输入（短想法 → 头脑风暴，大文档 → 结构化解析） |
 | `/ms-prd --revise FR-03` | 修改单个需求，重新进入 brainstorm |
-| `/ms-prd list` | 查看所有 PRD 及其状态 |
-| `/ms-prd status <prd_id>` | 查看指定 PRD 详情 |
-| `/ms-prd archive <prd_id>` | 归档已完成的 PRD |
+| `/ms-prd clear` | 清理当前需求脚手架（close 收尾用，dry-run→确认→删） |
 
 #### 你会经历的流程
 
@@ -60,8 +58,9 @@
 
 #### 产出与衔接
 
-- 产出文件：`docs/prd/<prd_id>/requirements/FR-XX-*.md` + `index.md`
-- 成熟度达到 `ready` 后，运行 `/ms-requirements --from-prd` 进入 DevDocs
+- 产出文件：`docs/prd/requirements/FR-XX-*.md` + `index.md`（扁平、单需求脚手架）
+- 成熟度达到 `ready` 后，运行 `/ms-requirements --from-prd docs/prd/requirements/index.md` 进入 DevDocs
+- 需求 close（上线）后，`docs/prd/` 脚手架可由 `/ms-prd clear`（或 `/ms-pipeline close` 末步）清理 —— 代码 + DevDocs 才是事实源
 
 ---
 

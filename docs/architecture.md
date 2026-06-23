@@ -119,15 +119,14 @@ devdocs:
 
 ### PRD 流程治理 Spec（轻量同类，已显性化）
 
-PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**的耦合（数据库 + 修订边界），但**不直接面对代码追溯**（通过 DevDocs 间接）。治理机制已齐备但散落在 4 个文件，需收纳显性化而非重建 6 阶段框架。
+PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**的耦合（修订边界），但**不直接面对代码追溯**（通过 DevDocs 间接）。`docs/prd/` 是**单需求一次性脚手架**（扁平、只存当前需求，close 后清理）——多需求并行经实践证伪已移除。治理机制已齐备但散落，收纳显性化而非重建 6 阶段框架。
 
 | spec | 内容 | 状态 |
 |------|------|------|
-| [prd-index-ssot.md](../skills/prd/references/governance/prd-index-ssot.md) | FR/NFR 全局 SSOT + 最大值续编 + 冲突检测 + 跨 PRD 引用边界 | [现状] |
-| [prd-revision-policy.md](../skills/prd/references/governance/prd-revision-policy.md) | 4 类变更边界统一规则（PRD 生命周期 / 单 FR / chunk / 模板）| [现状] |
+| [prd-revision-policy.md](../skills/prd/references/governance/prd-revision-policy.md) | 3 类变更边界统一规则（单 FR / chunk / 模板）| [现状] |
 | [prd-devdocs-mapping.md](../skills/prd/references/governance/prd-devdocs-mapping.md) | mapping 状态机（active/outdated/remapped/removed）+ 回扫责任分界 | [现状] |
 
-> **与 DevDocs 6 阶段的差异**：PRD 治理 ~85% 是收纳已有机制（chunk 指纹 / `--revise` / `--back-propagate-prd` / mapping_status），~15% 是必要边界补齐；总行数 413（vs DevDocs 治理 ~2700），保持轻量定位。
+> **与 DevDocs 6 阶段的差异**：PRD 治理大部分是收纳已有机制（chunk 指纹 / `--revise` / `--back-propagate-prd` / mapping_status），少量必要边界补齐，保持轻量定位。
 
 ### 治理工具命令
 

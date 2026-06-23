@@ -20,7 +20,7 @@
 
 入口：`/ms-prd-brainstorm --realign`，或 `/ms-pipeline realign` 编排调度。
 
-流程：扫描 `docs/prd/<prd_id>/requirements/*.md`（legacy: `docs/prd/requirements/*.md`）→ 对照 Matrix → 补齐 → Realign Log。
+流程：扫描 `docs/prd/requirements/*.md` → 对照 Matrix → 补齐 → Realign Log。
 
 ## 约束
 

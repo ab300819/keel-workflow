@@ -23,7 +23,7 @@
 |------|------|
 | Skill | 可复用的 SKILL.md 定义文件，扩展 AI agent 能力 |
 | ms- 前缀 | DevDocs 流程 skill 命名空间，区分独立 skill（非 ms-，如 dev-flow / code-quality） |
-| PRD 流程 | 模糊想法/大型 PRD → FR-XX/NFR-XX，支持多目录隔离（`docs/prd/<YYYYMMDD-slug>/`）|
+| PRD 流程 | 模糊想法/大型 PRD → FR-XX/NFR-XX，单需求一次性脚手架（扁平 `docs/prd/`，close 后清理）|
 | DevDocs | 文档驱动开发工作流（需求→设计→测试→任务→开发→验证→同步）|
 | 编号体系 | F/US/AC/UT/IT/E2E/Journey/INS/BUG/T，链路 F→US→AC→测试 |
 | design_context | 跨 skill 共享设计上下文 schema，定义于 `skills/prd/references/design-context.md` |
@@ -33,6 +33,7 @@
 
 ## 当前状态
 
+- **PRD 扁平化（移除多需求并行）**：mic-en 实践证伪「多需求并行」，已**删除**整套 multi-PRD 机器（全局 `index.md` + 跨 PRD 编号注册表 / `<prd_id>` 子目录 / supersedes / `_archived` / 顶层 `synthesis/` / 跨 PRD 引用+冲突检测 / `list`·`status`·`archive`·`migrate` / `prd-index-ssot.md` + `global-index-template.md`）。`docs/prd/` 改为**扁平·单需求一次性脚手架**，FR/NFR 当前需求内续编、新需求从 FR-01 重起（受 ms-prd 新建门禁保护）；需求 close（上线）后由 `/ms-prd clear`（`/ms-pipeline close` 末步委托）清理。删除而非封存 FUTURE（已证伪，逻辑同废弃 health 维度 e）。方案见 [specs/2026-06-23-prd-flatten-remove-multi-requirement-parallel-design.md](docs/superpowers/specs/2026-06-23-prd-flatten-remove-multi-requirement-parallel-design.md)
 - 综合方案落地：flag 收敛 49→20、shared-constraints SSOT、realign --scope 四入口
 - 治理盲区收敛：scope=health（结构/索引/过大/SSOT 4 维）+ health-lint 5 条 [新增] rule（state/* + dead-link + adr-only-revision），layout.v1+v2 通用
 - 新增 skill：ms-backlog（暂缓任务池）

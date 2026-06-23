@@ -16,8 +16,8 @@
 | `docs/devdocs/04-dev-tasks*.md` | ms-dev-tasks | `skills/dev-tasks/references/realign.md` |
 | `docs/devdocs/05-insights.md` | ms-insights | `skills/insights/references/realign.md` |
 | `docs/devdocs/00-context.md` | ms-onboard | `skills/onboard/references/realign.md` |
-| `docs/prd/<slug>/chunks/*.md` | ms-prd-parser | `skills/prd-parser/references/realign.md` |
-| `docs/prd/<prd_id>/requirements/*.md`（legacy: `docs/prd/requirements/*.md`） | ms-prd-brainstorm | `skills/prd-brainstorm/references/realign.md` |
+| `docs/prd/chunks/*.md` | ms-prd-parser | `skills/prd-parser/references/realign.md` |
+| `docs/prd/requirements/*.md` | ms-prd-brainstorm | `skills/prd-brainstorm/references/realign.md` |
 
 **独立扫描（在主报告独立章节呈现，不并入 A/B 类产物主统计）**：
 - `docs/codebase-insight.md` — 按其自有 `schema_version + commit_hash` 字段扫描（ms-codebase-insight 独立机制；判据：`schema_version` 不匹配 skill 常量或 `commit_hash` 与 git HEAD 不一致 = 需要重扫，由 ms-codebase-insight 自身处理，**不**纳入 realign 编排）

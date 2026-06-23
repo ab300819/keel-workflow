@@ -80,7 +80,7 @@ docs/devdocs/.health-report.md
 |------|------|
 | `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路） |
 | `.claude/rules/devdocs-state.md` | 维度 c 中 `state-size` / `state-forbidden-content` 专属扫描 |
-| `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（编号跨 PRD 引用） |
+| `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔DevDocs 编号引用） |
 | `traceability.yml` / `aliases.yml`（若存在） | 维度 b 编号引用核对 |
 
 ### 执行步骤
@@ -166,7 +166,7 @@ manual_decisions:
 | `state/*`（3 条）/ `health/dead-link`（手动修复）/ `design/adr-only-revision` | `health` | health scope `--apply` 直接处理 |
 | `ssot/*` (`current-md-size` / `file-size-cap` / `modules-size-cap`) | `layout` | 拆分走 layout scope |
 | `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
-| 跨 PRD 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |
+| PRD↔DevDocs 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |
 
 ### 评分契约
 

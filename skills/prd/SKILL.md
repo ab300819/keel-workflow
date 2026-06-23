@@ -23,7 +23,6 @@ user-invocable: true
 
 ## 详细文档
 
-- PRD 全局编号 SSOT：[references/governance/prd-index-ssot.md](references/governance/prd-index-ssot.md)
 - PRD 修订边界：[references/governance/prd-revision-policy.md](references/governance/prd-revision-policy.md)
 - PRD ↔ DevDocs Mapping：[references/governance/prd-devdocs-mapping.md](references/governance/prd-devdocs-mapping.md)
 - 共享约束 SSOT：[../_shared/constraints.md](../_shared/constraints.md)
@@ -48,33 +47,35 @@ user-invocable: true
 
 **核心价值**：弥补 DevDocs 对模糊想法和大型 PRD 的处理不足，提供需求探索到结构化输出的完整路径。
 
+## 单需求脚手架原则
+
+`docs/prd/` 是**当前需求的一次性脚手架**，扁平结构，任一时刻只服务一个在飞需求：
+
+- 不维护跨需求的全局索引、编号注册表、归档或迭代链 —— 多需求并行经实践证伪，已移除。
+- 需求生命周期：`brainstorm/解析 → requirements → 设计 → 开发 → close(上线)`。被 `/ms-requirements --from-prd` 吸收只是**进入开发流程**，不是终点；开发期间需求仍可 `--revise` 修订。
+- **close（上线）后**需求才结束，`docs/prd/` 可由 `/ms-prd clear`（或 `/ms-pipeline close` 末步）清理。唯一事实源是代码 + 已吸收进 `docs/devdocs/` 的 why 记忆；历史靠 git，不靠 `docs/prd/` 留存。
+
 ## 运行模式
 
 ```bash
-/ms-prd              → 自动检测输入类型（默认感知已有系统）
-/ms-prd brainstorm   → 强制头脑风暴模式
-/ms-prd prd          → 强制 PRD 解析模式
+/ms-prd                 → 自动检测输入类型（默认感知已有系统）
+/ms-prd brainstorm      → 强制头脑风暴模式
+/ms-prd prd             → 强制 PRD 解析模式
 /ms-prd --revise FR-03  → 单个 FR 重新 brainstorm
-/ms-prd list         → 列出所有 PRD 及状态
-/ms-prd archive <prd_id> → 归档指定 PRD
-/ms-prd status <prd_id>  → 查看单个 PRD 状态详情
+/ms-prd clear [--dry-run|--apply]  → 清理当前需求脚手架（close 收尾用）
 ```
 
-## 多 PRD 模式判定
+## 新建需求门禁（强约束）
 
-启动时自动检测目录结构，确定运行模式：
+`/ms-prd` 进入**新建路径**（brainstorm / prd-parse）前，先检测当前脚手架，确保"只存当前需求"：
 
-**三级判定**（优先级从高到低）：
-1. 存在 `docs/prd/index.md` 且含 PRD 清单表 → **multi-PRD 模式**
-2. 仅存在顶层 `docs/prd/chunks/` 或 `docs/prd/requirements/` 且无全局 index → **legacy 单 PRD 模式**，回退扁平行为
-3. 两者同时存在 → **⚠️ 必须确认**，提示用户执行 `/ms-prd migrate` 或手动清理
-
-**路径解析**：统一使用 `prd_id → 路径` 间接定位：
-- 先查 `docs/prd/<prd_id>/`，再查 `docs/prd/_archived/<prd_id>/`（仅限只读操作）
-
-**新建 PRD**：生成 `YYYYMMDD-<slug>` 目录名（同日冲突追加 `-2`、`-3`），读取全局 index 编号注册表获取 FR/NFR 最大编号，将起始值（`fr_start`, `nfr_start`）作为参数传给 parser。
-
-**编号分配职责**：ms-prd 编排层从全局注册表获取起始编号 → 传给 ms-prd-parser → parser 从该值续编 → brainstorm 块澄清沿用 chunk 编号。
+1. 检测 `docs/prd/requirements/index.md` 是否已存在。
+2. **不存在** → 绿地，直接新建，FR/NFR 从 `FR-01` / `NFR-01` 起。
+3. **已存在** → ⚠️ 必须确认，AskUserQuestion 三选一：
+   - **继续当前需求**：在现有脚手架上追加 / 修订（FR 续编，不重起编号）；
+   - **close 清理后新建**：跳转 `/ms-prd clear` 流程，清空后再从头新建；
+   - **显式 discard / reset**：用户明确丢弃当前脚手架（清空 `docs/prd/`）后从头新建。
+4. 未确认前 ⛔ 禁止直接覆盖新建 —— 防止旧需求被静默吞掉、新旧编号串台（旧 mapping row 会被误当成新 FR 的映射）。
 
 ## 自动检测逻辑
 
@@ -103,11 +104,10 @@ user-invocable: true
 
 | 触发点 | 门控 | 恢复 / 继续 |
 |---|---|---|
-| `docs/prd/index.md` 与 legacy `docs/prd/chunks/` 或 `docs/prd/requirements/` 同时存在 | ⚠️ 必须确认 | 用户执行 `/ms-prd migrate` 或手动清理后继续 |
+| 新建需求时 `docs/prd/requirements/index.md` 已存在 | ⚠️ 必须确认 | 三选一：继续当前需求 / `/ms-prd clear` 清理后新建 / 显式 discard 后新建 |
 | 输入 200~2000 字且无法判断是想法还是文档 | ⚠️ 必须确认 | 用户选择「作为想法进行头脑风暴」或「作为文档进行结构化解析」 |
-| `--revise` 目标文件位于 `_archived/` 下 | ⛔ 禁止继续 | 已归档 PRD 不可修改，需创建新版 PRD |
-| `archive <prd_id>` 目标已归档 | ⛔ 禁止继续 | 报错退出；只允许 `status` 或只读 `--from-prd` |
-| `archive <prd_id>` 目标为 active 或 superseded | ⚠️ 必须确认 | AskUserQuestion 确认归档意图后，移动目录并更新全局 index 与 per-PRD index |
+| `--revise` 目标 FR 文件不存在 | ⛔ 禁止继续 | 报错退出；检查编号或先创建该 FR |
+| `clear` 检测到孤儿 / 未同步需求 | ⚠️ 必须确认 | 显式确认后才删（见 [清理脚手架](#清理脚手架close-收尾)） |
 
 ## Step 0: 上下文感知（自动，所有场景前置）
 
@@ -125,16 +125,14 @@ user-invocable: true
 
 ## --revise 模式
 
-允许用户对单个 FR 重新进入 brainstorm 澄清，无需重新提交整个 PRD：
+允许用户对单个 FR 重新进入 brainstorm 澄清，无需重新提交整个需求：
 
 ```text
 /ms-prd --revise FR-03
     |
     v
-1. 定位 FR-03 文件：
-   multi-PRD 模式：glob docs/prd/*/requirements/FR-03-*.md 定位所属 PRD
-   legacy 模式：查 docs/prd/requirements/FR-03-*.md
-   ⛔ 若文件位于 _archived/ 下 → 禁止 revise（提示：已归档 PRD 不可修改，需创建新版 PRD）
+1. 定位 FR-03 文件：glob docs/prd/requirements/FR-03-*.md
+   ⛔ 若文件不存在 → 报错退出（检查编号或先创建）
    记录实际路径（source_fr_path），后续回写使用同一路径
     |
     v
@@ -147,7 +145,7 @@ user-invocable: true
     |  输出：更新后的 FR-03 内容（不分配新编号）
     |
     v
-4. 用 brainstorm 产出**原地覆盖** source_fr_path（保持 id: FR-03）+ 更新同目录下的 index.md
+4. 用 brainstorm 产出**原地覆盖** source_fr_path（保持 id: FR-03）+ 更新 requirements/index.md
     |
     v
 5. 如果 FR-03 已有 DevDocs 映射 → 将 mapping_status 置为 outdated
@@ -158,17 +156,32 @@ user-invocable: true
 
 > 详细规范见 `references/prd-mapping-status.md`（列定义、状态枚举、authoritative row 规则）
 
+## 清理脚手架（close 收尾）
+
+`/ms-prd clear` 在需求 close（上线）后清理 `docs/prd/` 一次性脚手架。通常由 `/ms-pipeline close` 末步委托（在 sync/compound/onboard 把 why 记忆抽干净后执行），也可独立调用。
+
+**dry-run → 确认 → 实施**（默认 `--dry-run`，`--apply` 才物理删除）：
+
+1. **清理范围**：列出 `docs/prd/` 下将删除的文件/目录树。
+2. **影响分析**（"已安全吸收"判定，三条件全满足才算可清理）：
+   - **枚举实际文件**：扫 `requirements/FR-*.md` / `NFR-*.md` 实际存在的 `product_id`，不只信 mapping 表；
+   - **取 authoritative row**：对每个 `product_id`，取 `requirements/index.md` 的 `## DevDocs 映射` 表中**最后一行**为权威状态（不能因历史行是 active 就忽略后续 outdated/removed，见 [prd-mapping-status.md](references/prd-mapping-status.md)）；
+   - **校验 DevDocs 实存**：权威行 `devdocs_id` 必须在 `docs/devdocs/01-requirements.md` 当前 F 列表中实际存在；
+   - 仅当「最新状态 ∈ {active, remapped} **且** 目标 F 在 DevDocs 存在」→ 标记**可安全清理**；其余（无映射 / outdated / removed / 目标缺失）→ ⚠️ **孤儿 / 未同步高亮**，默认不删。
+3. **⚠️ 必须确认** → `--apply` 删除 `docs/prd/`；存在孤儿 / 未同步项时，确认文案显式列出它们。
+4. 无 `docs/prd/` 时静默跳过（已清理）。
+
 ## 编排流程
 
 | 场景 | 输入 | 步骤 | 输出 / 门控 |
 |---|---|---|---|
 | 头脑风暴（idea → requirements） | 用户输入（一句话/简短想法） | Task: ms-prd-brainstorm（完整模式），按 5W1H → 用户旅程 → MoSCoW 收敛 | 生成 requirements/ 小文档 + index.md；成熟度评估 → DevDocs 衔接建议 |
-| PRD 解析（大文档 → chunks → requirements） | 用户提供 PRD 文档 | 1. Task: ms-prd-parser（转换 + 拆分 → chunks/FR-XX.md + NFR-XX.md）<br>2. 逐块 Task: ms-prd-brainstorm --chunk `<chunk文件路径>`；自适应深度：成熟块快速确认，模糊块深入探索；终判分类：复核 parser 的 FR/NFR 初判；入参示例：`/ms-prd-brainstorm --chunk docs/prd/<prd_id>/chunks/FR-09-用户认证.md`<br>3. 跨块合成：全局术语、共享假设、横切 NFR、冲突/重复解决<br>4. 生成/更新 requirements/index.md 总纲<br>5. 成熟度评估 | DevDocs 衔接建议 |
-| PRD 更新（增量处理） | 用户提供更新后的 PRD | 0. 留存原始文档（仅 multi-PRD 模式）：将 source/ 全量复制到 `_snapshots/<YYYYMMDD-HHMMSS>/source/`，`_snapshots/` 不入库，与 source/ 同忽略策略<br>1. Task: ms-prd-parser（重新拆分），计算新 document_fingerprint<br>2. 指纹对比：通过 chunk_key 匹配新旧块，对比 source_fingerprint<br>3. 仅对 outdated/pending 块调用 ms-prd-brainstorm<br>4. 更新 index.md + 成熟度重评估 | 不变 → 保持 clarified，跳过；变化 → 标记 outdated，重新 brainstorm；新增 → 创建新文件，status=pending；删除 → 标记 removed，对应 requirement 标记失效 |
+| PRD 解析（大文档 → chunks → requirements） | 用户提供 PRD 文档 | 1. Task: ms-prd-parser（转换 + 拆分 → chunks/FR-XX.md + NFR-XX.md）<br>2. 逐块 Task: ms-prd-brainstorm --chunk `<chunk文件路径>`；自适应深度：成熟块快速确认，模糊块深入探索；终判分类：复核 parser 的 FR/NFR 初判；入参示例：`/ms-prd-brainstorm --chunk docs/prd/chunks/FR-09-用户认证.md`<br>3. 跨块合成：全局术语、共享假设、横切 NFR、冲突/重复解决<br>4. 生成/更新 requirements/index.md 总纲<br>5. 成熟度评估 | DevDocs 衔接建议 |
+| PRD 更新（增量处理） | 用户提供更新后的 PRD | 1. Task: ms-prd-parser（重新拆分），计算新 document_fingerprint<br>2. 指纹对比：通过 chunk_key 匹配新旧块，对比 source_fingerprint<br>3. 仅对 outdated/pending 块调用 ms-prd-brainstorm<br>4. 更新 index.md + 成熟度重评估 | 不变 → 保持 clarified，跳过；变化 → 标记 outdated，重新 brainstorm；新增 → 创建新文件，status=pending；删除 → 标记 removed，对应 requirement 标记失效 |
 
 ## 跨块合成（Step 3 详解）
 
-PRD 场景中，所有块澄清完成后执行跨块合成：
+PRD 场景中，所有块澄清完成后执行跨块合成（单需求内部多 chunk 的综合，写入 `requirements/index.md`）：
 
 ### 全局术语表
 
@@ -176,7 +189,7 @@ PRD 场景中，所有块澄清完成后执行跨块合成：
 
 ### 共享假设与约束
 
-识别不属于单个块但影响多个需求的全局假设和约束条件。
+识别不属于单个块但影响多个需求的假设和约束条件。
 
 ### 横切 NFR
 
@@ -230,10 +243,8 @@ PRD 场景中，所有块澄清完成后执行跨块合成：
 
 ```
 需求包已就绪（maturity: ready），建议运行：
-/ms-requirements --from-prd <实际 index.md 路径>
+/ms-requirements --from-prd docs/prd/requirements/index.md
 ```
-
-> 路径使用当前 pipeline 实际写入的 index.md 路径（multi-PRD: `docs/prd/<prd_id>/requirements/index.md`；legacy: `docs/prd/requirements/index.md`）。archived PRD 允许只读 `--from-prd`。
 
 maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响后续质量。
 
@@ -241,7 +252,7 @@ maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响�
 
 - 需求文件**不分配 F/US/AC 编号**，编号权属于 DevDocs
 - FR-XX/NFR-XX 为 product 阶段唯一标识，进入 DevDocs 后映射为 F-XXX
-- 需求文件存放于 `docs/prd/<prd_id>/`（legacy 兼容 `docs/prd/`），不写入 `docs/devdocs/`
+- 需求文件存放于 `docs/prd/`，不写入 `docs/devdocs/`
 - 以小文档形式传入 DevDocs：index.md 提供全局视图，各 FR-XX 对应独立功能领域
 
 ## 编排规范（子 Agent 调度）
@@ -251,89 +262,38 @@ maturity 为 draft 时也可衔接，但需提示用户开放问题可能影响�
 | 分工 | PRD 私有约束 |
 |---|---|
 | 委托 | ms-prd 通过 Task 启动 ms-prd-parser 和 ms-prd-brainstorm（逐块），并接收 YAML 摘要 |
-| 自执行 | 跨块合成和 index.md 生成由 ms-prd 自身执行 |
+| 自执行 | 跨块合成、index.md 生成、clear 清理由 ms-prd 自身执行 |
 | 摘要传递 | 阶段间只传递 YAML 摘要 + 文件路径 + 新增编号列表；编排 Agent **不读取**子技能的完整输出文档内容来做编排决策 |
 | 异常回退 | 子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项并询问用户修复/跳过/终止；**不自行读取文档排障** |
 | 上下文隔离 | 每个子 Agent 自行读取所需的前置文件（从 `docs/prd/` 文件系统），不依赖编排 Agent 传递全文 |
 
 ## 文件产出路径
 
-### multi-PRD 模式
-
 ```
 docs/prd/
-+-- index.md                        <- 全局 PRD 索引（source of truth）
-+-- <prd_id>/                       <- YYYYMMDD-slug 格式
-|   +-- chunks/                     <- PRD 原文完整文本化副本
-|   |   +-- FR-XX-<topic>.md
-|   |   +-- NFR-XX-<topic>.md
-|   +-- requirements/               <- brainstorm 澄清后的结构化需求
-|   |   +-- index.md               <- 本 PRD 总纲
-|   |   +-- FR-XX-<topic>.md
-|   |   +-- NFR-XX-<topic>.md
-|   +-- source/                     <- 原始文件来源记录（.gitignore 排除）
-|   |   +-- manifest.md
-|   |   +-- original-prd.md
-|   +-- _snapshots/                    <- 重解析前的原始文档留存（与 source/ 同忽略策略）
-|       +-- <YYYYMMDD-HHMMSS>/source/
-+-- synthesis/                      <- 跨 PRD 综合产物
-|   +-- terminology.md
-|   +-- shared-constraints.md
-|   +-- conflict-resolution.md
-+-- _archived/                      <- 归档目录（保留完整结构）
-    +-- <prd_id>/
-```
-
-### legacy 单 PRD 模式（向后兼容）
-
-```
-docs/prd/
-+-- chunks/
-+-- requirements/
-+-- source/
++-- chunks/                     <- PRD 原文完整文本化副本（仅 prd-parse 路径产生）
+|   +-- FR-XX-<topic>.md
+|   +-- NFR-XX-<topic>.md
++-- requirements/               <- brainstorm 澄清后的结构化需求
+|   +-- index.md                <- 本需求总纲（含跨块合成结果 + DevDocs 映射表）
+|   +-- FR-XX-<topic>.md
+|   +-- NFR-XX-<topic>.md
++-- source/                     <- 原始文件来源记录（.gitignore 排除）
+    +-- manifest.md
+    +-- original-prd.md
 ```
 
 **模板**：
-- 全局索引模板：`templates/global-index-template.md`
 - 总纲模板：`templates/requirements-index-template.md`
 - 需求分文件模板：`templates/requirements-item-template.md`
 
-## 归档流程
-
-```text
-/ms-prd archive <prd_id>
-    |
-    v
-1. 读取全局 index，确认 prd_id 存在且状态为 active 或 superseded
-   ⛔ 已归档 → 报错退出
-    |
-    v
-2. AskUserQuestion 确认归档意图
-    |
-    v
-3. 移动 docs/prd/<prd_id>/ → docs/prd/_archived/<prd_id>/
-4. 更新全局 index：状态→archived，填写归档日期
-5. 更新 per-PRD index：prd_status→archived
-```
-
-**归档后操作边界**：archived PRD 禁止 `--revise`，允许只读 `--from-prd` 和 `status` 查看。
-
 ## 权威模型
 
-| 字段 | Source of Truth | 说明 |
-|------|----------------|------|
-| PRD 清单/生命周期状态/编号注册表 | 全局 index | 注册入口，parser 分配前查询 |
-| supersedes / superseded_by | 全局 index | 迭代关系双向维护 |
-| 需求清单 / DevDocs mapping / 假设挑战 | per-PRD index | 本 PRD 范围内 |
+`docs/prd/requirements/index.md` 是当前需求以下信息的唯一权威源：需求清单、跨块合成结果（术语/假设/横切 NFR/冲突）、假设挑战、DevDocs 映射。各 FR-XX/NFR-XX 分文件为对应需求项的内容权威。
 
-**写入顺序**：先写全局 index → 再更新 per-PRD index。全局写入成功即生效。
-
-### supersedes 链不变式
-
-- 禁止自指和环
-- 每个 PRD 最多一个 `supersedes` 目标
-- 写入时同步回填旧 PRD 的 `superseded_by`
-- 仅 `active` 状态的 PRD 允许被 supersede
+- FR/NFR 在当前需求内续编、两位数字（`FR-XX`），一旦分配在本需求内不复用。
+- 新需求从 `FR-01` 重起 —— 产品阶段编号是映射进 DevDocs 后即作废的临时标识，无需跨需求全局唯一（依赖[新建需求门禁](#新建需求门禁强约束)确保旧脚手架已清理）。
+- mapping 状态机（active/outdated/remapped/removed、authoritative row）见 [prd-mapping-status.md](references/prd-mapping-status.md)。
 
 ## 约束
 
@@ -343,6 +303,12 @@ docs/prd/
 - [ ] **brainstorm 和 prd-parser 阶段必须委托给对应 skill 执行**
 - [ ] **阶段间传递的信息仅限：YAML 摘要、文件路径、新增编号列表**
 - [ ] 用户可在任意阶段退出 pipeline
+
+### 单需求脚手架约束
+
+- [ ] **新建需求前必须执行门禁检测**（已有 index.md 时 ⚠️ 三选一，未确认 ⛔ 不覆盖）
+- [ ] **不维护跨需求的全局索引 / 编号注册表 / 归档 / 迭代链**
+- [ ] **clear 删除前必须输出范围 + 影响 dry-run，孤儿/未同步项默认不删**
 
 ### 自动检测约束
 
@@ -365,10 +331,10 @@ docs/prd/
 
 | 场景 | 编排的 Skill 链 |
 |------|----------------|
-| 头脑风暴 | 查全局注册表取编号起始 → ms-prd-brainstorm → index 生成 → ready 检查 |
-| PRD 解析 | 查全局注册表取编号起始 → ms-prd-parser → 逐块 ms-prd-brainstorm → 跨块合成 → index 生成 → ready 检查 |
+| 头脑风暴 | 新建门禁 → ms-prd-brainstorm → index 生成 → ready 检查 |
+| PRD 解析 | 新建门禁 → ms-prd-parser → 逐块 ms-prd-brainstorm → 跨块合成 → index 生成 → ready 检查 |
 | PRD 更新 | ms-prd-parser（重拆）→ 指纹对比 → 仅 outdated 块 brainstorm → index 更新 |
-| PRD 管理 | list（列出所有 PRD）/ status（查看详情）/ archive（归档） |
+| 清理收尾 | clear（dry-run → 孤儿拦截 → ⚠️确认 → 删），通常由 ms-pipeline close 末步委托 |
 | DevDocs 衔接 | ready 时推荐 ms-requirements --from-prd |
 
 ## 子 Agent 摘要格式
@@ -379,21 +345,21 @@ docs/prd/
 
 | 字段 | 值域 / 示例 |
 |---|---|
-| `prd_id` / `prd_status` | `20260330-用户认证` / `active` |
-| `index_path` | `docs/prd/20260330-用户认证/requirements/index.md` |
-| `mode` / `maturity` | `brainstorm \| prd-parse` / `idea \| draft \| ready` |
+| `index_path` | `docs/prd/requirements/index.md` |
+| `mode` / `maturity` | `brainstorm \| prd-parse \| clear` / `idea \| draft \| ready` |
 | `functional_count` / `nonfunctional_count` | 功能 / 非功能数量 |
 | `clarified_count` / `open_questions` | 已澄清块数 / 开放问题数 |
 | `ready_checks_passed` / `ready_checks_total` | ready 检查通过数 / 总数 |
+| `clear_removable` / `clear_orphans` | 仅 clear 模式：可安全清理 / 孤儿未同步项数 |
 
-**PRD status 判定**：`success` = 所有块处理完成且 index.md 已生成；`partial` = 部分块处理完成（用户中断或部分块失败）；`failed` = 关键步骤失败（如 PRD 无法解析）。
+**PRD status 判定**：`success` = 所有块处理完成且 index.md 已生成（clear 模式：清理完成或 dry-run 报告生成）；`partial` = 部分块处理完成（用户中断或部分块失败）；`failed` = 关键步骤失败（如 PRD 无法解析）。
 
-**产物字段**：`output_files` 列出 per-PRD index 与 FR/NFR 文件；`new_ids.requirements` 记录 `FR-09~FR-14, NFR-04~NFR-05` 这类新增编号；`next_recommended` 可指向 `ms-requirements --from-prd <实际 index.md 路径>`。
+**产物字段**：`output_files` 列出 index 与 FR/NFR 文件；`new_ids.requirements` 记录 `FR-09~FR-14, NFR-04~NFR-05` 这类新增编号；`next_recommended` 可指向 `ms-requirements --from-prd docs/prd/requirements/index.md`。
 
 ## 下一步
 
 pipeline 完成后，根据成熟度给出建议：
 
-- `ready` → 推荐 `/ms-requirements --from-prd <实际 index.md 路径>`
+- `ready` → 推荐 `/ms-requirements --from-prd docs/prd/requirements/index.md`
 - `draft` → 提示开放问题清单，建议补充后再衔接，或用户选择直接进入 DevDocs
 - `idea` → 建议继续 `/ms-prd brainstorm` 深化探索

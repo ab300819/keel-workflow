@@ -91,10 +91,10 @@ user-invocable: true
 
 | 检测项 | 判定 | 路由建议 |
 |------|------|---------|
-| PRD 候选（两段式） | 先读 `docs/prd/index.md` active 清单并检查每个 `requirements/index.md`；无全局 index 时 legacy 回退 `docs/prd/requirements/index.md` | 1 个可用候选读 maturity；多个候选用 AskUserQuestion 选择；0 个跳过 |
-| per-PRD index 缺失 | PRD 已登记但未生成可消费总纲 | 停留提示，不伪造 `--from-prd` 路径 |
-| `maturity=ready` | 产品需求已就绪 | 建议 `/ms-requirements --from-prd <实际检测到的 index.md 路径>` |
-| `maturity=idea/draft` | 产品需求包未就绪 | 建议 `/ms-prd` 继续完善需求 |
+| 已有脚手架 + 新需求意图 | `docs/prd/requirements/index.md` 已存在，且用户描述的是**与当前不同的新需求**（须先于下方 PRD 候选行判定，否则不可达） | 路由 `/ms-prd`，由其[新建需求门禁](../prd/SKILL.md#新建需求门禁强约束)⚠️三选一（继续当前 / clear 清理后新建 / discard 后新建）；未确认 ⛔ 不覆盖 |
+| PRD 候选（继续当前需求） | 检测 `docs/prd/requirements/index.md`（单需求脚手架，扁平唯一路径），且用户意图为继续/消费当前需求；存在则读 maturity；不存在则跳过 | 存在读 maturity；0 个跳过 |
+| `maturity=ready` | 产品需求已就绪（继续当前需求） | 建议 `/ms-requirements --from-prd docs/prd/requirements/index.md` |
+| `maturity=idea/draft` | 产品需求包未就绪（继续当前需求） | 建议 `/ms-prd` 继续完善需求 |
 | 有 `src/`、`lib/`、`app/` 等代码 | Q1a：新项目还是已有项目 | 已有项目 → `/ms-retrofit`；脚手架/模板 → 继续按输入类型路由 |
 | 用户输入极短（<200 字、无结构） | 模糊想法 | 建议 `/ms-prd` 探索需求 |
 | 文件/URL/长文 | 大文档引用 | 建议 `/ms-prd prd` 解析文档 |
@@ -185,7 +185,7 @@ Q3（feature/bugfix 追加，可选）:
 | `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep | `ms-feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness + Step 6 dev-workflow）→ `ms-verify --docs --impl` → `ms-sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
 | `bugfix` | 修复 Bug；不改变 feature 入口语义 | 简单 Bug：`ms-bugfix` → `ms-verify --impl` → `ms-sync`；复杂 Bug：`ms-dev-tasks` → `ms-dev-workflow` → `ms-verify --impl` → `ms-sync` | Bug 范围、复杂度判定、修复文件、验证结果 |
 | `verify` | 任意阶段质量检查 | 有代码变更 → `ms-verify --impl`；有文档变更 → `ms-verify --docs`；有 UI 设计稿 → `ms-verify --ui`；不确定 → 询问用户；再路由到对应 skill 修复 | 检查维度、问题摘要、建议修复 skill |
-| `close` | 开发周期结束收尾 | `ms-sync`（trace + audit）→ `ms-compound`（知识沉淀）→ `ms-onboard --update`；health 探针命中 blocker 级时，二级强化：建议顺带 `realign --scope=health` 全量扫描 | 同步结果、沉淀文件、更新后的上下文摘要 |
+| `close` | 开发周期结束收尾（上线后需求终结） | `ms-sync`（trace + audit）→ `ms-compound`（知识沉淀）→ `ms-onboard --update` → `ms-prd clear`（清理当前需求脚手架，末步执行确保 why 记忆已沉淀）；health 探针命中 blocker 级时，二级强化：建议顺带 `realign --scope=health` 全量扫描 | 同步结果、沉淀文件、更新后的上下文摘要、脚手架清理结果 |
 | `insights` | 外部洞察吸收 | `ms-insights`（收集 + 用户确认 + 追加 01）→ 有架构变更则 `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow` → `ms-verify` → `ms-sync`；简单改进则 `ms-dev-tasks` → `ms-dev-workflow` → `ms-verify` → `ms-sync` | 洞察确认结果、架构影响判定、变更链路 |
 | `design` | 用户主动推送设计资产；pipeline 只做阶段检测和收集 | no-prd → 收集并提示先 `/ms-prd` 或 `/ms-requirements`；prd-ready → `ms-requirements --update-design --target prd-index`；post-requirements/post-design → `ms-requirements --update-design`; in-dev → `ms-requirements --update-design` + 提示 `ms-verify --ui`; post-tasks → `ms-requirements --update-design` → `ms-dev-tasks --backfill-design` | `design_context`、目标阶段、委托目标、UI 验证提示 |
 | `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | spec_version：扫描 frontmatter → 比对各 skill 当前常量 → Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1；layout scope：扫描 AGENTS.md devdocs frontmatter → 比对 `writes_layout` → 三阶段迁移 | drift 数量、Phase 结果、确认项、layout/id/trace 差距 |
@@ -198,6 +198,7 @@ Q3（feature/bugfix 追加，可选）:
 - **Deep 模式**：跨模块 / 架构 / 安全变更时，dev-workflow 所有任务强制 `--review`，feature 完成后额外执行 `ms-verify --docs`，并展示影响面摘要。
 - **Sprint Contract 协调**：`ms-test-cases` 产出的可执行验收契约作为 `ms-dev-workflow` 输入；pipeline 只传摘要、文件路径、新增编号，不内联测试全文。
 - **design 主动推送**：详细协议见 [../prd/references/design-context.md](../prd/references/design-context.md)；pipeline 不写文档，no-prd 不阻塞，且不中断当前 dev-workflow。
+- **close 脚手架清理**：close 末步委托 `ms-prd clear` 清理 `docs/prd/` 一次性脚手架；先 dry-run 出范围 + 影响（孤儿 / 未同步项默认不删），⚠️ 必须确认后 `--apply` 删除；无 `docs/prd/` 时静默跳过。pipeline 只委托不自己删文件（见 ms-prd [清理脚手架](../prd/SKILL.md#清理脚手架close-收尾)）。
 - **realign 协调机制**：realign 非续做信号；restructuring / layout 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；`--headless` 必须显式 `--realign` 或 `--no-realign`；layout scope 升级需先跑 `--dry-run` + 独立 git branch 演练，执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md)。
 - **layout / id / trace 三层版本共性**：pipeline 是 SSOT 来源。三层版本号宪法见 [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md)，元数据 schema 见 [references/layout/layout-metadata-schema.md](references/layout/layout-metadata-schema.md)，aliases 见 [references/layout/aliases-yml-schema.md](references/layout/aliases-yml-schema.md)，迁移矩阵和不可逆操作见 [references/layout/docs-layout-migration.md](references/layout/docs-layout-migration.md)。
 
@@ -348,7 +349,7 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | bugfix | bugfix / (dev-tasks → dev-workflow) → verify → sync |
 | verify | verify --docs/--impl/--ui |
 | insights | 见下方 insights 流程图 |
-| close | sync → compound → onboard --update |
+| close | sync → compound → onboard --update → ms-prd clear（脚手架清理，dry-run→⚠️确认→删） |
 | design | 阶段检测 → 委托 ms-requirements --update-design [→ ms-dev-tasks --backfill-design] |
 | realign | Phase 1 B 类上游：prd-parser/prd-brainstorm --realign（若存在）→ Phase 2 A 类主链路：requirements → system-design → test-cases → dev-tasks → dev-workflow --all → Phase 3 B 类旁路：insights/onboard（若存在）（详见 [references/realign.md](references/realign.md)） |
 

@@ -92,7 +92,7 @@ migration: /ms-pipeline realign --scope=layout
 
 | 步骤 | 规则 |
 |---|---|
-| 定位 index | 读取用户指定的 `<index路径>`；未指定时先查 `docs/prd/index.md`，存在则解析 PRD 清单并仅自动筛选 active 候选（archived/superseded 仅在用户显式指定路径时可消费），逐个检查 `requirements/index.md`；仅 1 个可用自动使用，多个用 AskUserQuestion 选择；全局索引不存在则尝试 legacy `docs/prd/requirements/index.md`；均未找到则提示手动指定 |
+| 定位 index | 读取用户指定的 `<index路径>`；未指定时使用扁平默认路径 `docs/prd/requirements/index.md`（单需求脚手架）；未找到则提示先运行 `/ms-prd` 或手动指定 |
 | 记录来源 | 记录实际读取的 `source_index_path`，后续回写映射使用同一路径；读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产` |
 | 读取需求 | 通过 Glob 匹配 `requirements/FR-*` / `NFR-*`，提取澄清结论中的功能描述和验收意图；FR-XX → 生成功能需求（v1: F-XXX/US-XXX/AC-XXX；v2 [FUTURE]: FEAT-XXX/STORY-XXX/AC-XXX），NFR-XX → 写入非功能需求章节 |
 | 写入 DevDocs | 将 FR-XX/NFR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "ms-prd"）；按现有流程生成功能/故事/AC 编号，跳过方案确认但保留最终确认 |
@@ -120,7 +120,6 @@ migration: /ms-pipeline realign --scope=layout
 | 触发点 | 门控 | 恢复 / 继续 |
 |---|---|---|
 | 输入 `< 200` 字且无结构化标记 | ⚠️ 必须确认 | 建议先运行 `/ms-prd` 探索；用户选择继续或切换后进入对应流程 |
-| `--from-prd` 自动检测到多个 active 可用 PRD | ⚠️ 必须确认 | 用户选择具体 `requirements/index.md` 后继续；archived/superseded 仅显式路径可消费 |
 | 初始模式理解需求 + 探索代码后、编号分配前 | ⚠️ 必须确认 | 用户确认功能点划分、范围边界、优先级后，才开始编号分配和文档写入 |
 | 文档阶段试图产出实现代码（源代码、脚本、配置变更） | ⛔ 禁止继续 | 转交 `/ms-dev-workflow` 执行编码；本 skill 只写 DevDocs Markdown |
 | 生成/更新文档缺少 `generated_by / spec_version / generated_at` frontmatter | ⛔ 禁止继续 | 按 [templates/requirements-template.md](templates/requirements-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md) |

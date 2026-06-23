@@ -19,7 +19,7 @@
 
 入口：`/ms-prd-parser --realign`，或 `/ms-pipeline realign` 编排调度。
 
-流程：扫描 `docs/prd/<slug>/source/` 与 `chunks/` → frontmatter/分段字段差距 → additive 补齐 / restructuring 逐项确认 → Realign Log。
+流程：扫描 `docs/prd/source/` 与 `docs/prd/chunks/` → frontmatter/分段字段差距 → additive 补齐 / restructuring 逐项确认 → Realign Log。
 
 ## 约束
 

@@ -4,7 +4,7 @@ status: 现状提取，不引入新规则
 scope: 跨 skill 协议层共性
 related:
   - AGENTS.md（yaml-summary-v1 原始定义）
-  - skills/prd/references/governance/prd-index-ssot.md（PRD 编号 SSOT）
+  - skills/prd/references/governance/prd-revision-policy.md（PRD 修订边界）
   - skills/pipeline/references/layout/*（DevDocs 治理 SSOT）
 generated_at: 2026-05-18
 spec_version: shared-constraints.v1
@@ -268,7 +268,7 @@ expected_output: yaml-summary-v1
 - `realign/layout-pointer`：layout/id/trace 治理见 `skills/pipeline/references/layout/*`。
 - `realign/layout-execution-pointer`：`--scope=layout` 执行接口见 `skills/pipeline/references/realign-scope-layout.md`。
 - `realign/health-execution-pointer`：`--scope=health` 执行接口见 `skills/pipeline/references/realign-scope-health.md`。
-- `realign/prd-index-pointer`：PRD 编号 SSOT 见 `skills/prd/references/governance/prd-index-ssot.md`。
+- `realign/prd-revision-pointer`：PRD 修订边界见 `skills/prd/references/governance/prd-revision-policy.md`。
 
 ## 9. 分层记忆原则（决策 / 执行 / 数据三层分离）
 

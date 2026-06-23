@@ -491,8 +491,8 @@ mic-en 等历史项目维持 layout.v1 不动；任何时候用户主动调用 `
 
 | Skill | v1 输出 | v2 输出 | 章节改造范围 |
 |-------|--------|--------|------------|
-| `ms-prd-parser` | `docs/prd/<slug>/chunks/` | 不变（PRD 层级不属 DevDocs 内部）| 无路径改动 |
-| `ms-prd-brainstorm` | `docs/prd/<slug>/requirements/` | 不变 | 无路径改动 |
+| `ms-prd-parser` | `docs/prd/chunks/` | 不变（PRD 层级不属 DevDocs 内部）| 无路径改动 |
+| `ms-prd-brainstorm` | `docs/prd/requirements/` | 不变 | 无路径改动 |
 | `ms-insights` | `docs/devdocs/05-insights.md` 单文件 | 按 AskUserQuestion 归类后分流：决策类 → `design/decisions/ADR-NNN.md`；经验类 → `patterns/PATTERN-NNN.md`；一次性 → `notes/NOTE-NNN.md` | 拆 3 类后路径分流 + 各自 index 维护 |
 | `ms-onboard` | 读 `01~05` 单文件 | 读 `{requirements,design,tests,tasks,...}/index.md` | 路径切换 |
 

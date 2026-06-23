@@ -4,9 +4,6 @@
 
 | 字段 | 值 |
 |------|-----|
-| prd_id | {{YYYYMMDD-slug}}（multi-PRD 模式必填，legacy 省略） |
-| prd_status | active / superseded / archived（只读镜像，source of truth 在全局 index） |
-| supersedes | （迭代来源 PRD ID，无则留空；只读镜像，source of truth 在全局 index） |
 | 来源模式 | brainstorm / prd-parse |
 | 整体成熟度 | idea / draft / ready |
 | 生成日期 | YYYY-MM-DD |
@@ -23,7 +20,7 @@
 
 > 由 Step 0 上下文感知自动生成。绿地项目无此章节。
 
-引用：[docs/codebase-insight.md](../../../codebase-insight.md)（legacy 模式为 `../../codebase-insight.md`）
+引用：[docs/codebase-insight.md](../../codebase-insight.md)
 
 已有系统摘要：{{从 codebase-insight.md 提取的关键模块和接口概要}}
 
@@ -65,7 +62,7 @@
 ## 5. 共享假设与约束
 
 ### 假设
-- {{跨需求的共享假设}}
+- {{跨需求项（FR/NFR）的共享假设}}
 
 ### 约束
 - {{技术/业务/时间约束}}

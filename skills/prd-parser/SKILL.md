@@ -20,7 +20,7 @@ migration: /ms-pipeline realign --scope=layout
 
 > ℹ️ PRD 阶段编号（FR/NFR）**v1/v2 一致**（与 DevDocs id_scheme 解耦）。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
-> ℹ️ 输出路径：PRD 解析输出路径 `docs/prd/<slug>/chunks/` **不随 layout.v1/v2 切换**（PRD 不属 DevDocs 内部）。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
+> ℹ️ 输出路径：PRD 解析输出路径 `docs/prd/chunks/` **不随 layout.v1/v2 切换**（PRD 不属 DevDocs 内部）。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 将大型产品需求文档拆分为结构化的独立块文件，保留完整转换文本，为后续逐块澄清做预处理。
 
@@ -53,13 +53,11 @@ migration: /ms-pipeline realign --scope=layout
 - 来自 `/ms-prd` 的 PRD 解析委托
 - 用户需要对已有 PRD 进行变更检测和增量更新
 
-## 多 PRD 支持
+## 单需求脚手架
 
-由 ms-prd 编排层传入以下参数：
-- `prd_id`：当前 PRD 目录名（`YYYYMMDD-<slug>` 格式）
-- `fr_start`、`nfr_start`：FR/NFR 编号起始值（从全局注册表获取）
+所有输出路径基于扁平 `docs/prd/`（`docs/prd/chunks/`、`docs/prd/source/`）。任一时刻只服务一个当前需求，无跨需求目录隔离或全局编号注册表。变更检测限定在当前 `docs/prd/` 内。
 
-所有输出路径基于 `docs/prd/<prd_id>/`。变更检测限定在当前 `<prd_id>` 目录内，不跨 PRD 比对。legacy 模式下无 prd_id 参数时，回退到 `docs/prd/` 扁平结构。
+**编号续编**：FR/NFR 续编自当前 `docs/prd/chunks/` + `docs/prd/requirements/` 已有最大编号；目录为空（新需求 / 已 clear）则从 `FR-01` / `NFR-01` 起。这样"继续当前需求"追加块时不会撞号，"新需求"（脚手架已清）自然从 01 重起。
 
 ## 输入支持
 
@@ -86,8 +84,8 @@ migration: /ms-pipeline realign --scope=layout
    v
 2. 归集原始文件到 source/
    |
-   +-- 项目内文件 → 移动到 docs/prd/<prd_id>/source/（git mv 保留历史）
-   +-- 项目外文件 → 复制到 docs/prd/<prd_id>/source/
+   +-- 项目内文件 → 移动到 docs/prd/source/（git mv 保留历史）
+   +-- 项目外文件 → 复制到 docs/prd/source/
    +-- 若源文档为 Markdown → 扫描内嵌图片引用（`![...](相对路径)`），将引用的本地文件一并归集到 source/，保持相对路径结构
    +-- 记录 source/manifest.md（原始路径、归集方式 copy/move、哈希、类型）
    +-- 计算 document_fingerprint（对转换后的全文计算 sha256）
@@ -109,12 +107,12 @@ migration: /ms-pipeline realign --scope=layout
 5. 初判分类
    |
    +-- 每块判定 FR（功能）或 NFR（非功能）
-   +-- 分配编号：FR-XX / NFR-XX（multi-PRD: 从 fr_start/nfr_start 续编；legacy: 从 01 起始）
+   +-- 分配编号：FR-XX / NFR-XX（续编自当前 docs/prd/ 已有最大编号，空目录从 01 起）
    |
    v
 6. 输出 chunk 文件
    |
-   +-- 写入 docs/prd/<prd_id>/chunks/（legacy: docs/prd/chunks/），含 YAML 头 + 完整原文
+   +-- 写入 docs/prd/chunks/，含 YAML 头 + 完整原文
    +-- 每个文件包含双指纹 + parser_version + chunk_key
    |
    v
@@ -196,13 +194,13 @@ migration: /ms-pipeline realign --scope=layout
 
 - 同一块中 FR 和 NFR 内容混合时，按**主要内容**分类，在 YAML 头 `mixed_content` 字段标注
 - 分类存疑时标注 `classification_confidence: low`，由 brainstorm 终判
-- FR 和 NFR 独立计数（multi-PRD: 从 `fr_start`/`nfr_start` 续编；legacy: 从 01 起始）
+- FR 和 NFR 独立计数（续编自当前 docs/prd/ 已有最大编号，空目录从 01 起）
 
 ## 输出格式
 
 ### Chunk 文件
 
-文件路径：`docs/prd/<prd_id>/chunks/<编号>-<主题>.md`（legacy: `docs/prd/chunks/<编号>-<主题>.md`）
+文件路径：`docs/prd/chunks/<编号>-<主题>.md`
 
 **Frontmatter 必填**：生成 chunk 时必须在 frontmatter 顶部包含以下 3 个 realign 元数据字段（与 A 类模板同级约束；缺字段会被 `/ms-verify --schema-drift` 判为 `legacy`）：
 - `generated_by: ms-prd-parser`
@@ -219,7 +217,6 @@ generated_at: 2026-04-23T10:30:00+08:00
 id: FR-09
 title: 用户认证
 type: FR
-source_prd: 20260330-用户认证       # 所属 PRD（multi-PRD 模式必填，legacy 省略）
 source_file: /absolute/path/to/original-prd.pdf  # 原始文件路径（二进制文件为原始位置，文本文件为 source/ 副本）
 source_anchor: "2.1 用户认证"
 source_pages: "5-8"
@@ -244,7 +241,6 @@ status: pending
 | `id` | 是 | FR-XX 或 NFR-XX |
 | `title` | 是 | 块主题名称 |
 | `type` | 是 | FR 或 NFR |
-| `source_prd` | multi-PRD 必填 | 所属 PRD 的 prd_id |
 | `source_file` | 是 | 原始文件路径（文本文件指向 source/ 副本，二进制文件指向原始位置，详见 source/manifest.md） |
 | `source_anchor` | 是 | 原文章节标题或位置描述 |
 | `source_pages` | 否 | PDF 页码或行范围 |
@@ -259,13 +255,12 @@ status: pending
 
 ### 原始文件归集
 
-- 路径：`docs/prd/<prd_id>/source/`（legacy: `docs/prd/source/`）
+- 路径：`docs/prd/source/`
 - **项目内文件**（路径在当前 git 仓库内）→ **移动**到 source/（使用 `git mv` 保留版本历史）
 - **项目外文件**（路径在仓库外或非 git 管理）→ **复制**到 source/
 - 所有格式均自动归集（md/PDF/图片），不再需要用户手动复制
 - `source/manifest.md` 记录每个文件的：原始路径、归集方式（`move` / `copy`）、sha256 哈希、文件类型
 - 此目录在 `.gitignore` 中排除，不提交仓库（避免二进制膨胀和敏感信息入库）
-- `_snapshots/` 目录与 `source/` 同忽略策略，不提交仓库
 
 ## 变更追踪机制
 
@@ -318,7 +313,7 @@ pending ──(PRD 更新，章节删除)──> removed
 ### 阶段边界约束（最高优先级）
 
 - [ ] **禁止继续：不得解读、改写、删减原文内容**（恢复方式：原文完整保留到 chunk，需求解读由 ms-prd-brainstorm 负责）
-- [ ] Write 工具仅用于写入 `docs/prd/<prd_id>/chunks/` 和 `docs/prd/<prd_id>/source/` 下的文件
+- [ ] Write 工具仅用于写入 `docs/prd/chunks/` 和 `docs/prd/source/` 下的文件
 - [ ] 不分配 F/US/AC 编号（编号权属于 DevDocs 阶段）
 
 ### 忠实性约束
@@ -331,7 +326,7 @@ pending ──(PRD 更新，章节删除)──> removed
 
 - [ ] 每个块必须有唯一的 chunk_key
 - [ ] 块大小控制在 30-300 行范围内
-- [ ] FR 和 NFR 独立编号（multi-PRD: 从 `fr_start`/`nfr_start` 续编；legacy: 从 01 起始）
+- [ ] FR 和 NFR 独立编号（续编自当前 docs/prd/ 已有最大编号，空目录从 01）
 - [ ] 拆分不得丢失原文任何段落
 
 ### 变更追踪约束
@@ -365,9 +360,7 @@ status: success | partial | failed
 summary:
   headline: "PRD 拆分为 6 个功能块 + 2 个非功能块"
   details:
-    prd_id: 20260330-用户认证
-    prd_status: active
-    index_path: docs/prd/20260330-用户认证/requirements/index.md
+    index_path: docs/prd/requirements/index.md
     functional_count: 6
     nonfunctional_count: 2
     total_lines: 1200
@@ -376,11 +369,11 @@ summary:
     outdated_count: 0
 blockers: []
 output_files:
-  - docs/prd/20260330-用户认证/chunks/FR-09-用户认证.md
-  - docs/prd/20260330-用户认证/chunks/NFR-04-性能要求.md
-  - docs/prd/20260330-用户认证/source/manifest.md
+  - docs/prd/chunks/FR-01-用户认证.md
+  - docs/prd/chunks/NFR-01-性能要求.md
+  - docs/prd/source/manifest.md
 new_ids:
-  chunks: [FR-09~FR-14, NFR-04~NFR-05]
+  chunks: [FR-01~FR-06, NFR-01~NFR-02]
 next_recommended:
   skill: ms-prd
 ```

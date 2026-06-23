@@ -14,10 +14,10 @@
 |---|---|---|
 | mapping 表唯一位置 | `skills/prd/references/prd-mapping-status.md:3`：唯一存储位置是 index.md 的 "DevDocs 映射" 章节 | [现状] |
 | mapping 字段与状态全集 | `skills/prd/references/prd-mapping-status.md:5-24`：列定义、状态枚举、authoritative row 规则 | [现状] |
-| FR revise 写 outdated | `skills/prd/SKILL.md:153-159`：FR 已映射时将 `mapping_status` 置为 outdated，并链接 mapping 规范 | [现状] |
-| `--from-prd` 消费与回写 | `skills/requirements/SKILL.md:71-101`：读取 PRD index、处理 outdated、新增 FR、写回 mapping、remapped 保留历史 | [现状] |
-| `--back-propagate-prd` 回扫 | `skills/sync/SKILL.md:282-315`：对比 `01-requirements.md` 与 PRD mapping，废弃 F 标记 removed，只写映射状态不改 FR 内容 | [现状] |
-| PRD/DevDocs 编号边界 | `skills/prd/SKILL.md:303-305`：PRD 不分配 F/US/AC，FR/NFR 进入 DevDocs 后映射为 F-XXX | [现状] |
+| FR revise 写 outdated | `skills/prd/SKILL.md` § --revise 模式：FR 已映射时将 `mapping_status` 置为 outdated，并链接 mapping 规范 | [现状] |
+| `--from-prd` 消费与回写 | `skills/requirements/SKILL.md` § --from-prd：读取 PRD index、处理 outdated、新增 FR、写回 mapping、remapped 保留历史 | [现状] |
+| `--back-propagate-prd` 回扫 | `skills/sync/SKILL.md` § --back-propagate-prd：对比 `01-requirements.md` 与 PRD mapping，废弃 F 标记 removed，只写映射状态不改 FR 内容 | [现状] |
+| PRD/DevDocs 编号边界 | `skills/prd/SKILL.md` § DevDocs 桥接：PRD 不分配 F/US/AC，FR/NFR 进入 DevDocs 后映射为 F-XXX | [现状] |
 
 ## 规则
 
@@ -28,7 +28,7 @@
 | `active` | PRD FR/NFR 与 DevDocs F/FEAT 当前被认为一致 | 首次 `/ms-requirements --from-prd` 成功导入 | [现状] ms-requirements | 无需动作 |
 | `outdated` | PRD FR/NFR 已修改，但对应 DevDocs 尚未更新 | `/ms-prd --revise` 修改已映射 FR/NFR | [现状] ms-prd | 运行 `/ms-requirements --from-prd` 或人工处理 |
 | `remapped` | 已重新导入，DevDocs 对应内容已更新；旧行保留审计 | `/ms-requirements --from-prd` 处理 outdated 或重新导入 | [现状] ms-requirements | 以最后一行为 authoritative row |
-| `removed` | 对应 DevDocs F/FEAT 已被移除或废弃 | `/ms-sync --back-propagate-prd` 检测到映射的 F 已不在 DevDocs 需求文件 | [现状] ms-sync | 人工判断 PRD 是否保留、修订或 supersede |
+| `removed` | 对应 DevDocs F/FEAT 已被移除或废弃 | `/ms-sync --back-propagate-prd` 检测到映射的 F 已不在 DevDocs 需求文件 | [现状] ms-sync | 人工判断 PRD 是否保留或修订 |
 
 ### Authoritative Row
 
@@ -48,7 +48,7 @@
 
 ## 回扫算法
 
-1. 定位 PRD requirements index：multi-PRD 只自动选择 active PRD；archived/superseded 仅允许用户显式只读消费，不允许自动回写。
+1. 定位 PRD requirements index：固定为 `docs/prd/requirements/index.md`（单需求脚手架，无跨需求选择）。
 2. 读取 mapping 表并按 `product_id` 取最后一条 authoritative row。
 3. 读取 DevDocs 需求文件中的当前 F/FEAT 列表。
 4. 对每个 authoritative row 执行对比：目标 F/FEAT 存在则保持；目标不存在则追加 `removed` 行；DevDocs 中无 PRD 来源的新 F/FEAT 只报告，不自动创建 FR。
@@ -59,7 +59,7 @@
 ```text
 FR/NFR 内容修订
   -> /ms-prd --revise 保持 product_id 不变
-  -> per-PRD index.md 的 DevDocs 映射置 outdated
+  -> requirements/index.md 的 DevDocs 映射置 outdated
   -> /ms-requirements --from-prd 读取 outdated
   -> 原地更新对应 F/US/AC 或追加新映射
   -> mapping_status 追加 remapped，最后一行成为 authoritative row
@@ -78,7 +78,7 @@ FR/NFR 内容修订
 处置边界：
 
 - 自动：只更新 mapping 表。
-- 人工：判断对应 FR/NFR 是否仍是产品需求。如果仍有效，应重新导入或在 DevDocs 恢复；如果不再有效，应考虑 PRD supersede 或 FR revise。
+- 人工：判断对应 FR/NFR 是否仍是产品需求。如果仍有效，应重新导入或在 DevDocs 恢复；如果不再有效，应考虑 FR revise 或在收尾时清理。
 
 ### F 被新增但没有 PRD 来源
 
@@ -102,8 +102,8 @@ FR/NFR 内容修订
 
 ## 门控
 
-- ⛔ 禁止继续：对 archived/superseded PRD 自动回写 mapping、在 back-propagate 中改 FR 内容、把 `removed` 当作删除 PRD 文件。恢复方式：切换到 active PRD、只写 mapping 表、保留历史文件并由用户确认后处理。
-- ⚠️ 必须确认：多个 active PRD 候选、F 删除导致 mapped FR 失去 DevDocs 目标、FR 拆分/合并到多个 F。恢复方式：用户选择 PRD、确认保留/废弃/重映射策略。
+- ⛔ 禁止继续：在 back-propagate 中改 FR 内容、把 `removed` 当作删除 PRD 文件。恢复方式：只写 mapping 表、保留文件并由用户确认后处理。
+- ⚠️ 必须确认：F 删除导致 mapped FR 失去 DevDocs 目标、FR 拆分/合并到多个 F。恢复方式：用户确认保留/废弃/重映射策略。
 - ℹ️ 建议：发现 DevDocs-only F 或 long-lived outdated mapping 时提示处理；不强制阻断 PRD 文档维护。
 
 ## 验证
@@ -130,7 +130,6 @@ FR/NFR 内容修订
 
 ## Related Specs
 
-- [prd-index-ssot.md](./prd-index-ssot.md)
 - [prd-revision-policy.md](./prd-revision-policy.md)
 - [prd-mapping-status.md](../prd-mapping-status.md)
 - [ms-requirements --from-prd](../../../requirements/SKILL.md)
