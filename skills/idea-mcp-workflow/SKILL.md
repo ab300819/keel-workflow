@@ -93,7 +93,7 @@ jq -r '.problems[]|select(.kind=="ERROR")|.message' build.json | sort | uniq -c 
 
 | 场景 | 触发 | 读这个 |
 |------|------|--------|
-| XDebug 断点调试 | 调试、断点、xdebug、单步、看变量 | [references/debug.md](references/debug.md) |
+| 断点调试 / 调接口排 bug | 调试、断点、xdebug、单步、看变量、curl 调接口、微服务调试 | [references/debug.md](references/debug.md) |
 | 数据库查询 | 查库、执行 SQL、看表数据、连接 | [references/database.md](references/database.md) |
 | 安全重命名 / 重构 | 重命名、改符号、提取、重构 | [references/refactor.md](references/refactor.md) |
 
