@@ -101,6 +101,7 @@ git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-s
 | 测试指导 | `/testing-guide` | 断言质量、Mock、覆盖率/变异得分阈值 |
 | 重构 | `/refactor` | 系统化重构，测试驱动 |
 | 对抗审查 | `/adversarial-review` | 外部 LLM 独立审查计划/设计/代码 |
+| JetBrains MCP 操作 | `/idea-mcp-workflow` | 通过 `idea` MCP 编译/调试/查库的决策与踩坑（projectPath 纪律、build 输出防爆、依赖 vs bug、Maven reload 提示） |
 | UI 调度 / 自描述 / 记忆 / 报告 | `/ui-orchestrator` / `/code-self-describe` / `/agent-memory` / `/work-report` | 专项工具 |
 
 > `commit-convention`、`git-safety`、`iteration-policy` 由其他 skill 自动调用，不需用户直接运行。
