@@ -71,6 +71,7 @@ spec_version_notes: |
 | 功能点 | `F-001`（v1）/ `FEAT-001`（v2 [FUTURE]）| 通过 `关联需求` 字段反查所有关联任务 |
 | 用户故事 | `US-001`（v1）/ `STORY-001`（v2 [FUTURE]）| 同上 |
 | 全部 | `--all` | 所有 `状态∈{待开发,进行中}` 的任务（跳过 `review_pending`；后者由 `/ms-verify --review-drain` 收集） |
+| 轻量入口 | `--inline "<任务定义>" --ac "<验收标准>"` | 无 04 文档也可进入:按 [inline-entry.md](references/inline-entry.md) 物化 stub(01 AC 条目 + 04 任务条目)后转单任务路径;review_profile 下限 guarded |
 | 无人值守 | `--headless` | 批量模式 + 全自动决策（fail-fast） |
 | 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停（与 `--headless` 互斥） |
 | 单次提交 | `--single-commit` | 代码+文档合并为单次提交；适合无文档变更或后续 `/ms-sync` 已合并 |
@@ -90,8 +91,8 @@ spec_version_notes: |
 
 ## 前置条件
 
-- 任务文档：`docs/devdocs/04-dev-tasks.md`
-- 任务已定义并包含：关联需求、验收标准、测试方法
+- 任务文档：`docs/devdocs/04-dev-tasks.md`,且任务已定义并包含:关联需求、验收标准、测试方法
+- **或** `--inline "<任务定义>" --ac "<验收标准>"`:按 [inline-entry.md](references/inline-entry.md) 物化 stub 后进入 S1;Test Agent 输入中 02/03 字段标 `—(inline)`,以 S1.5 Sprint Contract 为测试输入约束
 
 ## 工作流程
 
