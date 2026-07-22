@@ -35,4 +35,5 @@ DevDocs 技能链的编码执行阶段，承接 `ms-dev-tasks` 输出的任务�
 | `references/ui-quality-checklist.md` | 🟢 UI 层 Phase 2-UI 审查清单：静态代理指标、与 ms-verify --ui 边界、UI 验收清单生成规则 |
 | `references/auto-mode.md` | 无人值守模式（`--headless`）：决策策略表、安全不变量、重试规范、工作区洁净协议、交付报告模板、续做豁免机制 |
 | `references/skeleton-examples.md` | 骨架代码示例：接口骨架（带标注的方法签名）和测试骨架（带标注的 test.skip） |
+| `references/inline-entry.md` | inline 轻量入口（`--inline`）：协议规则、stub 模板（01 AC 条目 + 04 任务条目）、手动回填协议、下游受限分支速查 |
 <!-- end auto-generated -->

@@ -6,7 +6,7 @@
 
 ## 当前 spec_version
 
-**`devflow.v1`**（MVP 起点，未发生首次 bump）
+**`devflow.v2`**（v1→v2:新增 `--inline` 轻量入口,见 Migration Matrix）
 
 ## 与 12 种续做信号的关系（重要）
 
@@ -24,10 +24,11 @@
 
 ## Migration Matrix（spec_version 演进）
 
-### v1 → v2（保留字段，未来启用）
+### v1 → v2
 
 | 分级 | 变更项 | 修复动作 | 判据 |
 |---|---|---|---|
+| additive | 新增 `--inline` 轻量入口（前置条件"或"分支 / 指定符解析 / Test Agent inline 分支，见 [inline-entry.md](inline-entry.md)） | 无:已完成任务无结构差距,回扫 no-op(仅规范能力扩展;dev-workflow 无自有产物模板,无模板 frontmatter 同步项) | 无(不产生存量差距) |
 | additive | （示例）新增"Phase 4 外审必填"：audit 任务 Phase 4 必填；fast/guarded 延后 drain | 对存量 audit 任务补跑 Phase 4，登记 `EXT_REVIEWED`；fast/guarded 任务标 `review_pending` 等待 drain | review_profile=audit + 无 EXT_* 状态 |
 | restructuring | （示例）AC 表列结构变更（新增"验收来源"列） | AskUserQuestion 呈现 before/after，逐任务确认后 Edit | AC 表列数 < 当前模板 |
 
