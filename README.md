@@ -4,7 +4,7 @@
 
 兼容 **Claude Code**、**Codex CLI**、**OpenCode** 等遵循 [Agent Skills](https://agentskills.io) 开放标准的工具。
 
-> 共 32 个 skill，分两类：`ms-` 前缀 = DevDocs 文档驱动流程（需求→设计→测试→开发→验证全链路）；非 `ms-` = 独立工具（代码质量、测试、通用开发流程等）。
+> 共 33 个 skill，分两类：`ms-` 前缀 = DevDocs 文档驱动流程（需求→设计→测试→开发→验证全链路）；非 `ms-` = 独立工具（代码质量、测试、通用开发流程等）。
 
 ---
 
@@ -87,6 +87,7 @@ git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-s
 | 开发执行 | `/ms-dev-workflow` | 骨架优先 + 分层 TDD + 双 Agent 隔离 → 代码 |
 | 测试执行 | `/ms-test-run` | 运行测试 + 追溯验证 → `05-test-report.md` |
 | 统一验证 | `/ms-verify` | --docs / --impl / --ui / --readiness |
+| 可视化评审 | `/ms-board` | 01/02 → 交互评审页面（浏览器桥双向），意见回流为文档修订 |
 | 文档同步 | `/ms-sync` | trace + audit + archive |
 | 新功能 / Bug | `/ms-feature` / `/ms-bugfix` | 增量功能 / 测试先行修复 |
 | 洞察 / 沉淀 / 暂缓 | `/ms-insights` / `/ms-compound` / `/ms-backlog` | 改进项 / 经验模式 / 暂缓池 |

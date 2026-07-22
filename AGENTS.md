@@ -6,7 +6,7 @@
 
 - 规格库：Markdown + YAML skill 定义（非代码库）
 - 无 build/test/lint 命令
-- 21 个 ms- 流程 skill + 12 个独立 skill（含 3 个 internal-only；dev-flow 为非 DevDocs 通用开发流程，idea-mcp-workflow 为 JetBrains idea MCP 操作手册）
+- 22 个 ms- 流程 skill + 12 个独立 skill（含 3 个 internal-only；dev-flow 为非 DevDocs 通用开发流程，idea-mcp-workflow 为 JetBrains idea MCP 操作手册）
 
 ## 架构决策
 
@@ -40,6 +40,7 @@
 - 新增 skill：idea-mcp-workflow（独立，非 DevDocs）：通过 JetBrains `idea` MCP（`mcp__idea__*` deferred 工具）操作项目的决策/踩坑手册。承载 4 条跨切面纪律（projectPath 必填且须绝对路径 / build 输出防爆=`filesToRebuild` 源头缩范围而非落盘 jq / 依赖未解析 vs 真 bug 强信号 / Maven reload 是 UI 动作 MCP 不暴露）+ 编译主链路，debug·database·refactor 沉 references 按需加载。经 Codex 独立调研（8 条反馈对齐）+ live MCP 实证（纪律 1 报错文案、envo/trade）+ 只读行为抽查。注：skill-creator 触发评测在嵌套 claude -p 环境非判别性（本仓 skill 靠目录发现、非真 Skill 注册），未采纳其分数
 - **dev-workflow inline 轻量入口**：`--inline "<任务>" --ac "<AC>"` 无 04 也可进入，物化 stub（AC 落 01 唯一编号源、review_profile 下限 guarded、`grep "来源: inline"` 即回填台账）；协议私有于 [dev-workflow references/inline-entry.md](skills/dev-workflow/references/inline-entry.md)（constraints.md 零改动），spec_version bump devflow.v2，方案见 [specs/2026-07-22-inline-input-satisfaction-design.md](docs/superpowers/specs/2026-07-22-inline-input-satisfaction-design.md)（codex 2 轮审查）
 - **superpowers 共存(单向)**：AGENTS.md「工作流路由」节压制外部 process skill 误触发（agent-memory 幂等维护+managed 标记；init/retrofit 实际委托发货、pipeline ℹ️ 兜底）；能力吸收三方对齐结论=9 项已有等价/更强、唯一内化 bugfix 根因门、worktree 并行 FUTURE、"委托+fallback"否决改"可选增强+单一路径"；方案见 [specs/2026-07-22-superpowers-coexistence-design.md](docs/superpowers/specs/2026-07-22-superpowers-coexistence-design.md)（codex 3 轮）+ [workflows.md 共存节](docs/workflows.md#与-superpowers-共存)
+- **新增 skill：ms-board（可视化评审面板）**：01/02 → 自包含 HTML 评审页（临时目录不入库），chrome-devtools MCP 双向桥（board_id fail-closed / 读 `window.__review` 写 `agent-*` 白名单），意见经评审修订协议回流（编号不变/新增委托 ms-requirements 增量/删除标废弃/02 走增量设计+ADR），mermaid 渲染须网络 deny-all 沙箱（macOS 配方已实证，含 unix-socket 放行坑）；协议 SSOT 在 [board references/board-protocol.md](skills/board/references/board-protocol.md)，方案见 [specs/2026-07-22-devdocs-review-board-design.md](docs/superpowers/specs/2026-07-22-devdocs-review-board-design.md)（codex 6 轮 R6 PASS）；E2E 冒烟通过（注入转义/状态恢复/导出/沙箱渲染）
 - **bugfix 根因诊断门**：原因不明的简单 Bug 必过"复现基线→假设清单→最小仪器化→证伪确认"，根因未证实 ⛔ 不得修复；连续 2 轮证伪 ⚠️ 升级 dev-tasks（吸收自 superpowers systematic-debugging 纪律，内化非委托）
 - internal-only：ms-iteration-policy（由 realign --scope=layout 调度）
 - code-quality 重构为代码质量 SSOT：核心阈值表（统一谓词）+ 命名/注释/日志规范 + 设计原则（代码级），示例拆 references/；日志规范=编码纪律 SSOT（级别纪律/最小上下文/异常纪律/安全红线/事实优先 6 条），system-design log-design-guide 留设计阶段"在哪打点"并指针回此；dev-flow/dev-workflow 编码纪律 + verification-flow 日志卫生审查项已并列接入；deferred：health-lint 镜像一致性 rule（见 [plans/2026-06-12-code-quality-restructure-naming.md](docs/superpowers/plans/2026-06-12-code-quality-restructure-naming.md) §4）

@@ -115,6 +115,7 @@ user-invocable: true
 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
 
 ℹ️ 建议:AGENTS.md 缺「工作流路由」节(存量 DevDocs 项目)→ 建议 `/agent-memory --update` 补齐;不阻塞路由。
+ℹ️ 建议:检测到 01(或 01+02)已产出 → 可 `/ms-board` 生成可视化评审页面(人审需求/设计;不阻塞、不强制)。
 
 ### 一次性升级提示（阶段检测后）
 
