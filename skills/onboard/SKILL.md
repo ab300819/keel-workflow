@@ -394,7 +394,7 @@ Agent: [展示现有文档内容]
 | DevDocs 不存在 | `/ms-retrofit` | 先从代码逆向生成文档 |
 | 进度信息过时 | `/ms-sync` | 先同步文档状态 |
 | 需要详细任务 | `/ms-dev-tasks` | 查看完整任务列表 |
-| 记忆文件同步 | `/agent-memory` | 更新 AGENTS.md |
+| 记忆文件同步 | `/agent-memory` | 更新 AGENTS.md;DevDocs 项目同步时包含工作流路由节 |
 
 ## 命令选项
 

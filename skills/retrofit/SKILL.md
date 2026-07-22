@@ -174,6 +174,8 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 **关键规则**：改造不是终点，必须通过后续 Skill 进入正常开发循环。推荐先用 `/ms-requirements --context` 补充背景信息。
 
+**记忆同步(成功路径必做)**:改造成功、`docs/devdocs/` 生成后,执行 `Task: /agent-memory --update` 同步 AGENTS.md(DevDocs 项目会包含工作流路由节)。失败语义:ℹ️ 不阻塞改造交付,blockers 记入报告。
+
 ---
 
 ## Skill 协作
@@ -194,7 +196,7 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码**（恢复方式：使用 /ms-dev-workflow 执行编码）
-- [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
+- [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档;窄例外:改造成功后委托 `agent-memory` 写其受管记忆文件(`AGENTS.md`/`CLAUDE.md` 导入行/`.claude/rules/devdocs-state.md`),其余业务文件仍禁止
 - [ ] 编码实现由 `/ms-dev-workflow` 负责，本 Skill 不涉及
 
 ### 方案确认约束
