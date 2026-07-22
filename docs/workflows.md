@@ -308,3 +308,24 @@
 ### 5. 对抗式验证不要跳过
 
 `--review` 对抗验证对应文章中的独立 Evaluator——外部视角发现自己看不到的问题。文章指出 LLM 对自身输出有正面偏见，分离评估是最有效的质量保障手段。
+
+## 与 superpowers 共存
+
+> 设计与审查记录:[specs/2026-07-22-superpowers-coexistence-design.md](superpowers/specs/2026-07-22-superpowers-coexistence-design.md)(codex 3 轮)。原则:**单向兼容**(superpowers 插件零改动)+ **可选增强、单一路径归一化**(ms- 阶段永远执行并产出权威结果)。
+
+### 路由声明(压制误触发)
+
+DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory --update` 幂等维护;init/retrofit 自动发货,存量项目由 pipeline 阶段检测 ℹ️ 提示补齐)。依"用户指令 > skill 默认行为"的通用优先级,该节使 superpowers 的 process skill(brainstorming / systematic-debugging / writing-plans / executing-plans / subagent-driven-development / finishing-a-development-branch 等)在 DevDocs 管理的工作上让位于 `ms-*` 入口;它们仍可用于体系外杂项(一次性脚本、非交付实验、文档体系元改造)。
+
+### 两座产物桥
+
+| 场景 | 通道 | 追溯 |
+|------|------|------|
+| superpowers writing-plans 产出的计划(**非 DevDocs 项目**) | `/dev-flow` 执行(契约先行+红绿+质量地板) | 零追溯 |
+| 一句话任务+验收标准(DevDocs 项目内轻量) | `/ms-dev-workflow --inline "<任务>" --ac "<AC>"` | 有追溯(AC 落 01,guarded 下限) |
+
+注意:DevDocs 项目内不使用 dev-flow(其自身路由判定亦如此);finishing-a-development-branch 的 merge/push 选项与 DevDocs"绝不推送远程"不变量冲突,任何情况下不接入。
+
+### 能力吸收结论(2026-07-22 三方对齐)
+
+逐项映射后:9 项 superpowers 能力 DevDocs 已有等价或更强;唯一内化项 = ms-bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
