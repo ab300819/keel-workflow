@@ -23,6 +23,21 @@
 
 发货闭环(R2 修正口径):**两路实际调用**——新项目(init 于 requirements 后即委托)+ 改造项目(retrofit 成功路径显式委托);**一路兜底提示**——存量项目(pipeline 阶段检测 ℹ️)。onboard 仅提示。全部落到 agent-memory 同一条幂等补节规则。
 
+### 2.1 R3 P2 细化(实施前必须落进对应文件)
+
+- **F-006 写入范围窄例外**:retrofit(及 pipeline 编排语境)现约束 Write 仅限 `docs/devdocs/`;补窄例外——DevDocs 生成成功后,可委托 agent-memory 写其**受管记忆文件**(`AGENTS.md` / `CLAUDE.md` 导入行 / `.claude/rules/devdocs-state.md`);其余业务文件仍禁止写入。
+- **F-007 委托结果分支适配**:此委托是**可选治理步**,不适用 pipeline 通用"failed+blockers → 用户决定"分支——`success` 正常记录;`partial` / `failed` / `interrupted` 均保留原状态与 blockers、显示 ℹ️ 后**继续主链**(路由声明缺失不影响开发,阶段检测有兜底)。
+- **F-008 受管章节边界**:memory-template 为 agent-memory 可再生章节设稳定受管标记(HTML 注释 `<!-- agent-memory:managed -->`);60 行超限时**只压缩带标记章节**;未知/用户章节绝不压缩;无标记可压 → 进入 ⚠️ 确认分支(裁剪或 `--restructure`)。
+- **F-009 摘要契约接 SSOT**:agent-memory 的 yaml-summary 节**引用 constraints.md §2 为权威**,固定 `status` 四值(`success/failed/interrupted/partial`)、私有字段入 `summary.details`、保留字段(`blockers/output_files/new_ids/next_recommended`)语义不得私有化;不造第二套近似契约。
+
+## 6.5 审查记录
+
+| 轮次 | 结果 |
+|------|------|
+| R1(codex) | F-001 发货不闭环 / F-002 轻量通道自相矛盾 / F-003 违反工具无关 → 全修复 |
+| R2(codex) | F-002/F-003 闭环;F-001 复现(非实际调用+init 时序)+ F-004 缺 yaml-summary 契约 + F-005 60 行硬限 → 全修复 |
+| R3(codex) | **无 P1,收敛**;遗留 4 条 P2(F-006~F-009)→ 已细化进 §2.1 |
+
 ## 3. 路由声明模板(写入 memory-template.md 的可选节;R1 修订:行为级、无插件名、轻量通道纠偏)
 
 ```markdown
