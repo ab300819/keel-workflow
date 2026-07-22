@@ -95,6 +95,11 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
 | 04-dev-tasks.md | 活跃任务 + 进度 |
 | 所有文档 | 编号状态（max F/US/AC/T/ADR） |
 
+**工作流路由节(幂等补节)**:`docs/devdocs/` 存在且 AGENTS.md 缺「工作流路由」节 → 按 [memory-template.md](templates/memory-template.md) 补入(带 `<!-- agent-memory:managed -->` 标记);节已存在 → 保留原文不覆盖(用户自定义优先)。
+
+**60 行硬限处理**:补节/更新前后计行;超限 → 仅压缩带 `<!-- agent-memory:managed -->` 标记的可再生章节(未知/用户章节绝不压缩);无标记章节可压 → ⚠️ 必须确认
+恢复方式:用户选择裁剪项或转 `--restructure`;无确认不写入(不得静默越界)。
+
 ## `--update` 工作流程
 
 ```text
@@ -247,6 +252,22 @@ bypass_reason: <用户提供的原因>
 | 阶段性文档变更 | `/ms-onboard` | onboard 完成后建议运行 /agent-memory |
 | 任务完成轻量更新 | `/ms-dev-workflow` | dev-workflow 步骤 6.5 内联更新"当前状态" |
 | 上下文摘要 | `/ms-onboard` | onboard 生成 00-context.md，不涉及记忆文件 |
+
+## 子 Agent 摘要格式（yaml-summary-v1）
+
+被编排层(如 `/ms-pipeline` init / `/ms-retrofit`)以 Task 委托时,返回统一信封;字段语义以 [constraints.md §2](../_shared/constraints.md) 为权威,不扩展 status、不私有化保留字段,私有统计入 `summary.details`:
+
+```yaml
+skill: agent-memory
+status: success | failed | interrupted | partial   # 四值,语义见共享 SSOT
+summary:
+  headline: "AGENTS.md 已更新,含工作流路由节"
+  details: {routing_section: added | kept | skipped, lines: 58}
+blockers: []          # 如 60 行超限待确认(partial 时必填)
+output_files: [AGENTS.md]
+new_ids: {}
+next_recommended: {skill: "", args: ""}
+```
 
 ## 模板引用
 
