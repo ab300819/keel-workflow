@@ -13,6 +13,7 @@
 /ms-dev-workflow F-001               # 按功能点（通过 关联需求 字段反查）
 /ms-dev-workflow US-001              # 按用户故事（同上）
 /ms-dev-workflow --all               # 所有待开发任务
+/ms-dev-workflow --inline "<任务定义>" --ac "<验收标准>"   # 轻量入口:物化 stub 后转单任务
 ```
 
 ### 解析流程
@@ -25,7 +26,9 @@
    ├── T-XX,T-YY,... → 拆分为任务 ID 列表
    ├── F-XXX         → 扫描所有任务的 关联需求 字段，匹配 F-XXX
    ├── US-XXX        → 扫描所有任务的 关联需求 字段，匹配 US-XXX
-   └── --all         → 收集所有 状态∈{待开发,进行中} 的任务（dev 执行跳过 review_pending，不重跑；review_pending 由 /ms-verify --review-drain 专门收集）
+   ├── --all         → 收集所有 状态∈{待开发,进行中} 的任务（dev 执行跳过 review_pending，不重跑；review_pending 由 /ms-verify --review-drain 专门收集）
+   └── --inline      → 不读 04 指定符;按 [inline-entry.md](inline-entry.md) 物化 01 AC 条目 + 04 任务条目
+                       (缺 --ac ⚠️ 必须确认:补验收标准或转 /dev-flow),物化得到 T-XX 后转单任务路径(与现有 T-XX 行为一致)
 3. 返回去重后的任务 ID 列表
 ```
 
@@ -392,6 +395,8 @@ docs(T-XX): 更新任务状态并同步 trace
 | 续做起点 | `null` 或 `skeleton_interface`/`skeleton_test`/`red_assertions` |
 
 > ⛔ 信息屏障：Test Agent 禁止读取任何 src/ 下的已有实现文件（骨架除外）
+
+> **inline 分支**(任务 `来源: inline`,见 [inline-entry.md](inline-entry.md)):`系统设计`/`测试用例` 两字段传 `—(inline)`;测试输入约束以 S1.5 Sprint Contract(AC + 当前代码上下文)为准——S1.5 本就是既有步骤,非新机制。`需求文档` 字段照常传 `01-requirements.md`(inline AC 定义于其 Inline stubs 区)。信息屏障不变。
 >
 > 📝 注释纪律（[`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)）：S3 骨架可用纯 AAA 占位（`// Arrange` / `// Act` / `// Assert`，不带来源）；S4 写完断言后必须删除来源记录式注释（"来自 UT-XX / 后置条件 / 行为契约"等）——测试名 + 断言本身表达预期，过程来源归 traceability.yml
 
