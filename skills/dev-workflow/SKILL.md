@@ -17,7 +17,9 @@ migration: /ms-pipeline realign --scope=layout
 spec_version: 2.0
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
-        P1 S9 并行化、P2 批量 Batch-Id trailer 标记 [FUTURE]，待 Phase 2 实施
+        P1 S9 并行化、P2 批量 Batch-Id trailer 标记 [FUTURE]，待 Phase 2 实施；
+        并行化前置依赖 worktree 隔离协议（工作区所有权/文档 SSOT 合并/review-drain 回收），
+        触发 = 真实并行需求（2026-07-22 吸收评审结论，见 docs/workflows.md § 与 superpowers 共存）
   2.0 = 重新定位(代码SSOT/文档记忆)+ review_profile 三档替代层级 + 质量地板恒定 + 独立审查延后 drain + review_pending 状态(Plan A)
 ---
 
