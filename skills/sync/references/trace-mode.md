@@ -8,6 +8,7 @@
 
 ```
 1. 读取 03-test-cases.md 追溯矩阵
+   ├── 03 不存在且 AC 标 `来源: inline` → 跳过该 AC 的 trace 写入,提示"inline 条目待回填"(见 [dev-workflow inline-entry.md](../../dev-workflow/references/inline-entry.md))
    │
    ▼
 2. 扫描代码文件
