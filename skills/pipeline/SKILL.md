@@ -114,6 +114,8 @@ user-invocable: true
 
 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
 
+ℹ️ 建议:AGENTS.md 缺「工作流路由」节(存量 DevDocs 项目)→ 建议 `/agent-memory --update` 补齐;不阻塞路由。
+
 ### 一次性升级提示（阶段检测后）
 
 阶段检测完成后、返回路由建议之前，执行 drift 轻量检查。**两类语义不同，勿混**（维护者注意：health 永不接回 ack）：
@@ -181,7 +183,7 @@ Q3（feature/bugfix 追加，可选）:
 
 | 入口 | 适用边界 | 调用顺序 / 路由 | 必传摘要字段 |
 |------|---------|----------------|-------------|
-| `init` | 全新项目，从需求到开发的完整流程 | `ms-requirements` → `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow`（批量）→ `ms-verify --docs --impl` → `ms-sync` | `output_files`、`new_ids.features`、`new_ids.acceptance`、各阶段 `status` |
+| `init` | 全新项目，从需求到开发的完整流程 | `ms-requirements` → `agent-memory --update`（治理委托，见下注）→ `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow`（批量）→ `ms-verify --docs --impl` → `ms-sync` | `output_files`、`new_ids.features`、`new_ids.acceptance`、各阶段 `status` |
 | `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep | `ms-feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness + Step 6 dev-workflow）→ `ms-verify --docs --impl` → `ms-sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
 | `bugfix` | 修复 Bug；不改变 feature 入口语义 | 简单 Bug：`ms-bugfix` → `ms-verify --impl` → `ms-sync`；复杂 Bug：`ms-dev-tasks` → `ms-dev-workflow` → `ms-verify --impl` → `ms-sync` | Bug 范围、复杂度判定、修复文件、验证结果 |
 | `verify` | 任意阶段质量检查 | 有代码变更 → `ms-verify --impl`；有文档变更 → `ms-verify --docs`；有 UI 设计稿 → `ms-verify --ui`；不确定 → 询问用户；再路由到对应 skill 修复 | 检查维度、问题摘要、建议修复 skill |
@@ -192,6 +194,7 @@ Q3（feature/bugfix 追加，可选）:
 
 ### 入口私有约束
 
+- **治理委托(init 链 `agent-memory --update`)**:`ms-requirements` 完成(首次产生 `docs/devdocs/`)后即 `Task: /agent-memory --update`,确保工作流路由节尽早落盘(中断也已发货)。**结果分支适配**:此为可选治理步,不适用通用"failed+blockers → 用户决定"分支——`success` 正常记录;`partial`/`failed`/`interrupted` 保留原状态与 blockers、显示 ℹ️ 后**继续主链**。写入范围窄例外:仅允许 agent-memory 写其受管记忆文件(`AGENTS.md`/`CLAUDE.md` 导入行/`.claude/rules/devdocs-state.md`),其余业务文件仍禁止。
 - **readiness 关卡**：`dev-tasks` 后必须调用 `ms-verify --readiness`；检查 AC↔测试用例对齐、任务文件路径具体性、依赖无环、设计↔任务一致性。P1 阻塞则展示问题清单，修复后重试。
 - **全量补充验证**：`dev-workflow` 批量模式内部已含逐任务 sync + compound；pipeline 后置 `verify → sync` 是全量验证 + 幂等补充同步，不再额外执行 compound。
 - **上下文传递**：启动时可读 `docs/devdocs/00-context.md` 作参考，但阶段检测始终以 `docs/devdocs/` 实际文件为准。
