@@ -1,7 +1,7 @@
 ---
 name: e2e-test-flow
 description: 消费已有测试用例文档(md/html),对运行中的系统做 AI 驱动的黑盒 E2E 实测:用例分类 → 按分支变更影响排优先级(Spring/RPC 影响分析)→ curl 经代理打接口 + 浏览器 UI 自动化,全程只读观测数据库佐证,产出自包含 HTML 评审面板。Triggers on "/e2e-test-flow", "E2E 测试", "端到端测试", "接口测试", "UI 自动化", "用例执行", "黑盒测试", "跑用例". NOT for 设计测试用例(用 ms-test-cases)、执行项目自带测试套件(用 ms-test-run)、编写测试代码规范(用 testing-guide)、修 Bug(用 ms-bugfix / dev-flow)。
-allowed-tools: Read, Write, Glob, Grep, Bash, Task, AskUserQuestion, TodoWrite, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__wait_for
+allowed-tools: Read, Write, Glob, Grep, Bash, Task, AskUserQuestion, TodoWrite, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__handle_dialog, mcp__chrome-devtools__press_key
 metadata:
   patterns: [orchestrator, tool-wrapper]
   interaction: multi-turn
@@ -89,7 +89,8 @@ user-invocable: true
 1. **只执行一次,一次取全证据** —— 首个外部动作(浏览器点击/curl/Job 触发)完成执行并同时采齐证据。**录制时那次动作就是唯一执行**,事后不得再用 curl 打一遍同一个写操作。
 2. 转出的 curl **只作产物交付**给用户手工重放,工作流不自动重打。
 3. **不自动重试、不自动重跑** —— 失败循环的重试/重跑仅适用非写型。写型任何再次执行**一律先问用户**。
-4. **铺前置数据若产生业务状态变更,同样适用本三条规则**(与用例本身是否写型无关)。
+
+> 铺前置数据若产生业务状态变更,同样适用本三条规则(与用例本身是否写型无关)。
 
 ## 集成测试腿(非 HTTP 入口)
 
