@@ -223,9 +223,46 @@ window.__run = {
 
 ## 13. Skill 形态
 
+**结论:单 skill + `references/` 分层,不拆多 skill。**
+
 - 目录 `skills/e2e-test-flow/`,`name: e2e-test-flow`(非 ms-,与 `dev-flow` 同族)
-- `SKILL.md` ≤ 500 行(本仓硬约束),协议细节下沉 `references/`
-- 工具按角色分配(承 D4):白盒子 Agent = Read/Glob/Grep/Bash(git) + idea MCP;黑盒子 Agent = chrome-devtools + Bash(curl) + 只读 DB MCP,**不给 idea MCP、不读被测源码**
+- `SKILL.md` ≤ 500 行(本仓硬约束),协议细节沉 `references/` **按需加载**(渐进式披露:跑到哪个阶段才加载对应协议,单次运行只付实际用到的上下文成本)
+
+```
+skills/e2e-test-flow/
+  SKILL.md                    ~180 行  流程骨架 + 4 纪律 + 路由表 + 何时问用户
+  references/
+    case-ingestion.md         用例摄取:md/html 容错解析 + 用例模型
+    impact-analysis.md        影响分析:注解锚点 / 跨服务追溯链 / 退化
+    execution-protocol.md     录制 / curl / DB 只读观测 / 判定 / fault-injection
+    panel-protocol.md         run-state-v1 + 注入安全 + T2 降级(参照 board-protocol)
+```
+
+**规模可行性**(本仓先例):`ms-dev-workflow` 单 skill = SKILL.md 426 行 + references 2059 行,规模大于本方案且运行良好;`ms-pipeline` = 413 + 1420。**单 skill 承载多阶段是本仓既定模式,不是新增风险。**
+
+### 13.1 为何不拆成多个 skill
+
+1. **拆分会重新引入 R4 熔断的病根**:多 skill = 跨 skill 契约面(yaml-summary 交接、状态传递),正是"叠加维度产生交叉矛盾"的同一个坑。
+2. **D4 的子 Agent 隔离不需要拆 skill 实现**:Task tool 派发子代理时给不同 `allowed-tools` 即可做到工具集隔离,与 skill 文件划分无关。
+3. **单一入口**降低认知负担:拆四个会让使用者每次都要判断"这步该调哪个"。
+4. **本仓教训**:multi-PRD 机器已因"为假想复用预建结构"而被整套删除。不重犯。
+
+**工具按角色分配**(承 D4,运行时由子 Agent 承担,非拆 skill):
+
+| 角色 | 工具集 |
+|------|-------|
+| 白盒分析子 Agent(阶段③) | Read / Glob / Grep / Bash(git) + idea MCP |
+| 黑盒执行子 Agent(阶段④⑤) | chrome-devtools + Bash(仅 curl) + 只读 DB MCP;**不给 idea MCP、不读被测源码** |
+
+### 13.2 FUTURE:影响分析可独立抽取
+
+阶段③"这个分支影响了哪些顶层入口"**独立于 E2E 测试亦有价值**(code review 范围评估、回归范围界定)。
+
+- **状态**:FUTURE(封存,不实现)
+- **触发条件**:真实项目中出现**跨场景复用需求**(即 E2E 之外确实有人要单独用它)
+- **不预先抽取的理由**:同 §13.1 第 4 条 —— 触发前抽取属于为假想复用建结构
+
+> 遵循本仓 FUTURE 三态惯例(spec 存在但运行时未实现),与 layout.v2 / trace.v1 同类处理。
 
 ## 14. 残余风险
 
