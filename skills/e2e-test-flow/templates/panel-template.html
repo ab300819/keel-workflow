@@ -141,7 +141,13 @@
       c.evidence.forEach(ev => ul.append(el('li', null, '[' + ev.kind + '] ' + ev.ref + (ev.redacted ? '(已脱敏)' : ''))));
       card.append(ul);
     }
-    window.__run.cases[c.case_id] = { status: c.status, evidence: c.evidence || [], comment: c.comment || '', defect_confirm: undefined };
+    const prev = window.__run.cases[c.case_id] || {};
+    window.__run.cases[c.case_id] = {
+      status: c.status,
+      evidence: c.evidence || [],
+      comment: prev.comment ?? (c.comment || ''),
+      defect_confirm: prev.defect_confirm
+    };
     if (c.status === 'fail') {
       const vd = el('div', 'verdict');
       const bConfirm = el('button', 'confirm', '确认缺陷');
@@ -158,7 +164,7 @@
       card.append(vd, state);
       renderState();
     }
-    const ta = el('textarea'); ta.placeholder = '意见(可空)'; ta.maxLength = LIMIT;
+    const ta = el('textarea'); ta.id = 'comment-' + slug(c.case_id); ta.placeholder = '意见(可空)'; ta.maxLength = LIMIT;
     ta.value = touch(c.case_id).comment;
     ta.addEventListener('input', () => { touch(c.case_id).comment = ta.value; sync(); });
     card.append(ta);

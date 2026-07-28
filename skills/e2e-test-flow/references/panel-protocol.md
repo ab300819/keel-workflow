@@ -27,8 +27,8 @@ window.__run = {
 
 ## 2. 生成与注入
 
-1. **run_id**:随机 id(如 `openssl rand -hex 6` 输出),嵌入输出文件名与 `<html data-run-id>`。生成时 Agent 侧保存 **immutable run context**(`run_id` / `environment` / 用例编号全集),T2 导入以此为准,不信任粘贴对象自带的数据。
-2. **注入**:以 [templates/panel-template.html](../templates/panel-template.html) 为骨架,替换 `__RUN_ID__` 与 `<script type="application/json" id="run-data">` 内的 `__RUN_DATA_JSON__`。
+1. **run_id**:随机 id(如 `openssl rand -hex 6` 输出),必须匹配 `^[0-9a-f]{6,}$`,非法即拒绝生成。嵌入输出文件名与 `<html data-run-id>`。生成时 Agent 侧保存 **immutable run context**(`run_id` / `environment` / 用例编号全集),T2 导入以此为准,不信任粘贴对象自带的数据。
+2. **注入**:以 [templates/panel-template.html](../templates/panel-template.html) 为骨架(**run-data 输入 shape 见模板头部注释**),替换 `__RUN_ID__` 与 `<script type="application/json" id="run-data">` 内的 `__RUN_DATA_JSON__`。**注意两个 shape 不同**:run-data 输入的 `cases` 是**数组**(元素带 `case_id`/`title`/`expected`,另需顶层 `isolation_level`/`generated_at`/`integration_cases`);而 §1 `window.__run.cases`(页面运行态)是**以用例编号为键的映射**——两者分属生成输入与运行时状态两个阶段,不可混用。
 3. **HTML-safe JSON 序列化**(防 `</script>` 闭合数据标签,及 JSON 非法控制字符):对 `JSON.stringify` 结果按字符替换为字面转义文本 —— `<` 替换为 `\u003c`、`>` 替换为 `\u003e`、U+2028 替换为 `\u2028`、U+2029 替换为 `\u2029`。
 4. 渲染端一律 `textContent` 填充,**禁止 `innerHTML`** 承载用例内容与证据。
 5. 输出到系统临时目录(不入库),`mcp__chrome-devtools__new_page(file:///<path>)` 打开。
@@ -49,4 +49,4 @@ window.__run = {
 
 ## 5. 断点续跑
 
-进度状态文件(已执行用例/结果/待执行清单)落系统临时目录。resume 时**先复核写型用例账本**:已执行的写动作不得重跑(规则权威见 [SKILL.md「写型用例三条规则」](../SKILL.md)),需再次执行的一律**先问用户**,本文件不重复该规则细节。
+进度状态文件(已执行用例/结果/待执行清单)落系统临时目录。resume 时先复核写型用例账本,处置规则见 [SKILL.md「写型用例三条规则」](../SKILL.md)。
