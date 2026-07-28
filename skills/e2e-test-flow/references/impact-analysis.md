@@ -1,6 +1,6 @@
 # 影响分析协议(e2e-test-flow 私有)
 
-> 本文件是阶段③影响分析的协议权威,是 [SKILL.md](../SKILL.md) `D4`(白盒只用于排序,判定纯黑盒)中"白盒那一半"的细则。阶段③由白盒子 Agent 执行,产出跨界到黑盒子 Agent 的输出结构见第 7 节。
+> 本文件是阶段③影响分析的协议权威,是 [SKILL.md](../SKILL.md) `D4` 中"白盒那一半"的细则。阶段③由白盒子 Agent 执行,产出结构及实际跨越隔离边界的范围见第 7 节。
 
 ## 1. 为什么不能只做 HTTP 签名 diff
 
@@ -48,16 +48,19 @@
 
 ## 7. 输出契约(过界约束)
 
-阶段③白盒子 Agent 向阶段④⑤黑盒子 Agent 交付的输出结构(每个受影响入口一条):
+阶段③白盒子 Agent 的产出结构(每个受影响入口一条),消费方分两层:
 
 ```yaml
 entry_path: string          # 入口路径(如 HTTP 路径,或 @Job 的任务名)
 http_method: string         # HTTP 方法;非 HTTP 入口留空或标注 N/A
 priority: string            # 高/中/低,综合 git diff 影响范围与用例原生 priority
-entry_type: string          # http / non-http / rpc(用于阶段④⑤选择调度腿)
+entry_type: string          # http / non-http / rpc
 trigger_how: string         # 直接 curl / 集成测试腿 / 手动触发入口等
-uncertain_reason: string?   # 可选,仅当第 5 节判"影响未知"或扩大范围时填写,仅入报告
+uncertain_reason: string?   # 可选,仅当第 5 节判"影响未知"或扩大范围时填写
 ```
+
+- **阶段③产出结构(供编排层消费)**:以上 6 个字段全部提供给编排层,`entry_type`/`trigger_how` 供编排层选择阶段④⑤的调度腿(如 `non-http` 走集成测试腿),`uncertain_reason` 仅入报告供用户看。
+- **实际跨越隔离边界、进入阶段④⑤黑盒子 Agent 的**:只有 `entry_path` / `http_method` / `priority` 三个字段(外加用例原文,见 SKILL.md `D4`)。`entry_type`、`trigger_how` **留在编排层**用于调度腿选择,**不过界**;`uncertain_reason` **仅入报告**,同样不过界。
 
 **不过界清单**(以下内容一律不得跨界传给阶段④⑤黑盒子 Agent):
 
@@ -67,5 +70,7 @@ uncertain_reason: string?   # 可选,仅当第 5 节判"影响未知"或扩大�
 - `@Provider` → `@Consumer` 的追溯过程
 - 代码级参数签名推断
 - 得出上述结论的推理理由
+- `entry_type`、`trigger_how`(留在编排层用于调度腿选择)
+- `uncertain_reason`(仅入报告)
 
-判据:**能过界的必须是纯外部黑盒测试者本来就能获得的信息**(路径、方法、优先级、入口类型、触发方式),任何需要读源码才能得到的信息都不过界。`uncertain_reason` 是例外中的例外——它不是过界的代码细节,而是给报告消费者(用户)看的一句话说明,不含调用链或推理过程。
+判据:**能过界的必须是纯外部黑盒测试者本来就能获得的信息**——一个纯外部黑盒测试者只可能知道要打的路径、方法、以及测试优先级,不可能知道这是个 `@Job` 还是 `@Provider`(那是读注解才知道的信息)。因此只有 `entry_path` / `http_method` / `priority` 三项能过界,其余字段无论是否"看起来无害",一律留在编排层内侧。
