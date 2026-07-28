@@ -104,6 +104,7 @@
 ### 7.2 数据库只读观测
 
 - **连接方式问用户**(`mcp__sqldev__run_query` / `mcp__idea__execute_sql_query` / CLI 均可),要求**只读账号**
+- **授权粒度必须与 D4 相容**:优先 `mcp__sqldev__run_query`(独立只读 server);若只能走 `mcp__idea__execute_sql_query`,**只授予该单个工具**,不得授予其余 `mcp__idea__*`;若只能走 CLI,则该次 Bash 授权已超出「仅 curl」范围 → 报告按 D4 标注 `isolation_level: best-effort`,不假装 structural。DB 只读工具在派发黑盒子 Agent 时按需授予,不进主 skill 的工具清单
 - 只跑单语句 `SELECT`;不用存储过程/函数(可能内含写)、不用显式事务
 - **不做写探针**验证只读权限(那本身就是写);只查权限元数据,或采信用户声明。证明不了 → **问用户**
 - **观测时机**:写操作前后各取一次,对比差异;**观测内容由用例预期驱动**,不 dump 表
