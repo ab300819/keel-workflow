@@ -430,7 +430,11 @@ Expected: `FAIL: 不存在`
 
    **录制 ≠ 天然可重放**:短时 token / CSRF / 签名 nonce / BFF 聚合都可能破坏重放。首次重放前先拿一个**只读**请求验证能否复现;不行 → 改走浏览器验证或**问用户**要可用的请求生成方式。**不把重放失败当被测系统的缺陷。**
 
-2. **`## 2. 写型用例执行规则`** —— 复述 Task 1 的三条规则 + 铺数条款(**必须与 SKILL.md 一致**),并补充:附带写入(审计日志/已读标记/会话状态)无法避免,由开跑前 run 级确认一次性覆盖;**逐例判断只针对业务语义写**。
+2. **`## 2. 写型用例执行规则`** —— ⚠️ **不得复述规则正文**(DRY,pre-flight 裁决):本节以一句话 + 链接指回 SKILL.md 的「写型用例三条规则」作为唯一权威,例如:
+
+   > 写型用例的执行规则(只执行一次 / curl 只交付不重打 / 不自动重试重跑 / 铺数同样适用)以 [SKILL.md](../SKILL.md) 「写型用例三条规则」为唯一权威,本文不复述。
+
+   本节**只补充 SKILL.md 未覆盖的内容**:附带写入(审计日志 / 已读标记 / 会话状态)无法避免,由开跑前 run 级确认一次性覆盖;**逐例判断只针对业务语义写**。
 
 3. **`## 3. 数据库只读观测(D1)`**:
    - 连接方式**问用户**(`mcp__sqldev__run_query` / `mcp__idea__execute_sql_query` / CLI 均可),要求**只读账号**
@@ -465,15 +469,19 @@ grep -q "单语句" $F && echo "PASS: 单语句SELECT" || echo "FAIL: 单语句S
 
 Expected: 全 PASS。
 
-- [ ] **Step 4: 与 SKILL.md 的写型规则一致性复核**
+- [ ] **Step 4: 校验未复述规则正文(DRY,pre-flight 裁决)**
 
 ```bash
-diff <(grep -A6 "写型用例三条规则" skills/e2e-test-flow/SKILL.md | grep -oE "只执行一次|不自动重试|不自动重跑|唯一执行|问用户") \
-     <(grep -A12 "写型用例执行规则" skills/e2e-test-flow/references/execution-protocol.md | grep -oE "只执行一次|不自动重试|不自动重跑|唯一执行|问用户") \
-  && echo "PASS: 写型规则一致" || echo "⚠️ 复核两处表述,确保语义一致(允许措辞差异,不允许语义冲突)"
+F=skills/e2e-test-flow/references/execution-protocol.md
+grep -q 'SKILL.md' $F && echo "PASS: 有指回 SKILL.md 的链接" || echo "FAIL: 缺少权威链接"
+grep -q '唯一权威' $F && echo "PASS: 声明唯一权威" || echo "FAIL: 未声明唯一权威"
+grep -q '不复述' $F && echo "PASS: 明示不复述" || echo "FAIL: 未明示不复述"
+# 规则正文三个要点不应在本文件成段重复出现(允许在链接句中一句话概括)
+n=$(grep -cE '只执行一次|不自动重试|不自动重跑' $F)
+[ "$n" -le 1 ] && echo "PASS: 未成段复述规则正文(命中 $n 行)" || echo "FAIL: 疑似复述规则正文(命中 $n 行,应 ≤1)"
 ```
 
-Expected: `PASS` 或人工确认语义一致。
+Expected: 全 PASS。
 
 - [ ] **Step 5: 提交**
 
@@ -559,6 +567,7 @@ window.__run = {
 - 按状态分区展示:`FAIL(疑似缺陷,置顶)` / `BLOCKED` / `PASS` / `OUT-OF-SCOPE`
 - 疑似缺陷区每条提供「确认缺陷 / 否决」按钮 → 写入 `defect_confirm`
 - 每条用例展示 `expected` 原文 + 证据引用列表
+- **DOM 契约(Step 5 断言依赖,必须实现)**:每条用例的容器元素带 `data-anchor="<case_id>"`;其中展示 `expected` 原文的元素 class 为 `expected`。即选择器 `[data-anchor="TC-J-001"] .expected` 必须能取到该用例的预期原文
 - **分区展示「本地集成验证」结论**,与部署环境黑盒结论不混列(承 SKILL.md 集成测试腿)
 - 顶部展示 `environment` 与隔离等级(`structural` / `best-effort`)
 - "导出结果"按钮(T2 降级用)
@@ -578,18 +587,47 @@ grep -q '__RUN_DATA_JSON__' $T && echo "PASS: 模板 DATA 占位符" || echo "FA
 
 Expected: 全 PASS(注:protocol 中 `innerHTML` 应作为**禁止项**出现,故 grep 命中即 PASS)。
 
-- [ ] **Step 5: 注入安全冒烟测试(真实验证,非纸面)**
+- [ ] **Step 5: 注入安全冒烟(chrome-devtools 全自动断言,pre-flight 裁决)**
 
-构造含恶意载荷的用例数据,验证不执行:
+**这是本 Task 唯一的真实行为验证,不得跳过、不得改为人工目视。**
 
-```bash
-mkdir -p /private/tmp/e2e-smoke && cd /private/tmp/e2e-smoke
-# 用 </script><script>alert(1)</script> 作为用例 expected 内容,按 protocol §2 转义规则注入模板
-# 预期:浏览器打开后页面正常渲染该字符串为文本,无弹窗、无脚本执行
-echo "手工步骤:按 protocol §2 生成一个含该载荷的面板文件,用 new_page 打开,确认字符串以文本呈现且无 alert"
+1. 构造载荷用例数据。载荷字符串(逐字使用):
+
+```
+</script><script>window.__PWNED=1</script><img src=x onerror="window.__PWNED=2">
 ```
 
-Expected: 载荷以纯文本呈现,无脚本执行。**若失败必须修 §2 转义规则后重测。**
+2. 按 `panel-protocol.md` §2 的转义规则,生成一个真实面板文件到临时目录:用例 `TC-SMOKE-001` 的 `expected` 字段值 = 上述载荷,`status` = `fail`。
+
+3. 用 `mcp__chrome-devtools__new_page` 打开该 `file:///` 路径。
+
+4. **断言 A —— 载荷未执行**:
+
+```
+mcp__chrome-devtools__evaluate_script:
+  function(){ return { pwned: window.__PWNED === undefined ? "clean" : "PWNED:"+window.__PWNED }; }
+```
+
+Expected: `{ pwned: "clean" }`。若返回 `PWNED:*` → **转义规则失效,必须修 §2 后重测**。
+
+5. **断言 B —— 载荷以纯文本原样呈现**:
+
+```
+mcp__chrome-devtools__evaluate_script:
+  function(){
+    var el = document.querySelector('[data-anchor="TC-SMOKE-001"] .expected') || document.body;
+    var s = el.textContent || "";
+    return { contains_payload_as_text: s.indexOf("</script><script>window.__PWNED=1</script>") !== -1 };
+  }
+```
+
+Expected: `{ contains_payload_as_text: true }` —— 证明载荷被当作文本而非标记。
+
+6. **断言 C —— 无脚本执行痕迹**:调用 `mcp__chrome-devtools__list_console_messages`,断言无与注入载荷相关的错误/执行记录。
+
+7. 三条断言全过后关闭页面(`mcp__chrome-devtools__close_page`)并删除临时冒烟文件。
+
+Expected: A/B/C 全部通过。**任一失败 → 修 `panel-protocol.md` §2 转义规则与模板渲染方式,重跑本 Step,不得带病进入下一 Task。**
 
 - [ ] **Step 6: 提交**
 
