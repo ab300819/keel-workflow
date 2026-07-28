@@ -44,7 +44,7 @@ git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-s
 
 ---
 
-## 3 个上手例子
+## 4 个上手例子
 
 **例 1 — 全新项目，需求已明确**
 ```
@@ -61,6 +61,11 @@ git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-s
 ```
 /ms-onboard --read       # 只读生成项目上下文摘要
 /ms-retrofit             # 需要规范化时，从代码逆向生成 DevDocs
+```
+
+**例 4 — 已有用例文档，要对运行中系统跑一遍黑盒实测**
+```
+/e2e-test-flow           # 给它用例文档，自动走 分类 → 变更影响排序 → 接口实测 → UI 实测 → 面板报告
 ```
 
 ---
@@ -103,6 +108,7 @@ git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-s
 | 重构 | `/refactor` | 系统化重构，测试驱动 |
 | 对抗审查 | `/adversarial-review` | 外部 LLM 独立审查计划/设计/代码 |
 | JetBrains MCP 操作 | `/idea-mcp-workflow` | 通过 `idea` MCP 编译/调试/查库的决策与踩坑（projectPath 纪律、build 输出防爆、依赖 vs bug、Maven reload 提示） |
+| E2E 实测 | `/e2e-test-flow` | 已有用例文档 → 对运行中系统黑盒实测（接口+UI，只读观测 DB），产出 HTML 评审面板 |
 | UI 调度 / 自描述 / 记忆 / 报告 | `/ui-orchestrator` / `/code-self-describe` / `/agent-memory` / `/work-report` | 专项工具 |
 
 > `commit-convention`、`git-safety`、`iteration-policy` 由其他 skill 自动调用，不需用户直接运行。
