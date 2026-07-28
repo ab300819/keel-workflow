@@ -85,3 +85,7 @@
 
 - **文案内容**(按钮文本、金额格式如 `USD 2,000.00`)属功能正确性 → `ui`(或作为 `ui`/`ui+api` 用例里的一个断言点)
 - **呈现样式**(颜色、字重、省略号截断、hover 视觉态、布局溢出)→ `visual`,标 `OUT-OF-SCOPE(视觉类)`,不执行
+
+## 5. 用例集落点
+
+阶段①②产出的用例集(全部 12 字段,含 `route`/`side_effect`)以 **JSON 落系统临时目录**,与报告面板(见 [panel-protocol.md](panel-protocol.md))同目录。派发阶段③白盒子 Agent 与阶段④⑤黑盒子 Agent 时**传文件路径**,不内联全文。传给黑盒子 Agent 的用例集**只含用例原文字段**(不含白盒信息,与 D4 相容,见 [impact-analysis.md §7](impact-analysis.md))。
