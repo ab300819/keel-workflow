@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!--
+  e2e-test-flow 报告面板骨架。生成时由 Agent 替换两处占位:
+  1. __RUN_ID__ (html data-run-id 与 <title>)
+  2. run-data 内的 __RUN_DATA_JSON__ —— HTML-safe JSON(转义规则见 panel-protocol.md §2)
+
+  run-data shape:
+  {
+    "run_id": "…", "environment": "dev|test", "isolation_level": "structural|best-effort",
+    "generated_at": "<ISO>",
+    "cases": [
+      { "case_id": "TC-J-001", "title": "…", "status": "pass|fail|blocked|out-of-scope",
+        "expected": "…",                                    // 纯文本渲染,判定唯一权威原文
+        "evidence": [ { "kind": "response|sql|screenshot|snapshot", "ref": "…", "redacted": true } ],
+        "comment": "" }
+    ],
+    "integration_cases": [                                    // 本地集成验证结论(non-http 路由),与黑盒结论分区展示
+      { "case_id": "TC-N-001", "title": "…", "status": "pass|fail|blocked|out-of-scope", "expected": "…", "evidence": [], "comment": "" }
+    ]
+  }
+
+  安全约定:渲染一律用 textContent 赋值,不用整体标记覆写方式承载用例内容与证据;Agent 只读 window.__run、只写 id^="agent-" 节点。
+  DOM 契约:每条用例容器带 data-anchor="<case_id>";展示 expected 原文的元素 class 为 "expected"。
+-->
+<html lang="zh" data-run-id="__RUN_ID__">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;">
+<title>E2E 报告面板 __RUN_ID__</title>
+<style>
+  :root { --pass:#16a34a; --fail:#dc2626; --blocked:#d97706; --oos:#64748b; --line:#e2e8f0; --muted:#64748b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; color:#0f172a; background:#f8fafc; }
+  header { position:sticky; top:0; background:#fff; border-bottom:1px solid var(--line); padding:10px 20px; z-index:10; }
+  h1 { font-size:16px; margin:0 0 4px; }
+  .meta { color:var(--muted); font-size:12px; }
+  .badge { display:inline-block; border-radius:4px; padding:1px 8px; font-size:12px; color:#fff; }
+  .badge.dev,.badge.test { background:#0f172a; }
+  .badge.structural { background:var(--pass); }
+  .badge.best-effort { background:var(--blocked); }
+  .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+  button { cursor:pointer; border:1px solid var(--line); background:#fff; border-radius:6px; padding:4px 12px; font-size:13px; }
+  button.primary { background:#0f172a; color:#fff; border-color:#0f172a; }
+  button.confirm { background:var(--fail); color:#fff; border-color:var(--fail); }
+  button.reject { background:#fff; }
+  main { max-width:960px; margin:0 auto; padding:16px 20px 80px; }
+  section.group>h2 { font-size:15px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin:10px 0; }
+  .card.status-fail { border-color:var(--fail); box-shadow:0 0 0 2px #fee2e2; }
+  .card.status-blocked { border-color:var(--blocked); }
+  .card h3 { margin:0 0 6px; font-size:14px; }
+  .status-tag { display:inline-block; border-radius:4px; padding:0 6px; font-size:12px; color:#fff; margin-left:6px; }
+  .status-tag.pass { background:var(--pass); }
+  .status-tag.fail { background:var(--fail); }
+  .status-tag.blocked { background:var(--blocked); }
+  .status-tag.out-of-scope { background:var(--oos); }
+  .field-label { font-size:12px; color:var(--muted); margin:8px 0 2px; }
+  pre.expected { white-space:pre-wrap; word-break:break-word; margin:0; font:13px/1.6 inherit; color:#334155; background:#f8fafc; border-radius:6px; padding:8px 10px; max-height:340px; overflow:auto; }
+  ul.evidence { list-style:none; margin:4px 0 0; padding:0; }
+  ul.evidence li { font-size:12px; color:var(--muted); padding:2px 0; }
+  .verdict { display:flex; gap:8px; margin:8px 0 0; }
+  textarea { width:100%; min-height:44px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font:13px/1.5 inherit; resize:vertical; margin-top:6px; }
+  .agent { margin-top:6px; font-size:13px; color:#1d4ed8; background:#eff6ff; border-radius:6px; padding:6px 8px; min-height:1em; }
+  .agent:empty { display:none; }
+  .defect-state { font-size:12px; margin-top:6px; }
+  .defect-state.confirmed { color:var(--fail); }
+  .defect-state.rejected { color:var(--muted); }
+  .hidden { display:none; }
+  #export-fallback { width:100%; }
+  #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; border-radius:8px; padding:8px 16px; font-size:13px; opacity:0; transition:opacity .3s; pointer-events:none; }
+</style>
+</head>
+<body>
+<script type="application/json" id="run-data">__RUN_DATA_JSON__</script>
+<header>
+  <h1 id="hd-title"></h1>
+  <div class="meta" id="hd-meta"></div>
+  <div class="toolbar">
+    <button id="btn-export">导出结果</button>
+    <span class="meta" id="submit-state"></span>
+  </div>
+  <textarea id="export-fallback" class="hidden" readonly></textarea>
+</header>
+<main>
+  <section class="group" id="group-fail"><h2>FAIL(疑似缺陷,置顶待确认)</h2><div id="list-fail"></div></section>
+  <section class="group" id="group-blocked"><h2>BLOCKED</h2><div id="list-blocked"></div></section>
+  <section class="group" id="group-pass"><h2>PASS</h2><div id="list-pass"></div></section>
+  <section class="group" id="group-oos"><h2>OUT-OF-SCOPE</h2><div id="list-oos"></div></section>
+  <section class="group hidden" id="group-integration"><h2>本地集成验证(non-http 路由,与部署环境黑盒结论分区)</h2><div id="list-integration"></div></section>
+  <section class="card"><h3>全局意见</h3>
+    <textarea id="global-comment" placeholder="整体意见(可空)"></textarea>
+    <div class="agent" id="agent-global" data-anchor="global"></div></section>
+</main>
+<div id="toast"></div>
+<script>
+(() => {
+  'use strict';
+  const DATA = JSON.parse(document.getElementById('run-data').textContent);
+  const LIMIT = 2000;
+  const KEY = 'e2erun:' + DATA.run_id;
+  const slug = a => a.replace(/[^A-Za-z0-9_-]/g, '-');
+
+  // —— 状态(run-state-v1) ——
+  window.__run = {
+    version: 1, run_id: DATA.run_id, environment: DATA.environment,
+    cases: {}, global_comment: ''
+  };
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+    if (saved && saved.run_id === DATA.run_id) {
+      window.__run.cases = saved.cases || {};
+      window.__run.global_comment = saved.global_comment || '';
+    }
+  } catch (e) { /* 损坏的存档直接忽略 */ }
+  const persist = () => { try { sessionStorage.setItem(KEY, JSON.stringify(window.__run)); } catch (e) {} };
+
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+
+  // —— 头部 ——
+  document.getElementById('hd-title').textContent = 'E2E 报告面板';
+  const meta = document.getElementById('hd-meta');
+  meta.append(el('span', null, 'run_id=' + DATA.run_id + ' · 生成于 ' + DATA.generated_at + ' · 环境:'));
+  meta.append(el('span', 'badge ' + DATA.environment, DATA.environment));
+  meta.append(el('span', null, ' · 隔离等级:'));
+  meta.append(el('span', 'badge ' + DATA.isolation_level, DATA.isolation_level));
+
+  const touch = id => (window.__run.cases[id] = window.__run.cases[id] || { status: undefined, evidence: [], comment: '' });
+
+  function makeCard(c) {
+    const card = el('section', 'card status-' + c.status);
+    card.dataset.anchor = c.case_id;
+    card.id = 'card-' + slug(c.case_id);
+    const h = el('h3', null, c.case_id + ' · ' + c.title);
+    h.append(el('span', 'status-tag ' + c.status, c.status));
+    card.append(h);
+    card.append(el('div', 'field-label', '预期结果'));
+    card.append(el('pre', 'expected', c.expected));
+    if (c.evidence && c.evidence.length) {
+      card.append(el('div', 'field-label', '证据引用'));
+      const ul = el('ul', 'evidence');
+      c.evidence.forEach(ev => ul.append(el('li', null, '[' + ev.kind + '] ' + ev.ref + (ev.redacted ? '(已脱敏)' : ''))));
+      card.append(ul);
+    }
+    window.__run.cases[c.case_id] = { status: c.status, evidence: c.evidence || [], comment: c.comment || '', defect_confirm: undefined };
+    if (c.status === 'fail') {
+      const vd = el('div', 'verdict');
+      const bConfirm = el('button', 'confirm', '确认缺陷');
+      const bReject = el('button', 'reject', '否决');
+      const state = el('div', 'defect-state');
+      const renderState = () => {
+        const v = touch(c.case_id).defect_confirm;
+        state.textContent = v === 'confirmed' ? '已确认为缺陷' : v === 'rejected' ? '已否决' : '待裁决';
+        state.className = 'defect-state' + (v ? ' ' + v : '');
+      };
+      bConfirm.addEventListener('click', () => { touch(c.case_id).defect_confirm = 'confirmed'; renderState(); sync(); });
+      bReject.addEventListener('click', () => { touch(c.case_id).defect_confirm = 'rejected'; renderState(); sync(); });
+      vd.append(bConfirm, bReject);
+      card.append(vd, state);
+      renderState();
+    }
+    const ta = el('textarea'); ta.placeholder = '意见(可空)'; ta.maxLength = LIMIT;
+    ta.value = touch(c.case_id).comment;
+    ta.addEventListener('input', () => { touch(c.case_id).comment = ta.value; sync(); });
+    card.append(ta);
+    const agent = el('div', 'agent'); agent.id = 'agent-' + slug(c.case_id); agent.dataset.anchor = c.case_id;
+    card.append(agent);
+    return card;
+  }
+
+  const buckets = { pass: [], fail: [], blocked: [], 'out-of-scope': [] };
+  (DATA.cases || []).forEach(c => { (buckets[c.status] || buckets['out-of-scope']).push(c); });
+  buckets.fail.forEach(c => document.getElementById('list-fail').append(makeCard(c)));
+  buckets.blocked.forEach(c => document.getElementById('list-blocked').append(makeCard(c)));
+  buckets.pass.forEach(c => document.getElementById('list-pass').append(makeCard(c)));
+  buckets['out-of-scope'].forEach(c => document.getElementById('list-oos').append(makeCard(c)));
+
+  if (DATA.integration_cases && DATA.integration_cases.length) {
+    document.getElementById('group-integration').classList.remove('hidden');
+    const box = document.getElementById('list-integration');
+    DATA.integration_cases.forEach(c => box.append(makeCard(c)));
+  }
+
+  // —— 全局意见 ——
+  const gc = document.getElementById('global-comment');
+  gc.maxLength = LIMIT;
+  gc.value = window.__run.global_comment;
+  gc.addEventListener('input', () => { window.__run.global_comment = gc.value; sync(); });
+
+  function sync() { persist(); }
+  sync();
+
+  // —— 导出(T2 降级) ——
+  const toast = msg => { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = 1; setTimeout(() => t.style.opacity = 0, 2200); };
+  document.getElementById('btn-export').addEventListener('click', async () => {
+    const json = JSON.stringify(window.__run);
+    try { await navigator.clipboard.writeText(json); toast('结果 JSON 已复制,粘贴回对话即可。'); }
+    catch (e) {
+      const fb = document.getElementById('export-fallback');
+      fb.classList.remove('hidden'); fb.value = json; fb.focus(); fb.select();
+      toast('剪贴板不可用,请手动复制文本框内容。');
+    }
+  });
+})();
+</script>
+</body>
+</html>
