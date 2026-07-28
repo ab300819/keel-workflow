@@ -4,7 +4,7 @@
 
 兼容 **Claude Code**、**Codex CLI**、**OpenCode** 等遵循 [Agent Skills](https://agentskills.io) 开放标准的工具。
 
-> 共 33 个 skill，分两类：`ms-` 前缀 = DevDocs 文档驱动流程（需求→设计→测试→开发→验证全链路）；非 `ms-` = 独立工具（代码质量、测试、通用开发流程等）。
+> 共 35 个 skill，分两类：`ms-` 前缀 = DevDocs 文档驱动流程（需求→设计→测试→开发→验证全链路）；非 `ms-` = 独立工具（代码质量、测试、通用开发流程等）。
 
 ---
 
