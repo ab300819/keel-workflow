@@ -75,7 +75,7 @@ window.__review = {
 
 1. **source manifest**:按 glob `docs/devdocs/01-requirements*.md` / `02-system-design*.md` 收集文档集合(scope 过滤),逐文件 `shasum -a 256`;01 主文件缺失 ⛔。
 2. **board_id**:随机 id(如 `openssl rand -hex 6` 输出),嵌入输出文件名与 `<html data-board-id>`。生成时 Agent 侧保存 **immutable board context**(board_id / scope / manifest / 允许锚点全集),T2 导入以此为准,不信任粘贴对象自带的 manifest。
-3. **注入**:以 [templates/board-template.html](../templates/board-template.html) 为骨架,替换 `__BOARD_ID__` 与 `<script type="application/json" id="board-data">` 内的 `__BOARD_DATA_JSON__`(数据 shape 见模板头部注释)。**HTML-safe JSON 序列化**:`<`→`<`、`>`→`>`、U+2028→` `、U+2029→` `(防 `</script>` 闭合数据标签);渲染端一律 `textContent`,禁止 `innerHTML` 承载文档内容。
+3. **注入**:以 [templates/board-template.html](../templates/board-template.html) 为骨架,替换 `__BOARD_ID__` 与 `<script type="application/json" id="board-data">` 内的 `__BOARD_DATA_JSON__`(数据 shape 见模板头部注释)。**HTML-safe JSON 序列化**:`<`→`\u003c`、`>`→`\u003e`、U+2028→`\u2028`、U+2029→`\u2029`(防 `</script>` 闭合数据标签);渲染端一律 `textContent`,禁止 `innerHTML` 承载文档内容。
 4. **mermaid 渲染边界**(源码视为不可信输入):**网络 deny-all 隔离是渲染的必要条件**(macOS 实证配方见下;其他平台需等价机制);无法提供隔离 → 一律不渲染,回退源码块。渲染前外链指令扫描(image/URL/`click`/`href`/CSS `url()`,命中即先行回退)仅作纵深防御。产物以 `data:image/svg+xml;base64,` `<img>` 内嵌,禁止 SVG 作为标记插入 DOM。**尺寸后处理**:mmdc 产物根元素是 `width="100%"`,`<img>` 内嵌会撑满容器——嵌入前把根元素 `width` 改为 viewBox 的像素宽并补 `height`(如 `viewBox="0 0 118.7 396.4"` → `width="118.7" height="396.4"`)。
 5. 输出到系统临时目录(不入库),`new_page(file:///<path>)` 打开。
 
