@@ -545,7 +545,7 @@ window.__run = {
 2. **`## 2. 生成与注入`**(复用 board-protocol 已验证做法):
    - `run_id` = 随机 id(如 `openssl rand -hex 6`),嵌入**输出文件名**与 `<html data-run-id>`
    - 以 `templates/panel-template.html` 为骨架,替换 `__RUN_ID__` 与 `<script type="application/json" id="run-data">` 内的 `__RUN_DATA_JSON__`
-   - **HTML-safe JSON 序列化**(防 `</script>` 闭合数据标签):`<`→`<`、`>`→`>`、U+2028→` `、U+2029→` `
+   - **HTML-safe JSON 序列化**(防 `</script>` 闭合数据标签):`<`→`\u003c`、`>`→`\u003e`、U+2028→`\u2028`、U+2029→`\u2029`
    - 渲染端一律 `textContent`,**禁止 `innerHTML`** 承载用例内容与证据
    - 输出到**系统临时目录**(不入库),`mcp__chrome-devtools__new_page(file:///<path>)` 打开
    - 生成时 Agent 侧保存 **immutable run context**(`run_id` / `environment` / 用例编号全集)
