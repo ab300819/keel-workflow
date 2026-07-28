@@ -136,7 +136,7 @@ user-invocable: true
 
 **D4 白盒只用于排序,判定纯黑盒** —— 阶段③读代码,其结论**只用于提升优先级,永不用于缩小范围**。阶段④⑤只经外部接口驱动、只按用例预期判定,**禁止**用实现代码当"预期应该是什么"的来源。
 
-落地:③与④⑤**由不同子 Agent 承担**(Task tool 派发),跨界只传**用例原文 + `{入口路径, 方法, 优先级}`**,代码/调用链/推理过程不过界。黑盒子 Agent 不给 idea MCP、不读被测源码,Bash 仅用于 curl。隔离强度取决于工具权限能否收窄;做不到就在报告标注"隔离为尽力而为",**不假装做到了**。
+落地:③与④⑤**由不同子 Agent 承担**(Task tool 派发),跨界只传**用例原文 + `{入口路径, 方法, 优先级}`**,代码/调用链/推理过程不过界。黑盒子 Agent 不给 idea MCP、不读被测源码,Bash 仅用于 curl。隔离强度取决于工具权限能否收窄;做不到就在报告标注"隔离为尽力而为",**不假装做到了**。影响分析细则见 [references/impact-analysis.md](references/impact-analysis.md)。
 
 ## 测试范围:只做功能,不做视觉
 
@@ -255,7 +255,7 @@ Expected: 全部 `PASS:`,退出码 0,行数 ≤ 500。
 grep -oE '\]\(references/[^)]+\.md\)' skills/e2e-test-flow/SKILL.md | sed -E 's/^\]\(//; s/\)$//' | sort -u | while read p; do [ -f "skills/e2e-test-flow/$p" ] && echo "OK: $p" || echo "DEAD(预期,Task 2-5 补齐): $p"; done
 ```
 
-Expected: 4 条 `DEAD(预期...)` —— 这是 Task 2-5 的待办清单。**Task 6 会复查此项必须全 OK。**
+Expected: **恰好 4 条** `DEAD(预期...)` —— 四个 references 各一条,证明四个链接都以**真实 Markdown 链接语法**存在(而非仅在流程图代码块里以纯文本出现)。**少于 4 条即为缺链,必须补足**:D1→execution-protocol、**D4→impact-analysis**、副作用预分类→case-ingestion、报告面板→panel-protocol。这是 Task 2-5 的待办清单;**Task 6 会复查此项必须全 OK。**
 
 - [ ] **Step 6: 提交**
 
