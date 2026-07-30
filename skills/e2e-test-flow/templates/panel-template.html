@@ -12,6 +12,11 @@
       { "case_id": "TC-J-001", "title": "…", "status": "pass|fail|blocked|out-of-scope",
         "expected": "…",                                    // 纯文本渲染,判定唯一权威原文
         "evidence": [ { "kind": "response|sql|screenshot|snapshot", "ref": "…", "redacted": true } ],
+        "blocked_info": {                                   // status==="blocked" 时必填,四字段齐备
+          "tier": "A|B|C",                                  // A 用户当场能解 / B 需环境改造 / C 本流程永远测不到
+          "blocker": "缺什么(具体到可操作)",
+          "unblock": "谁做什么能解开(C 级须给替代路径)",
+          "risk": "这条挡住的是什么风险" },
         "comment": "" }
     ],
     "integration_cases": [                                    // 本地集成验证结论(non-http 路由),与黑盒结论分区展示
@@ -83,7 +88,13 @@
 </header>
 <main>
   <section class="group" id="group-fail"><h2>FAIL(疑似缺陷,置顶待确认)</h2><div id="list-fail"></div></section>
-  <section class="group" id="group-blocked"><h2>BLOCKED</h2><div id="list-blocked"></div></section>
+  <section class="group hidden" id="group-unblock"><h2>⚡ 你可以立即解阻(A 级)</h2><div id="list-unblock"></div></section>
+  <section class="group" id="group-blocked"><h2>BLOCKED(按解阻成本分级)</h2>
+    <h3 id="h-tier-A">A 级 · 用户当场能解</h3><div id="list-blocked-A"></div>
+    <h3 id="h-tier-B">B 级 · 需环境改造</h3><div id="list-blocked-B"></div>
+    <h3 id="h-tier-C">C 级 · 本流程永远测不到(转人工 / 修用例)</h3><div id="list-blocked-C"></div>
+    <h3 id="h-tier-X">未分级(不合格的 BLOCKED,须补 blocked_info)</h3><div id="list-blocked-X"></div>
+  </section>
   <section class="group" id="group-pass"><h2>PASS</h2><div id="list-pass"></div></section>
   <section class="group" id="group-oos"><h2>OUT-OF-SCOPE</h2><div id="list-oos"></div></section>
   <section class="group hidden" id="group-integration"><h2>本地集成验证(non-http 路由,与部署环境黑盒结论分区)</h2><div id="list-integration"></div></section>
@@ -141,6 +152,15 @@
       c.evidence.forEach(ev => ul.append(el('li', null, '[' + ev.kind + '] ' + ev.ref + (ev.redacted ? '(已脱敏)' : ''))));
       card.append(ul);
     }
+    if (c.status === 'blocked') {
+      const bi = c.blocked_info || {};
+      card.append(el('div', 'field-label', '解阻信息 · ' + (bi.tier ? ('tier ' + bi.tier) : 'tier 缺失')));
+      const dl = el('ul', 'evidence');
+      dl.append(el('li', null, '缺什么:' + (bi.blocker || '(未填 — 不合格的 BLOCKED)')));
+      dl.append(el('li', null, '怎么解:' + (bi.unblock || '(未填 — 不合格的 BLOCKED)')));
+      dl.append(el('li', null, '挡住的风险:' + (bi.risk || '(未填 — 不合格的 BLOCKED)')));
+      card.append(dl);
+    }
     const prev = window.__run.cases[c.case_id] || {};
     window.__run.cases[c.case_id] = {
       status: c.status,
@@ -148,6 +168,9 @@
       comment: prev.comment ?? (c.comment || ''),
       defect_confirm: prev.defect_confirm
     };
+    if (c.status === 'blocked' && c.blocked_info) {
+      window.__run.cases[c.case_id].blocked_info = c.blocked_info;
+    }
     if (c.status === 'fail') {
       const vd = el('div', 'verdict');
       const bConfirm = el('button', 'confirm', '确认缺陷');
@@ -176,7 +199,26 @@
   const buckets = { pass: [], fail: [], blocked: [], 'out-of-scope': [] };
   (DATA.cases || []).forEach(c => { (buckets[c.status] || buckets['out-of-scope']).push(c); });
   buckets.fail.forEach(c => document.getElementById('list-fail').append(makeCard(c)));
-  buckets.blocked.forEach(c => document.getElementById('list-blocked').append(makeCard(c)));
+  // BLOCKED 按 tier 聚类(A/B/C),无 blocked_info 的落 X 区(显式暴露不合格)
+  const tierOf = c => (c.blocked_info && ['A','B','C'].indexOf(c.blocked_info.tier) >= 0) ? c.blocked_info.tier : 'X';
+  buckets.blocked.forEach(c => document.getElementById('list-blocked-' + tierOf(c)).append(makeCard(c)));
+  ['A','B','C','X'].forEach(t => {
+    if (!buckets.blocked.some(c => tierOf(c) === t)) {
+      document.getElementById('h-tier-' + t).classList.add('hidden');
+      document.getElementById('list-blocked-' + t).classList.add('hidden');
+    }
+  });
+  // A 级单列成「可立即解阻清单」(只列 case_id + 缺什么 + 怎么解,供用户直接行动)
+  const aList = buckets.blocked.filter(c => tierOf(c) === 'A');
+  if (aList.length) {
+    document.getElementById('group-unblock').classList.remove('hidden');
+    const ul = el('ul', 'evidence');
+    aList.forEach(c => {
+      const bi = c.blocked_info || {};
+      ul.append(el('li', null, c.case_id + ' — 缺:' + (bi.blocker || '?') + ' → 解:' + (bi.unblock || '?')));
+    });
+    document.getElementById('list-unblock').append(ul);
+  }
   buckets.pass.forEach(c => document.getElementById('list-pass').append(makeCard(c)));
   buckets['out-of-scope'].forEach(c => document.getElementById('list-oos').append(makeCard(c)));
 
