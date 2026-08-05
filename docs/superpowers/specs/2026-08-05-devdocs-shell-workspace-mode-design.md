@@ -165,9 +165,12 @@ dev-workflow Step 1 状态检测现为四重验证（文档状态 + 证据复核
 
 | 文件 | 改动 |
 |------|------|
-| `skills/_shared/constraints.md` | 新增 §10「工作区模式（inline / shell）」——协议正文：字段语义、校验表、归属判定、零污染红线、N+1 提交协议、Recovery 三类。约 45 行 |
-| `skills/pipeline/references/layout/workspace-shell.md` | **新建** —— 操作细节：探测步骤、inline→shell 迁移（§6）、detached HEAD 处置、指针漂移修复 |
+| `skills/_shared/workspace-mode.md` | **新建** —— 协议正文 SSOT：字段语义、校验表、归属判定、零污染红线、N+1 提交协议、Recovery 三类 |
+| `skills/_shared/constraints.md` | 新增 §10「工作区模式」——**仅指针 + 字段枚举**，约 8 行 |
+| `skills/pipeline/references/layout/workspace-shell.md` | **新建** —— 操作手册：探测步骤、inline→shell 迁移（§6）、detached HEAD 处置、指针漂移修复 |
 | `skills/pipeline/references/layout/layout-metadata-schema.md` | §1 schema 增两字段 + 校验规则 + 缺失行为表 |
+
+**为什么协议正文不放 constraints.md**：该文件 frontmatter 声明 `status: 现状提取，不引入新规则`，条款 `doc/status-extraction` 明确禁止引入新执行语义（§9 当初即以「不新增运行时强制」声明合规）。塞入一整节新协议正文属违章。其 `doc/reference-over-copy` 条款要求的正是「详细 spec 保留在原位置，本文只声明协议层共性与指针」——故正文落 `_shared/workspace-mode.md`（跨 skill 共享命名空间，与 constraints.md 平级），constraints.md §10 只留指针。此形态同时避开了「跨 skill 协议落在 pipeline 私有目录」的问题。
 
 ### 编排与治理层
 
@@ -193,12 +196,13 @@ dev-workflow Step 1 状态检测现为四重验证（文档状态 + 证据复核
 
 本仓 `AGENTS.md` 当前状态 · `docs/architecture.md` 文件结构节加 shell 布局图 · `docs/workflows.md` 用户面「怎么开 shell 模式」
 
-### spec_version bump
+### 版本号处置
 
-按共享约束 §8 `realign/bump-required-structure`（新增条件性硬校验规则）：
+`spec_version` 追踪的是 **A/B 类文档产物模板**，常量位于各 skill `references/realign.md` 顶部（`realign/current-constant-location`）。核对结果：
 
-- bump `dev-workflow` / `bugfix` / `codebase-insight` / `verify` / `test-run` 的 `spec_version`，并按 `bump-sync-three-places` 同步各自 `references/realign.md` 当前常量 + Migration Matrix + 模板 frontmatter 示例
-- health-lint 新增 rule → bump `pipeline/references/realign.md`
+- **不 bump 任何 skill 的 `spec_version`。** 本方案不改任何产物模板的必填章节 / 字段 / 结构，只改流程规则。且 `bugfix` / `codebase-insight` / `verify` / `test-run` 本就没有 `references/realign.md`（不产受 realign 管的模板产物），无从 bump
+- **不 bump layout 版本。** `layout-metadata-schema` 只加**可选**字段，无该字段的 layout.v1 项目仍然合法
+- **bump `constraints.md` 自身 `spec_version`：`shared-constraints.v1` → `shared-constraints.v2`**（新增 §10 属结构变更），并在 frontmatter `related` 列表补 `skills/_shared/workspace-mode.md`
 - **不新增 realign scope**（复用 `layout` + `health`，守 `scope-enum-authority`）
 
 ## 6. inline → shell 迁移
