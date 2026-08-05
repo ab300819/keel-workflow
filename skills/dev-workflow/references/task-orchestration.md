@@ -133,6 +133,17 @@ Step 5: 工作区决策
             选项："暂存(stash)后继续" / "忽略继续" / "终止"
 ```
 
+`workspace_mode: shell` 时状态检测扩为五重，详见 [../../_shared/workspace-mode.md](../../_shared/workspace-mode.md)：「工作区」维遍历 N+1 个仓，「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」，新增第五维「指针一致性」（不一致 → 进 Step 1.5 证据复核不直接跳过）。**Step 1.5 证据复核（A/B/C/D1/D2/E）不变**——与仓库拓扑无关。
+
+shell 模式下「工作区」维的遍历：
+
+```bash
+git status --porcelain                                    # 外壳仓
+for p in <各 code_root path>; do git -C "$p" status --porcelain; done
+```
+
+任一仓有不相关变更 → 按现有 AskUserQuestion（stash / 忽略 / 终止）处理，**提示文案须标明是哪个仓**。
+
 ### 续做模式信号表
 
 | 检测信号 | 已完成步骤 | 续做起点 | 续做 Agent |

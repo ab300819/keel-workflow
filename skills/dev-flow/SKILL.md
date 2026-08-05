@@ -130,6 +130,8 @@ execution_contract:
 
 ## 提交规范
 
+> `workspace_mode: shell` 时「一项一 commit」展开为 N+1 仓，见 [_shared/workspace-mode.md § N+1 仓提交协议](../_shared/workspace-mode.md)。
+
 - 用户要求提交或批量模式逐项提交时：**原子提交**，一项一 commit，遵循 `/commit-convention`
 - 文件移动/删除遵循 `/git-safety`（git mv/rm）
 - 绝不推送远程；Verify Gate 未过不提交

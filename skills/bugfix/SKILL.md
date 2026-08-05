@@ -285,6 +285,8 @@ npm test
 
 ## Step 7: 提交
 
+> `workspace_mode: shell` 时提交走 N+1 仓协议（含 detached HEAD 前置门与跨仓 Recovery），见 [_shared/workspace-mode.md § N+1 仓提交协议](../_shared/workspace-mode.md)。修复代码提交进对应子模块（commit message 沿用该仓风格、**不带 BUG-XX 编号**），bugfix 日志提交进外壳仓。
+
 ### 提交前检查
 
 - [ ] 新增的测试通过

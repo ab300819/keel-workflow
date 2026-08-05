@@ -110,7 +110,7 @@ spec_version_notes: |
 | S9 前置验证 | guarded/audit `/ms-verify --impl`；fast 仅质量地板（不跑前置验证）；🟢 UI 任务有设计稿时另跑 `/ms-verify --ui --impl` 对齐设计稿（不随 profile 变） |
 | S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：**audit inline fail-fast**；**fast/guarded 延后**到 `/ms-verify --review-drain`，任务期间标 `review_pending`；`--review` 可临时叠加 inline |
 | S9 Phase 4 | 外部对抗审查 embedded-headless（独立审查）：**audit inline**；**fast/guarded 延后** drain；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态 `EXT_REVIEWED`/`EXT_PENDING`/`EXT_UNRESOLVED`/`EXT_BLOCKED`（与 `review_pending` 区分） |
-| S10 自描述 | `/code-self-describe --update` |
+| S10 自描述 | `/code-self-describe --update`（`workspace_mode: shell` 时**默认跳过**——自描述产物写在代码目录内，违反零污染红线。跳过须在 yaml 摘要里以 ℹ️ 记录 `skipped: workspace_mode=shell`。用户显式 `--force-code-docs` 才执行） |
 | S11 Commit 1 | 代码提交，遵循 `/commit-convention`，Phase 4 触发时必须写 `External-Review-Verdict` |
 | Commit 2 后置 | `/ms-sync` 更新 trace + 文档提交；若有 AGENTS.md 仅更新“当前状态”；批量默认 `/ms-compound` |
 
@@ -303,6 +303,9 @@ spec_version_notes: |
 - [ ] **提交前必须通过完成检查**
 - [ ] 提交后更新状态：**audit → 已完成**；**fast/guarded → `review_pending`**（经 `/ms-verify --review-drain` 通过才转已完成）
 - [ ] `--single-commit` 可将代码+文档合并为单次提交
+- [ ] **`workspace_mode: shell` 时展开为 N+1 仓提交**：Commit 1 拆成每个有变更的 code_root 一个 commit，Commit 2 是外壳仓一次 commit（文档 + 所有变更子模块的指针 bump）。协议见 [_shared/workspace-mode.md § N+1 仓提交协议](../_shared/workspace-mode.md)
+- [ ] **shell 模式提交前必过 detached HEAD 门**：每个变更子模块 `git -C <path> symbolic-ref -q HEAD` 失败即 ⛔ 阻塞，处置见 [workspace-shell.md § detached HEAD 处置](../pipeline/references/layout/workspace-shell.md#detached-head-处置)
+- [ ] **shell 模式下 `--single-commit` 不可用**：跨仓无法合并为单 commit，⚠️ 忽略该 flag 并提示
 
 ### 断点续做约束
 
@@ -313,6 +316,7 @@ spec_version_notes: |
 - [ ] 旧任务（前版本完成，无 A/D1/D2/E 产物）→ AskUserQuestion：复核续做 / 登记豁免原因 / 终止
 - [ ] 进行中任务分析续做起点（精确定位：S1~S11 + S1.5；S12 后置同步单独判定，含续做 Agent 判定）
 - [ ] 文档状态 + 证据复核 + Git 历史 + 工作区四重验证
+- [ ] **`workspace_mode: shell` 时状态检测扩为五重**：「工作区」维遍历 N+1 个仓；「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」；新增第五维「指针一致性」，不一致 → 进 Step 1.5 证据复核不直接跳过。**「证据复核」维（A/B/C/D1/D2/E）不变**——它复核 AC 表 / 测试 / trace / 对抗验证证据，与仓库拓扑无关
 
 > 详见 [task-orchestration.md](references/task-orchestration.md)
 
