@@ -6,8 +6,9 @@ related:
   - AGENTS.md（yaml-summary-v1 原始定义）
   - skills/prd/references/governance/prd-revision-policy.md（PRD 修订边界）
   - skills/pipeline/references/layout/*（DevDocs 治理 SSOT）
+  - skills/_shared/workspace-mode.md（工作区模式协议正文）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v1
+spec_version: shared-constraints.v2
 ---
 
 # 共享约束 SSOT
@@ -286,6 +287,15 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 - `layered-memory/symptom-rules`：现役 rule 只能捕捉**部分典型退化症状**——`state/total-size-cap`、`state/line-length-cap`（执行状态膨胀塞爆一个文件）、`design/adr-only-revision`（决策被就地改写、与正文混编）；**不能通用检测三层混写**（短决策理由塞进 state、数据明细塞进任务文件、非 ADR 章节混写都可能不触发）。把"抓文件膨胀"等同于"抓三层混写"是夸大。
 - `layered-memory/review-lens`：因此三层分离**主要靠人工 review lens 承载，不是自动兜底**。审查时发现某文件同时承载两层以上内容（典型：state 文件里塞决策理由或数据明细），即提示拆到对应层。
 - `layered-memory/no-auto-detection`：**不做**"关键词扫描自动判定章节混杂"——即原 health 维度 e / Plan B 检测面。该方向已**废弃**（`[废弃]`，原标 [FUTURE]）：复杂度不匹配收益，skill 宜简。**不再保留为 FUTURE 触发项**（区别于 trace.v1 / layout.v2 / 维度 d，后三者仍为封存 FUTURE）。
+
+## 10. 工作区模式（inline / shell）
+
+> 本节**仅声明协议层共性与指针**（遵 `doc/reference-over-copy`）。完整协议正文见 [workspace-mode.md](workspace-mode.md)——该文件引入新执行语义，故独立成文，不并入本文。
+
+- `workspace/mode-enum`：`workspace_mode` 二值枚举 `inline` | `shell`，声明在项目根 `AGENTS.md` 的 `devdocs:` frontmatter。**缺省 `inline`**——无此字段的存量项目行为完全不变。
+- `workspace/code-roots-source`：`shell` 模式下 `code_roots` 必填，元素为 `.gitmodules` 的 submodule **name**；路径与 URL 的唯一真源是 `.gitmodules`，不在 frontmatter 复制。
+- `workspace/orthogonal-to-layout`：本维度与 `docs_layout_version` / `id_scheme` / `traceability_version` **正交**——docs 内部结构不因模式而变，不进 layout 版本矩阵。
+- `workspace/pointer`：字段 schema 见 [layout/layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1；探测、迁移与故障处置见 [layout/workspace-shell.md](../pipeline/references/layout/workspace-shell.md)。
 
 ## 差异点与跳过项
 
