@@ -153,6 +153,7 @@ validation_probes:
 | 编号映射歧义 | 旧编号可映射到多个新编号，例如 `F-01 → FEAT-001` 或 `FEAT-005` | 展示候选来源、引用次数、推荐理由 |
 | PRD 引用受影响 | PRD mapping 或 `docs/prd/**` 引用旧 DevDocs 编号/路径 | 展示受影响引用、旧引用、新引用候选 |
 | 文件名冲突 | 目标路径已存在且内容不是同一 owner | 展示两个文件摘要，提供改名/合并/停止选项 |
+| 工作区模式迁移 | 用户显式要求 inline → shell | 走 [workspace-shell.md § inline → shell 迁移](layout/workspace-shell.md#inline--shell-迁移) 的七步流程，第 2 步 dry-run 计划必须确认后才动文件 |
 
 `--apply` 遇到未确认决策时必须暂停并逐项问询。headless 场景不得跳过这些项；只能返回 `status: interrupted` 或 `partial`。
 

@@ -54,3 +54,159 @@ git -C <path> symbolic-ref -q HEAD
 | 漏 bump（子模块已提交，外壳仓没跟） | 子模块 HEAD 比记录**新**，且在同一分支上 | 补一次外壳仓提交：`git add <path> && git commit` |
 | 未 update（外壳仓记录较新，本地子模块滞后） | 记录的 SHA 在子模块中存在但非 HEAD | `git submodule update <path>` |
 | 分叉（互不包含） | 记录的 SHA 与 HEAD 无祖先关系 | ⛔ 阻塞，AskUserQuestion 让用户决定以哪边为准，**不自动选** |
+
+## inline → shell 迁移
+
+**触发**：**仅由用户显式意图触发**（如「把这个项目转成外壳模式」），经 `/ms-pipeline realign --scope=layout` 路由至此。realign 自身**永不主动提议**做仓库手术——那是产品决策，不是规范差距。
+
+要做的是一次**仓库手术**：单仓 R（code + docs 混在一起）→ 外壳仓 W + R 作为 W 的子模块。R 保留全部历史并继续当代码仓，W 是新建的空仓。
+
+以下命令示例中，`$R` 表示 R 的绝对路径（迁移前的单仓工作目录），`$W` 表示外壳仓目标路径（默认 `../<R名>-dev`，Step 3 可覆盖）。
+
+### 七步，dry-run 优先
+
+| 步 | 动作 | 门 |
+|----|------|-----|
+| 1 | 前置检查：R 工作区干净、有 remote、无未推送提交 | 任一不满足 ⛔ 阻塞 —— 手术前必须有远端兜底 |
+| 2 | 输出完整计划（建哪个仓、移哪些文件、产生哪几个 commit），AskUserQuestion 确认 | 未确认不动任何文件 |
+| 3 | 在 `../<R名>-dev` 建 W（`git init` + 初始 commit），路径可覆盖 | 目标已存在 ⛔ |
+| 4 | `git submodule add <R 的 url> <name>` | |
+| 5 | 迁移 DevDocs 产物到 `W/docs/`；R 根 `AGENTS.md` 的 `devdocs:` 治理段迁到 `W/AGENTS.md`；委托 `agent-memory --update` 补工作流路由节 | 见下方「迁移范围」小节 |
+| 6 | R 内 `git rm -r` 已迁走的路径 + 清掉 `devdocs:` frontmatter → commit `chore: 迁出 DevDocs 产物` | **不自动 push**，提示用户自行推送 |
+| 7 | W 写 `workspace_mode: shell` / `code_roots: [<name>]`，bump 子模块指针，commit | |
+
+每步失败都给 Recovery（见下方「失败恢复」）。步序刻意设计成**前 5 步全部可逆**（只新增不删除）；唯一不可逆的删除集中在第 6 步，且此时 W 已完整。
+
+#### 逐步命令
+
+**Step 1 —— 前置检查**
+
+```bash
+git -C "$R" status --porcelain
+# 非空输出 ⛔ 阻塞：工作区不干净
+
+git -C "$R" remote -v
+# 空输出 ⛔ 阻塞：无 remote，手术前必须有远端兜底
+
+git -C "$R" rev-list --count '@{u}..HEAD' 2>/dev/null
+# 非 0（或命令报错说明无上游）⛔ 阻塞：存在未推送提交
+```
+
+**Step 2 —— dry-run 计划**
+
+```bash
+R_NAME=$(basename "$(git -C "$R" rev-parse --show-toplevel)")
+W="${W:-$(dirname "$R")/${R_NAME}-dev}"
+
+# 无条件迁移清单
+ls -d "$R"/docs/devdocs "$R"/docs/prd "$R"/docs/codebase-insight.md 2>/dev/null
+
+# docs/ 下未分类条目 —— 逐项 AskUserQuestion
+ls "$R"/docs 2>/dev/null | grep -vE '^(devdocs|prd|codebase-insight\.md)$'
+```
+
+dry-run 计划必须列出并经 AskUserQuestion 确认：
+
+- **将创建的仓路径**：`$W`
+- **将迁移的文件清单**：`docs/devdocs/`、`docs/prd/`、`docs/codebase-insight.md`（无条件）+ 用户对未分类条目逐项确认后的清单
+- **将产生的 commit 及其 message**：
+  - `$W` 初始 commit：`chore: init shell workspace`（Step 3）
+  - `$W` 迁入 commit：`chore: 迁入 DevDocs 产物`（Step 5）
+  - `$R` 迁出 commit：`chore: 迁出 DevDocs 产物`（Step 6）
+  - `$W` 收尾 commit：`chore: 声明 workspace_mode: shell 并初始化子模块指针`（Step 7）
+
+未确认（用户未回复 AskUserQuestion，或选择放弃）**不动任何文件**。
+
+**Step 3 —— 建 W**
+
+```bash
+test -e "$W" && echo "⛔ 目标已存在：$W"   # 存在则阻塞，停止本步
+
+mkdir -p "$W"
+cd "$W" && git init
+git commit --allow-empty -m "chore: init shell workspace"
+```
+
+**Step 4 —— 加子模块**
+
+```bash
+R_URL=$(git -C "$R" remote get-url origin)
+cd "$W"
+git submodule add "$R_URL" "<name>"   # <name> 默认取 R_NAME，用户可在计划确认时改
+```
+
+**Step 5 —— 迁移产物**
+
+```bash
+mkdir -p "$W/docs"
+
+# 无条件迁移（拷贝而非 git mv：R/W 是两个独立仓，跨仓无法保留同一次移动记录，见「明确不做」第 2 条）
+cp -r "$R/docs/devdocs" "$W/docs/devdocs"
+[ -d "$R/docs/prd" ] && cp -r "$R/docs/prd" "$W/docs/prd"
+[ -f "$R/docs/codebase-insight.md" ] && cp "$R/docs/codebase-insight.md" "$W/docs/codebase-insight.md"
+# Step 2 确认要迁移的未分类条目，同样逐个 cp -r 到 "$W/docs/<条目>"
+
+# 将 R 根 AGENTS.md 的 devdocs: frontmatter 段整体剪切到 W/AGENTS.md
+# （文本编辑操作，非 shell 命令；R 侧原文件此时保持不动，删除留到 Step 6）
+
+cd "$W"
+git add docs/ AGENTS.md
+git commit -m "chore: 迁入 DevDocs 产物"
+```
+
+委托 `agent-memory --update` 为 `$W/AGENTS.md` 补工作流路由节。
+
+**Step 6 —— R 内清理（唯一不可逆删除）**
+
+```bash
+cd "$R"
+git rm -r docs/devdocs docs/prd docs/codebase-insight.md   # 只删已确认迁走的路径，不是 git rm -r docs/
+# 手工清掉 AGENTS.md 里的 devdocs: frontmatter 段（内容已在 Step 5 剪切进 W）
+git add AGENTS.md
+git commit -m "chore: 迁出 DevDocs 产物"
+# 不自动 push —— 提示用户自行 git push
+```
+
+**Step 7 —— W 声明模式 + 指针**
+
+```bash
+cd "$W"
+# 编辑 AGENTS.md 写入 workspace_mode: shell / code_roots: [<name>]
+SUBMODULE_SHA=$(git -C "<name>" rev-parse HEAD)
+git add AGENTS.md "<name>"
+git commit -m "chore: 声明 workspace_mode: shell 并初始化子模块指针"
+```
+
+### 迁移范围：只搬 DevDocs 产物，不搬整个 docs/
+
+`docs/` 里未必只有 DevDocs 产物 —— 用户面文档、API 文档、架构图等属于代码仓，搬走反而是错的。
+
+- **无条件迁移**：`docs/devdocs/`、`docs/prd/`、`docs/codebase-insight.md`
+- **留在 R**：`docs/` 下其余内容
+- **逐项确认**：第 2 步的 dry-run 计划里列出 `docs/` 下所有未分类条目，AskUserQuestion 让用户决定去留
+
+第 6 步的 `git rm` 只删已确认迁走的路径，不是 `git rm -r docs/`。
+
+### 明确不做
+
+1. **不重写 R 的历史。** docs 仍留在 R 的历史里。若 R 已公开且历史含私有内容，泄露已发生，迁移救不回来 —— 只提示 `git filter-repo` 这条路存在，**绝不代执行**。
+2. **不搬 docs 的 git 历史到 W。** W 的 `docs/` 从一个干净 commit 起步。要考古去 R 的历史查，成本远低于 subtree split 的复杂度与风险。
+3. **不自动 push、不删 R 本地目录、不动 R 里除 `docs/` 和 `AGENTS.md` 外的任何文件。**
+
+### 反向迁移（shell → inline）不提供
+
+无真实动机，YAGNI。
+
+### 失败恢复
+
+前 5 步只新增不删除，故全部可逆；唯一不可逆的删除在第 6 步，且此时 W 已完整（Step 5 已把全部产物 commit 进 W）。
+
+| 步 | 失败点 | 残留状态 | 恢复命令 |
+|----|--------|---------|---------|
+| 1 | 前置检查未过（工作区不干净 / 无 remote / 有未推送提交） | 未做任何操作，R 未被触碰 | 按提示 `git stash` 或 commit 清理工作区、`git remote add origin <url>`、`git push` 推送未推送提交后重跑 Step 1 |
+| 2 | 用户未确认或拒绝 dry-run 计划 | 只生成了计划文本，未创建任何文件 | 修改计划后重新发起 AskUserQuestion 确认；用户放弃则无需清理，直接结束 |
+| 3 | 建 W 失败（目标路径已存在 / `git init` 失败） | 可能已 `mkdir` 出空目录，R 未变 | 确认是本次新建的空目录后 `rm -rf "$W"`，或换路径重跑 Step 3；R 侧无需操作 |
+| 4 | `git submodule add` 失败（URL 不可达 / 网络中断） | W 已有初始 commit，`.gitmodules` 可能被部分写入，无有效子模块内容 | `git submodule deinit -f "<name>"; rm -rf "$W/.git/modules/<name>"` 清理残留后重跑 Step 4；R 未变 |
+| 5 | 迁移拷贝 / 迁入 commit 失败 | R 的 `docs/`、`AGENTS.md` 原封不动（尚未删除、未编辑）；W 可能已 `cp` 部分文件但未 commit | 清理 `$W/docs` 下已复制的半成品文件后重新执行拷贝 + commit；R 侧无需任何操作 |
+| 6 | R 内 `git rm` / commit 失败（**唯一不可逆删除点**） | 若尚未 commit：工作区已 `git rm` 但可用 `git checkout -- docs/ AGENTS.md` 完整还原；若已 commit：删除已写入 R 历史 | 未 commit：`git checkout -- docs/ AGENTS.md` 还原后重试；已 commit 需撤销：`git revert <sha>`（不用 `reset --hard`，遵守不改写已提交历史）——此时 W 已持有完整副本，内容零丢失 |
+| 7 | W 写 frontmatter / 指针 commit 失败 | W 已有 `docs/` 内容，但缺 `workspace_mode` 声明，子模块指针未确认一致 | 修正 `AGENTS.md` frontmatter 后重新 `git add AGENTS.md "<name>" && git commit`；不影响 R（R 侧 Step 6 已独立完成） |
