@@ -84,6 +84,14 @@ AI 搜索到第五层文件时，已自动加载前四层 CLAUDE.md，对整个�
 | update | 变更文件 (git diff) | ✅ 更新现有 | ✅ 更新变更 | 低风险自动 |
 | audit | 全项目 | ❌ 仅报告 | ❌ 仅报告 | ❌ |
 
+### workspace_mode: shell 下默认跳过
+
+本 skill 的产物（模块级 `CLAUDE.md` + 源文件头注释）写在代码目录内。`workspace_mode: shell` 的动机就是不让私有产物进代码仓，二者直接冲突。
+
+- **默认跳过**，输出 ℹ️ 说明原因，不报错
+- 仅 `--force-code-docs` 显式启用。启用前 AskUserQuestion 确认「这些文件会进入 <各 code_root>，若该仓将公开请确认可接受」
+- 代码根解析见 [_shared/workspace-mode.md](../_shared/workspace-mode.md)
+
 ### 智能检测流程
 
 ```

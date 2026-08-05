@@ -133,6 +133,8 @@ metadata:
 
 验证代码实现是否正确——AC 满足度、设计符合度、追溯完整性。
 
+> `workspace_mode: shell` 时实现代码扫描范围是各 `code_roots` 路径，不是仓库根。外壳仓根下（`docs/` 之外）出现源码文件 → ⚠️ 提示「外壳仓不该有代码」。代码根解析见 [_shared/workspace-mode.md](../_shared/workspace-mode.md)。
+
 ### B1：AC 满足度审查
 
 逐条验证实现是否匹配验收标准。

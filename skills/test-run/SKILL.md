@@ -69,6 +69,8 @@ metadata:
 
 ## 执行流程
 
+> `workspace_mode: shell` 时测试命令在各 `code_root` 目录下执行（`git -C <path>` 或 cd 进去），不在仓库根。多代码根时逐个执行并在报告中按 root 分组。测试报告写外壳仓 `docs/devdocs/05-test-report.md`。代码根解析见 [_shared/workspace-mode.md](../_shared/workspace-mode.md)。
+
 ```text
 1. 读取测试用例文档
    ├── 扫描 docs/devdocs/03-test-cases*.md

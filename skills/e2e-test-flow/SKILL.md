@@ -45,6 +45,8 @@ user-invocable: true
 
 落地:③与④⑤**由不同子 Agent 承担**(Task tool 派发),跨界只传**用例原文 + `{入口路径, 方法, 优先级}`**,代码/调用链/推理过程不过界。黑盒子 Agent 不给 idea MCP、不读被测源码,Bash 仅用于 curl。隔离强度取决于工具权限能否收窄;做不到就在报告标注"隔离为尽力而为",**不假装做到了**。影响分析细则见 [references/impact-analysis.md](references/impact-analysis.md)。
 
+> 若工作区是 DevDocs 外壳布局（外壳仓根 `AGENTS.md` 含 `workspace_mode: shell`），源码在 `code_roots` 各子模块下而非仓库根。本 skill 与 DevDocs 独立，仅借该字段定位源码，不读 `docs/devdocs/`。代码根解析见 [_shared/workspace-mode.md](../_shared/workspace-mode.md)。
+
 ## 测试范围:只做功能,不做视觉
 
 | 在范围内 | 出范围 |
