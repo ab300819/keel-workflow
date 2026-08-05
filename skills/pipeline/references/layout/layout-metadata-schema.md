@@ -24,6 +24,10 @@ devdocs:
     docs_layout_version: layout.v1
     id_scheme: id.v1
     traceability_version: trace.v0
+  workspace_mode: shell                   # 可选，枚举 inline / shell，缺省 inline
+  code_roots: [web, api]                  # workspace_mode=shell 时必填，≥1 项
+                                          # 元素为 .gitmodules 的 submodule name（非路径）
+                                          # 路径解析：git config -f .gitmodules submodule.<name>.path
   legacy_annotation_grace_period: null    # 可选，layout.v2 期间 legacy @satisfies/@verifies 注释截止删除日期
                                           # null = 使用默认（layout.v2 升级日 + 6 个月）
                                           # ISO 日期（如 "2026-12-31"）= 显式覆盖默认
@@ -38,6 +42,10 @@ devdocs:
 - `initialized_at` 一旦写入不可修改
 - `upgraded_at` 每次执行 `/ms-pipeline realign --scope=layout` 后自动更新
 - frontmatter 段必须紧贴文件起始（无 leading 空行 / heading）
+- `workspace_mode` ∈ [`inline`, `shell`]，缺省 `inline`
+- `workspace_mode: shell` 时 `code_roots` 必填且非空；每个元素必须在 `.gitmodules` 中存在同名 submodule
+- `code_roots` 各元素解析出的 path 两两不得互为前缀（禁嵌套子模块）
+- `workspace_mode` 与 `docs_layout_version` / `id_scheme` / `traceability_version` **正交**，无版本依赖
 
 ### 缺失时的行为
 
@@ -46,6 +54,11 @@ devdocs:
 | AGENTS.md 不存在 | skill surface "无 DevDocs 治理标记，建议 `/ms-pipeline init`" |
 | AGENTS.md 存在但无 devdocs 段 | skill 视为 `layout.v0`（隐式），按 `on_incompatible` 字段处理 |
 | devdocs 段不完整（缺字段）| skill surface 警告 + 建议补全；不阻塞 |
+| `shell` 但 `code_roots` 缺失 / 为空 | ⛔ 阻塞 |
+| 某 name 不在 `.gitmodules` | ⛔ 阻塞，提示修 frontmatter |
+| name 在 `.gitmodules` 但工作区目录为空 | ⛔ 阻塞，提示 `git submodule update --init <path>` |
+| 解析出的两个 path 互为前缀（嵌套子模块） | ⛔ 阻塞 |
+| `inline` 却出现 `code_roots` | ⚠️ 警告并忽略，不阻塞 |
 
 ## 2. Skill frontmatter（layout 兼容性声明）
 
