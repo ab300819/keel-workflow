@@ -30,7 +30,7 @@
 
 | 维度 | 检查内容 | 依赖能力 | 状态 |
 |------|----------|----------|------|
-| a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订 | ms-verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）| [新增] |
+| a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订、子模块指针一致性（仅 `workspace_mode: shell`）| ms-verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）+ `submodule/pointer-drift`（[新增]，仅 shell）| [新增] |
 | b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
 | c 过大文档识别（含 state-hygiene 子项）| size 三档（byte 阈值 / 单行长度）+ state-hygiene（内嵌禁用模式）| `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
 | d SSOT 遵从 | 占位/索引不复制权威源内容 | `ssot/no-restatement` | [FUTURE] (layout.v2 才启用) |
@@ -164,7 +164,7 @@ manual_decisions:
 
 | 违规 rule | route_to_scope | 修复路径 |
 |----|----|----|
-| `state/*`（3 条）/ `health/dead-link`（手动修复）/ `design/adr-only-revision` | `health` | health scope `--apply` 直接处理 |
+| `state/*`（3 条）/ `health/dead-link`（手动修复）/ `design/adr-only-revision` / `submodule/pointer-drift`（仅 `workspace_mode: shell`）| `health` | health scope `--apply` 直接处理（`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
 | `ssot/*` (`current-md-size` / `file-size-cap` / `modules-size-cap`) | `layout` | 拆分走 layout scope |
 | `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
 | PRD↔DevDocs 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |

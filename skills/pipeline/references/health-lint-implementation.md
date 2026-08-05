@@ -478,15 +478,18 @@ notes: |
 - `state/forbidden-content`：按 (file, line) 元组 hash；baseline 中存在的视为存量，新增的报告为 violation
 - `health/dead-link`：baseline 中已知死链不重复报；新增死链一律 ⛔
 - `design/adr-only-revision`：baseline 不适用（按 commit 时间窗判定，本身就是增量语义）
+- `submodule/pointer-drift`：按 (code_root name, 漂移类型) 元组去重；baseline 中已知漂移不重复报，新增漂移一律按第 4 步算法定性的严重度（warning 或 blocker）报告。仅 `workspace_mode: shell` 生效
 
 ## 退出码（CLI 集成）
 
 | 退出码 | 含义 |
 |--------|------|
 | 0 | 无违规（或全部在 baseline 内）|
-| 1 | 仅 warning 违规（state/forbidden-content / design/adr-only-revision）|
-| 2 | 有 blocker 违规（state/total-size-cap / state/line-length-cap / health/dead-link 新增）|
+| 1 | 仅 warning 违规（state/forbidden-content / design/adr-only-revision / submodule/pointer-drift）|
+| 2 | 有 blocker 违规（state/total-size-cap / state/line-length-cap / health/dead-link 新增 / submodule/pointer-drift）|
 | 3 | lint 自身错误（git 不可用 / baseline 文件损坏 / report stale）|
+
+> `submodule/pointer-drift` 按成因分级，同一条 rule 可能落在退出码 1 或 2：漏 bump / 未 update / 未初始化 → ⚠️ warning（退出码 1）；分叉 → ⛔ blocker（退出码 2）。仅 `workspace_mode: shell` 生效，`inline` 项目报 `not_applicable`，不计入任一退出码。
 
 错误码（细分诊断，写入 finding.error_code）：
 
@@ -496,7 +499,7 @@ notes: |
 | `health/baseline-missing` | `--since-baseline` 但 `.health-baseline.yml` 不存在 |
 | `health/baseline-corrupt` | baseline schema 不匹配或 YAML 解析失败 |
 | `health/manual-pending` | `--apply` 时存在 `status: pending` 的 manual_decision |
-| `health/git-unavailable` | git 命令失败或 repo 不在 git 控制下（影响 dead-link / adr-only-revision）|
+| `health/git-unavailable` | git 命令失败或 repo 不在 git 控制下（影响 dead-link / adr-only-revision / submodule/pointer-drift，仅 `workspace_mode: shell` 时后者适用）|
 | `health/scan-timeout` | 扫描超过性能阈值（见下表）|
 
 ## 性能预期
