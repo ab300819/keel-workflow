@@ -2,18 +2,18 @@
 
 > 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
 >
-> 与 [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) 的区别：ssot-lint 治理 layout.v2 的 SSOT 强约束（v1 报 `not_applicable`）；本文件 5 条 rule **layout.v1+v2 通用**，专门解决 devdocs-state 膨胀 + 死链两类痛点。
+> 与 [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) 的区别：ssot-lint 治理 layout.v2 的 SSOT 强约束（v1 报 `not_applicable`）；本文件 6 条 rule **layout.v1+v2 通用**，专门解决 devdocs-state 膨胀 + 死链两类痛点。
 
 ## 定位
 
 | 治理对象 | 文件 |
 |---------|------|
 | health scope 入口与执行接口 | [realign-scope-health.md](realign-scope-health.md) |
-| **本文件**：5 条 [新增] rule 的检测算法、严重度、修复路径 | health-lint-implementation.md |
+| **本文件**：6 条 [新增] rule 的检测算法、严重度、修复路径 | health-lint-implementation.md |
 | layout.v2 专属 SSOT 强约束（12 条）| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) |
 | 既有偏差评分（layout.v1 legacy）| `../../sync/references/health-scoring.md` |
 
-## Rule 集（[新增] 5 条）
+## Rule 集（[新增] 6 条）
 
 | rule_id | 严重度 | 维度 | 适用 | 自动修复 |
 |---------|--------|------|------|---------|
@@ -22,8 +22,9 @@
 | `state/forbidden-content` | ⚠️ | c/state-hygiene（c 维度子项）| v1+v2 | ❌（manual_decision）|
 | `health/dead-link` | ⛔ | b 索引/链接 | v1+v2 | ⚠️ 部分（删除引用可自动；补建定义需 manual）|
 | `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
+| `submodule/pointer-drift` | ⛔ / ⚠️ | a 结构正确性 | v1+v2（仅 shell）| ❌（manual_decision）|
 
-> 5 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。
+> 6 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 `workspace_mode: shell` 下生效，`inline` 项目报 `not_applicable`。
 
 ---
 
@@ -381,6 +382,63 @@ Phase B：扫描引用 + 范围编号展开
 
 ---
 
+### `submodule/pointer-drift`
+
+**目的**：检测外壳仓记录的子模块指针与子模块实际状态不一致，防止「代码已提交但追溯链断裂」静默累积。
+
+**检测对象**：`AGENTS.md` 的 `code_roots` 解析出的每个子模块路径。
+
+**适用性门**：读 `AGENTS.md` 的 `workspace_mode`；非 `shell`（含字段缺失）→ 输出 finding `{ status: not_applicable }`，return。
+
+**算法**（Agent 执行步骤）：
+
+```text
+1. 适用性门
+   mode = AGENTS.md devdocs.workspace_mode
+   if mode != "shell": 输出 not_applicable，return
+
+2. 解析各代码根路径
+   for name in code_roots:
+     path = Bash: git config -f .gitmodules submodule.$name.path
+     if 解析失败: severity = blocker
+                  verdict_msg = "code_roots 中的 $name 不存在于 .gitmodules"
+                  继续下一个
+
+3. 读指针状态
+   status = Bash: git submodule status -- "$path"
+   首字符判定：
+     ' ' (空格) → 一致，pass
+     '+'        → 漂移，进第 4 步定性
+     '-'        → 未初始化
+                  severity = warning
+                  verdict_msg = "$name 未初始化，跑 git submodule update --init $path"
+                  继续下一个
+
+4. 漂移定性（区分三种成因，见 workspace-shell.md § 指针漂移修复）
+   recorded = Bash: git ls-tree HEAD "$path" | awk '{print $3}'
+   actual   = Bash: git -C "$path" rev-parse HEAD
+   if Bash: git -C "$path" merge-base --is-ancestor "$recorded" "$actual" 成功:
+     severity = warning   # 漏 bump：子模块领先
+     verdict_msg = "$name 已领先记录 N 个 commit，外壳仓漏 bump 指针"
+   elif Bash: git -C "$path" merge-base --is-ancestor "$actual" "$recorded" 成功:
+     severity = warning   # 未 update：本地滞后
+     verdict_msg = "$name 落后外壳仓记录，跑 git submodule update $path"
+   else:
+     severity = blocker   # 分叉
+     verdict_msg = "$name 与外壳仓记录已分叉（互无祖先关系），需人工裁定"
+
+5. 输出 finding（见"Finding 输出 schema"）
+```
+
+**修复路径**：**不可自动修复**。三种成因的处置见 [layout/workspace-shell.md § 指针漂移修复](layout/workspace-shell.md#指针漂移修复)（本文不重复）。分叉情形必须 AskUserQuestion。
+
+**误报与边界**：
+
+- 子模块目录为空（未 `submodule update --init`）→ 报 ⚠️ 而非 ⛔，因为这是本地环境问题不是仓库问题
+- `.gitmodules` 中存在但不在 `code_roots` 里的子模块（素材 / vendor）**不扫**
+
+---
+
 ## Baseline 与增量扫描
 
 ### Baseline 文件
@@ -463,10 +521,10 @@ notes: |
 
 ## Finding 输出 schema
 
-所有 5 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
+所有 6 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
 
 ```yaml
-- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link
+- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift
   severity: blocker | warning
   file: <relative-path>
   line: <int 或 null>
@@ -482,7 +540,7 @@ notes: |
 
 | 命令 | 执行的 rule |
 |------|------------|
-| `/ms-pipeline realign --scope=health --dry-run` | 全部 5 条 |
+| `/ms-pipeline realign --scope=health --dry-run` | 全部 6 条 |
 | `/ms-pipeline realign --scope=health --fix=state/total-size-cap` | 仅该 rule |
 | `/ms-pipeline realign --scope=health --apply` | 修复 auto_fixable + 已 AskUserQuestion 的 manual_decision |
 
@@ -502,7 +560,7 @@ notes: |
 
 ## 历史项目兼容
 
-- **mic-en 等 layout.v1 项目**：本 5 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
+- **mic-en 等 layout.v1 项目**：本 6 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
 - 不依赖 `aliases.yml` / `traceability.yml`（这两个文件是 layout.v2 产物）。
 - 不依赖 `agents.md devdocs.docs_layout_version` 字段。
 
@@ -512,3 +570,4 @@ notes: |
 |------|------|
 | 2026-05-22 | 初始版本（health scope 4 条 [新增] rule 落地：state/* + dead-link）|
 | 2026-05-25 | 新增 `design/adr-only-revision`（维度 a 结构正确性），落地 system-design 增量修订正文偏差检测 |
+| 2026-08-05 | 新增 `submodule/pointer-drift`（维度 a 结构正确性，仅 `workspace_mode: shell` 生效），落地 devdocs 工作区模式外壳仓子模块指针漂移检测 |

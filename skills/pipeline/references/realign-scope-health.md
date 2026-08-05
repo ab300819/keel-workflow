@@ -19,7 +19,7 @@
 | 文件 | 本 spec 的使用方式 |
 |------|-------------------|
 | [realign.md](realign.md) | 继承 realign 安全不变量、yaml-summary-v1 汇总方式 |
-| [health-lint-implementation.md](health-lint-implementation.md) | 调用 5 条 [新增] lint rule（state/total-size-cap / state/line-length-cap / state/forbidden-content / health/dead-link / design/adr-only-revision）；rule 清单以该文件 Rule 集表为权威，layout.v1+v2 通用 |
+| [health-lint-implementation.md](health-lint-implementation.md) | 调用 6 条 [新增] lint rule（state/total-size-cap / state/line-length-cap / state/forbidden-content / health/dead-link / design/adr-only-revision / submodule/pointer-drift）；rule 清单以该文件 Rule 集表为权威，layout.v1+v2 通用 |
 | [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) | layout.v2 启用后追加 `ssot/no-restatement` 等 [FUTURE] rule 到维度 d（数量与清单以该文件 rule 表为权威，当前 12 条）；v1 项目跳过 |
 | `../../sync/references/health-scoring.md` | 6 类偏差评分（layout.v1 legacy）作为子项 |
 | `../../verify/SKILL.md` | 调用 `--schema-drift` / `--docs` / `--impl` 已有能力 |
@@ -88,10 +88,11 @@ docs/devdocs/.health-report.md
 1. 归一化 `repo_root` 与 `docs_root`。
 2. 调用 `/ms-verify --schema-drift`（只读），获取维度 a 数据。
 3. 调用 `/ms-sync` audit 计算（只读复用 `health-scoring.md`），获取既有 6 类偏差作为维度 b 子项。
-4. 执行 health-lint 5 条 [新增] rule（详见 [health-lint-implementation.md](health-lint-implementation.md)）：
+4. 执行 health-lint 6 条 [新增] rule（详见 [health-lint-implementation.md](health-lint-implementation.md)）：
    - `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` → 维度 c
    - `health/dead-link` → 维度 b
    - `design/adr-only-revision` → 维度 a（基于 git 历史扫描最近 30 天 commit）
+   - `submodule/pointer-drift` → 维度 a（仅 `workspace_mode: shell`；`inline` 报 not_applicable）
 5. 若项目为 layout.v2 → 追加 ssot-lint 调用获取维度 d 数据；layout.v1 → 维度 d 报 `skipped: requires layout.v2`。
 6. 加权评分输出（见下方"评分契约"）。
 7. 写入 `.health-report.md`，stdout 打印摘要 + 下一步建议命令。
