@@ -169,23 +169,28 @@ git commit -m "chore: 迁出 DevDocs 产物"
 # 不自动 push —— 提示用户自行 git push
 ```
 
-**Step 6 与 Step 7 之间 —— 等待 push + 同步子模块（必需，否则 Step 7 指针不含迁出变更）**
+**Step 6 与 Step 7 之间 —— push + 把子模块具名分支快进到最新（必需，否则 Step 7 指针不含迁出变更）**
 
 Step 4 的 `git submodule add` 是从远端 URL **独立 clone**，工作树内容取自当时的远端 HEAD，并不指向本地 `$R` 目录；Step 6 的迁出 commit 只落在 `$R` 本地（「不自动 push」）。若跳过同步直接执行 Step 7，`git -C "<name>" rev-parse HEAD` 读到的还是 Step 4 clone 时的旧 SHA —— 子模块工作树里 `docs/devdocs` 等本该迁出的内容**依然存在**，迁移在代码根一侧根本没有完成。
 
 ```bash
-# 用户需先在 R 本地把 Step 6 的迁出 commit 推到远端：
+# 1. 用户需先在 R 本地把 Step 6 的迁出 commit 推到远端
 git -C "$R" push
 
-# 确认已推送后，同步 W 里子模块的工作树：
-git -C "$W/<name>" fetch
-git -C "$W/<name>" checkout <branch>
-# 或等价地在 W 根下：git -C "$W" submodule update --remote "<name>"
+# 2. 子模块目录里把具名分支指针快进到最新
+#    —— 不能用 `checkout <branch>`：子模块本就在该分支上，checkout 同分支是空操作，
+#       它只更新 origin/<branch>（远程追踪分支），不移动本地分支指针本身（已实测验证，见失败恢复后的实测记录）
+git -C "$W/<name>" fetch origin
+git -C "$W/<name>" merge --ff-only origin/<branch>
+
+# 3. 断言同步到位且仍在具名分支上，再进入 Step 7
+[ "$(git -C "$W/<name>" rev-parse HEAD)" = "$(git -C "$R" rev-parse HEAD)" ] || echo "⛔ 未同步到位，见下方「若用户未 push」"
+git -C "$W/<name>" symbolic-ref -q HEAD || echo "⛔ 已脱离具名分支，不得继续"
 ```
 
-只有子模块工作树 HEAD 已指向包含 Step 6 迁出 commit 的提交后，Step 7 读到的 `SUBMODULE_SHA` 才是正确指针。
+**为什么不用 `git submodule update --remote`**：该命令会把子模块置于 **detached HEAD**——正是 `## detached HEAD 处置` 小节警告的危险态（游离 commit、`git gc` 可能回收），且违反"Step 7 之后一切都依赖仍在具名分支上"的前提，因此不作为备选，只保留 `merge --ff-only` 这一条路径。
 
-**若用户未 push 就跑了 Step 7**：记录的指针停留在 Step 4 clone 时的旧 SHA，仍含未迁出的 `docs/devdocs` 等——这属于「指针漂移」的「未 update」情形，处置见上方「指针漂移修复」小节，不在此重复。
+**若用户未 push 就跑了同步**：`merge --ff-only` 不会报错，只会输出"已经是最新的"（因为 `origin/<branch>` 本身没有新内容可合并）——子模块 HEAD 悄悄停留在旧内容上，比报错更隐蔽。这正是第 3 步要显式断言 `rev-parse HEAD` 与 `$R` 本地 HEAD 是否一致的原因：只看 `merge` 命令退出码（恒为 0）不足以判断同步是否到位。断言失败 → ⛔ 提示用户先确认 `git -C "$R" push` 已成功，再重跑第 2、3 步；不得直接进入 Step 7。若已经带着错误指针跑完 Step 7，按下方「指针漂移修复」的「未 update」情形处置，不在此重复算法。
 
 **Step 7 —— W 声明模式 + 指针**
 
@@ -229,5 +234,5 @@ git commit -m "chore: 声明 workspace_mode: shell 并初始化子模块指针"
 | 4 | `git submodule add` 失败（URL 不可达 / 网络中断） | W 已有初始 commit，`.gitmodules` 可能被部分写入，无有效子模块内容 | `git submodule deinit -f "<name>"; rm -rf "$W/.git/modules/<name>"` 清理残留后重跑 Step 4；R 未变 |
 | 5 | 迁移拷贝 / 迁入 commit 失败 | R 的 `docs/`、`AGENTS.md` 原封不动（尚未删除、未编辑）；W 可能已 `cp` 部分文件但未 commit | 清理 `$W/docs` 下已复制的半成品文件后重新执行拷贝 + commit；R 侧无需任何操作 |
 | 6 | R 内 `git rm` / commit 失败（**唯一不可逆删除点**） | 若尚未 commit：工作区已 `git rm` 但可用 `git checkout -- docs/ AGENTS.md` 完整还原；若已 commit：删除已写入 R 历史 | 未 commit：`git checkout -- docs/ AGENTS.md` 还原后重试；已 commit 需撤销：`git revert <sha>`（不用 `reset --hard`，遵守不改写已提交历史）——此时 W 已持有完整副本，内容零丢失 |
-| 6→7 之间 | 用户未 push R 的迁出 commit，或已 push 但未同步子模块工作树，就执行了 Step 7 | W 记录的子模块指针仍是 Step 4 clone 时的旧 SHA，工作树里 `docs/devdocs` 等本该迁出的内容依然存在 | 按上方「Step 6 与 Step 7 之间」补跑 `git push` + `fetch`/`checkout` 后重新执行 Step 7；若已提交了错误指针，按「指针漂移修复」的「未 update」情形处置（不在此重复） |
+| 6→7 之间 | 用户未 push R 的迁出 commit 就跑了同步（`merge --ff-only` 静默 no-op，退出码仍是 0，不会报错）；或压根跳过同步直接执行 Step 7 | W 记录的子模块指针停留在旧 SHA（跳过同步前的状态，或 Step 4 clone 时的状态），`docs/devdocs` 等本该迁出的内容依然存在 | 先跑「Step 6 与 Step 7 之间」第 3 步的两条断言确认是否真的同步到位；断言失败则确认/补跑 `git -C "$R" push` 后重跑第 2、3 步；若已经带着错误指针跑完 Step 7，按「指针漂移修复」的「未 update」情形处置（不在此重复） |
 | 7 | W 写 frontmatter / 指针 commit 失败 | W 已有 `docs/` 内容，但缺 `workspace_mode` 声明，子模块指针未确认一致 | 修正 `AGENTS.md` frontmatter 后重新 `git add AGENTS.md "<name>" && git commit`；不影响 R（R 侧 Step 6 已独立完成） |
