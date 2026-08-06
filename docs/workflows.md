@@ -329,3 +329,24 @@ DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory --upd
 ### 能力吸收结论(2026-07-22 三方对齐)
 
 逐项映射后:9 项 superpowers 能力 DevDocs 已有等价或更强;唯一内化项 = ms-bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
+
+## 文档与代码分仓（workspace_mode: shell）
+
+**什么时候用**：维护 fork 的开源项目，或自有项目计划公开——DevDocs 的需求 / 设计 / 任务 / 洞察都是私有产物，不该进代码仓。
+
+**怎么开**：
+
+- **新项目**：`/ms-pipeline init`。若仓内有 `.gitmodules`，会问你哪些子模块是代码根
+- **已有外壳仓但没跑过 DevDocs**（如手工建好的 `xxx-dev`）：`/ms-pipeline retrofit`
+- **现有单仓要拆开**：直接说「把这个项目转成外壳模式」，走 `realign --scope=layout` 的七步迁移，第 2 步会先给你完整 dry-run 计划
+
+**开了之后有什么不同**：
+
+| | 变了 | 没变 |
+|---|------|------|
+| 文档路径 | — | `docs/devdocs/` 等全部不变 |
+| 提交 | 一个任务产生 N+1 个 commit（每个变更代码根一个 + 外壳仓一个）| 一任务一次提交的原则不变 |
+| 代码仓 | 只收代码和测试，commit message 沿用该仓风格、不带 DevDocs 编号 | — |
+| 自描述 / 代码注释类产物 | 默认跳过（`--force-code-docs` 才开） | — |
+
+**追溯**：外壳仓的 commit 是枢纽——它带 T-XX，body 里记各子模块 SHA。代码仓自身干净得像没有 DevDocs 存在过。

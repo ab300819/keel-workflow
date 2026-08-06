@@ -34,6 +34,7 @@
 ## 当前状态
 
 - **PRD 扁平化（移除多需求并行）**：mic-en 实践证伪「多需求并行」，已**删除**整套 multi-PRD 机器（全局 `index.md` + 跨 PRD 编号注册表 / `<prd_id>` 子目录 / supersedes / `_archived` / 顶层 `synthesis/` / 跨 PRD 引用+冲突检测 / `list`·`status`·`archive`·`migrate` / `prd-index-ssot.md` + `global-index-template.md`）。`docs/prd/` 改为**扁平·单需求一次性脚手架**，FR/NFR 当前需求内续编、新需求从 FR-01 重起（受 ms-prd 新建门禁保护）；需求 close（上线）后由 `/ms-prd clear`（`/ms-pipeline close` 末步委托）清理。删除而非封存 FUTURE（已证伪，逻辑同废弃 health 维度 e）。方案见 [specs/2026-06-23-prd-flatten-remove-multi-requirement-parallel-design.md](docs/superpowers/specs/2026-06-23-prd-flatten-remove-multi-requirement-parallel-design.md)
+- **工作区模式（inline / shell）**：新增与 layout/id/trace **正交**的维度——`shell` 模式下文档在外壳仓 `docs/`，代码作 git 子模块挂在同级（服务「维护开源项目」「自有项目待公开」两类零污染场景）。`code_roots` 记 submodule name（`.gitmodules` 为路径唯一真源），多代码根为一等场景。核心：零污染红线（LLM 不主动往子模块写非代码文件）+ N+1 仓提交协议（detached HEAD 前置门 / 外壳仓 commit 为追溯枢纽 / 跨仓 Recovery 三类）+ inline→shell 迁移七步（dry-run 优先，前 5 步可逆）。协议 SSOT 在 [_shared/workspace-mode.md](skills/_shared/workspace-mode.md)，操作手册在 [layout/workspace-shell.md](skills/pipeline/references/layout/workspace-shell.md)，方案见 [specs/2026-08-05-devdocs-shell-workspace-mode-design.md](docs/superpowers/specs/2026-08-05-devdocs-shell-workspace-mode-design.md)。**无 `workspace_mode` 字段 = `inline` = 现状，存量项目零影响**
 - 综合方案落地：flag 收敛 49→20、shared-constraints SSOT、realign --scope 四入口
 - 治理盲区收敛：scope=health（结构/索引/过大/SSOT 4 维）+ health-lint 5 条 [新增] rule（state/* + dead-link + adr-only-revision），layout.v1+v2 通用
 - 新增 skill：ms-backlog（暂缓任务池）

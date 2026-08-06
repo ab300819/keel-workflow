@@ -279,3 +279,18 @@ docs/
 │
 └── codebase-insight.md           # 代码盘点（/ms-codebase-insight）
 ```
+
+### workspace_mode: shell 布局
+
+代码与文档分仓时（外壳仓私有、代码仓可公开）：
+
+```
+<project>-dev/                    # 外壳仓
+├── AGENTS.md                     # devdocs.workspace_mode: shell + code_roots
+├── .gitmodules                   # 路径与 URL 唯一真源
+├── docs/                         # 结构与上方完全一致，一字节未变
+├── web/                          # 子模块 = code_root
+└── api/                          # 子模块 = code_root
+```
+
+docs 内部结构不因模式而变，故本维度与 layout 版本正交。详见 [_shared/workspace-mode.md](../skills/_shared/workspace-mode.md)。
