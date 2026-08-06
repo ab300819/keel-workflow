@@ -85,8 +85,9 @@ git -C <path> symbolic-ref -q HEAD
 git -C "$R" status --porcelain
 # 非空输出 ⛔ 阻塞：工作区不干净
 
-git -C "$R" remote -v
-# 空输出 ⛔ 阻塞：无 remote，手术前必须有远端兜底
+R_REMOTE=$(git -C "$R" remote | grep -qx origin && echo origin || git -C "$R" remote | head -1)
+[ -z "$R_REMOTE" ] && echo "⛔ 阻塞：无 remote，手术前必须有远端兜底"
+# R_REMOTE 记录探测到的实际 remote 名（优先 origin，否则取第一个）；Step 4 复用，不假设一定叫 origin
 
 git -C "$R" rev-list --count '@{u}..HEAD' 2>/dev/null
 # 非 0（或命令报错说明无上游）⛔ 阻塞：存在未推送提交
@@ -120,7 +121,7 @@ dry-run 计划必须列出并经 AskUserQuestion 确认：
 **Step 3 —— 建 W**
 
 ```bash
-test -e "$W" && echo "⛔ 目标已存在：$W"   # 存在则阻塞，停止本步
+test -e "$W" && { echo "⛔ 目标已存在：$W"; exit 1; }   # 真阻断：命中即退出，不继续往下执行
 
 mkdir -p "$W"
 cd "$W" && git init
@@ -130,7 +131,7 @@ git commit --allow-empty -m "chore: init shell workspace"
 **Step 4 —— 加子模块**
 
 ```bash
-R_URL=$(git -C "$R" remote get-url origin)
+R_URL=$(git -C "$R" remote get-url "$R_REMOTE")   # 复用 Step 1 探测到的 remote 名，不硬编码 origin
 cd "$W"
 git submodule add "$R_URL" "<name>"   # <name> 默认取 R_NAME，用户可在计划确认时改
 ```
@@ -161,11 +162,30 @@ git commit -m "chore: 迁入 DevDocs 产物"
 ```bash
 cd "$R"
 git rm -r docs/devdocs docs/prd docs/codebase-insight.md   # 只删已确认迁走的路径，不是 git rm -r docs/
+# Step 2 确认要迁移的未分类条目，同样逐个 git rm -r "docs/<条目>"（与 Step 5 的 cp 对称，两侧都要处理，否则两边都留着）
 # 手工清掉 AGENTS.md 里的 devdocs: frontmatter 段（内容已在 Step 5 剪切进 W）
 git add AGENTS.md
 git commit -m "chore: 迁出 DevDocs 产物"
 # 不自动 push —— 提示用户自行 git push
 ```
+
+**Step 6 与 Step 7 之间 —— 等待 push + 同步子模块（必需，否则 Step 7 指针不含迁出变更）**
+
+Step 4 的 `git submodule add` 是从远端 URL **独立 clone**，工作树内容取自当时的远端 HEAD，并不指向本地 `$R` 目录；Step 6 的迁出 commit 只落在 `$R` 本地（「不自动 push」）。若跳过同步直接执行 Step 7，`git -C "<name>" rev-parse HEAD` 读到的还是 Step 4 clone 时的旧 SHA —— 子模块工作树里 `docs/devdocs` 等本该迁出的内容**依然存在**，迁移在代码根一侧根本没有完成。
+
+```bash
+# 用户需先在 R 本地把 Step 6 的迁出 commit 推到远端：
+git -C "$R" push
+
+# 确认已推送后，同步 W 里子模块的工作树：
+git -C "$W/<name>" fetch
+git -C "$W/<name>" checkout <branch>
+# 或等价地在 W 根下：git -C "$W" submodule update --remote "<name>"
+```
+
+只有子模块工作树 HEAD 已指向包含 Step 6 迁出 commit 的提交后，Step 7 读到的 `SUBMODULE_SHA` 才是正确指针。
+
+**若用户未 push 就跑了 Step 7**：记录的指针停留在 Step 4 clone 时的旧 SHA，仍含未迁出的 `docs/devdocs` 等——这属于「指针漂移」的「未 update」情形，处置见上方「指针漂移修复」小节，不在此重复。
 
 **Step 7 —— W 声明模式 + 指针**
 
@@ -209,4 +229,5 @@ git commit -m "chore: 声明 workspace_mode: shell 并初始化子模块指针"
 | 4 | `git submodule add` 失败（URL 不可达 / 网络中断） | W 已有初始 commit，`.gitmodules` 可能被部分写入，无有效子模块内容 | `git submodule deinit -f "<name>"; rm -rf "$W/.git/modules/<name>"` 清理残留后重跑 Step 4；R 未变 |
 | 5 | 迁移拷贝 / 迁入 commit 失败 | R 的 `docs/`、`AGENTS.md` 原封不动（尚未删除、未编辑）；W 可能已 `cp` 部分文件但未 commit | 清理 `$W/docs` 下已复制的半成品文件后重新执行拷贝 + commit；R 侧无需任何操作 |
 | 6 | R 内 `git rm` / commit 失败（**唯一不可逆删除点**） | 若尚未 commit：工作区已 `git rm` 但可用 `git checkout -- docs/ AGENTS.md` 完整还原；若已 commit：删除已写入 R 历史 | 未 commit：`git checkout -- docs/ AGENTS.md` 还原后重试；已 commit 需撤销：`git revert <sha>`（不用 `reset --hard`，遵守不改写已提交历史）——此时 W 已持有完整副本，内容零丢失 |
+| 6→7 之间 | 用户未 push R 的迁出 commit，或已 push 但未同步子模块工作树，就执行了 Step 7 | W 记录的子模块指针仍是 Step 4 clone 时的旧 SHA，工作树里 `docs/devdocs` 等本该迁出的内容依然存在 | 按上方「Step 6 与 Step 7 之间」补跑 `git push` + `fetch`/`checkout` 后重新执行 Step 7；若已提交了错误指针，按「指针漂移修复」的「未 update」情形处置（不在此重复） |
 | 7 | W 写 frontmatter / 指针 commit 失败 | W 已有 `docs/` 内容，但缺 `workspace_mode` 声明，子模块指针未确认一致 | 修正 `AGENTS.md` frontmatter 后重新 `git add AGENTS.md "<name>" && git commit`；不影响 R（R 侧 Step 6 已独立完成） |
