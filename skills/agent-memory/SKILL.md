@@ -130,6 +130,9 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
 3. 更新 AGENTS.md（使用 templates/memory-template.md）
    │
    ▼
+3.5 devdocs frontmatter 幂等写入(可选,仅调用方传入 `devdocs_frontmatter` 时触发;详见下方「devdocs frontmatter 写入(可选)」)
+   │
+   ▼
 4. 确保 CLAUDE.md 存在（若缺失则创建导入文件；已存在则跳过，不覆盖补充区）
    │
    ▼
@@ -164,6 +167,50 @@ bypass_reason: <用户提供的原因>
 
 设计意图：避免 mic-en 等存量项目（245k）立即被 ⛔ 卡死；首次 bypass 锚定 baseline，之后只阻断"新增膨胀"。
 
+### devdocs frontmatter 写入(可选)
+
+**触发条件**:调用方(`retrofit` / `pipeline init`,未来可能还有 `realign --scope=layout`)随 `Task: /agent-memory --update` 传入 `devdocs_frontmatter` 输入(按 [constraints.md](../_shared/constraints.md) §3 最小握手协议放入 `inputs`),例如:
+
+```yaml
+devdocs_frontmatter:
+  workspace_mode: shell        # 或 inline
+  code_roots: [web, api]       # workspace_mode=shell 时必填
+```
+
+**未传入此字段时(当前全部存量项目 + inline 路径):本节全部步骤跳过,AGENTS.md 不新增 frontmatter,行为与现状完全一致。**
+
+**受管字段白名单**(按字段而非块标记界定受管边界 —— YAML frontmatter 不支持 HTML 注释,不能沿用正文的 `<!-- agent-memory:managed -->` 体例):当前 `workspace_mode`、`code_roots`、`initialized_at`。白名单外的 `devdocs:` 字段(`docs_layout_version`/`id_scheme`/`traceability_version`/`upgraded_at`/`upgraded_from`/`legacy_annotation_grace_period`)**本次不写** —— 那批字段的执行接口仍是 FUTURE(见 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md));但下方写入算法本身是通用的,未来这些字段落地时只需把字段名加入白名单即可直接复用,不必重新设计机制。字段清单、枚举值、校验规则的权威源是 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 + [workspace-mode.md](../_shared/workspace-mode.md) §3;本节只定义"怎么写",不重复"有哪些字段"。
+
+**写入步骤**:
+
+1. **定位/插入 frontmatter 块**:
+   - AGENTS.md 首行已是 `---` → 已有 frontmatter,解析到下一个 `---` 为止的 `devdocs:` YAML 段
+   - AGENTS.md 不存在 → 先完成本次 `--update` 首次创建流程,再在生成结果最前面插入 frontmatter
+   - AGENTS.md 存在但无 frontmatter(包括首行是 HTML 注释等正文内容,如本仓当前 `AGENTS.md` 首行 `<!-- 由 /agent-memory 生成... -->`)→ 在**文件最前面**插入新 frontmatter 块,原有全部内容整体下移,不改写原内容一个字符(schema 硬规则:frontmatter 必须紧贴文件起始,无 leading 空行 / heading)
+2. **合并白名单字段**:
+   - 传入值与已有值相同 → no-op(幂等)
+   - `initialized_at` 已存在 → 不可修改;调用方传入不同值 → ⛔ 不写入,报告冲突
+   - `initialized_at` 不存在 → 首次写入补当天 ISO 日期
+   - 其余白名单字段(`workspace_mode`/`code_roots`):不同则按传入值覆盖
+   - 白名单外字段:原样保留 key/value/原始顺序,不比较、不改动
+3. **写入前校验**:按 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 校验规则 + [workspace-mode.md](../_shared/workspace-mode.md) §3 fail-closed 全表逐条检查;任一不通过 → ⛔ 本步骤不写入,`blockers` 报告具体规则 + 冲突值,frontmatter 保持原状(**不回滚步骤 3 已完成的 AGENTS.md 正文更新,也不阻塞步骤 4~6**;整体 `status` 按 `partial` 处理,`summary.details.devdocs_frontmatter: blocked`)
+4. 校验通过 → 写入 frontmatter,其余 AGENTS.md 正文流程(步骤 4~6)照常继续
+
+**示例**(本仓 `AGENTS.md` 传入 `workspace_mode: shell, code_roots: [web]` 后的结果形态):
+
+```markdown
+---
+devdocs:
+  workspace_mode: shell
+  code_roots: [web]
+  initialized_at: "2026-08-07"
+---
+<!-- 由 /agent-memory 生成，请通过该命令更新 -->
+
+# AI Agent Skills
+...
+```
+
 ### 分流规则
 
 | 信息类型 | 目标位置 | 理由 |
@@ -175,6 +222,7 @@ bypass_reason: <用户提供的原因>
 | 代码约定、提交格式 | AGENTS.md | 跨工具一致 |
 | 编号状态 (max F/US/AC/T/ADR) | `.claude/rules/devdocs-state.md` | Claude 专属运行态 |
 | 完整需求/设计/测试详情 | 留在 `docs/devdocs/` | 太详细，不适合记忆文件 |
+| `workspace_mode` / `code_roots` / `initialized_at` | AGENTS.md devdocs frontmatter | 治理字段，仅调用方显式传入 `devdocs_frontmatter` 时写入；schema 权威见 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 |
 
 ## `--restructure` 工作流程
 
@@ -206,6 +254,7 @@ bypass_reason: <用户提供的原因>
 - 位置：项目根目录
 - 模板：[templates/memory-template.md](templates/memory-template.md)
 - 约束：不超过 60 行，工具无关
+- 可选 devdocs frontmatter（`workspace_mode`/`code_roots`/`initialized_at`）：仅调用方传入 `devdocs_frontmatter` 时写入，见 [devdocs frontmatter 写入(可选)](#devdocs-frontmatter-写入可选)
 
 ### CLAUDE.md
 
@@ -230,6 +279,9 @@ bypass_reason: <用户提供的原因>
 - [ ] **编号状态仅写入 `.claude/rules/devdocs-state.md`**
 - [ ] **devdocs-state.md 占位 prose ≤ 200 字符 / 单行 ≤ 500 字符 / 文件 ≤ 40 KiB**（违反由 health-lint 检测）
 - [ ] **devdocs-state.md 禁止内嵌 commit hash / LOC / 测试结果 / codex 分数 / 文件路径 / 工时统计**（明细去资源文件）
+- [ ] **devdocs frontmatter 仅在调用方显式传入 `devdocs_frontmatter` 时写入**；未传入不新增、不检查，inline 路径零影响
+- [ ] **`initialized_at` 一旦写入不可修改**；传入冲突值 ⛔ 不写入并报告
+- [ ] **devdocs frontmatter 白名单外字段原样保留**，不读不改（按字段而非块标记界定受管边界）
 
 ### 质量守则
 
@@ -262,8 +314,8 @@ skill: agent-memory
 status: success | failed | interrupted | partial   # 四值,语义见共享 SSOT
 summary:
   headline: "AGENTS.md 已更新,含工作流路由节"
-  details: {routing_section: added | kept | skipped, lines: 58}
-blockers: []          # 如 60 行超限待确认(partial 时必填)
+  details: {routing_section: added | kept | skipped, lines: 58, devdocs_frontmatter: written | unchanged | skipped | blocked}
+blockers: []          # 如 60 行超限待确认,或 devdocs frontmatter 校验失败(均 partial 时必填)
 output_files: [AGENTS.md]
 new_ids: {}
 next_recommended: {skill: "", args: ""}
