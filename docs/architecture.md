@@ -111,7 +111,7 @@ devdocs:
 > 原维度 e「三层分离自动检测」已废弃。三层分离作为**原则**在 layout.v1 已由编号文件结构 + `state/*` / `design/adr-only-revision` 症状规则承载，审查时作人工尺子用，不再做独立的关键词扫描维度。权威见 [constraints.md §9 分层记忆原则](../skills/_shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 
 **关键设计**：
-- health-lint 5 条 [新增] rule 与 layout.v2 的 ssot-lint 12 条 rule **独立**，layout.v1 项目（mic-en）可直接使用
+- health-lint rule（清单以 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md) Rule 集表为权威）与 layout.v2 的 ssot-lint 12 条 rule **独立**，layout.v1 项目（mic-en）可直接使用
 - `devdocs-state.md` 模板硬化（forbidden 6 类内嵌模式 + 200/500/40K 三档阈值）+ `agent-memory --update` 健康度自检（双重保险）
 - `design/adr-only-revision` 把 system-design 既有 ⛔ 硬约束（仅追加 ADR 不改正文）从人工自检升级为 git 历史自动扫描
 
@@ -143,7 +143,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | `spec`（默认）| 产物 `spec_version` drift（schema 维度）| ✅ 部分可用 |
 | `layout` | layout.v1 → v2 迁移（含编号/目录/追溯重组）| ⚠️ **入口与接口规范已落地，迁移执行逻辑分阶段交付**（接口见 [realign-scope-layout.md](../skills/pipeline/references/realign-scope-layout.md)；落地状态权威见 [docs-layout-migration.md §执行接口落地状态](../skills/pipeline/references/layout/docs-layout-migration.md)）|
 | `prd-mapping` | PRD mapping_status 扫描 + 报告 | [FUTURE] |
-| `health` | 文档健康度主动审查（4 维度 / health-lint 5 条 rule）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](../skills/pipeline/references/realign-scope-health.md)）|
+| `health` | 文档健康度主动审查（4 维度 / health-lint rule，清单见 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md) Rule 集表）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](../skills/pipeline/references/realign-scope-health.md)）|
 
 **Apply 6 Phase**：checkpoint → file_ops → id_map → trace → frontmatter → post-validation；每 Phase 单独 commit；失败 ⛔ + `git reset --hard <checkpoint_commit>` 回滚；plan_hash 校验中断恢复一致性。
 
@@ -159,7 +159,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | `/ms-verify --readiness` | 开发前就绪检查 | ✅ 可用 |
 | `/ms-verify --schema-drift` | drift 三态报告（schema + layout 两段呈现）| ✅ 可用 |
 | `/ms-verify --ssot-lint` | 跑 12 条 SSOT lint 规则（layout.v2 专属，v1 报 not_applicable）| [FUTURE] |
-| `/ms-pipeline realign --scope=health` | 健康度主动审查（5 条 [新增] rule，layout.v1+v2 通用）| ✅ 可用 |
+| `/ms-pipeline realign --scope=health` | 健康度主动审查（rule 清单见 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md)，layout.v1+v2 通用）| ✅ 可用 |
 
 #### 已收敛 / internal-only（不再用户面暴露）
 
@@ -186,7 +186,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | 3 | 各 skill SKILL.md 收敛 ≤5 外露 flag | ✅ |
 | 4 | `shared-constraints.md § 8` 新增 single-entry 规则族 | ✅ |
 | 5 | `ms-iteration-policy` 标 internal-only | ✅ |
-| 6 | `--scope=health` 健康度主动审查（health-lint 5 条 rule + devdocs-state 模板硬化 + ADR↔正文同期修订检测）| ✅ |
+| 6 | `--scope=health` 健康度主动审查（health-lint rule（清单见 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md)）+ devdocs-state 模板硬化 + ADR↔正文同期修订检测）| ✅ |
 
 **用户面 flag 总收敛 49 → 20（-59%）**：
 

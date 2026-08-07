@@ -56,7 +56,7 @@ devdocs:
 | 无 `workspace_mode` 字段 | 视为 `inline` —— 现存所有项目零影响 |
 | `shell` 但 `code_roots` 缺失 / 为空 | ⛔ 阻塞 |
 | 某 name 不在 `.gitmodules` | ⛔ 阻塞，提示修 frontmatter |
-| name 在 `.gitmodules` 但工作区目录为空 | ⛔ 阻塞，提示 `git submodule update --init <path>` |
+| name 在 `.gitmodules` 但工作区目录为空 | ⛔ 阻塞（**运行时校验门**场景：要用代码根干活，目录空了就得停），提示 `git submodule update --init <path>`；health 只读扫描同一情形降级为 ⚠️，见 [health-lint-implementation.md § submodule/pointer-drift](../pipeline/references/health-lint-implementation.md#submodulepointer-drift) |
 | 解析出的两个 path 互为前缀（嵌套子模块） | ⛔ 阻塞 |
 | 某 path 为 `.` / 含 `..` / 等于 `docs` | ⛔ 阻塞 |
 | `inline` 却出现 `code_roots` | ⚠️ 警告并忽略，不阻塞 |

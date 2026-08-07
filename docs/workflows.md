@@ -337,7 +337,7 @@ DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory --upd
 **怎么开**：
 
 - **新项目**：`/ms-pipeline init`。若仓内有 `.gitmodules`，会问你哪些子模块是代码根
-- **已有外壳仓但没跑过 DevDocs**（如手工建好的 `xxx-dev`）：`/ms-pipeline retrofit`
+- **已有外壳仓但没跑过 DevDocs**（如手工建好的 `xxx-dev`）：`/ms-retrofit`
 - **现有单仓要拆开**：直接说「把这个项目转成外壳模式」，走 `realign --scope=layout` 的七步迁移，第 2 步会先给你完整 dry-run 计划
 
 **开了之后有什么不同**：
@@ -345,7 +345,7 @@ DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory --upd
 | | 变了 | 没变 |
 |---|------|------|
 | 文档路径 | — | `docs/devdocs/` 等全部不变 |
-| 提交 | 一个任务产生 N+1 个 commit（每个变更代码根一个 + 外壳仓一个）| 一任务一次提交的原则不变 |
+| 提交 | 一个任务产生 N+1 个 commit（每个变更代码根一个 + 外壳仓一个）| 每个任务独立提交、不跨任务合并的原则不变（inline 下本就是 Commit 1 代码 + Commit 2 文档两次提交，shell 只是把 Commit 1 按变更代码根展开）|
 | 代码仓 | 只收代码和测试，commit message 沿用该仓风格、不带 DevDocs 编号 | — |
 | 自描述 / 代码注释类产物 | 默认跳过（`--force-code-docs` 才开） | — |
 

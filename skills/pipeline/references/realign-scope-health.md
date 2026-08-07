@@ -19,7 +19,7 @@
 | 文件 | 本 spec 的使用方式 |
 |------|-------------------|
 | [realign.md](realign.md) | 继承 realign 安全不变量、yaml-summary-v1 汇总方式 |
-| [health-lint-implementation.md](health-lint-implementation.md) | 调用 6 条 [新增] lint rule（state/total-size-cap / state/line-length-cap / state/forbidden-content / health/dead-link / design/adr-only-revision / submodule/pointer-drift）；rule 清单以该文件 Rule 集表为权威，layout.v1+v2 通用 |
+| [health-lint-implementation.md](health-lint-implementation.md) | 调用 [新增] lint rule；rule 清单以该文件 Rule 集表为权威，layout.v1+v2 通用 |
 | [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) | layout.v2 启用后追加 `ssot/no-restatement` 等 [FUTURE] rule 到维度 d（数量与清单以该文件 rule 表为权威，当前 12 条）；v1 项目跳过 |
 | `../../sync/references/health-scoring.md` | 6 类偏差评分（layout.v1 legacy）作为子项 |
 | `../../verify/SKILL.md` | 调用 `--schema-drift` / `--docs` / `--impl` 已有能力 |
@@ -88,7 +88,7 @@ docs/devdocs/.health-report.md
 1. 归一化 `repo_root` 与 `docs_root`。
 2. 调用 `/ms-verify --schema-drift`（只读），获取维度 a 数据。
 3. 调用 `/ms-sync` audit 计算（只读复用 `health-scoring.md`），获取既有 6 类偏差作为维度 b 子项。
-4. 执行 health-lint 6 条 [新增] rule（详见 [health-lint-implementation.md](health-lint-implementation.md)）：
+4. 执行 health-lint [新增] rule（清单见 [health-lint-implementation.md](health-lint-implementation.md)）：
    - `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` → 维度 c
    - `health/dead-link` → 维度 b
    - `design/adr-only-revision` → 维度 a（基于 git 历史扫描最近 30 天 commit）
@@ -164,7 +164,7 @@ manual_decisions:
 
 | 违规 rule | route_to_scope | 修复路径 |
 |----|----|----|
-| `state/*`（3 条）/ `health/dead-link`（手动修复）/ `design/adr-only-revision` / `submodule/pointer-drift`（仅 `workspace_mode: shell`）| `health` | health scope `--apply` 直接处理（`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
+| health-lint 全部 rule（清单见 [health-lint-implementation.md](health-lint-implementation.md) Rule 集表；`submodule/pointer-drift` 仅 `workspace_mode: shell` 适用）| `health` | health scope `--apply` 直接处理（`health/dead-link` 手动修复；`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
 | `ssot/*` (`current-md-size` / `file-size-cap` / `modules-size-cap`) | `layout` | 拆分走 layout scope |
 | `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
 | PRD↔DevDocs 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |

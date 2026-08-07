@@ -9,7 +9,7 @@
 | 治理对象 | 文件 |
 |---------|------|
 | health scope 入口与执行接口 | [realign-scope-health.md](realign-scope-health.md) |
-| **本文件**：6 条 [新增] rule 的检测算法、严重度、修复路径 | health-lint-implementation.md |
+| **本文件**：[新增] rule 的检测算法、严重度、修复路径（清单见下方 Rule 集表）| health-lint-implementation.md |
 | layout.v2 专属 SSOT 强约束（12 条）| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) |
 | 既有偏差评分（layout.v1 legacy）| `../../sync/references/health-scoring.md` |
 
@@ -388,53 +388,23 @@ Phase B：扫描引用 + 范围编号展开
 
 **检测对象**：`AGENTS.md` 的 `code_roots` 解析出的每个子模块路径。
 
-**适用性门**：读 `AGENTS.md` 的 `workspace_mode`；非 `shell`（含字段缺失）→ 输出 finding `{ status: not_applicable }`，return。
+**适用性门**：读 `AGENTS.md` 的 `workspace_mode`；非 `shell`（含字段缺失）→ 输出 finding `{ status: not_applicable }`，早退。
 
-**算法**（Agent 执行步骤）：
+**判据**：对每个路径跑 `git submodule status`，按首字符分派；命中 `+`（有漂移）再用 `git -C <path> merge-base --is-ancestor <recorded> <actual>`（及反向）判祖先关系区分成因：
 
-```text
-1. 适用性门
-   mode = AGENTS.md devdocs.workspace_mode
-   if mode != "shell": 输出 not_applicable，return
+| 首字符 | 成因 | 严重度 |
+|---|---|---|
+| ` `（空格）| 一致 | pass |
+| `-` | 未初始化 | ⚠️ warning |
+| `+`，子模块领先记录（`is-ancestor recorded actual` 成立） | 漏 bump | ⚠️ warning |
+| `+`，记录领先子模块（反向 `is-ancestor` 成立） | 未 update（本地滞后） | ⚠️ warning |
+| `+`，两方向都不成立 | 分叉（互无祖先关系） | ⛔ blocker，须 AskUserQuestion 人工裁定，不自动选 |
 
-2. 解析各代码根路径
-   for name in code_roots:
-     path = Bash: git config -f .gitmodules submodule.$name.path
-     if 解析失败: severity = blocker
-                  verdict_msg = "code_roots 中的 $name 不存在于 .gitmodules"
-                  继续下一个
-
-3. 读指针状态
-   status = Bash: git submodule status -- "$path"
-   首字符判定：
-     ' ' (空格) → 一致，pass
-     '+'        → 漂移，进第 4 步定性
-     '-'        → 未初始化
-                  severity = warning
-                  verdict_msg = "$name 未初始化，跑 git submodule update --init $path"
-                  继续下一个
-
-4. 漂移定性（区分三种成因，见 workspace-shell.md § 指针漂移修复）
-   recorded = Bash: git ls-tree HEAD "$path" | awk '{print $3}'
-   actual   = Bash: git -C "$path" rev-parse HEAD
-   if Bash: git -C "$path" merge-base --is-ancestor "$recorded" "$actual" 成功:
-     severity = warning   # 漏 bump：子模块领先
-     verdict_msg = "$name 已领先记录 N 个 commit，外壳仓漏 bump 指针"
-   elif Bash: git -C "$path" merge-base --is-ancestor "$actual" "$recorded" 成功:
-     severity = warning   # 未 update：本地滞后
-     verdict_msg = "$name 落后外壳仓记录，跑 git submodule update $path"
-   else:
-     severity = blocker   # 分叉
-     verdict_msg = "$name 与外壳仓记录已分叉（互无祖先关系），需人工裁定"
-
-5. 输出 finding（见"Finding 输出 schema"）
-```
-
-**修复路径**：**不可自动修复**。三种成因的处置见 [layout/workspace-shell.md § 指针漂移修复](layout/workspace-shell.md#指针漂移修复)（本文不重复）。分叉情形必须 AskUserQuestion。
+**修复路径**：**不可自动修复**。三种成因的具体处置命令见 [layout/workspace-shell.md § 指针漂移修复](layout/workspace-shell.md#指针漂移修复)（本文不重复）。
 
 **误报与边界**：
 
-- 子模块目录为空（未 `submodule update --init`）→ 报 ⚠️ 而非 ⛔，因为这是本地环境问题不是仓库问题
+- 子模块目录为空（未 `submodule update --init`）→ 报 ⚠️ 而非 ⛔，因为这是本地环境问题不是仓库问题；不与 [_shared/workspace-mode.md § 校验规则](../../_shared/workspace-mode.md#3-校验规则fail-closed) 的 ⛔ 冲突——那条是**运行时校验门**（要用代码根干活，目录空了就得停），本 rule 是**只读扫描**报告，适用范围不同
 - `.gitmodules` 中存在但不在 `code_roots` 里的子模块（素材 / vendor）**不扫**
 
 ---

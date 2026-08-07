@@ -257,7 +257,7 @@ dev-workflow Step 1 状态检测现为四重验证（文档状态 + 证据复核
 
 ### 对现有项目零影响的论证
 
-所有新增规则的触发条件都是 `workspace_mode: shell`。现存项目 frontmatter 无此字段 → 判为 `inline` → 走原路径。落地后逐条 grep 核对新增规则确实都在 shell 条件下，**无裸露的无条件门**。
+所有新增规则的触发条件都是 `workspace_mode: shell`。现存项目 frontmatter 无此字段 → 判为 `inline` → 走原路径。落地后逐条 grep 核对新增规则确实都在 shell 条件下，**无裸露的无条件门**——唯一例外：探测探针本身在 init / retrofit / `realign --scope=layout` 三处对含 `.gitmodules` 的 `inline` 项目可见（如 realign 的 dry-run plan 会多列一条「可选项：未声明工作区模式」），此行为由 §2.3 授权、只在 dry-run 列示不自动改，不影响其余场景。
 
 ### 验证策略（规格库，无测试框架）
 
