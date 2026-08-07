@@ -71,7 +71,7 @@ user-invocable: true
 | `--scope=spec` | 默认值；处理 spec_version 维度 |
 | `--scope=layout` | 文档体系版本升级（layout.v1→v2，含编号/目录/追溯重组），执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md) |
 | `--scope=prd-mapping` | 处理 PRD 映射维度 |
-| `--scope=health` | 文档健康度主动审查（5 维度 / health-lint 5 条 rule，layout.v1+v2 通用），执行接口见 [references/realign-scope-health.md](references/realign-scope-health.md) |
+| `--scope=health` | 文档健康度主动审查（5 维度 / health-lint rule，清单见 [references/health-lint-implementation.md](references/health-lint-implementation.md)，layout.v1+v2 通用），执行接口见 [references/realign-scope-health.md](references/realign-scope-health.md) |
 | `--target=<path>` | 限定回扫目标路径 |
 | `--dry-run` | 只出差距报告，**业务产物零写入**；scope=health 允许写 `.health-report.md` 作报告载体 |
 | `--apply` | 执行已确认的迁移 / 补齐动作 |
@@ -205,7 +205,7 @@ Q3（feature/bugfix 追加，可选）:
 - **close 脚手架清理**：close 末步委托 `ms-prd clear` 清理 `docs/prd/` 一次性脚手架；先 dry-run 出范围 + 影响（孤儿 / 未同步项默认不删），⚠️ 必须确认后 `--apply` 删除；无 `docs/prd/` 时静默跳过。pipeline 只委托不自己删文件（见 ms-prd [清理脚手架](../prd/SKILL.md#清理脚手架close-收尾)）。
 - **realign 协调机制**：realign 非续做信号；restructuring / layout 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；`--headless` 必须显式 `--realign` 或 `--no-realign`；layout scope 升级需先跑 `--dry-run` + 独立 git branch 演练，执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md)。
 - **layout / id / trace 三层版本共性**：pipeline 是 SSOT 来源。三层版本号宪法见 [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md)，元数据 schema 见 [references/layout/layout-metadata-schema.md](references/layout/layout-metadata-schema.md)，aliases 见 [references/layout/aliases-yml-schema.md](references/layout/aliases-yml-schema.md)，迁移矩阵和不可逆操作见 [references/layout/docs-layout-migration.md](references/layout/docs-layout-migration.md)。
-- **工作区模式探测（`init` / `retrofit`）**：`ms-requirements` 完成后（首次产生 `docs/devdocs/`）、`agent-memory --update` 之前，执行一次工作区模式探测，见 [layout/workspace-shell.md § 探测](references/layout/workspace-shell.md#探测)。探测结果写入 `AGENTS.md` 的 `devdocs:` frontmatter。无 `.gitmodules` 时静默判定 `inline`，不打扰用户。
+- **工作区模式探测（`init`）**：`ms-requirements` 完成后（首次产生 `docs/devdocs/`）、`agent-memory --update` 之前，执行一次工作区模式探测，见 [layout/workspace-shell.md § 探测](references/layout/workspace-shell.md#探测)。探测结果写入 `AGENTS.md` 的 `devdocs:` frontmatter。无 `.gitmodules` 时静默判定 `inline`，不打扰用户。retrofit 场景的探测路径由 [retrofit/SKILL.md](../retrofit/SKILL.md) 自己承载（retrofit 非 pipeline 管辖，见下方约束"识别到 retrofit 场景时，路由到 `/ms-retrofit` 并退出 pipeline"）。
 
 ### Sprint Contract 握手
 
