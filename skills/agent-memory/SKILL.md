@@ -128,6 +128,7 @@ AGENTS.md（精简、稳定、跨 AI 工具通用）← 通用信息唯一编辑
    │
    ▼
 3. 更新 AGENTS.md（使用 templates/memory-template.md）
+   └── 若文件首部已有 `---...---` frontmatter 块,本步骤只在该块之后的内容范围内操作,不移动/改写/吞掉该块(即使模板「首次创建时内容」首行恰好也是 HTML 注释,与真实 frontmatter 不可混淆)
    │
    ▼
 3.5 devdocs frontmatter 幂等写入(可选,仅调用方传入 `devdocs_frontmatter` 时触发;详见下方「devdocs frontmatter 写入(可选)」)
@@ -169,12 +170,16 @@ bypass_reason: <用户提供的原因>
 
 ### devdocs frontmatter 写入(可选)
 
-**触发条件**:调用方(`retrofit` / `pipeline init`,未来可能还有 `realign --scope=layout`)随 `Task: /agent-memory --update` 传入 `devdocs_frontmatter` 输入(按 [constraints.md](../_shared/constraints.md) §3 最小握手协议放入 `inputs`),例如:
+**触发条件**:调用方(`retrofit` / `pipeline init`,未来可能还有 `realign --scope=layout`)随 `Task: /agent-memory --update` 传入 `devdocs_frontmatter`,嵌在 [constraints.md](../_shared/constraints.md) §3 最小握手协议的 `inputs` 里,完整信封例如:
 
 ```yaml
-devdocs_frontmatter:
-  workspace_mode: shell        # 或 inline
-  code_roots: [web, api]       # workspace_mode=shell 时必填
+skill: agent-memory
+mode: update
+inputs:
+  devdocs_frontmatter:
+    workspace_mode: shell        # 或 inline
+    code_roots: [web, api]       # workspace_mode=shell 时必填
+expected_output: yaml-summary-v1
 ```
 
 **未传入此字段时(当前全部存量项目 + inline 路径):本节全部步骤跳过,AGENTS.md 不新增 frontmatter,行为与现状完全一致。**
