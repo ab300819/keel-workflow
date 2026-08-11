@@ -6,7 +6,7 @@
 
 - 规格库：Markdown + YAML skill 定义（非代码库）
 - 无 build/test/lint 命令
-- 22 个 ms- 流程 skill + 13 个独立 skill（含 3 个 internal-only；dev-flow 为非 DevDocs 通用开发流程，idea-mcp-workflow 为 JetBrains idea MCP 操作手册，e2e-test-flow 为独立 E2E 实测流程）
+- 22 个 ms- 流程 skill + 14 个独立 skill（含 3 个 internal-only；dev-flow 为非 DevDocs 通用开发流程，idea-mcp-workflow 为 JetBrains idea MCP 操作手册，e2e-test-flow 为独立 E2E 实测流程，markdown-style 为 Markdown 标记与排版审查器）
 
 ## 架构决策
 
