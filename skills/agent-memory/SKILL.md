@@ -199,6 +199,8 @@ expected_output: yaml-summary-v1
    - 其余白名单字段(`workspace_mode`/`code_roots`):不同则按传入值覆盖
    - 白名单外字段:原样保留 key/value/原始顺序,不比较、不改动
 3. **写入前校验**:按 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 校验规则 + [workspace-mode.md](../_shared/workspace-mode.md) §3 fail-closed 全表逐条检查;任一不通过 → ⛔ 本步骤不写入,`blockers` 报告具体规则 + 冲突值,frontmatter 保持原状(**不回滚步骤 3 已完成的 AGENTS.md 正文更新,也不阻塞步骤 4~6**;整体 `status` 按 `partial` 处理,`summary.details.devdocs_frontmatter: blocked`)
+
+   **明确(避免 fail-closed 惯性误判为阻塞)**:`devdocs:` 段首次创建时,`docs_layout_version`/`id_scheme`/`traceability_version`/`initialized_at` 等白名单外必填字段本就不存在(它们的执行接口是 FUTURE,本节根本不写它们,见上方白名单说明)。这种"三层版本号缺失"**不是**本步骤的 ⛔ 判据——按 [layout-metadata-schema.md §1「缺失时的行为」](../pipeline/references/layout/layout-metadata-schema.md#缺失时的行为),devdocs 段不完整只 ⚠️ 警告 + 建议补全,不阻塞。本步骤的 ⛔ 仅针对 §1「校验规则」子节列出的规则本身、以及 workspace-mode.md §3 fail-closed 全表本身不满足的情形(如 `initialized_at` 冲突改值、frontmatter 未紧贴文件起始、`code_roots` 的 name 不在 `.gitmodules` 等),不包含"必填字段尚未齐全"这一类。
 4. 校验通过 → 写入 frontmatter,其余 AGENTS.md 正文流程(步骤 4~6)照常继续
 
 **示例**(本仓 `AGENTS.md` 传入 `workspace_mode: shell, code_roots: [web]` 后的结果形态):

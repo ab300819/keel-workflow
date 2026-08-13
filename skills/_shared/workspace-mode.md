@@ -126,3 +126,33 @@ devdocs:
 
 - `workspace/commit-protocol`：Commit 1 = 每个有变更的代码根各一个 commit；Commit 2 = 外壳仓一次提交（文档变更 + 各变更子模块指针 bump）。提交前逐个变更子模块跑 `git -C <path> symbolic-ref -q HEAD` 检查具名分支，detached HEAD ⛔ 阻塞并提示 `git -C <path> checkout <branch>`。子模块提交沿用自身仓风格、不带 T-XX/F-XX；外壳仓提交用 Conventional Commits + T-XX，body 列各子模块 SHA；追溯枢纽 = 外壳仓 commit。`--single-commit` 在 shell 下不可用，⚠️ 忽略并提示。
 - `workspace/recovery`：跨仓无真原子性，按失败点分三类（见上表：子模块提交失败 / 全部子模块已提交但外壳仓提交失败 / 外壳仓已提交但漏 bump 指针），均按共享约束 §7 Recovery 格式输出；不自动回滚已提交的代码。
+
+## 7. 工作区洁净检查（gitlink 排除）
+
+`ms-dev-workflow` 的 N+1 工作区遍历（外壳仓 + 各 `code_roots` 各跑一次 `git status --porcelain`，检出「不相关变更」后 AskUserQuestion：stash / 忽略 / 终止，见 [task-orchestration.md § 断点续做状态机](../dev-workflow/references/task-orchestration.md)）在外壳仓这一层必须排除 gitlink 条目，否则同一件事会被双重报告，且 gitlink 条目不适用 stash。
+
+### 7.1 现象：gitlink 条目与普通文件条目在 porcelain v1 里同形
+
+子模块工作区脏时（含子模块内部再嵌套子模块的 untracked 内容层层冒泡），外壳仓 `git status --porcelain` 会显示一条形如 ` M <code_root_path>` 的 gitlink 条目——格式上与普通文件的 `M`/`??` 条目**完全相同**，无法仅凭这一行文本区分「指针漂移待 bump」还是「子模块工作区脏污染冒泡」（这两者的判据只存在于 `git submodule status` 的首字符：空格=SHA 一致=非漂移，`+`=漂移，见 §3 表「name 在 .gitmodules 但工作区目录为空」行相邻的 `pointer-drift` health rule）。
+
+实测（`chiaki-ng-dev`，2026-08-05，子模块内部 `third-party/curl` 有原有未跟踪改动、指针未漂移）：
+
+```
+$ git status --porcelain          # 外壳仓
+ M chiaki-ng
+$ git -C chiaki-ng status --porcelain
+ M third-party/curl
+$ git status --porcelain=2        # 更细粒度格式能看出区别，但工作区洁净检查用的是 v1
+1 .M S..U 160000 160000 160000 <sha> <sha> chiaki-ng   # S..U = submodule/无commit变更/无tracked变更/有untracked内容
+```
+
+`--porcelain=2` 的 `S..U` 标志位能区分「指针未变、纯工作区脏」，但工作区洁净检查依赖的 v1 格式不暴露这个区分——这正是排除规则存在的原因。
+
+### 7.2 判据：识别 gitlink 条目
+
+外壳仓 `git status --porcelain` 输出中，**条目路径恰好等于某个 code_root 解析出的 path**（`git config -f .gitmodules submodule.<name>.path` 的结果）→ 判定为 gitlink 条目，无论其状态标记是 `M`/`??`/`AM` 等。
+
+### 7.3 排除规则
+
+- `workspace/gitlink-exclusion`：外壳仓层面的工作区洁净扫描跳过匹配 code_root 路径的条目（判据见 §7.2）。该条目代表的信号分别交给：指针是否漂移 → `submodule/pointer-drift` health rule（[workspace-shell.md § 指针漂移修复](../pipeline/references/layout/workspace-shell.md#指针漂移修复)）；子模块内部是否有不相关变更 → 该 code_root 自身那一轮 `git -C <path> status --porcelain` 扫描。**不得**在外壳仓扫描与 code_root 扫描里对同一件事各报一次。
+- `workspace/no-stash-gitlink`：gitlink 条目**不适用**「stash / 忽略 / 终止」三选一，尤其**绝不提供 stash 选项**。理由：`git stash` 对未提交的子模块指针状态与普通文件的处理方式不同——不存在"把 gitlink 这个条目本身暂存掉"的语义，实际效果是暂存子模块内已 `git add` 的变更（若有），子模块工作区本身未 `add` 的脏内容不受影响；用户会误以为"暂存"消除了这件事，但状态原样存在。gitlink 条目只能引导用户去对应 code_root 内部处理（`git -C <path> ...`）。

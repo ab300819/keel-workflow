@@ -18,8 +18,22 @@
    - 选项逐个列出 `<name>（路径：<path>）`
    - 提示语必须说明「子模块也可能是素材 / vendor，不都算代码根」
    - 允许全不选 → 判定 `inline`
-5. 写入外壳仓根 `AGENTS.md` 的 `devdocs:` frontmatter：`workspace_mode: shell` + `code_roots: [<选中的 name>]`
-6. 写入后立即跑一次校验（`workspace/fail-closed` 全表），任一 ⛔ 则回滚本次写入并报告
+5. 写入外壳仓根 `AGENTS.md` 的 `devdocs:` frontmatter：**仅** `workspace_mode: shell` + `code_roots: [<选中的 name>]` 这两个字段——探测的写入范围到此为止，不涉及其余字段。
+
+   **若 `devdocs:` 段此前完全不存在**（项目从未跑过 `init`/`retrofit`，`AGENTS.md` 里没有任何 `devdocs:` frontmatter）：探测会就地创建一个**只含这两字段的部分块**，例如：
+
+   ```yaml
+   ---
+   devdocs:
+     workspace_mode: shell
+     code_roots: [chiaki-ng]
+   ---
+   ```
+
+   `docs_layout_version` / `id_scheme` / `traceability_version` 三层版本号与 `initialized_at` **不在探测的写入范围内**——它们由 layout 元数据机制负责，该机制的执行接口在本仓标 FUTURE（见 [layout-metadata-schema.md](layout-metadata-schema.md)）。探测**不代写、不伪造**这几个字段：三层版本号没有可靠来源，伪造比缺失更糟；`initialized_at` 的语义是「DevDocs 首次初始化时间」，探测无权代为声称这件事。
+
+   此时按 [layout-metadata-schema.md §1「缺失时的行为」](layout-metadata-schema.md#缺失时的行为)：devdocs 段不完整（缺字段）→ skill surface **⚠️ 警告 + 建议补全**，**不阻塞**。消费方不得把这条部分块当 ⛔ 处理——探测产出的部分块是合法的既知状态，不是意外。
+6. 写入后立即跑一次校验（`workspace/fail-closed` 全表），任一 ⛔ 则回滚本次写入并报告。该表只校验 `workspace_mode`/`code_roots` 相关规则，不涉及第 5 步说明的三层版本号/`initialized_at`（那些字段的缺失走上方 ⚠️ 不阻塞路径，不在本表判定范围内）
 
 ## detached HEAD 处置
 

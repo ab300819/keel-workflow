@@ -90,7 +90,7 @@ dev-workflow 执行某任务前,按实际改动廉价复核风险信号(反向�
 
 ## 3. 断点续做状态机
 
-每个任务开始前执行以下 5 步检测流水线：
+每个任务开始前执行以下 6 步检测流水线（Step 1 / 1.5 / 2 / 3 / 4 / 5）：
 
 ```
 Step 1: 文档状态检测
@@ -142,7 +142,9 @@ git status --porcelain                                    # 外壳仓
 for p in <各 code_root path>; do git -C "$p" status --porcelain; done
 ```
 
-任一仓有不相关变更 → 按现有 AskUserQuestion（stash / 忽略 / 终止）处理，**提示文案须标明是哪个仓**。
+**外壳仓输出需排除 gitlink 条目**：路径恰好等于某个 code_root 解析出的 path 的条目（如 ` M chiaki-ng`）不算外壳仓自身的「不相关变更」——它代表的信号已被上面 `for` 循环对该 code_root 的独立扫描覆盖，指针是否漂移则由 `submodule/pointer-drift` health rule 负责；判据、成因见 [../../_shared/workspace-mode.md § 7 工作区洁净检查](../../_shared/workspace-mode.md#7-工作区洁净检查gitlink-排除)。
+
+排除 gitlink 条目后，任一仓有不相关变更 → 按现有 AskUserQuestion（stash / 忽略 / 终止）处理，**提示文案须标明是哪个仓**；**gitlink 条目本身不进入这个三选一，尤其不得提供 stash 选项**（理由同上指针）。
 
 ### 续做模式信号表
 
