@@ -293,9 +293,4 @@ Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他
 
 ### 批量模式下 TodoWrite
 
-```
-1. 初始化：将执行队列中所有任务添加为 todo 项
-2. 执行中：当前任务标记为 in_progress
-3. 完成时：任务标记为 completed
-4. 断点续做：读取 TodoWrite 状态辅助判断进度
-```
+见 [task-orchestration.md § TodoWrite 集成](task-orchestration.md#todowrite-集成)（唯一权威）。

@@ -35,7 +35,7 @@ spec_version_notes: |
 
 > **权威文件唯一原则**（spec_version 1.1 起强制）：
 > - Phase 4 / 并行调度 / `diff_hash` / 重跑机制 → [verification-flow.md](references/verification-flow.md) 唯一权威
-> - Step 1.5 各分支 / `sync_pending` / Batch-Id 识别 → [task-orchestration.md](references/task-orchestration.md) 唯一权威
+> - Step 1.5 各分支 / Batch-Id 识别 → [task-orchestration.md](references/task-orchestration.md) 唯一权威
 > - Phase 2-UI 审查清单 → [ui-quality-checklist.md](references/ui-quality-checklist.md) 唯一权威
 > - review_profile / drain / review_pending → [verification-flow.md](references/verification-flow.md) + [task-orchestration.md](references/task-orchestration.md)
 > - 风险分类器(review_profile 提议)→ /ms-dev-tasks

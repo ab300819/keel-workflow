@@ -9,7 +9,7 @@ DevDocs 技能链的编码执行阶段，承接 `ms-dev-tasks` 输出的任务�
 以 `04-dev-tasks*.md` 为输入，按 review_profile（fast/guarded/audit，由风险分类器据风险信号判定；层级标记为输入之一）决定独立审查时机与强度；质量地板 5 条恒定 inline；双 Agent 红绿对所有档保留。fast/guarded 独立审查延后到 /ms-verify --review-drain（任务标 review_pending），audit inline。
 每任务采用双 Agent 模型：Test Agent（写骨架+测试）→ 编排器红色验证 → Impl Agent（写实现+重构），物理隔离测试代码与实现代码的上下文。
 批量模式采用编排器-执行器架构（Task tool 子 Agent），实现每任务独立上下文隔离。
-断点续做状态机（5 步检测流水线）支持中断后精确续跑，含 Agent 类型判定。
+断点续做状态机（6 步检测流水线）支持中断后精确续跑，含 Agent 类型判定。
 对抗式验证通过角色切换（代码审查员 + 测试审查员）模拟多人协作，Blocker 必须闭环修复。
 `--headless` 在共享架构上叠加策略驱动决策层：8 个交互点由预定义策略自动决策，fail-fast 语义保证安全不变量。
 
