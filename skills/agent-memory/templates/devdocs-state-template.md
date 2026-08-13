@@ -24,7 +24,7 @@
 | LOC 计数 | `+184/-5`、`732 LOC`、`净 -85 LOC` | task 文件 / PR description |
 | 测试结果数 | `49/49 GREEN`、`94 cases`、`焦点 51/51 PASS` | task 文件 / CI 报告 |
 | codex 分数 | `R1 88 → R2 92`、`health=92 PASS` | task 文件 review 章节 |
-| 源码文件路径 | `OssFundTraceProviderImpl.java:L54` | task 文件 / ADR |
+| 源码文件路径 | `src/services/PaymentProvider.java:L54` | task 文件 / ADR |
 | submodule 引用 | `trade@`、`envo@`、`mstatic@` | commit / task |
 | 工时统计 | `~45min vs 估 2-3h`、`75% 节省` | task 文件 retrospective |
 

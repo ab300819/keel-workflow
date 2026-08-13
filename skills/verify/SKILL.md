@@ -305,7 +305,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | `docs/devdocs/verify-report.md` | `--docs` / `--impl` / `--ui` | 验证时间、`verified_commit`、验证维度、验证范围、关联文档、验证结果摘要（各维度 P1/P2/P3/状态）、对应 A/B/C 章节、问题汇总、修复路由 |
 | `docs/devdocs/readiness-report.md` | `--readiness` | 验证时间、验证维度、验证范围、关联文档、D1-D4 就绪度摘要、D1-D4 明细、问题汇总、修复路由 |
 
-`--impl` 报告必须包含 CE 三问；触发盲区 6/7 时必须填写 B4/B5。字段与 A/B/C 类示例见 [templates/verify-report.md](templates/verify-report.md)，就绪报告见 [templates/readiness-report.md](templates/readiness-report.md)。
+`--impl` 报告必须包含 CE 三问；触发 IT 断言完备性检查时必须填写 B4。字段与 A/B/C 类示例见 [templates/verify-report.md](templates/verify-report.md)，就绪报告见 [templates/readiness-report.md](templates/readiness-report.md)。
 
 ## 上下文管理
 
@@ -345,11 +345,8 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 - [ ] **--ui 无设计稿输入时不可运行，必须提示用户提供**
 - [ ] **必须生成验证报告**
 
-- [ ] **IT 断言完备性检查**（盲区 6, P1）：spec 显式提及 IT-XXX 期望 N 类断言时，`--impl --ac` 必须 diff 期望 vs 实际 @Test 数 + 类级断言粒度；不匹配 ⛔ 阻断 DoD ✅。判定/源案例见 [references/impl-completeness-rubric.md](references/impl-completeness-rubric.md)。
-- [ ] **DoD checkbox 粒度约束**（盲区 6）：测试用例部分完成（K/N 类）时 DoD 必须显式标 `[完成 X/Y 类]`，禁止整项 ✅。
-- [ ] **SPI DTO 字段透传完备性 cross-check**（盲区 7, P1）：DTO 字段集变化时必须扫描上游 PO 视觉展示性字段类型集做交叉验证；缺失字段必须 `DEFER:<原因>` + cross-link 前端锚点，否则 ⛔ 阻断 SPI 升级合并。
-- [ ] **task spec "字段透传矩阵"必填项**（盲区 7）：SPI 出参升级 task 必须含 `Upstream PO Field → New DTO Field → Frontend Display Anchor` 三列映射表。
-- [ ] **UI 视觉对齐 review 提前触发**（盲区 7）：SPI 升级影响前端时，`--ui --design` 必须在 DTO 字段定稿前执行（先提取 `visual_anchor_field_set` 再设计 DTO）。
+- [ ] **IT 断言完备性检查**（P1）：spec 显式提及 IT-XXX 期望 N 类断言时，`--impl --ac` 必须 diff 期望 vs 实际测试方法数 + 类级断言粒度；不匹配 ⛔ 阻断 DoD ✅。判定见 [references/impl-completeness-rubric.md](references/impl-completeness-rubric.md)。
+- [ ] **DoD checkbox 粒度约束**：测试用例部分完成（K/N 类）时 DoD 必须显式标 `[完成 X/Y 类]`，禁止整项 ✅。
 
 ### 分级约束
 
