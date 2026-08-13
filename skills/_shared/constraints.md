@@ -8,7 +8,7 @@ related:
   - skills/pipeline/references/layout/*（DevDocs 治理 SSOT）
   - skills/_shared/workspace-mode.md（工作区模式协议正文）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v2
+spec_version: shared-constraints.v3
 ---
 
 # 共享约束 SSOT
@@ -19,6 +19,7 @@ spec_version: shared-constraints.v2
 - `doc/no-immediate-impact`：现有 `skills/*/SKILL.md` 不会因本文创建而自动改变；引用切换是后续独立任务。
 - `doc/reference-over-copy`：已有详细 spec 优先保留在原位置，本文只声明协议层共性与指针。
 - `doc/private-rule-boundary`：skill 私有规则不得提升到共享层；例如 Sprint Contract、verify P 级评分、具体 layout 迁移算法仍归各自 skill 或 references 文件维护。
+- `doc/project-rule-boundary`：**项目实战发现不得提拔为 skill 级默认强制约束**。单项目的语言 / 框架 / 业务域细节（类名、字段名、分层契约、设计稿锚点、该项目的 commit 与编号）一律留在项目侧 `docs/devdocs/patterns/verify-blindspots.md` 等插件位，由消费方 skill 自动加载。判据：**规则的适用域必须 ≥ 它的强制域**——一个只在某语言/某业务成立的规则挂上 ⛔ 全局强制，会让所有不适用的项目误阻断，或迫使 agent 学会无视 ⛔ 标记（后者腐蚀全体系阻断标记的可信度）。skill 侧只保留语言与领域中立的判定 + 一句"插件位会被加载"。与 `doc/private-rule-boundary` 同向：前者管 skill→shared，本条管 project→skill。
 
 ## 1. 门控标记 SSOT
 
@@ -296,6 +297,28 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 - `workspace/code-roots-source`：`shell` 模式下 `code_roots` 必填，元素为 `.gitmodules` 的 submodule **name**；路径与 URL 的唯一真源是 `.gitmodules`，不在 frontmatter 复制。
 - `workspace/orthogonal-to-layout`：本维度与 `docs_layout_version` / `id_scheme` / `traceability_version` **正交**——docs 内部结构不因模式而变，不进 layout 版本矩阵。
 - `workspace/pointer`：字段 schema 见 [layout/layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1；探测、迁移与故障处置见 [layout/workspace-shell.md](../pipeline/references/layout/workspace-shell.md)。
+
+## 11. 作用域匹配（评审边界 ≥ 影响边界）
+
+> 本节是**原则声明 + 人工 review lens**，零新增 status / 标记 / 流程类别 / 执行语义（守 `doc/status-extraction` 四项），强制力等级同 §9。但需诚实标注：本节是本文**第一个规范性（而非现状提取）小节**——它约束未来的门怎么设计，不只是给已有结构命名。
+>
+> **适用范围**：DevDocs 流程 skill（`ms-*`）+ `dev-flow`。独立 skill（`e2e-test-flow` / `prior-art-scan` / `code-quality` / `adversarial-review` 等）不在强制范围内。
+
+与本文件的 SSOT 前提**对偶**：SSOT 约束「事实边界 ≡ 文件边界」（防同一事实散落多处）；本节约束「评审边界 ≥ 影响边界」（防决策被小于其影响的视野判定）。两者合起来是**边界对齐**。
+
+核心命题：
+
+> **局部最优 = 优化的作用域 < 决策的影响域。**
+> 看不到影响域的门，结构上只能产出局部答案——这不是审查者不努力，是输入决定的。
+
+- `scope/gate-coverage`：设计任何门（审查 / 验证 / 确认）时，其**观察范围必须 ≥ 被判定对象的影响范围**。典型违反：只看单任务 diff 却要判定抽象是否正确（影响域=整个模块）；只看 `02` 却要判定设计决策（影响域=`02`+`03`+`04`+代码）。
+- `scope/subtraction-check`：任何"新增"决策须能回答**"从零开始还会不会加它"**。局部优化默认是加法的——每条 finding 都靠"加"来消解，无反向压力即单调增生。
+- `scope/upstream-veto`：每个门必须能把问题**判回上游**，而非就地打补丁。否则上游一经放行即成公理，并被下游每一轮加固。
+- `scope/task-boundary-is-source`：`04-dev-tasks` 的任务边界决定下游每个门能看到多宽，是全流程的**作用域源头**。拆分时须考虑"这样拆会不会让下游的门瞎掉"——拆错则后续所有审查注定局部。
+- `scope/design-time-only`：**本准则约束「门的设计」，不约束「每次执行」**。不要求每个任务重新审视整个架构（那是成本爆炸，也是本准则最易被滥用的方向：「我在做全局优化」可正当化任意范围膨胀）。设计门时让输入覆盖判定范围；执行照旧原子、增量。
+- `scope/not-delivery-granularity`：约束**判断依据**，不改**交付粒度**。仍然每任务原子提交，只是审的时候看全景。
+- `scope/review-lens`：强制力主要来自人工 / agent review lens 三问——(1) 这个门看得到它要判的东西的影响范围吗？(2) 这一轮的"加"，从零开始还会加吗？(3) 问题在上游时，这个门能判回去吗？
+- `scope/no-auto-detection`：**不做**"门 scope vs 影响域"的自动检测——不可 grep，硬做即以增生治增生。同 §9 `layered-memory/no-auto-detection` 结论。
 
 ## 差异点与跳过项
 
