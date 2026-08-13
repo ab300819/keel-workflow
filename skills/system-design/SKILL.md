@@ -273,6 +273,13 @@ docs/devdocs/
 
 详细模板参见 [templates/design-template.md](templates/design-template.md)。
 
+### 信息组织
+
+撰写与增量更新设计文档时遵循 [doc-organization](../doc-organization/SKILL.md) 的五条原则。与本 skill 关系最紧的两条：
+
+- **变更理由归入 ADR 章节，不留在正文引言**——引言放修订记录会让"当前设计是什么"在同一文档内出现两个答案（正文旧说法与修订记录新结论并存）
+- **模块编号（`M1` / `M2` …）与 `ADR-NNN` 首次出现即说明所指**——被否决的模块尤其容易只留下名字（"删除 M3"）而从未定义，事后无法补
+
 ## 设计原则
 
 ### MTE 原则

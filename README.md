@@ -4,7 +4,7 @@
 
 兼容 **Claude Code**、**Codex CLI**、**OpenCode** 等遵循 [Agent Skills](https://agentskills.io) 开放标准的工具。
 
-> 共 36 个 skill，分两类：`ms-` 前缀 = DevDocs 文档驱动流程（需求→设计→测试→开发→验证全链路）；非 `ms-` = 独立工具（代码质量、测试、通用开发流程等）。
+> 共 37 个 skill，分两类：`ms-` 前缀 = DevDocs 文档驱动流程（需求→设计→测试→开发→验证全链路）；非 `ms-` = 独立工具（代码质量、测试、通用开发流程等）。
 
 ---
 
@@ -110,6 +110,7 @@ git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-s
 | JetBrains MCP 操作 | `/idea-mcp-workflow` | 通过 `idea` MCP 编译/调试/查库的决策与踩坑（projectPath 纪律、build 输出防爆、依赖 vs bug、Maven reload 提示） |
 | E2E 实测 | `/e2e-test-flow` | 已有用例文档 → 对运行中系统黑盒实测（接口+UI，只读观测 DB），产出 HTML 评审面板 |
 | Markdown 规范 | `/markdown-style` | 标记与排版审查（markdownlint + GB/T 15834 中文排版 + LLM 排版毛病），只报告不改语意 |
+| 文档信息组织 | `/doc-organization` | 五条指导原则：当前状态与变更历史分离、编号先定义、引言职责、结论单一出处、写给缺上下文的读者 |
 | UI 调度 / 自描述 / 记忆 / 报告 | `/ui-orchestrator` / `/code-self-describe` / `/agent-memory` / `/work-report` | 专项工具 |
 
 > `commit-convention`、`git-safety`、`iteration-policy` 由其他 skill 自动调用，不需用户直接运行。
