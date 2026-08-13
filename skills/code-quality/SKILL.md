@@ -31,7 +31,9 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## 核心阈值表
 
-**全仓唯一权威阈值源**。谓词语义统一：**≤ 建议值 = 合规；> 建议值且 ≤ 最大值 = [Suggestion]；> 最大值 = [Blocker]**；无建议值的指标（重复代码 / 单类行数）只有两档——≤ 最大值 = 合规，> 最大值 = [Blocker]。镜像处（如 dev-workflow verification-flow Phase 1）须标注"摘录自本表，变更需同 commit 同步"。
+**全仓唯一权威阈值源**。谓词语义统一：**≤ 建议值 = 合规；> 建议值且 ≤ 最大值 = [Suggestion]；> 最大值 = [Blocker]**；无建议值的指标（重复代码 / 单类行数）只有两档——≤ 最大值 = 合规，> 最大值 = [Blocker]。**镜像边界**：agent 侧 references / SKILL 一律**改指针不镜像**（已迁移：dev-workflow verification-flow Phase 1、本 skill refactor-signals.md）；仅**用户侧产物模板**（会复制进用户项目，届时本 skill 不在场）允许内联数字，且须标注"摘录自本表，变更需同 commit 同步"。
+>
+> 待迁移（本表的已知 agent 侧镜像，未清）：`refactor/SKILL.md:126-132`——非纯镜像，含该 skill 私有的 `> 2× 最大值 → P0` 优先级映射，需连带重写故单独处理。
 
 | 指标 | 建议值 | 最大值 | 超最大值的重构方向 |
 |------|-------:|-------:|--------------------|

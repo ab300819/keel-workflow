@@ -51,7 +51,9 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 ### 核心阈值表
 
-**全仓唯一权威测试质量阈值源**。谓词语义与 [`/code-quality` 核心阈值表](../code-quality/SKILL.md#核心阈值表) 同构：**≥ 达标值 = 合规；≥ 最低值且 < 达标值 = [Suggestion]；< 最低值 = [Blocker]**。镜像处（如 dev-workflow verification-flow Phase 2、ms-test-cases 模板）须标注"摘录自本表，变更需同 commit 同步"。
+**全仓唯一权威测试质量阈值源**。谓词语义与 [`/code-quality` 核心阈值表](../code-quality/SKILL.md#核心阈值表) 同构：**≥ 达标值 = 合规；≥ 最低值且 < 达标值 = [Suggestion]；< 最低值 = [Blocker]**。**镜像边界**：agent 侧 references / SKILL 一律**改指针不镜像**（已迁移：dev-workflow verification-flow Phase 2、ms-test-cases SKILL.md 覆盖率要求）；仅**用户侧产物模板**（如 ms-test-cases 的 test-cases / unit-test 模板，会复制进用户项目，届时本 skill 不在场）允许内联数字，且须标注"摘录自本表，变更需同 commit 同步"。
+>
+> 待迁移（本表的已知 agent 侧镜像，未清）：`refactor/SKILL.md:216-220,250-252,271-272,281,359`（测试状态分类以 ≥80% 定义"充分/不足"，需连带重写状态机口径）、`onboard/SKILL.md:247`。
 
 | 指标 | 达标值 | 最低值 | 适用 |
 |------|-------:|-------:|------|

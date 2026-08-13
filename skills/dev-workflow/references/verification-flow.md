@@ -35,86 +35,13 @@
 
 ### 审查清单
 
-> 数字阈值摘录自 [`/code-quality` 核心阈值表](../../code-quality/SKILL.md#核心阈值表)，变更需同 commit 同步。
+> **清单与报告格式的权威在 [`/code-quality` review-rubric](../../code-quality/references/review-rubric.md)**（M/T/E + 设计原则 + 错误处理 + 安全检查 + 输出格式）；数字阈值以 [核心阈值表](../../code-quality/SKILL.md#核心阈值表) 为准；注释 / 命名 / 日志的黑名单以 [`/code-quality`](../../code-quality/SKILL.md) 对应规范节为准。**本文件不再镜像上游条目与数字**（守 `doc/reference-over-copy`；原镜像的同步义务无强制手段，见 AGENTS.md 记录的 health-lint 镜像 rule deferred）。
 
-#### M - 可维护性
+dev-workflow 私有的执行差异（**仅此三条不在上游**，Phase 1 执行时叠加）：
 
-- [ ] 函数职责单一（一个函数只做一件事）
-- [ ] 函数长度 ≤ 50 行
-- [ ] 参数数量 ≤ 5 个（超过使用参数对象）
-- [ ] 嵌套深度 ≤ 3 层（使用早返回减少嵌套）
-- [ ] 无重复代码（Rule of Three: ≤3 处合规，第 3 处建议提取、不阻塞；>3 处未提取 = Blocker；<3 禁止提前抽象）
-
-#### T - 可测试性
-
-- [ ] 依赖可注入（不硬编码依赖）
-- [ ] 纯函数优先（相同输入相同输出）
-- [ ] 业务逻辑与 IO 分离
-
-#### E - 可扩展性
-
-- [ ] 不为假设需求设计（YAGNI）
-- [ ] 接口抽象合理（不过度抽象）
-- [ ] 只有 1 个实现时不创建接口（例外：跨模块边界 / 外部依赖 / 可测试性边界可先建接口）
-
-#### 安全检查
-
-- [ ] 无 SQL 注入风险
-- [ ] 无 XSS 风险
-- [ ] 敏感数据正确处理（不 log 密码、Token 等）
-- [ ] 错误信息不泄露内部实现细节
-
-#### 注释卫生（依据 [`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)，仅审本次 diff 新增/修改的注释）
-
-- [ ] 无变更日志式注释（描述本轮变更过程而非代码当前状态；按语义判定）
-- [ ] 无对审查者说话的注释（"此处已修复""按要求处理"）
-- [ ] 无来源记录式注释（"来自 UT-XX/AC-XX/后置条件"；过程来源归 traceability.yml）
-- [ ] 无复述代码的注释、无注释掉的代码、无残留骨架脚手架（TODO / Not implemented）
-- [ ] 注释与代码当前语义一致（改代码须同步更新受影响注释）
-
-#### 命名卫生（依据 [`/code-quality` 命名规范](../../code-quality/SKILL.md#命名规范)，仅审本次 diff 新增/修改标识符）
-
-- [ ] 无误导名（名实不符：`is*` 返回非布尔、`get*` 带副作用、`xxxList` 非 List）
-- [ ] 无泛化名作完整名（`data/info/temp/result/obj/item/thing/flag/val`；局部惯用语除外）
-- [ ] 无同概念多名漂移（引入新名词前先 grep 项目既有词表）、无类型编码/不可发音自造缩写
-
-#### 日志卫生（依据 [`/code-quality` 日志规范](../../code-quality/SKILL.md#日志规范)，仅审本次 diff 新增/修改的日志）
-
-- [ ] 无安全红线泄露（密码/token/密钥/PII/支付·银行·医疗/原始 SQL·请求响应体等，**完整禁入清单以 [`/code-quality` 日志规范](../../code-quality/SKILL.md#日志规范)为准**）→ 命中即 Blocker
-- [ ] 无 log-and-throw（逐层 log 再抛造重复堆栈）、无吞异常只 log
-- [ ] 级别正确（ERROR=当前动作失败 / WARN=异常但已处理 / INFO=低频长期价值 / DEBUG·TRACE=默认关闭）
-- [ ] 含最小上下文（event + result + 关联 id + 组件 + 安全主对象 id；失败另加 error_code/异常类型 + 原因）；无 `here`/`step1` 占位日志；不把推测写成事实
-
-#### 错误处理（依据 [`/code-quality` 错误处理节](../../code-quality/SKILL.md#错误处理编码级)，仅审本次 diff 新增/修改）
-
-- [ ] 不吞异常（空 catch / 仅 log 后照常继续 → Blocker）；异常转换只在边界一次并保留 cause（丢 cause → Blocker）
-- [ ] 错误有语义（类型化错误/错误码，非裸字符串或布尔）；外部输入 / 不变量违反在边界 fail-fast
-- [ ] 对外错误不泄露堆栈 / SQL / 内部路径 / 实现细节（→ Blocker）
-
-### Phase 1 输出格式
-
-```markdown
-## Phase 1: 代码质量审查报告
-
-**审查角色**: 代码审查员 (基于 /code-quality MTE 原则)
-
-### 🚫 Blocker
-
-| # | 文件:行号 | 问题 | 说明 |
-|---|----------|------|------|
-| 1 | `src/x.ts:45` | 函数过长 (87行) | 拆分为多个职责单一的函数 |
-
-### 💡 Suggestion
-
-| # | 文件:行号 | 问题 | 说明 |
-|---|----------|------|------|
-| 1 | `src/x.ts:12` | 4个参数 | 建议使用参数对象 |
-
-### ✅ 良好实践
-
-- 依赖注入使用正确
-- 命名清晰准确
-```
+- `review/diff-only`：注释 / 命名 / 日志 / 错误处理四类**仅审本次 diff 新增或修改**的部分；M/T/E、设计原则、安全检查审全量受影响面。
+- `review/legacy-suggestion`：本次未触碰的存量坏注释 / 坏命名 → 降为 Suggestion，不阻塞提交。
+- `review/security-no-tier`：日志命中安全红线、注入 / XSS / 越权**不分档**，命中即 Blocker（不套用阈值三档谓词）。
 
 ---
 
@@ -126,35 +53,12 @@
 
 ### 审查清单
 
-> 数字阈值摘录自 [`/testing-guide` 核心阈值表](../../testing-guide/SKILL.md#核心阈值表)，变更需同 commit 同步。
+> **清单权威在 [`/testing-guide` 单元测试约束](../../testing-guide/SKILL.md#单元测试约束)**（断言质量 / Mock 质量 / 追溯标注 / 分支覆盖分析）；覆盖率与断言阈值以 [核心阈值表](../../testing-guide/SKILL.md#核心阈值表) 为准。**本文件不再镜像**（理由同 Phase 1）。
 
-#### 覆盖率
+dev-workflow 私有的执行差异：
 
-- [ ] 行覆盖率 ≥ 80%
-- [ ] 分支覆盖率 ≥ 80%
-
-#### 断言质量
-
-- [ ] 每个测试有 ≥1 个具体断言
-- [ ] 无弱断言作为唯一断言（toBeDefined, toBeTruthy, not.toBeNull）
-- [ ] 测试名称描述预期行为
-
-#### 需求追溯
-
-- [ ] 每个 AC 有对应测试
-- [ ] 测试代码有 @verifies 标注
-- [ ] 测试代码有 @testcase 标注
-
-#### Mock 质量
-
-- [ ] 只 Mock 外部依赖，不 Mock 内部实现
-- [ ] Mock 验证了调用参数
-- [ ] 无过度 Mock
-
-#### [可选] 代码分支覆盖分析
-
-- [ ] 代码分支已分析
-- [ ] 未覆盖分支已生成 BCA 补充测试
+- `review/ac-coverage`：每个 AC 必须有对应测试——这是 DevDocs 追溯要求，非 testing-guide 的覆盖率阈值，缺失即 Blocker 且不可用覆盖率达标抵消。
+- 追溯标注 `@verifies` / `@testcase` 属 layout.v1 legacy，v2 起改读 `traceability.yml`（见 testing-guide 文首标注）。
 
 ### Phase 2 输出格式
 
@@ -362,42 +266,21 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 
 ## Blocker 判定标准
 
-### 代码质量 Blocker
+> **逐指标判定由上游阈值 + 上游谓词机械推导，本文件不再镜像**：
+> - 代码质量 → [`/code-quality` 核心阈值表](../../code-quality/SKILL.md#核心阈值表)，谓词「≤ 建议值合规 / > 建议值且 ≤ 最大值 → Suggestion / > 最大值 → Blocker；无建议值的指标只有合规 / Blocker 两档」
+> - 测试完备 → [`/testing-guide` 核心阈值表](../../testing-guide/SKILL.md#核心阈值表)，谓词「≥ 达标值合规 / ≥ 最低值且 < 达标值 → Suggestion / < 最低值 → Blocker」
+>
+> 两张上游表均自带谓词语义，原本文件的 20 行判定表每一行都可由此推出，无独立信息。**反馈分级元语义**（Blocker/Suggestion/Question/Nice 的含义与处置要求）以 [`/code-quality` 反馈分级表](../../code-quality/SKILL.md) 为权威。
 
-> 阈值摘录自 [`/code-quality` 核心阈值表](../../code-quality/SKILL.md#核心阈值表)（谓词统一：≤ 建议值合规；> 建议值且 ≤ 最大值 → Suggestion；> 最大值 → Blocker；无建议值的指标 ≤ 最大值合规 / > 最大值 Blocker），变更需同 commit 同步。
+dev-workflow 私有判定（**不可从上游推导**，故保留）：
 
-| 问题 | 阈值 | Blocker 判定 | 依据 |
-|------|------|-------------|------|
-| 函数长度 | > 50 行 | 🚫 Blocker | /code-quality 最大 50 行 |
-| 函数长度 | > 30 且 ≤ 50 行 | 💡 Suggestion | /code-quality 建议 30 行 |
-| 参数数量 | > 5 个 | 🚫 Blocker | /code-quality 最大 5 个 |
-| 参数数量 | > 3 且 ≤ 5 个 | 💡 Suggestion | /code-quality 建议 3 个 |
-| 嵌套深度 | > 3 层 | 🚫 Blocker | /code-quality 最大 3 层 |
-| 嵌套深度 | > 2 且 ≤ 3 层 | 💡 Suggestion | /code-quality 建议 2 层 |
-| 重复代码 | > 3 处相同 | 🚫 Blocker | /code-quality Rule of Three |
-| 单类/单文件行数 | > 500 行 | 🚫 Blocker | /code-quality 最大 500 行（上帝类） |
-| 安全漏洞 | 任何 | 🚫 Blocker | — |
-| 黑名单注释（变更日志式/对审查者说话/来源记录式等） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 注释规范 |
-| 注释与代码语义不符 | 本次 diff 涉及 | 🚫 Blocker | /code-quality 注释规范 |
-| 黑名单命名（误导名/泛化名/同概念漂移/类型编码） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 命名规范 |
-| 日志命中安全红线（密码/token/PII/支付等入日志） | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 日志规范 |
-| log-and-throw 重复堆栈 / 吞异常只 log / 把推测写成事实 | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 日志规范 |
-| 日志级别误用 / 上下文不足 / 占位日志（here·step1） | 本次 diff 新增/修改 | 💡 Suggestion | /code-quality 日志规范 |
-| 错误吞异常 / 丢 cause / 对外泄露内部 | 本次 diff 新增/修改 | 🚫 Blocker | /code-quality 错误处理 |
-| 错误无语义（裸字符串/布尔）/ 边界未 fail-fast | 本次 diff 新增/修改 | 💡 Suggestion | /code-quality 错误处理 |
-| 存量坏注释/坏命名（本次未触碰）、public API 缺契约注释 | 任何 | 💡 Suggestion | /code-quality 注释/命名规范 |
-
-### 测试完备 Blocker
-
-> 阈值摘录自 [`/testing-guide` 核心阈值表](../../testing-guide/SKILL.md#核心阈值表)（谓词统一：≥ 达标值合规；≥ 最低值且 < 达标值 → Suggestion；< 最低值 → Blocker），变更需同 commit 同步。
-
-| 问题 | 阈值 | Blocker 判定 |
-|------|------|-------------|
-| 弱断言 | 作为唯一断言 | 🚫 Blocker |
-| 覆盖率 | < 60% | 🚫 Blocker |
-| 覆盖率 | ≥ 60% 且 < 80% | 💡 Suggestion |
-| AC 无对应测试 | 任何 | 🚫 Blocker |
-| 缺少 @verifies 标注 | 核心逻辑 | 🚫 Blocker |
+| 情形 | 判定 | 为什么不能从上游推出 |
+|------|------|---------------------|
+| 安全漏洞 / 日志命中安全红线 / 注入·XSS·越权 | 🚫 Blocker（**不分档**） | 安全维度不套用阈值三档谓词 |
+| 黑名单注释 / 命名，**本次 diff 新增或修改** | 🚫 Blocker | 上游无 diff 范围概念，见 `review/diff-only` |
+| 黑名单注释 / 命名，**本次未触碰的存量**；public API 缺契约注释 | 💡 Suggestion | 同上，见 `review/legacy-suggestion` |
+| AC 无对应测试 | 🚫 Blocker | DevDocs 追溯要求，非覆盖率阈值，不可用覆盖率达标抵消 |
+| 缺 `@verifies` 标注（核心逻辑） | 🚫 Blocker | 同上（layout.v1 legacy 追溯机制） |
 
 ---
 
