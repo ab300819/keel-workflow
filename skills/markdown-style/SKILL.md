@@ -1,6 +1,6 @@
 ---
 name: markdown-style
-description: 审查 Markdown 文档(尤其 LLM 输出)的标记与排版规范:markdownlint 标记检查 + 中文排版检查(GB/T 15834 与中文文案排版指北)+ LLM 排版毛病检查。只碰排版与标记,不改原文语意;全部只报告,修改经确认后走哈希校验事务。Triggers on "/markdown-style", "markdown 规范", "排版检查", "markdownlint", "中英文空格", "文档格式检查", "规范文档". NOT for 文风与语言润色(长句/被动语态/的地得)、代码规范检查(用 code-quality)、提交信息规范(用 commit-convention)。
+description: 审查 Markdown 文档(尤其 LLM 输出)的标记与排版规范:markdownlint 标记检查 + 中文排版检查(GB/T 15834 与中文文案排版指北)+ LLM 排版毛病检查。只碰排版与标记,不改原文语意;全部只报告,修改经确认后走哈希校验事务。Triggers on "/markdown-style", "markdown 规范", "排版检查", "markdownlint", "中英文空格", "文档格式检查", "规范文档". NOT for 文档信息组织(流水账/编号无定义/引言过长/黑话,用 doc-organization)、文风与语言润色(长句/被动语态/的地得)、代码规范检查(用 code-quality)、提交信息规范(用 commit-convention)。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, TodoWrite
 metadata:
   patterns: [tool-wrapper, checklist]
@@ -30,6 +30,7 @@ user-invocable: true
 
 | 需求 | 去处 |
 |---|---|
+| 信息组织：流水账、编号只用不定义、引言过长、黑话、同一结论散布多处 | `doc-organization`（管信息放哪里；本 skill 只管用什么标记） |
 | 文风与语言润色（长句、被动语态、的地得、套话） | 不在本 skill 范围内，属语意改写（见「边界原则」）；需要时另做 `writing-review` |
 | 代码规范、命名、注释、日志 | `code-quality` |
 | 提交信息格式 | `commit-convention` |
