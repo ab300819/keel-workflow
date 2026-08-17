@@ -143,7 +143,7 @@ docs/devdocs/
 
 ## 任务分层
 
-根据任务类型分层；层级是风险输入之一，**执行强度由 `review_profile` 决定**（S1~S11 完整矩阵见 ms-dev-workflow execution-flow）：
+根据任务类型分层。层级**仅作风险输入之一**——实际 `review_profile` 按下方[风险分类器](#review_profile-初始提议风险分类器)组合信号确定，执行强度由 `review_profile` 决定（S1~S11 完整矩阵见 ms-dev-workflow execution-flow）：
 
 | 层级 | 标签 | 建议初始 review_profile | 说明 |
 |------|------|------------------------|------|
@@ -151,8 +151,6 @@ docs/devdocs/
 | **接口层** (Controller/API) | 🟡 | guarded | 建议测试先行 |
 | **UI 层** (Component/View) | 🟢 | fast / guarded | 可实现后补；有跨模块契约时升 guarded |
 | **基础设施** (DB/Config) | ⚪ | fast（仅非运行时·非安全）/ audit（schema 迁移/部署） | 集成测试验证 |
-
-> 层级标签 🔴🟡🟢⚪ 仅作分类输入；实际 review_profile 按上方[风险分类器](#review_profile-初始提议风险分类器)组合信号确定。
 
 ### review_profile 初始提议(风险分类器)
 
@@ -162,7 +160,7 @@ docs/devdocs/
 - **guarded** 信号(任一):有分支的新行为、公开/对外接口、跨模块契约、行为边界不清的新测试。
 - **fast**(默认):配置(仅非运行时·非安全·非部署)、文案、样式、有覆盖的内部重构、文档、无下游叶子。
 - 组合规则:命中 ≥2 个 guarded 信号 或 预估 diff > 150 行/触及 > 5 文件 → 升 audit。
-- 治理:不确定默认 guarded;层级标签 🔴🟡🟢⚪ 仅作输入之一。
+- 治理:不确定时默认 guarded。
 
 ## 设计稿关联
 
@@ -228,8 +226,6 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 自检不通过项自动修复后再呈现用户，不增加用户交互步骤。
 
 ### 分层约束
-
-> 层级 🔴🟡🟢⚪ 为**风险输入**，执行强度由 `review_profile` 决定；S1~S11 完整强制程度见 ms-dev-workflow execution-flow 矩阵。
 
 - [ ] **核心逻辑任务标记 🔴**；`audit` 档（通常来自 🔴/高风险信号组合）走完整独立审查（红→绿→重构）；`guarded` 档走推荐独立审查
 - [ ] **接口层任务标记 🟡**；通常提议 `guarded`，含推荐 TDD 执行步骤（红→绿）

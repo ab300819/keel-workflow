@@ -213,7 +213,7 @@ spec_version_notes: |
 
 ### 分层 TDD 约束
 
-- [ ] **所有任务遵循统一执行流程（S1~S11 + S1.5 Contract；S12 为 Commit 2 后置同步）**（层级标记仅作风险输入）
+- [ ] **所有任务遵循统一执行流程（S1~S11 + S1.5 Contract；S12 为 Commit 2 后置同步）**
 - [ ] **audit/guarded 任务强制 test-first**（双 Agent 红绿 + 测试冻结）；**质量地板 5 条所有 profile 恒定**
 - [ ] **各 review_profile 的 S1~S11 强制程度见 [execution-flow.md](references/execution-flow.md) 矩阵；层级标签仅作风险输入**
 - [ ] **Test Agent 先写测试，Impl Agent 后写实现**（物理隔离）
