@@ -392,6 +392,8 @@ Phase B：扫描引用 + 范围编号展开
 
 **判据**：对每个路径跑 `git submodule status`，按首字符分派；命中 `+`（有漂移）再用 `git -C <path> merge-base --is-ancestor <recorded> <actual>`（及反向）判祖先关系区分成因：
 
+> ⛔ **进入祖先关系判定前必须先做显式相等门**：`recorded == actual` → 直接 pass，不进 is-ancestor 分支。理由：`git merge-base --is-ancestor X X` 退出码为 0（commit 是自己的祖先），所以一旦首字符分派没命中（解析写错、或实现跳过该步），正常的一致情形会被误判为「漏 bump」假阳性。首字符是 `git submodule status` 输出的**前导空格**，从文本里抠它容易出错（实测踩点：BSD `od -c` 把空格渲染成字面空格、GNU 渲染成 `sp`，据此写的解析在两平台行为不同）。加这道门后判定与首字符解析方式无关。
+
 | 首字符 | 成因 | 严重度 |
 |---|---|---|
 | ` `（空格）| 一致 | pass |
