@@ -48,6 +48,7 @@ devdocs:
 - 「必须是 git 子模块」这条校验由构造保证，不用单独判
 
 - `workspace/code-roots-source`：`shell` 模式下 `code_roots` 必填，元素为 `.gitmodules` 的 submodule **name**，不是路径；路径与 URL 的唯一真源是 `.gitmodules`，不在 frontmatter 复制，运行时经 `git config -f .gitmodules submodule.<name>.path` 解析。
+- `workspace/no-nested-submodules`：**嵌套子模块（vendor / 依赖项）不在 `code_roots` 语义内，`workspace-mode.v1` 不处理。** `code_roots` 只认外壳仓自身 `.gitmodules` 里的一层；code_root 内部再嵌套的子模块属依赖项、不在工作面上，其 gitlink 条目在 code_root 层扫描中按普通「不相关变更」呈现（即 §7.2 判据不认它是 gitlink，§7.3 的 stash 禁令不覆盖它）。这是**有意缺位而非缺口**：依赖项的正确答案本就是「忽略」，三选一里有一项（stash）对它是空操作，属可接受的表面瑕疵。不扩展 §7.2 判据、不做嵌套深度遍历、不为此新增 health rule。
 
 ## 3. 校验规则（fail-closed）
 
@@ -148,9 +149,13 @@ $ git status --porcelain=2        # 更细粒度格式能看出区别，但工�
 
 `--porcelain=2` 的 `S..U` 标志位能区分「指针未变、纯工作区脏」，但工作区洁净检查依赖的 v1 格式不暴露这个区分——这正是排除规则存在的原因。
 
+> ⚠️ **本节所有输出均为 `git status --porcelain`（v1），不可与 `git status --short` 混用。** 同一仓、无 git 别名、无 `status.*` 配置下实测（`od -c` 核过原始字节）：`--short` 得 ` ? chiaki-ng`，`--porcelain` 得 ` M chiaki-ng`。§7.2 判据是状态位无关的，两种格式下都成立，但上文「无法仅凭这一行文本区分指针漂移与工作区脏冒泡」的断言**只对 `--porcelain` 成立**——`--short` 的 ` ?` 会漏出「仅 untracked 内容」这一信号，不可依赖它做判定。复现本节实测块请用 `--porcelain`。
+
 ### 7.2 判据：识别 gitlink 条目
 
 外壳仓 `git status --porcelain` 输出中，**条目路径恰好等于某个 code_root 解析出的 path**（`git config -f .gitmodules submodule.<name>.path` 的结果）→ 判定为 gitlink 条目，无论其状态标记是 `M`/`??`/`AM` 等。
+
+判据刻意只认 code_root 一层：code_root **内部**再嵌套的子模块（如 `chiaki-ng/third-party/curl`）不适用本判据，属有意缺位，见 §2 `workspace/no-nested-submodules`。
 
 ### 7.3 排除规则
 
