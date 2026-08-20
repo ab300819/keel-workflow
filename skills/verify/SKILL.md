@@ -402,8 +402,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | 状态 | 含义 | verify 处理 |
 |------|------|-------------|
 | `EXT_REVIEWED` | T1 codex CLI 或 T2 codex-mcp 成功且无 blocker | 可继续后续同步/沉淀 |
-| `EXT_PENDING` | audit 任务经 `--skip-external-review-reason` **主动跳过**外审后待补跑的**阻塞态**（≠ fast/guarded 的延后审查） | 阻塞;须补跑外审达 `EXT_REVIEWED` |
-| `review_pending` | fast/guarded 任务独立审查**延后**(非阻塞,已 Commit 1) | 由 `--review-drain` 集中清审转 `已完成`（不复用 `EXT_PENDING`） |
+| `review_pending` | fast/guarded 任务独立审查**延后**(非阻塞,已 Commit 1) | 由 `--review-drain` 集中清审转 `已完成` |
 | `EXT_UNRESOLVED` | T1/T2 全失败或环境不可用 | 标为 P2 环境风险，提示补跑外审 |
 | `EXT_BLOCKED` | 外审发现未解除 blocker | 保持阻塞，修复后重跑 `--impl` + 外审 |
 

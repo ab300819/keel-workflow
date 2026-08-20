@@ -11,7 +11,7 @@
 1. **Phase 1~3（内置角色演绎）**：编排器切换到不同视角（/code-quality / /testing-guide / ui-quality-checklist），在**同进程**内审查。成本低、响应快，但本质仍是"同一个 agent 切视角自审"。
 2. **Phase 4（外部独立审查）**：调用**不同进程、不同模型**的外部审查者（codex CLI / codex-mcp），对 git diff 做真正的第三方审查。成本较高但独立性强，audit 默认 inline 触发；fast/guarded 延后到 `/ms-verify --review-drain`。
 
-两类机制并行运行、各自判定：Phase 1~3 产出 `INT_*` canonical state（`INT_REVIEWED` / `INT_PENDING` 等），Phase 4 产出 `EXT_*` canonical state（见下方真值表）。**进入 Commit 1 的放行条件按 review_profile 分**：**audit** 任务需 `INT_*` 与 `EXT_*` 同时为"放行态"才能 Commit 1（独立审查 inline）；**fast/guarded** 任务独立审查延后,Commit 1 不等 INT/EXT 放行,提交后落 `review_pending`,经 `/ms-verify --review-drain` 通过才转 `已完成`（质量地板与 `/ms-verify --impl` 前置验证仍 inline 阻塞,不在延后范围）。
+两类机制并行运行、各自判定：Phase 1~3 产出 `INT_*` canonical state（`INT_REVIEWED` / `INT_UNRESOLVED`），Phase 4 产出 `EXT_*` canonical state（见下方真值表）。**进入 Commit 1 的放行条件按 review_profile 分**：**audit** 任务需 `INT_*` 与 `EXT_*` 同时为"放行态"才能 Commit 1（独立审查 inline）；**fast/guarded** 任务独立审查延后,Commit 1 不等 INT/EXT 放行,提交后落 `review_pending`,经 `/ms-verify --review-drain` 通过才转 `已完成`（质量地板与 `/ms-verify --impl` 前置验证仍 inline 阻塞,不在延后范围）。
 
 ### 核心原则
 
@@ -181,13 +181,11 @@ S8 AC 完备性表 / 类型×证据矩阵 / 声称-vs-diff 交叉验证已是所
 
 详细 AC 类型分类、证据矩阵、可复核判据见 [本文件 §AC 完备性](#ac-完备性s8-权威定义)（S8 权威定义）；强制性约束见 [SKILL.md §完成检查约束](../SKILL.md#完成检查约束)。
 
-### 最低发现数门槛
+### 发现数：无下限
 
-对抗式审查**至少报告 3 个发现**（问题或确认项），防止走过场式审查：
+**允许 0 发现**，但须给出一句可复核判据说明为何无发现（例：本次 diff 仅 3 行配置变更，无新增分支与外部调用）。
 
-- 如实际问题不足 3 个，用 ✅ 确认项补齐（如"依赖注入使用正确"、"命名清晰"）
-- 若审查后发现数 < 3，审查员必须说明为什么代码质量高到只有不足 3 个发现点
-- 目的不是凑数，而是**确保审查过程认真执行**
+> 不设最低发现数门槛。门槛本身即凑数激励——凑出的 ✅ 确认项挤占注意力，凑出的 Suggestion 会被修成 accretion（单向增生）。审查是否认真执行由判据可复核性保证，不由发现数量保证。
 
 ### 三种解决路径分类
 
@@ -195,13 +193,13 @@ S8 AC 完备性表 / 类型×证据矩阵 / 声称-vs-diff 交叉验证已是所
 
 | 路径 | 标记 | 含义 | 处理方式 |
 |------|------|------|----------|
-| 自动修复 | 🔧 | Agent 可直接修复 | 立即修复，修复后重新验证 |
+| 自动修复 | 🔧 | Agent 可直接修复 | 立即修复，修复后重新验证。**修复动作可以是删除或合并，不限于新增** |
 | 行动项 | 📋 | 需记录待修，不阻塞当前任务 | 记录到 insights 或后续任务 |
 | 详细解释 | 💬 | 非问题，但需说明理由 | 在报告中补充解释 |
 
 **分类规则**：
 
-- Blocker 只能是 🔧（必须当场修复）
+- Blocker 只能是 🔧（必须当场修复；用删除消解也算 🔧）
 - Suggestion 可以是 🔧、📋 或 💬
 - ✅ 确认项固定为 💬
 
@@ -210,13 +208,15 @@ S8 AC 完备性表 / 类型×证据矩阵 / 声称-vs-diff 交叉验证已是所
 Phase 3 综合报告在标准章节外追加 "发现汇总"：
 
 ```markdown
-## 发现汇总（≥ 3 项）
+## 发现汇总
 
 | # | 发现 | 分级 | 路径 | 说明 |
 |---|------|------|------|------|
 | 1 | AC-002 无实际变更 | 🚫 Blocker | 🔧 自动修复 | 需补充实现 |
-| 2 | utils.ts 未关联 AC | 💡 Suggestion | 📋 行动项 | 记录为技术债 |
-| 3 | 依赖注入使用正确 | ✅ 确认 | 💬 解释 | 构造函数注入，符合 MTE |
+| 2 | 重复的入参校验（与 validator.ts 同逻辑） | 🚫 Blocker | 🔧 删除 | 删除本处，改调用既有 validator |
+| 3 | utils.ts 未关联 AC | 💡 Suggestion | 📋 行动项 | 记录为技术债 |
+
+<!-- 无发现时：写「本轮无发现」+ 一句可复核判据，不得用 ✅ 确认项凑数 -->
 ```
 
 > 注：声称 vs 实际验证表已前移到 S8（约束见 [SKILL.md §完成检查约束](../SKILL.md#完成检查约束)，表模板见 [§AC 完备性](#ac-完备性s8-权威定义)），Phase 3 直接引用 S8 产出，不再重复生成。
@@ -299,9 +299,9 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 ```
 ┌─ Phase 4 调度器（dev-workflow 编排器内置） ─────────────────┐
 │                                                            │
-│  1. 准备 brief：自动生成，包含任务 AC / Phase 1~3 综合报告 │
-│     / 本任务 git diff（注意：不要暴露 Phase 1~3 的结论，   │
-│     避免污染外部审查者视角）                                │
+│  1. 准备 brief：任务 AC / Phase 1~3 综合报告 / 本任务 diff │
+│     （diff 源按触发模式分离，见下方「diff 源」小节）        │
+│     注意：不要暴露 Phase 1~3 的结论，避免污染外审视角      │
 │                                                            │
 │  2. T1 codex CLI（首选）                                   │
 │     └── codex exec --sandbox read-only \                   │
@@ -312,7 +312,8 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 │                                                            │
 │  3. T2 codex-mcp（T1 失败时）                              │
 │     └── mcp__codex-mcp__review-code \                      │
-│             { prompt: "<brief>", uncommitted: true }       │
+│             inline: { prompt, uncommitted: true }          │
+│             drain : { prompt } + 显式 diff 内容/commit 范围│
 │         retry 轮询 → yaml-summary                          │
 │                                                            │
 │  4. 收敛循环（自动，无 AskUserQuestion）                   │
@@ -334,6 +335,25 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 └────────────────────────────────────────────────────────────┘
 ```
 
+### diff 源（按触发模式分离）
+
+Phase 4 有两条触发路径，**工作区 diff 只对其中一条有效**：
+
+| 触发模式 | 发生时点 | diff 源 |
+|---------|---------|--------|
+| **inline**（audit） | Commit 1 **之前** | 工作区 diff（`uncommitted: true`）——此时工作区改动即本任务改动 |
+| **drain**（fast/guarded，经 `/ms-verify --review-drain`） | Commit 1 **之后** | **该任务 Commit 1 的提交 diff** |
+
+> ⛔ **drain 路径禁止使用工作区 diff**。Commit 1 已落盘时工作区为空，沿用 `uncommitted: true` 会让外审收到**空 diff**（即"审了但什么都没看到"）。
+
+drain 侧定位规则（不新增状态，全部复用已有 trailer）：
+
+1. 用 Commit 1 的 `Review-Batch-Id: <id>` trailer + 提交标题中的任务编号（`<type>(T-XX): ...`）定位该任务 Commit 1 的 SHA。
+2. 外审输入 = 该 Commit 1 的 diff。**Commit 2 是纯文档提交，不入外审输入。**
+3. T2 通道 drain 侧须传入显式 diff 内容或 commit 范围（契约见 [external-reviewer-integration.md](../../adversarial-review/references/external-reviewer-integration.md)）。
+4. **`workspace_mode: shell`**：Commit 1 按 `code_root` 拆成 N 个子模块 commit（见 [workspace-mode.md N+1 仓提交协议](../../_shared/workspace-mode.md)）。drain 侧须**逐 code_root 定位并拼接**；外壳仓 Commit 2（文档 + 指针 bump）不参与。
+5. diff 为空（任务确无代码变更）→ 记 `drain.empty_diff`，跳过 Phase 4 但**不判 `EXT_REVIEWED`**——无审查即无证据。
+
 **默认轮次**：`max_rounds=3`（dev-workflow 嵌入收紧值）。`--external-rounds N` 覆盖上限 5（对齐 /adversarial-review 自身默认）。
 
 **无 T3 兜底**：dev-workflow embedded-headless 模式**仅采用 T1/T2**真外部通道，不复用 /adversarial-review skill 的 T3 Task 子 Agent（T3 是同进程独立上下文，不满足"独立审查"承诺）。T1/T2 全失败 → `EXT_UNRESOLVED` → --headless 立即 fail-fast；交互模式由用户选择手动补跑或终止。
@@ -353,8 +373,7 @@ audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `r
 
 | 状态 ID | 触发条件 | 优先级 | 唯一恢复动作 | 放行 |
 |---------|---------|--------|-------------|------|
-| `EXT_REVIEWED` | T1/T2 + status=success + blockers=[] + L2 yaml 可读 | 4（终态） | —（无需恢复） | ✅ |
-| `EXT_PENDING` | `--skip-external-review-reason` 登记主动跳过 | 3 | 事后补跑 Phase 4，产出 L2 yaml | ❌ |
+| `EXT_REVIEWED` | T1/T2 + status=success + blockers=[] + L2 yaml 可读 | 3（终态） | —（无需恢复） | ✅ |
 | `EXT_UNRESOLVED` | T1/T2 全失败 / L2 yaml 缺失或不可读 | 2 | 交互模式 AskUserQuestion 手动补跑或终止；headless fail-fast | ❌ |
 | `EXT_BLOCKED` | `breaker_reason=safety_limit`（达 max_rounds 未收敛） | 1（最高） | 交互模式用户可解除 max_rounds += 3 重跑；headless fail-fast | ❌ |
 
@@ -375,18 +394,15 @@ audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `r
 |-------|---------|----------------------|------|
 | 1 | `breaker_reason=safety_limit` | `EXT_BLOCKED` | 熔断终态 |
 | 2 | L2 yaml 缺失或不可读（Phase 4 运行时产出失败 / Step 1.5 [D2] 续做校验失败） | `EXT_UNRESOLVED` | **必须优先于 `EXT_REVIEWED` 判定**——无可复核证据不得放行 |
-| 3 | `--skip-external-review-reason="..."` 登记 | `EXT_PENDING` | 主动跳过，待补跑 |
-| 4 | `channel∈{T1,T2} ∧ status=success ∧ blockers=[]`（且规则 2 未命中） | `EXT_REVIEWED` | 外审通过，**唯一**放行分支 |
-| 5 | `channel∈{T1,T2} ∧ (status!=success ∨ blockers!=[])` 或 T1/T2 全失败 | `EXT_UNRESOLVED` | Phase 4 单轮未通过（已达 max_rounds 由规则 1 捕获） |
+| 3 | `channel∈{T1,T2} ∧ status=success ∧ blockers=[]`（且规则 2 未命中） | `EXT_REVIEWED` | 外审通过，**唯一**放行分支 |
+| 4 | `channel∈{T1,T2} ∧ (status!=success ∨ blockers!=[])` 或 T1/T2 全失败 | `EXT_UNRESOLVED` | Phase 4 单轮未通过（已达 max_rounds 由规则 1 捕获） |
 | fallback | 以上均不命中（应不可达） | `EXT_UNRESOLVED` | 安全阀，同时产生诊断日志 |
 
 **互斥性保证**：规则按优先级**唯一命中**一条（高优先级短路低优先级），任一输入组合有且仅有一个 `EXT_*` 映射。
 
 **优先级冲突澄清**：
 - 规则 1（safety_limit）是硬终态，优先于其他规则
-- 规则 2（L2 证据缺失）优先于规则 4（EXT_REVIEWED）——防止"T1/T2 + status=success + blockers=[] + L2 缺失"被误判为 `EXT_REVIEWED`
-
-> **P0-A 澄清**：`EXT_PENDING` 在所有放行路径下都为 ⛔ 阻塞 Commit 1，无例外。`--skip-external-review-reason="<原因>"` 仅登记跳过原因 + 自动标 `EXT_PENDING` + 留 `Skip-External-Review-Reason:` 尾注，**不构成 Commit 1 放行**。补跑 Phase 4 达成 `EXT_REVIEWED` 后方可进入 Commit 1。
+- 规则 2（L2 证据缺失）优先于规则 3（EXT_REVIEWED）——防止"T1/T2 + status=success + blockers=[] + L2 缺失"被误判为 `EXT_REVIEWED`
 
 ### 证据协议（L2 为权威源）
 
@@ -399,7 +415,7 @@ audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `r
 **L2 最小必需 schema**（Phase 4 调度器必须产出；缺键视为 L2 无效）：
 
 ```yaml
-ext_review_state: EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED   # 必需：canonical enum 之一
+ext_review_state: EXT_REVIEWED | EXT_UNRESOLVED | EXT_BLOCKED   # 必需：canonical enum 之一
 status: success | failed | partial | interrupted                              # 必需
 blockers: []                                                                  # 必需（数组，可空）
 rounds: N                                                                     # 必需（整数 ≥ 1）
@@ -420,21 +436,19 @@ fallback_events: []                                                           # 
 
 不再校验 L1↔L2 一致性（L1 由 L2 派生，结构上同源）或 L3 存在性（L3 已降为可选）。
 
-### 双 skip 禁令
-
-`--skip-review-reason` + `--skip-external-review-reason` 同时使用 → ⛔ 非法参数组合（恢复方式：删除其中一个）。不设例外通道——实际遇到需要跳过 Phase 1~3 和 Phase 4 的场景极少，且任何"例外通道"都会被滥用为常规路径；与其用复杂的 Emergency-Mode 授权链软化禁令，不如让两个 skip 参数互斥，遇到真需要时手动在 diff 上跑一次 T1/T2 外审做证据补跑。
-
 ---
 
 ## 延后审查与 review_pending(fast/guarded)
 
 ### review_pending 状态
-- fast/guarded 任务 Commit 1 落盘后,独立审查(Phase 1~3 + Phase 4)未做 → 任务标 `review_pending`(**全新状态,严禁复用 `EXT_PENDING`**——后者是 Phase 4 主动跳过的阻塞态,所有放行路径阻塞)。
+- fast/guarded 任务 Commit 1 落盘后,独立审查(Phase 1~3 + Phase 4)未做 → 任务标 `review_pending`(**独立状态**——含义是"已提交待集中审",区别于 `EXT_UNRESOLVED` 的"审过但未通过")。
 - Commit 1 尾注:`Review-Batch-Id` / `Review-Due`(格式 `sprint:<id>` 或 `due:YYYY-MM-DD`,默认落盘日+3 工作会话)/ `Pending-Reason: deferred-fast|deferred-guarded`。
 - 转移:`review_pending` --(drain 无 Blocker)--> `已完成`;有 Blocker → fix-forward(见下)。
 
 ### `/ms-verify --review-drain` 集中清审
 收集所有 `review_pending` 任务,按延后档位补跑 Phase 1~3 + Phase 4(复用 embedded-headless T1→T2 通道),逐任务出 verdict。
+
+**外审输入**:drain 侧**必须**用该任务 Commit 1 的提交 diff,不得用工作区 diff——见上方 [§diff 源](#diff-源按触发模式分离)。
 
 **drain 失败矩阵:**
 
@@ -444,6 +458,8 @@ fallback_events: []                                                           # 
 | 部分通过 | 过的转 `已完成`,未过保持 `review_pending` | 非0 | `drain.passed`/`drain.pending` |
 | T1/T2 全失败 | 保持 `review_pending`(EXT_UNRESOLVED) | 非0 | `drain.channel_failure` |
 | L2 yaml 无效 | 保持 `review_pending` | 非0 | `drain.invalid_evidence` |
+| **Commit 1 diff 为空** | 保持 `review_pending`,**不判 `EXT_REVIEWED`** | 非0 | `drain.empty_diff` |
+| **Commit 1 SHA 无法定位** | 保持 `review_pending`(缺 `Review-Batch-Id` 或标题无任务编号) | 非0 | `drain.commit_not_found` |
 | 用户中断 | 已处理落定,余下保持 `review_pending` | 130 | `drain.interrupted_at` |
 | headless fail-fast | 保持 `review_pending` | 非0 | `drain.headless_halt` |
 

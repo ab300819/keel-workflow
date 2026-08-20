@@ -19,8 +19,8 @@
 | S6 | 实现代码 | Impl Agent | `green_impl` |
 | S7 | 重构优化 | Impl Agent | `refactored` |
 | S8 | 验证 AC 满足度（逐条完备性 + 声称 vs 实际 diff） | 编排器 | `ac_verified` |
-| S9 / Phase 1~3 | 对抗式验证（内置角色演绎） | 编排器 | `int_review_state` ∈ {INT_REVIEWED, INT_PENDING, INT_UNRESOLVED} |
-| S9 / Phase 4 | 外部对抗审查（audit inline；fast/guarded 延后到 `/ms-verify --review-drain`） | 编排器（embedded-headless 调度器） | `ext_review_state` ∈ {EXT_REVIEWED, EXT_PENDING, EXT_UNRESOLVED, EXT_BLOCKED} |
+| S9 / Phase 1~3 | 对抗式验证（内置角色演绎） | 编排器 | `int_review_state` ∈ {INT_REVIEWED, INT_UNRESOLVED} |
+| S9 / Phase 4 | 外部对抗审查（audit inline；fast/guarded 延后到 `/ms-verify --review-drain`） | 编排器（embedded-headless 调度器） | `ext_review_state` ∈ {EXT_REVIEWED, EXT_UNRESOLVED, EXT_BLOCKED} |
 | S10 | 更新自描述 | 编排器 | `self_describe_done` |
 | S11 | 提交代码 | 编排器 | `committed` |
 | S12 | 追溯同步 + 知识沉淀 | 编排器 | `synced` |
@@ -188,13 +188,11 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
 
 关联: F-XXX, AC-XXX
 测试: UT-XXX, IT-XXX 通过
-External-Review-Verdict: <audit profile Phase 4 inline 时必填：EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED；含 rounds 和 health_scores>
+External-Review-Verdict: <audit profile Phase 4 inline 时必填：EXT_REVIEWED | EXT_UNRESOLVED | EXT_BLOCKED；含 rounds 和 health_scores>
 External-Review-Channel: <audit profile Phase 4 inline 时必填：T1 | T2 | none（非状态字段）>
 Review-Batch-Id: <fast/guarded profile 延后时必填；audit 省略>
 Review-Due: <fast/guarded profile 延后时必填（格式 YYYY-MM-DD）；audit 省略>
 Pending-Reason: <fast/guarded profile 延后时必填：deferred-fast | deferred-guarded；audit 省略>
-Skip-Review-Reason: <audit profile 使用 --skip-review-reason 时填写；其他情况省略此行>
-Skip-External-Review-Reason: <audit profile 使用 --skip-external-review-reason 时填写；其他情况省略此行>
 Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
 Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
 ```

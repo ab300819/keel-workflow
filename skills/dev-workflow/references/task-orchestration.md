@@ -102,8 +102,8 @@ Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判
         ├── [A] AC 完备性表可复核（S8 产物，存于任务记录或 Commit 1 附加信息）
         ├── [B] 关联测试存在且 skipped/todo=0（除显式豁免）
         ├── [C] trace 矩阵作为索引按需维护——缺失不阻塞放行,记 trace_pending 供后续 /ms-sync 增量补齐(不再是提交前阻塞门)
-        ├── [D1] 对抗式验证 Phase 1~3 证据：**audit 任务**须有 Phase 1~3 综合报告；若 Commit 1 带 `Skip-Review-Reason:` 且补跑未完成 → `INT_PENDING`。fast/guarded 的延后内审由 [F] review_pending + drain 覆盖，不在 [D1] 判定。
-        ├── [D2] Phase 4 外部对抗审查证据：**audit 任务**必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 尾注由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；若 Commit 1 带 `Skip-External-Review-Reason:` → `EXT_PENDING`。fast/guarded 不在 [D2] 判定（其延后外审经 [F] review_pending + drain 闭合）。
+        ├── [D1] 对抗式验证 Phase 1~3 证据：**audit 任务**须有 Phase 1~3 综合报告；缺失 → `INT_UNRESOLVED`。fast/guarded 的延后内审由 [F] review_pending + drain 覆盖，不在 [D1] 判定。
+        ├── [D2] Phase 4 外部对抗审查证据：**audit 任务**必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 尾注由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；fast/guarded 不在 [D2] 判定（其延后外审经 [F] review_pending + drain 闭合）。
         ├── [E] 后置测试证据（任一即可）：单任务为 `/ms-test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/ms-test-run --trace` 执行记录；若 Commit 1 带 `Skip-Trace-Reason:` 尾注且补跑未完成 → `postcheck_pending`
         ├── [F] review_pending 检测:Commit 1 带 `Pending-Reason: deferred-*` 且无对应 drain verdict → 任务为 `review_pending`,**非"已完成"**,不得跳过;须经 `/ms-verify --review-drain` 转 `已完成`
         ├── A~F 全部可复核(含 [F] 无未清 review_pending)（[D1] `INT_REVIEWED` ∧ [D2] `EXT_REVIEWED` 或均未触发）→ 跳过该任务
@@ -160,7 +160,7 @@ for p in <各 code_root path>; do git -C "$p" status --porcelain; done
 | 代码提交完成 + 无文档提交（`docs_only_pending`） | 代码提交 | 文档同步 | 编排器 |
 | 任务状态=已完成但 AC 表不可复核（`verification_pending`） | 代码/文档均已提交 | S8 重跑 AC 完备性 | 编排器 |
 | 任务状态=已完成但 trace 未同步（`trace_pending`） | 代码/文档均已提交 | `/ms-sync` 重跑 + trace 校验 | 编排器 |
-| audit 任务跳过 S9 Phase 1~3 后未补跑（`INT_PENDING`，Skip-Review-Reason 已登记但审查窗未闭） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
+| audit 任务缺 S9 Phase 1~3 综合报告（`INT_UNRESOLVED`） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
 | 单任务 `--skip-trace` 后未补跑后置测试（`postcheck_pending`） | 代码/文档均已提交 | `/ms-test-run --affected` 或 `--trace` 补跑 | 编排器 |
 | 旧任务（AC 表不存在，前版本完成） | 全量历史 | AskUserQuestion：复核 / 豁免 / 终止 | 编排器 |
 | fast/guarded 延后审查未 drain(`review_pending`,Commit 1 带 deferred-* 尾注) | 代码已提交 | `/ms-verify --review-drain` 集中清审 | ms-verify(编排器调度) |

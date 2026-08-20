@@ -8,7 +8,7 @@ related:
   - skills/pipeline/references/layout/*（DevDocs 治理 SSOT）
   - skills/_shared/workspace-mode.md（工作区模式协议正文）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v3
+spec_version: shared-constraints.v4
 ---
 
 # 共享约束 SSOT
@@ -353,9 +353,9 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 4. 行为型 AC 至少 1 条独立行为证据(不能只靠实现代码自证;无则显式豁免)
 5. 受影响测试后置 `/ms-test-run --affected`
 
-### review_pending(全新任务状态,严禁复用 EXT_PENDING)
+### review_pending(任务状态)
 - 含义:fast/guarded 任务代码已提交(Commit 1 已落盘),但延后的独立审查尚未做,**状态 ≠ 已完成**。
-- 与续做信号 `INT_PENDING`/`EXT_PENDING`/`postcheck_pending` 独立:后三者是"未放行阻塞态",`review_pending` 是"已提交待集中审"。
+- 与 `INT_UNRESOLVED`/`EXT_UNRESOLVED`/`postcheck_pending` 独立:后者是"审过但未通过 / 未放行阻塞态",`review_pending` 是"尚未审,已提交待集中审"。
 - Commit 1 尾注:`Review-Batch-Id: <id>` / `Review-Due: <sprint:ID | due:YYYY-MM-DD>` / `Pending-Reason: deferred-fast | deferred-guarded`。
 - 清算入口:`/ms-verify --review-drain`(批/sprint 边界集中跑延后审查)。
 
@@ -363,10 +363,11 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 
 | 枚举 | 值域 | 放行态 | 语义 |
 |------|------|--------|------|
-| `int_review_state` | `INT_REVIEWED` / `INT_PENDING` / `INT_UNRESOLVED` | `INT_REVIEWED` | Phase 1~3 内置角色演绎结果；PENDING=主动跳过待补跑，UNRESOLVED=审查未通过 |
-| `ext_review_state` | `EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED` | `EXT_REVIEWED` | Phase 4 外部对抗审查结果；PENDING=主动 skip 阻塞态（≠`review_pending`），UNRESOLVED=未通过或 L2 证据缺失，BLOCKED=熔断终态 |
+| `int_review_state` | `INT_REVIEWED` / `INT_UNRESOLVED` | `INT_REVIEWED` | Phase 1~3 内置角色演绎结果；UNRESOLVED=审查未通过或综合报告缺失 |
+| `ext_review_state` | `EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED` | `EXT_REVIEWED` | Phase 4 外部对抗审查结果；UNRESOLVED=未通过或 L2 证据缺失，BLOCKED=熔断终态 |
 
 - `enum/no-extension`：消费方（ms-verify / adversarial-review / dev-workflow 全部 references）不得扩展枚举值或私有化语义。
+- `enum/no-skip-channel`：**审查不提供跳过通道**。原 `INT_PENDING`/`EXT_PENDING`（对应已删除的 `--skip-review-reason` / `--skip-external-review-reason`）与 `*_UNRESOLVED` 在阻塞性和恢复动作上完全等价，差别仅一句 reason（写 commit body 即可），保留只会把"现在必须做"改造成"事后要补的债"。
 - `enum/non-pass-blocks`：非放行态一律 ⛔ 阻塞 audit 档 Commit 1；fast/guarded 延后语义见上方 review_pending。
 - 判定规则（真值表/优先级/L2 证据协议/T1→T2 降级链）为**执行细节**，权威见 [dev-workflow verification-flow.md](../dev-workflow/references/verification-flow.md)；本节只锁定值域与放行语义。
 
@@ -377,7 +378,6 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 | `Review-Batch-Id` / `Review-Due` / `Pending-Reason` | fast/guarded 延后必填 | 见上方 review_pending |
 | `External-Review-Verdict` | audit Phase 4 inline 必填 | 值 = `ext_review_state`（由 L2 yaml 派生，L1 不作独立校验源） |
 | `External-Review-Channel` | audit Phase 4 inline 必填 | `T1` / `T2` / `none`（通道记录，非状态字段） |
-| `Skip-Review-Reason` / `Skip-External-Review-Reason` | audit 档使用 skip 参数时 | 登记原因 + 自动标 `*_PENDING`，**不构成放行** |
 | `Skip-Trace-Reason` | 单任务 `--skip-trace` | 跳过后置 trace 校验的原因 |
 | `Exploration-Mode` | 探索模式 | `true` + 证据/豁免原因登记 |
 | `Profile-Downgrade-Reason` | 带理由降档时 | 降档理由（升档不需要） |

@@ -14,13 +14,15 @@ reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: block
 migration: /ms-pipeline realign --scope=layout
-spec_version: 2.0
+spec_version: 3.0
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
         P1 S9 并行化、P2 批量 Batch-Id trailer 标记 [FUTURE]，待 Phase 2 实施；
         并行化前置依赖 worktree 隔离协议（工作区所有权/文档 SSOT 合并/review-drain 回收），
         触发 = 真实并行需求（2026-07-22 吸收评审结论，见 docs/workflows.md § 与 superpowers 共存）
   2.0 = 重新定位(代码SSOT/文档记忆)+ review_profile 三档替代层级 + 质量地板恒定 + 独立审查延后 drain + review_pending 状态(Plan A)
+  3.0 = 修复延后外审空 diff(Phase 4 按 inline/drain 分离 diff 源)+ 删 skip 参数族
+        (2 flag / INT_PENDING·EXT_PENDING 2 enum 值 / 2 trailer / 双 skip 禁令)+ 删最低发现数门槛
 ---
 
 # 开发工作流
@@ -78,10 +80,8 @@ spec_version_notes: |
 | 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停（与 `--headless` 互斥） |
 | 单次提交 | `--single-commit` | 代码+文档合并为单次提交；适合无文档变更或后续 `/ms-sync` 已合并 |
 | 上下文重置 | `--context-reset N` | 每 N 个任务后编排器重置上下文（默认 3，仅批量模式） |
-| 跳过审查（audit 限定） | `--skip-review-reason="<原因>"` | 仅 audit 档任务可用；必须带 reason，否则视为非法参数（详见[对抗式验证](#对抗式验证可选)） |
 | 跳过 trace 校验 | `--skip-trace="<原因>"` | 单任务模式关闭 `--affected` 后置校验；必须带 reason，写入 `Skip-Trace-Reason:` 尾注 |
 | 外部对抗审查（Phase 4） | `--external-review` | fast/guarded 任务显式叠加 inline Phase 4（audit 默认 inline 触发，无需此 flag；fast/guarded 不加则默认 defer → drain） |
-| 外部对抗审查跳过（audit 限定） | `--skip-external-review-reason="<原因>"` | **仅交互模式 + audit 档任务可用**；跳过 Phase 4 并登记原因；自动标 `EXT_PENDING`，Step 1.5 [D2] 会拦截。`--headless` 下传入此参数视为非法参数 ⚠️ 不构成 Commit 1 放行，需后续补跑 Phase 4 达成 `EXT_REVIEWED` 才能完成任务（详见 [对抗式验证 §Skip 参数](#对抗式验证可选)）。 |
 | 外部对抗审查轮次 | `--external-rounds N` | 覆盖 Phase 4 默认 `max_rounds=3`；上限 5（对齐 /adversarial-review skill 的 max_rounds） |
 | 规范升级回扫 | `--realign` | 已完成任务按新 spec_version 查漏补缺；**独立于 12 种续做信号**，不覆盖原证据，仅追加补齐+`Realigned-From` 尾注。详见 [references/realign.md](references/realign.md)。推荐用户入口：`/ms-pipeline realign`。 |
 | 强制档位 | `--review-profile=<fast\|guarded\|audit>` | 覆盖风险分类器自动判档;仅允许**升档**或带理由降档(降档写 `Profile-Downgrade-Reason:` 尾注) |
@@ -109,7 +109,7 @@ spec_version_notes: |
 | S8 完成检查 | 质量地板 5 条 + AC 完备性表（fast 证据摘要 / audit 完整 AC 类型×证据矩阵）+ 声称 vs 实际 diff 交叉验证；缺证据或未关联大块 diff → ⛔ 禁止继续 |
 | S9 前置验证 | guarded/audit `/ms-verify --impl`；fast 仅质量地板（不跑前置验证）；🟢 UI 任务有设计稿时另跑 `/ms-verify --ui --impl` 对齐设计稿（不随 profile 变） |
 | S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：**audit inline fail-fast**；**fast/guarded 延后**到 `/ms-verify --review-drain`，任务期间标 `review_pending`；`--review` 可临时叠加 inline |
-| S9 Phase 4 | 外部对抗审查 embedded-headless（独立审查）：**audit inline**；**fast/guarded 延后** drain；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态 `EXT_REVIEWED`/`EXT_PENDING`/`EXT_UNRESOLVED`/`EXT_BLOCKED`（与 `review_pending` 区分） |
+| S9 Phase 4 | 外部对抗审查 embedded-headless（独立审查）：**audit inline**；**fast/guarded 延后** drain；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态 `EXT_REVIEWED`/`EXT_UNRESOLVED`/`EXT_BLOCKED`（与 `review_pending` 区分） |
 | S10 自描述 | `/code-self-describe --update`（`workspace_mode: shell` 时**默认跳过**——自描述产物写在代码目录内，违反零污染红线。跳过须在 yaml 摘要里以 ℹ️ 记录 `skipped: workspace_mode=shell`。用户显式 `--force-code-docs` 才执行） |
 | S11 Commit 1 | 代码提交，遵循 `/commit-convention`，Phase 4 触发时必须写 `External-Review-Verdict` |
 | Commit 2 后置 | `/ms-sync` 更新 trace + 文档提交；若有 AGENTS.md 仅更新“当前状态”；批量默认 `/ms-compound` |
@@ -226,7 +226,7 @@ spec_version_notes: |
 
 - [ ] **S8 必须产出 AC 完备性表**（逐条 AC：编号/**AC 类型**（行为型/视觉型/结构型，必填）/证据类型/代码或测试位置/判定）
 - [ ] **任一 AC 缺失有效证据 / 违反 AC 类型×证据类型分级矩阵 → ⛔ 禁止继续**（恢复方式：补实现或补测试后重新生成证据表）
-- [ ] **Phase 4 `ext_review_state` 必须为 `EXT_REVIEWED`（audit 任务 inline 触发）或未触发 Phase 4 时 `EXT_REVIEWED`/空** 才能进入 Commit 1；fast/guarded 延后 drain 期间提交状态为 `review_pending`；`EXT_UNRESOLVED` / `EXT_BLOCKED` ⛔ 阻塞（恢复方式见 [verification-flow.md 真值表](references/verification-flow.md)）（语义详见 [对抗式验证 §Skip 参数收紧](#对抗式验证可选)）
+- [ ] **Phase 4 `ext_review_state` 必须为 `EXT_REVIEWED`（audit 任务 inline 触发）或未触发 Phase 4 时 `EXT_REVIEWED`/空** 才能进入 Commit 1；fast/guarded 延后 drain 期间提交状态为 `review_pending`；`EXT_UNRESOLVED` / `EXT_BLOCKED` ⛔ 阻塞（恢复方式见 [verification-flow.md 真值表](references/verification-flow.md)）
 - [ ] **声称 vs 实际 diff 交叉验证必做**（所有层级 S8 必做，不再是 --review 才触发）
 - [ ] **测试通过判定排除 skipped / todo**（skipped/todo 计数 > 0 → ⛔ 禁止继续，除非任务文档显式豁免并记录原因）
 - [ ] **Review 要点自查完成**
@@ -258,7 +258,7 @@ spec_version_notes: |
 
 | review_profile（层级→风险输入映射） | 默认前置验证 | Phase 1~3 自审 | Phase 4 外部对抗 | 手动控制 |
 |---------|-------------------------------|---------------|------------------|---------|
-| **audit**（≈🔴 高风险） | `/ms-verify --impl` inline | **inline 自动触发** | **inline 自动触发**（T1 → T2 降级链，全失败 fail-fast） | `--skip-review-reason` 跳过 Phase 1~3；`--skip-external-review-reason`（仅交互）跳过 Phase 4；`--external-rounds N`；`--impl` 不可跳过 |
+| **audit**（≈🔴 高风险） | `/ms-verify --impl` inline | **inline 自动触发** | **inline 自动触发**（T1 → T2 降级链，全失败 fail-fast） | `--external-rounds N`；Phase 1~3 / Phase 4 / `--impl` 均不可跳过 |
 | **guarded**（≈🟡 中风险） | `/ms-verify --impl` inline | **默认 defer → drain**（风险触发可 inline） | **默认 defer → drain** | `--review`/`--external-review` 临时叠加 inline；`--no-defer-review` 强制 inline |
 | **fast**（默认 低风险） | 仅质量地板（不跑前置验证） | **defer → drain** | **defer → drain** | `--review`/`--external-review` 临时叠加 inline；`--no-defer-review` 强制 inline |
 | UI 任务（不分档） | 有设计稿另跑 `/ms-verify --ui --impl`（不随 profile 变） | 同所属档 | 同所属档 | 同所属档 |
@@ -271,13 +271,7 @@ spec_version_notes: |
 - Phase 1~3（内置角色演绎）与 Phase 4（外部独立审查）**独立判定**：各自维护 `INT_*` / `EXT_*` canonical state；`--review` 控 Phase 1~3，`--external-review` 控 Phase 4；**audit inline / fast,guarded defer** 到 `/ms-verify --review-drain`。
 - 前置验证失败（Blocker）⛔ 阻塞 Commit 1，不因"未加 --review"而放行。
 
-**Skip 参数收紧（均仅作用于 audit 档；对应任务定义 🔴 标记）**：
-
-| 参数 | 作用对象 | 约束 | 自动标记 |
-|------|---------|------|---------|
-| `--skip-review-reason="<原因>"` | Phase 1~3 | 必须带 reason；写入 Commit 1 `Skip-Review-Reason:` 尾注 | `INT_PENDING`，Step 1.5 [D1] 拦截至补跑 |
-| `--skip-external-review-reason="<原因>"` | Phase 4 | 必须带 reason；**仅交互模式**（`--headless` 下视为非法）；写入 `Skip-External-Review-Reason:` 尾注；⚠️ 仅登记 pending，不构成放行 | `EXT_PENDING`，Step 1.5 [D2] 拦截至补跑 |
-| 双 skip 同时 | 双 | ⛔ **非法参数组合**（不设例外通道） | — |
+**无 skip 通道**：Phase 1~3 与 Phase 4 **不提供跳过参数**。原 `--skip-review-reason` / `--skip-external-review-reason` 已删除——二者标记的 `INT_PENDING`/`EXT_PENDING` 在所有放行路径下都阻塞，与"未跑审查 → `*_UNRESOLVED`"在阻塞性和恢复动作上完全等价，唯一差别是那句 reason（可写进 commit body）。保留它们的效果只是把"现在必须做"改造成"事后要补的债"。
 
 > Phase 4 详细调用契约（T1/T2 双通道、max_rounds、真值表、L2 权威证据协议）见 [verification-flow.md Phase 4 章节](references/verification-flow.md)。Phase 1~3 验证流程（代码质量/测试完备/UI 自查/综合报告/AC↔diff 交叉验证）同文件。
 
@@ -285,8 +279,8 @@ spec_version_notes: |
 
 - [ ] **Blocker 必须修复后才能提交**；每个 Phase 声明审查角色；结果分级（Blocker/Suggestion）
 - [ ] **audit 默认 inline 触发 Phase 1~3+4**；**fast/guarded 延后 drain**（任务期间标 `review_pending`）；修复 Blocker 后重新运行验证
-- [ ] Skip 参数遵循上表（必须带 reason；非 audit 档(fast/guarded)使用 skip 参数视为非法）
-- [ ] 双 skip 组合 → 非法参数组合直接拒绝
+- [ ] **审查无跳过通道**：不存在跳过 Phase 1~3 / Phase 4 的参数（见上方「无 skip 通道」）
+- [ ] **drain 侧外审必须用 Commit 1 的提交 diff**，⛔ 不得用工作区 diff（否则收到空 diff，等于未审）；见 [verification-flow.md § diff 源](references/verification-flow.md)
 
 ### 依赖解析约束
 
@@ -311,7 +305,7 @@ spec_version_notes: |
 
 - [ ] **每个任务开始前执行状态检测**（6 步流水线：Step 1 / 1.5 证据复核 / 2~5）
 - [ ] **不相关变更必须警告用户**（AskUserQuestion：stash/忽略/终止）
-- [ ] **存在完成痕迹的任务必须通过 Step 1.5 五项证据复核才允许跳过**：[A] AC 表可复核 / [B] 测试无 skip/todo / [C] trace 矩阵按需维护的索引——缺失记 `trace_pending` 增量补齐，不作为放行硬门 / [D1] Phase 1~3 内置对抗式验证证据（audit 任务必查，`Skip-Review-Reason` 不得作为放行）/ [D2] Phase 4 外部对抗审查证据（audit 任务必查，`ext_review_state=EXT_REVIEWED` 且 L2 yaml 可读；`Skip-External-Review-Reason` 不得作为放行）/ [E] 后置测试证据（`Skip-Trace-Reason` 不得作为放行）
+- [ ] **存在完成痕迹的任务必须通过 Step 1.5 五项证据复核才允许跳过**：[A] AC 表可复核 / [B] 测试无 skip/todo / [C] trace 矩阵按需维护的索引——缺失记 `trace_pending` 增量补齐，不作为放行硬门 / [D1] Phase 1~3 内置对抗式验证证据（audit 任务必查）/ [D2] Phase 4 外部对抗审查证据（audit 任务必查，`ext_review_state=EXT_REVIEWED` 且 L2 yaml 可读）/ [E] 后置测试证据（`Skip-Trace-Reason` 不得作为放行）
 - [ ] **Git 历史有 code+doc commit 但任务状态非已完成**：不再直接跳过，改为进入 Step 1.5 证据复核路径
 - [ ] 旧任务（前版本完成，无 A/D1/D2/E 产物）→ AskUserQuestion：复核续做 / 登记豁免原因 / 终止
 - [ ] 进行中任务分析续做起点（精确定位：S1~S11 + S1.5；S12 后置同步单独判定，含续做 Agent 判定）
@@ -389,10 +383,8 @@ Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）�
 
 关联: F-XXX, AC-XXX        # v1；v2 [FUTURE] 用 FEAT-XXX/STORY-XXX
 测试: UT-XXX, IT-XXX 通过
-External-Review-Verdict: <EXT_REVIEWED | EXT_PENDING | EXT_UNRESOLVED | EXT_BLOCKED>（Phase 4 触发时必填，含 rounds 和 health_scores）
+External-Review-Verdict: <EXT_REVIEWED | EXT_UNRESOLVED | EXT_BLOCKED>（Phase 4 触发时必填，含 rounds 和 health_scores）
 External-Review-Channel: <T1 | T2 | none>（非状态字段，Phase 4 触发时记录实际通道）
-Skip-Review-Reason: <仅 audit 档任务使用 --skip-review-reason 时填写；其他情况省略此行>
-Skip-External-Review-Reason: <仅 audit 档任务使用 --skip-external-review-reason 时填写；留作补跑追溯，Commit 1 仍要求 ext_review_state=EXT_REVIEWED>
 Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
 Profile-Downgrade-Reason: <使用 --review-profile 降档时必填；Step 1.5 复核校验降档理由是否合规；batch 交付报告按 `Review-Batch-Id` 聚合 review_pending 清单>
 Review-Batch-Id: <fast/guarded 任务标 review_pending 时填写 batch ID；消费者：/ms-verify --review-drain 批量交付报告>
@@ -401,7 +393,7 @@ Pending-Reason: <review_pending 或 trace_pending 的延后原因；消费者：
 Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
 ```
 
-**合法 `External-Review-Verdict` 枚举**：`EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED`。禁用 `CONVERGED` / `DEGRADED` / `SKIPPED` 等非 canonical 词汇。
+**合法 `External-Review-Verdict` 枚举**：`EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED`。禁用 `CONVERGED` / `DEGRADED` / `SKIPPED` 等非 canonical 词汇。
 
 **type 类型**：feat | fix | refactor | test | docs | chore
 

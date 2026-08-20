@@ -106,7 +106,7 @@
 
 ### Phase 4 在 headless 下的状态机
 
-> Phase 4 状态字段（`ext_review_state` / `EXT_REVIEWED` / `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED`）、轮次控制（`max_rounds`）、降级链（T1 → T2）、真值表全部由 [verification-flow.md Phase 4 章节](verification-flow.md#phase-4-外部对抗审查) 权威定义。本文件不再重复转述。Headless 下仅追加：任一 `EXT_PENDING` / `EXT_UNRESOLVED` / `EXT_BLOCKED` → fail-fast，输出 `resume_command`。
+> Phase 4 状态字段（`ext_review_state` / `EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED`）、轮次控制（`max_rounds`）、降级链（T1 → T2）、真值表全部由 [verification-flow.md Phase 4 章节](verification-flow.md#phase-4-外部对抗审查) 权威定义。本文件不再重复转述。Headless 下仅追加：任一 `EXT_UNRESOLVED` / `EXT_BLOCKED` → fail-fast，输出 `resume_command`。
 
 ## 安全不变量
 
@@ -173,7 +173,7 @@ if not all_passed:
 | `batch_id` | 本次批量的 Batch-Id 标识（Phase 2 引入后强制；Phase 1 期间为空）|
 | `tasks_done` | 已完成任务列表（含 Commit 1 sha）|
 | `tasks_pending` | 未完成任务 + 失败原因（中断/Blocker/超时）|
-| `phase_4_summary` | Phase 4 外审 verdict 汇总（EXT_REVIEWED / EXT_PENDING / EXT_UNRESOLVED / EXT_BLOCKED）|
+| `phase_4_summary` | Phase 4 外审 verdict 汇总（EXT_REVIEWED / EXT_UNRESOLVED / EXT_BLOCKED）|
 | `resume_command` | 续做命令（完整 CLI，可复制执行）|
 
 极简示例：
