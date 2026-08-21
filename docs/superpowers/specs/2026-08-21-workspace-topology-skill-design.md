@@ -1,6 +1,6 @@
 # 抽取 workspace-topology：仓库拓扑从 DevDocs 解耦为独立 skill
 
-> 状态：**第 1 稿 · 待 codex 审查** · 日期：2026-08-21
+> 状态：**第 2 稿 · codex R1 已过（7 条全确认并修正）· 待 R2** · 日期：2026-08-21
 > 前置：`workspace-mode.v1`（[2026-08-05 设计](2026-08-05-devdocs-shell-workspace-mode-design.md)）已落地并在 `chiaki-ng-dev` 实测过
 > 本稿**退休** `workspace-mode.v1` 的文件布局与声明位置，协议内核（inline/shell 语义、`.gitmodules` 真源、零污染红线、N+1 提交）保留
 
@@ -46,9 +46,9 @@
 | b | 声明移到与 `devdocs:` 平级的独立 `workspace:` 块 | 0.1 的病根一半在「字段住在 `devdocs:` 里」 |
 | c | 协议正文搬进 skill，`_shared/workspace-mode.md` 删除 | §4.1「依赖接口而非实现」的连带后果 |
 | d | 消费方一律委托入口，⛔ 不得自读声明文件 | 新增 `workspace/no-bypass` 禁令 |
-| e | skill 保持**只读**：算分组、跑只读门，不执行 `git commit` | 提交由干活的 skill 做；skill 不吃 DevDocs 编号语义 |
+| e | skill 保持**只读**：把调用方的逻辑提交单元映射成物理步骤、跑只读门，不执行 `git commit` | 提交由干活的 skill 做；逻辑提交数与编号策略归调用方，skill 不吃 DevDocs 编号语义 |
 | f | 删除 inline→shell 迁移手术（七步、约 170 行） | 0.2 |
-| g | docs 根恒为 `<仓库根>/docs/`，不设字段、不可配置 | 280 处 `docs/devdocs` 硬编码的正确性建立在这条常量上 |
+| g | docs 根恒为 `<仓库根>/docs/`，不设字段、不可配置 | 310 处 `docs/devdocs` 硬编码的正确性建立在这条常量上 |
 | h | 可重入四动作，幂等 | 用户需求：后期改 mode、加子模块 |
 
 ## 2. 接口契约
@@ -65,108 +65,140 @@
 
 没有这条禁令，下一个 skill 又会去 grep `AGENTS.md`。
 
-### 2.2 入口
+### 2.2 入口：一个交互式 + 两个只读查询
 
-一个交互式入口 + 三个只读查询。三个查询**不合并**，因为它们回答不同的问题、在不同时点被问、失败语义不同。
+| 入口 | 回答的问题 | 被问的时点 |
+|---|---|---|
+| `/workspace-topology` | （交互式维护声明，见 §5） | 用户显式 / init / retrofit |
+| `--check [--id <ID>]` | 代码扫哪、docs 在哪、本 skill 该开还是该关、工作区什么状态；带 `--id` 时附该编号的提交证据 | 流程开头 / 断点续做判定 |
+| `--plan-commits` | 把调用方的逻辑提交单元映射成有序物理步骤 | 提交前 |
 
-| 入口 | 回答的问题 | 被问的时点 | ⛔ 条件 |
-|---|---|---|---|
-| `/workspace-topology` | （交互式维护声明，见 §5） | 用户显式 / init / retrofit | 写入后自校验失败 |
-| `--check` | 代码在哪、docs 在哪、当前什么 mode | 流程开头 | 仅声明失配 |
-| `--commit-status --id <ID>` | 这个编号的提交是否完整落地 | 断点续做判定 | 无（返回状态而非阻塞） |
-| `--plan-commits` | 这批变更该怎么分组提交 | 提交前 | 提交前置门失败 |
+**声明失配前置**：§3.3 的 ⛔ 行在两个查询上一律前置阻塞——拿不到可信拓扑，后面的答案都无意义。
 
-**三个查询共有的前置**：声明失配（§3.3 的 ⛔ 行）在三个查询上**一律前置阻塞**——拿不到可信的拓扑，后面的答案都无意义。表中「⛔ 条件」列指的是该查询**额外**引入的阻塞条件。
+**为什么 `--plan-commits` 不能并进 `--check`**：`--plan-commits` 带提交前置门（detached HEAD 等）。`test-run` 在流程开头问「代码在哪」，不该被一个提交时才相关的门挡住。**问题不同、失败语义不同，就不共用入口。**
 
-**为什么 `--check` 不能吃下 `--plan-commits`**：`test-run` 在流程开头问「代码在哪」，不该被一个提交时才相关的 detached HEAD 门挡住。**问题不同、失败语义不同，就不共用入口。**
-
-> ⚠️ 三个 flag 是本稿最可能被判过度的地方（本仓刚把 flag 从 49 收到 20）。合并任意两个都会导致失败语义混淆或调用方分支，见 §10 的取舍记录。请审查者重点质疑此处。
+**为什么提交状态查询并进了 `--check` 而非独立成第三个 flag**：它与 `--check` 的失败语义完全相同（只有声明失配才 ⛔），只多一个 ID 输入。第 1 稿曾把它独立为 `--commit-status`，被判缺乏独立的失败语义（codex R1 F-003）。
 
 ### 2.3 摘要信封
 
-作为子 Agent 被委托，返回 `yaml-summary-v1`（`constraints.md §2`），`skill: workspace-topology`。私有字段按 `yaml-summary/details-only-private` 一律落 `summary.details`：
+作为子 Agent 被委托，返回 `yaml-summary-v1`（`constraints.md §2`），`skill: workspace-topology`。私有字段按 `yaml-summary/details-only-private` 一律落 `summary.details`。
+
+### 2.4 `--check`：输出能力，不输出模式
+
+第 1 稿直接返回 `mode: inline|shell`，被判**语义泄漏**（codex R1 F-002）：`code-self-describe` 要靠它决定跳不跳、`verify` 要靠它决定扫哪，调用方必然写 `if mode == shell`。`workspace/no-bypass` 只禁止读声明文件，没禁住这种分支。
+
+**修正：输出能力与事实，不输出模式。**
 
 ```yaml
-skill: workspace-topology
-status: success
 summary:
-  headline: "shell 模式，2 个代码根"
   details:
-    mode: shell
     docs_root: docs
-    code_roots:
-      - {name: web, path: web}
-      - {name: api, path: api}
-    changed: false
-blockers: []
-output_files: []
+    scan_targets:                       # 代码扫描 / 测试执行 / 洞察盘点的目标目录
+      - {label: web, path: web}
+      - {label: api, path: api}         # inline 时为单项 {label: ".", path: "."}
+    capabilities:
+      code_docs_policy: skip_by_default # allow | skip_by_default —— code-self-describe 直接读这个字段
+      single_logical_commit: false      # true 时调用方可把多个逻辑单元合并为一次提交
+    root_residue: []                    # 仓根下不在 docs/、不属任何 scan_target 的已跟踪文件（ℹ️，见 §4.3）
+    undeclared_submodules: []           # 仓内有 .gitmodules 条目但未进声明 → ℹ️
+    worktree_changes:                   # 按仓分组，gitlink 条目已在出口前滤掉
+      - {label: web, path: web, changes: [src/a.ts]}
+      - {label: ".", path: ".", changes: [docs/devdocs/00-context.md]}
+    mode: shell                         # ⚠️ 仅供人读；机器消费者不得以此分支
 ```
 
-`--check` 在 `inline` 项目上的返回：`mode: inline` / `docs_root: docs` / `code_roots: [{name: ".", path: "."}]`。**调用方不分支**——inline 也是一个代码根，路径为 `.`。
+三条契约要点：
 
-### 2.4 `commit_grouping` 契约
+1. **`mode` 标注为仅供人读**。它留在输出里是为了让人看报告时知道自己在哪种拓扑下，但任何 skill 以 `mode` 做分支即违反 `workspace/no-bypass`。§9 的验证项因此不能只 grep `.gitmodules`，必须同时查 mode-derived 分支。
+2. **`worktree_changes` 在出口前已排除 gitlink 条目**，且覆盖**任务开始时**的断点续做检查（`task-orchestration.md` Step 3–5），不是只覆盖提交前。第 1 稿把这个快照只挂在 `--plan-commits` 上，导致任务开始时的扫描无接口可用（codex R1 F-007）。「变更是否属于当前任务」的判定仍归调用方——它知道任务涉及哪些文件，topology 不知道。
+3. **`root_residue` / `undeclared_submodules` 是 ℹ️ 级事实**，不阻塞。后者补住 `realign-scope-layout.md:83` 那条「未声明工作区模式」提示——改成委托后若不返这个字段，该提示会静默失效。
 
-`--plan-commits` 的核心产出。分组长度 = 代码根数 + 1；**inline 项目拿到 2 项**（代码 + 文档，路径均为 `.`），与今天的「Commit 1 代码 + Commit 2 文档」逐字节等价。
+`--id` 附加段见 §2.6。
+
+### 2.5 `--plan-commits`：逻辑单元 → 物理步骤
+
+第 1 稿让 topology 输出 `commit_grouping`（长度恒为「代码根数 + 1」），被判 P1 阻塞（codex R1 F-004）：只有 `dev-workflow` 默认路径是 Commit 1+2，`bugfix` inline 下是**一个** fix commit 带 `BUG-XXX`，`dev-flow` 是**一项一 commit**，`--single-commit` 要求合成一次。topology 无权决定逻辑提交数，`carries_id` 更是三套互不相同的编号策略。
+
+**修正：调用方给逻辑单元，topology 只做「逻辑 → 物理」映射。**
+
+**输入**（调用方提供，topology 不发明）：
+
+```yaml
+logical_units:
+  - kind: code                          # 语义类别，非仓库概念
+    paths: [src/a.ts, src/b.ts]
+    message: |
+      feat(T-07): 实现 X
+
+      Review-Batch-Id: rb-3
+  - kind: docs
+    paths: [docs/devdocs/00-context.md]
+    message: "docs(T-07): 同步任务状态"
+```
+
+`bugfix` 传 1 个 `kind: code` 单元（message 含 `BUG-XXX`）；`dev-flow` 每个 checklist 项传 1 个；`dev-workflow --single-commit` 传 1 个合并单元。**message 全文由调用方写定**，编号体系不进 topology。
+
+**输出**（有序物理步骤）：
 
 ```yaml
 summary:
   details:
-    single_commit_allowed: false      # inline: true（可合并两项）；shell: false（跨仓无法合并）
-    commit_grouping:
-      - repo: web
-        path: web
-        role: code
-        gate: ok                      # ok | blocked
-        message_style: inherit        # 沿用该仓自身提交历史风格
-        carries_id: false             # 编号对上游是噪声
-        worktree_changes: [src/a.ts]  # 已排除 gitlink 条目
-        pollution_findings: []        # 非源码/测试路径的变更
-      - repo: api
-        path: api
-        role: code
-        gate: blocked
-        gate_recovery: |
-          ⛔ 禁止继续：子模块 api 处于 detached HEAD，此状态下提交会产生游离 commit
-          恢复方式：
-          - 动作：git -C api checkout <branch>（若已误提交，先 git -C api branch <tmp> <sha> 保住 commit 再切）
-          - 执行者：用户
-          - 验证：git -C api symbolic-ref -q HEAD 输出 refs/heads/<branch>
-          - 下一步：重跑 /workspace-topology --plan-commits
-        ...
-      - repo: .
-        path: .
-        role: shell
+    steps:
+      - step: 0
+        cwd: web                        # inline 恒为 "."
+        add: [src/a.ts]
+        message: "feat: 实现 X"          # 见下方 message 改写规则
+        gate: ok                        # ok | blocked
+        gate_recovery: null
+      - step: 1
+        cwd: .
+        add: [docs/devdocs/00-context.md, web]
+        message: |
+          docs(T-07): 同步任务状态
+
+          web@{{steps[0].sha}}
         gate: ok
-        message_style: conventional
-        carries_id: true
-        bump_pointers: [web, api]     # inline 时为 []
-        worktree_changes: [docs/devdocs/00-context.md]
+    unmapped_paths: []                  # 不属任何 scan_target 且不在 docs/ 的路径 → ⚠️ 调用方确认
+    pollution_findings: []              # 落进 scan_target 的非源码/测试路径 → ⚠️ AskUserQuestion
 ```
 
-调用方跑一个**与模式无关**的统一循环：`for g in commit_grouping: commit(g)`。没有 `if shell`，没有章节引用。
+调用方跑一个与拓扑无关的统一循环：`for s in steps: commit(s)`，并对 `{{steps[N].sha}}` 做**通用占位替换**（用前序步骤的实际 SHA）。占位替换是个泛型机制——调用方不知道 `web` 是子模块、不知道那行叫「指针 bump」。
 
-三条设计要点：
+四条契约要点：
 
-1. **门在算分组时就跑掉**，结果落 `gate` 字段。门不合格 → `status: failed` + `blockers`，调用方连循环都进不去。调用方不需要知道 detached HEAD 是什么概念，只看 `gate` 和一句现成的恢复指令。
-2. **Recovery 预置在每一项里**（按 `constraints.md §7` 四字段完整模板，运行时输出禁用简写）。调用方失败时照着走，不回头再问 skill——skill 保持无状态只读。
-3. **`worktree_changes` 已排除 gitlink 条目**。这使 `workspace-mode.v1` 的 `workspace/no-stash-gitlink`（「绝不给 gitlink 条目提供 stash 选项」）**在接口层自然消失**——条目根本不出现在调用方视野里，无从误提供。原协议 §7.1 那 30 行「porcelain v1 与 --short 的字节级差异」实测记录降级为 skill 内部实现笔记。
+1. **inline 是恒等映射**。1 个逻辑单元出 1 步、2 个出 2 步，`cwd` 恒为 `.`，无占位符。**三个消费方今天各自的提交形态原样保留**，零回归。
+2. **占位符消解了两阶段调用**。外壳提交正文要的 `web@<sha>` 只在子仓提交后才存在（codex R1 F-001）。第 1 稿的一次性快照装不下它；用模板占位而非 `plan → finalize` 两次调用，是因为占位替换对调用方是泛型操作，不引入拓扑知识。
+3. **message 改写规则**：shell 下落进子模块的步骤，topology 按 `message_style: inherit` **剥掉调用方 message 的首行 scope 编号与编号型 trailer**（`T-XX` / `BUG-XX` / `Review-Batch-Id`），实现「子模块干净得像没有 DevDocs 存在过」；落进外壳仓的步骤原文保留。inline 下不改写。⚠️ 这条是 topology 唯一触碰 message 文本的地方，剥离规则须在 skill 内列白名单，不做正则猜测。
+4. **门在算步骤时就跑掉**，`gate: blocked` → `status: failed` + `blockers`，调用方连循环都进不去。每项的 `gate_recovery` 按 `constraints.md §7` 四字段完整模板预置，调用方失败时照着走，不回头再问 skill。
 
-`single_commit_allowed` 让调用方的 `--single-commit` flag 无需知道模式：`false` 时忽略该 flag 并 ℹ️ 提示。
+### 2.6 `--check --id <ID>`：返证据，不返结论
 
-### 2.5 `--commit-status` 契约
+第 1 稿返 `committed: true|false|drifted`，被判 P1 阻塞（codex R1 F-005）：`task-orchestration.md` Step 2 今天分四态——无提交 / 有码无档（`docs_only_pending`）/ 有码有档（进 Step 1.5）/ 指针不一致——三值枚举压掉了 `docs_only_pending`，`shell_commit` 单数也装不下 N 个代码提交。
 
-`dev-workflow` 断点续做需判定「T-XX 是否已提交」。shell 下这个判定比 inline 复杂（外壳仓存在带该编号的 commit **且** body 记录的子模块 SHA 与当前指针一致），该复杂度不得泄漏给调用方。
+**修正：返 topology-neutral 的提交证据，业务结论留给调用方。**
 
 ```yaml
 summary:
   details:
     id: T-07
-    committed: true | false | drifted
-    shell_commit: a1b2c3d           # inline 时即仓库自身的 commit
-    pointer_check: [{name: web, recorded: e4f5g6h, actual: e4f5g6h, match: true}]
+    implementation_refs:                # N 个代码提交；inline 时 0 或 1 项
+      - {label: web, commit: a1b2c3d}
+      - {label: api, commit: b2c3d4e}
+    documentation_ref: c3d4e5f          # 文档提交；无则 null
+    logical_shape: split                # split | combined | none
+    consistency: consistent             # consistent | pointer_drift | not_applicable
+    review_diff_sources:                # 延后外审的稳定 diff 源（见要点 2）
+      - {label: web, range: a1b2c3d}
+      - {label: api, range: b2c3d4e}
 ```
 
-`drifted` = 外壳仓有该编号的 commit 但指针不一致。调用方对 `drifted` 的动作：进证据复核，不直接跳过（沿用今天 `dev-workflow` 的第五维语义，只是判定搬进了 skill）。inline 项目永不返回 `drifted`。
+三条契约要点：
+
+1. **`docs_only_pending` 与 Step 1.5 的 A–F 判定仍归 `dev-workflow`**。它读 `implementation_refs` 非空 + `documentation_ref` 为 null 自己得出 `docs_only_pending`。topology 不压缩业务结论。
+2. **`review_diff_sources` 是延后外审的唯一合法 diff 源**。第 1 稿说 drain「按 `commit_grouping` 逐项取」——那是**提交前**的工作区计划，落盘后 `worktree_changes` 已为空，[2026-08-06 修掉的空 diff 缺陷](2026-08-06-review-unit-task-to-batch-design.md)会原地复活（codex R1 F-006）。此字段从追溯枢纽（外壳仓 commit 正文记录的子模块 SHA）重建，**排除纯文档提交**。⛔ drain 只能消费此字段，不得消费 `--plan-commits` 的产出。
+3. **`logical_shape: combined` 的外审语义**：代码与文档在同一 commit 时，`review_diff_sources` 返回该 commit 并附 `docs_paths_excluded`，由调用方在取 diff 时排除文档路径。
+
+> ℹ️ codex R1 F-006 同时指出 `--single-commit` + drain 在**今天**就与「只审 Commit 1、排除纯文档 Commit 2」冲突。核过了，这是既存缺陷、非本稿引入，归 [空 diff 修复的验证债台账](../../audits/2026-08-20-complexity-audit-backlog.md)。本稿只负责让新接口能表达 combined 形态（要点 3），不负责修那个既存缺陷。
 
 ## 3. 声明 schema 与写者归属
 
@@ -187,7 +219,7 @@ devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有
 
 - `workspace/docs-root`：文档根**恒为** `<仓库根>/docs/`，两种模式无差别，**不设字段、不可配置**。
 
-理由：可配置就会漂，而仓内 280 处 `docs/devdocs` 硬编码引用的正确性正建立在这条常量上。`--check` 仍在 `details.docs_root` 里回答它——调用方拿常量，不是「不用问」。
+理由：可配置就会漂，而仓内 **310 处**（2026-08-21 实测 `grep -ro "docs/devdocs" skills/ | wc -l`）`docs/devdocs` 硬编码引用的正确性正建立在这条常量上。`--check` 仍在 `details.docs_root` 里回答它——调用方拿常量，不是「不用问」。
 
 ### 3.2 写者归属：skill 自己写，不经 agent-memory
 
@@ -291,9 +323,9 @@ skills/workspace-topology/
 | `test-run/SKILL.md` | 72 | 测试执行目录 | 换委托句 |
 | `code-self-describe/SKILL.md` | 87, 89, 93 | shell 下跳过 | 保留「跳过」决策（本 skill 私有），路径解析换委托句 |
 | `bugfix/SKILL.md` | 288 | 指 `_shared` § N+1 | 换委托句 |
-| `dev-workflow/SKILL.md` | 113, 300, 301, 313 | **复述** N+1 拆分规则、detached HEAD 门、五重状态检测 | **复述全删**，换委托句 + 消费 `commit_grouping` / `--commit-status` |
+| `dev-workflow/SKILL.md` | 113, 300, 301, 313 | **复述** N+1 拆分规则、detached HEAD 门、五重状态检测 | **复述全删**；113 改读 `capabilities.code_docs_policy`；提交改为传 `logical_units` 消费 `steps`；断点续做改消费 `--check --id` 的证据字段 |
 | `dev-workflow/references/task-orchestration.md` | 136, 145 | **复述**五重检测 + gitlink 判据 | **复述全删**，换委托句 |
-| `dev-workflow/references/verification-flow.md` | 354 | **复述**逐 `code_root` 拼接 | **复述全删**；drain 侧 diff 源改为按 `commit_grouping` 逐项取 |
+| `dev-workflow/references/verification-flow.md` | 354 | **复述**逐 `code_root` 拼接 | **复述全删**；drain 侧 diff 源改为消费 `--check --id` 的 `review_diff_sources`（⛔ 不得消费 `--plan-commits` 产出，见 §2.6 要点 2） |
 
 `verification-flow.md:354` 需特别注意：它是 [2026-08-06 空 diff 修复](2026-08-06-review-unit-task-to-batch-design.md) 的产物，且该修复**尚未在真实项目验证**（见 [复杂度审计遗留台账](../../audits/2026-08-20-complexity-audit-backlog.md)）。本稿改它的 diff 源表达方式，不改语义；验证债照旧挂账，不因本稿而解除。
 
@@ -345,14 +377,16 @@ skills/workspace-topology/
 
 | 项 | 增 | 减 |
 |---|---|---|
-| `skills/workspace-topology/`（SKILL + 2 references） | +约 380 行 | |
+| `skills/workspace-topology/`（SKILL + 2 references） | +约 450 行 | |
 | `_shared/workspace-mode.md` | | −163 行 |
 | `workspace-shell.md` | | −252 行 |
 | 10 处消费方的复述内容 | | −约 60 行 |
 | `agent-memory` 白名单 + 示例 | | −约 15 行 |
 | `pipeline` / `retrofit` 传参管道 | | −约 8 行 |
 | `constraints.md §10` | | −约 5 行 |
-| **净** | | **约 −120 行** |
+| **净** | | **约 −50 行** |
+
+第 2 稿比第 1 稿多约 70 行（+380 → +450）：`logical_units` 输入契约、message 编号剥离白名单、`review_diff_sources` 重建规则都是 R1 修正引入的。净删从 −120 收窄到 −50。
 
 新增的不是行数而是**一个 skill 边界**。换来的是：非 DevDocs 项目可用、拓扑知识单点收敛、10 处消费方对协议变更免疫。
 
@@ -363,18 +397,19 @@ skills/workspace-topology/
 **本仓（可立即做）**
 
 1. `grep -rn "workspace_mode\|workspace-mode\|workspace-shell" skills/ docs/` —— 除历史 spec / 台账外零命中
-2. `grep -rn "\.gitmodules" skills/ | grep -v workspace-topology` —— 零命中（`workspace/no-bypass` 的机械可查形式）
-3. 新 SKILL.md ≤ 500 行（硬约束）
-4. 死链检查：`workspace-shell.md` / `_shared/workspace-mode.md` 无残留引用
-5. `realign --scope=health` 的 `dead-link` rule 全过
+2. `grep -rn "\.gitmodules" skills/ | grep -v workspace-topology` —— 零命中
+3. **mode-derived 分支检查**：`grep -rn "mode.*shell\|shell.*mode" skills/ | grep -v workspace-topology` 逐条人工判读，确认无 skill 以 `mode` 做行为分支（codex R1 F-002：只 grep `.gitmodules` 兜不住语义泄漏，`workspace/no-bypass` 禁的是读声明，不禁 `if mode == shell`）
+4. 新 SKILL.md ≤ 500 行（硬约束）
+5. 死链检查：`workspace-shell.md` / `_shared/workspace-mode.md` 无残留引用
+6. `realign --scope=health` 的 `dead-link` rule 全过
 
 **真实项目（挂账，不阻塞本稿实施）**
 
-6. 在 `chiaki-ng-dev`（已有 shell 声明）跑 `--check`，确认存量迁移提示与幂等
-7. 在一个 inline 项目跑 `--plan-commits`，确认分组 2 项、行为与今天逐字节一致
-8. 在 shell 项目跑一次完整 `dev-workflow` 提交，确认 N+1 展开与 `gate` 生效
+7. 在 `chiaki-ng-dev`（已有 shell 声明）跑 `--check`，确认存量迁移提示与幂等
+8. 在一个 inline 项目分别跑 `bugfix`（1 逻辑单元）与 `dev-workflow` 默认路径（2 逻辑单元），确认 `steps` 为恒等映射、提交形态与今天逐字节一致
+9. 在 shell 项目跑一次完整 `dev-workflow` 提交，确认物理展开、`gate` 生效、占位符替换正确、子模块 message 编号已剥离
 
-第 6–8 项与 [空 diff 修复的验证债](../../audits/2026-08-20-complexity-audit-backlog.md) 合并挂账。
+第 7–9 项与 [空 diff 修复的验证债](../../audits/2026-08-20-complexity-audit-backlog.md) 合并挂账。
 
 ## 10. 明确不做
 
@@ -384,16 +419,21 @@ skills/workspace-topology/
 | `workspace-topology` 执行 `git commit` | 提交是干活 skill 的职责；让它执行意味着吃进 T-XX 编号与 Commit 1/2 语义，把刚拆开的 DevDocs 耦合从另一头接回去，且成为所有 inline 项目提交的必经之路 |
 | 只在 shell 下委托提交（`if shell → 委托 / else → 自己提交`） | 那个 `if` 本身就是接口泄漏 |
 | `docs_root` 做成可配置字段 | §3.1 |
-| 合并三个只读 flag | §2.2；合并会导致失败语义混淆（`--check` 被提交门阻塞）或调用方分支 |
+| 把 `--plan-commits` 并进 `--check` | §2.2；`--plan-commits` 带提交前置门，会让流程开头的路径查询被提交时才相关的门阻塞 |
+| topology 决定逻辑提交数 / 编号策略 | codex R1 F-004；三个消费方的提交形态与编号体系各不相同，调用方传 `logical_units`，topology 只做物理映射 |
+| topology 输出 `mode` 供机器分支 | codex R1 F-002；输出能力（`capabilities`）而非模式，否则调用方必然写 `if mode == shell` |
+| topology 压缩业务结论（`committed` / `docs_only_pending`） | codex R1 F-005；只返证据，判定归 `dev-workflow` |
 | 嵌套子模块（vendor / 依赖项）进 `code_roots` 语义 | 沿用 `workspace-mode.v1` `workspace/no-nested-submodules`：依赖项的正确答案本就是「忽略」 |
 | 「什么算源码」的静态白名单 | §4.3 |
 | 移除代码根时 `git submodule deinit` / `git rm` | 破坏性动作交用户 |
 | 为存量声明位置迁移建独立机器 | §7；可重入入口已覆盖 |
 
-## 11. 待审查者重点质疑
+## 11. 待审查者重点质疑（R2）
 
-1. **三个只读 flag 是否过度**（§2.2）—— 本仓刚把 flag 从 49 收到 20，这是最可能被判过度的地方
-2. **`--commit-status` 的 `drifted` 状态是否该由 skill 判定** —— 它接近「业务判定」而非「拓扑判定」
-3. **两个写者共存 `AGENTS.md`**（§3.2）—— 块级不相交是否足够，还是该保留单写者
-4. **inline 项目拿到 2 项分组** 是否真与今天逐字节一致（§2.4），有无遗漏的今日行为
-5. **`workspace/no-bypass` 的可执行性** —— §9 第 2 项的 grep 是否足以兜住，还是需要 health-lint rule
+R1 的 7 条（P1×4 / P2×2 / partial×1）全部确认并已修正，修正点见 §2.4–§2.6 各节开头的「第 1 稿…被判…」说明。R2 请集中攻击修正本身：
+
+1. **占位符 `{{steps[N].sha}}` 是否真是泛型操作**（§2.5 要点 2）—— 它替掉了 `plan → finalize` 两阶段调用。调用方做替换时会不会仍需理解「为什么这一步的 message 里要塞前一步的 SHA」？如果会，泄漏没消除，只是换了形式。
+2. **message 改写规则的安全性**（§2.5 要点 3）—— topology 剥掉子模块 message 里的编号型 trailer 是它唯一触碰文本的地方。白名单（`T-XX` / `BUG-XX` / `Review-Batch-Id`）是否够、会不会误剥调用方的业务 trailer。
+3. **`review_diff_sources` 能否真从追溯枢纽重建**（§2.6 要点 2）—— 子模块 commit 刻意不带编号，重建完全依赖外壳仓 commit 正文里的 `web@<sha>` 行。这个正文由**调用方**写（topology 只提供占位符），那 topology 反过来解析它时，是否在依赖一个自己不控制的格式？
+4. **`capabilities` 的封闭性**（§2.4）—— 当前只有 `code_docs_policy` 与 `single_logical_commit` 两项。是否存在第三个消费方需要、但两项都表达不了的能力，导致它退回 `mode` 分支。
+5. **`worktree_changes` 同时服务任务开始扫描与提交前检查**（§2.4 要点 2）—— 两个时点对「不相关变更」的定义是否真的一致。
