@@ -1,369 +1,329 @@
-# 抽取 workspace-topology：把工作区声明维护从 DevDocs 触发链上摘下来
+# workspace-topology：仓库拓扑从 DevDocs 解耦
 
-> 状态：**第 6 稿（最小可行）· 待 R6** · 日期：2026-08-21（第 6 稿 08-24）
-> **配对 spec**：[shell 模式单仓假设审计 + 拓扑查询接口](2026-08-21-shell-single-repo-assumptions-audit-design.md)
-> 审查轨迹：R1 `39.5` → R2 `70.75`（🔴 熔断，提交侧不做接口）→ R3 `56.5`（codex 确认塌缩正确）→ R4 `74.5`（🔴 二次熔断，拆两 spec）→ R5 `90`（🔴 安全上限；F-404 机械证明 `--check` 委托在当前工具权限下不成立）→ 用户决策「最小可行方案」→ 本稿
+> 状态：**第 7 稿 · 按原始方案审查结论重写** · 日期：2026-08-24
+> **配对 spec**：[shell 模式单仓假设审计](2026-08-21-shell-single-repo-assumptions-audit-design.md)
+>
+> **本稿的基线是「用户原始方案 + codex 对该方案的独立评估」**，不是前六稿的展开。前六轮审查（`39.5 → 70.75 → 56.5 → 74.5 → 90`，两次熔断 + 一次安全上限）审的是设计者在原方案之上的加戏，其结论只在与本基线一致处被保留。
 
-## 0. 问题
+## 0. 问题（用户原话）
 
-`workspace_mode`（inline/shell 工作区拓扑，2026-08-05 落地）在使用中暴露三处缺陷。
+> 1. 触发机制问题，"仓库设定"是绑定 devdocs 在其他流程中会难以触发或误触发 devdocs 流程
+> 2. 该"仓库设定"会修改最外层目录名，按正常节奏不应该修改
 
-### 0.1 声明动作绑死在 DevDocs 触发链上
+**0.1 触发耦合**：探测入口只有三个且全属 DevDocs（`ms-pipeline init` / `ms-retrofit` / `realign --scope=layout`），而消费方里有三个自称「与 DevDocs 独立」的（`dev-flow:133`、`e2e-test-flow:48`、`code-self-describe:87`）。外壳形状但不跑 DevDocs 的项目无路声明；想声明就得拉起整套 DevDocs。
 
-用户原话：
+**0.2 外层目录**：`workspace-shell.md` 的迁移七步会在 `../<原名>-dev` 建外壳仓并从远端独立 clone 一份代码仓，磁盘上出现两份工作副本、工作根目录改名。
 
-> 「『仓库设定』是绑定 devdocs，在其他流程中会难以触发或误触发 devdocs 流程」
+**0.3 §4/§5 自相矛盾**：`_shared/workspace-mode.md` §4 要「仓根下的**源码文件** → ⚠️」，§5 明确拒绝「静态白名单猜测什么算源码」。
 
-探测入口只有三个，全属 DevDocs：`ms-pipeline init`（`ms-requirements` 之后）、`ms-retrofit`（改造成功后）、`realign --scope=layout`。而消费方里有三个明确声明「与 DevDocs 独立」的：`dev-flow:133`、`e2e-test-flow:48`（原文「本 skill 与 DevDocs 独立，仅借该字段定位源码」）、`code-self-describe:87`。
+## 1. 第一版定义
 
-后果双向：**难触发**——外壳形状但不跑 DevDocs 的项目无路声明；**误触发**——想声明就得跑 `init` / `retrofit`，顺带拉起需求编码、`docs/devdocs/` 脚手架、`agent-memory` 更新。
+采纳 codex 对原始方案的评估结论：
 
-> ⚠️ **本稿刻意不动字段的 YAML 位置。** 第 1–5 稿把「字段住在 `devdocs:` 块里」当成本问题的「病根一半」，那是**设计者加的诊断，不是用户的诉求**。这条加戏引出新声明位置 → legacy 兼容 → current-only 回归（R5 F-403）→ `no-bypass` → 撞上 Task 权限（R5 F-404），是五轮复杂度的主要来源之一。用户抱怨的是**触发**，不是嵌套。
+> 独立入口 + 独立元数据 + 稳定 `inspect`/`reconcile` 接口 + 可重入 shell 管理 + **有边界的**迁移；不顺手承诺通用反向迁移或 Git 历史优化。
 
-### 0.2 「仓库设定」会造一个新名字的外层目录
+### 1.1 五条要求的判定
 
-`workspace-shell.md` 的 inline→shell 迁移：Step 2 算 `W="${W:-$(dirname "$R")/${R_NAME}-dev"}`，Step 3 `mkdir -p "$W" && git init`，Step 4 从 remote URL **独立 clone** 一份 R 作子模块。结果是同一个仓在磁盘上有两份工作副本，用户此后工作的根目录变成 `<原名>-dev`。
-
-用户原话：「该『仓库设定』会修改最外层目录名，按正常节奏不应该修改」。
-
-**判定：不是「迁移不该存在」，而是「迁移不该是声明设定的隐藏副作用，且不该由 skill 擅自决定外层目录路径」。** 修法：迁移改为**显式的、双模式的、路径由用户定**的独立操作（§5）。原七步删除重写。
-
-### 0.3 §4 / §5 自相矛盾
-
-`_shared/workspace-mode.md` §4 要「仓根下的**源码文件** → ⚠️」，§5 明确拒绝「静态白名单猜测什么算源码」。两条不能同时成立。
-
-## 1. 范围：五件事，消费方零改动
-
-| # | 动作 | 解决 |
+| 用户要求 | 判定 | 依据 |
 |---|---|---|
-| 1 | 新建 `workspace-topology` skill = **交互式声明维护**（四动作、幂等、校验、`.gitmodules` 探测），写**现有字段位置** | §0.1 |
-| 2 | 删除 inline→shell 迁移七步及其 realign 路由 | §0.2 |
-| 3 | `pipeline` / `retrofit` / `realign --scope=layout` 的探测改委托该 skill | §0.1 反向 |
-| 4 | 裁掉「什么算源码」的猜测 | §0.3 |
-| 5 | inline→shell 迁移重写为**双模式显式操作**（§5） | §0.2 |
+| 抽独立 skill | 成立，但**不便宜** —— 21 处消费/治理/文档点 | 现有直接消费者较多，见 §6 |
+| docs 目录统一（inline/shell 都在 `docs/`） | 成立，**现状已基本满足**；做成固定不变量而非可配置字段 | `_shared/workspace-mode.md:21`、`docs/workflows.md:343` |
+| 可重入 | 部分成立，**中等到高代价** —— 须区分「改声明」与「改真实拓扑」 | §4 |
+| 依赖接口而非实现 | 成立，但**不能解释成调用方什么都不知道** —— `mode`/`docs_dir`/`code_roots` 是必要接口语义，可隐藏的是探测、校验、迁移、恢复算法 | §2 |
+| commit 归干活的 skill | 成立，且**用在本 skill 自己身上也成立** —— 它提交自己产生的 `.gitmodules` 与元数据变更 | §2.4 |
 
-**⛔ 明确不在本稿范围**（→ 配对 spec）：`--check` 拓扑查询接口、`workspace/no-bypass`、字段位置迁移、任何消费方改动、25 处单仓假设、`_shared/workspace-mode.md` 的任何改动。
+### 1.2 「docs 目录统一」的边界
 
-### 1.1 为什么消费方零改动 —— R5 的机械证据
+统一的是**工作区文档根**（`docs/devdocs/`、`docs/prd/`、`docs/codebase-insight.md`），**不等于**把代码仓自己的 `docs/`（API 文档、README 资料）一并搬走。后者应留在代码仓。现手册对此边界判断正确（`workspace-shell.md:219`）。
 
-第 5 稿要求路径类消费方委托 `/workspace-topology --check`。实测 `allowed-tools`：
+### 1.3 第一版明确不做
 
+| 不做 | 理由 |
+|---|---|
+| **优化代码提交历史**（rebase / filter / squash / force-push） | 对已公开开源仓风险过高，且**不是布局迁移的必要步骤**。用户第一版已同意去掉 |
+| 通用 `shell → inline` 自动化 | 多代码根时「合并进哪个仓 / 是否保留外壳历史 / 多远端如何处理」不存在安全默认答案。第一版只给手动规划 |
+| 保持原最外层路径不变的「原地换壳」 | 须先把当前 Git 仓移成子目录再在原路径 init，会移动当前 cwd 且常需 workspace 根之外的父目录写权限 |
+| 完全无人值守迁移 | 存在 push 边界；沿用现有纪律：不自动 push |
+| 单仓算法迁移（25 处） | → 配对 spec |
+| 封装跨仓提交编排 | 跨仓提交是有状态分布式事务；前六轮 R2 熔断结论，codex R3 独立确认 |
+
+## 2. 接口
+
+### 2.1 三个入口
+
+```text
+/workspace-topology inspect                              # 只读，返回拓扑上下文
+/workspace-topology reconcile                            # 交互式维护声明（幂等）
+/workspace-topology migrate --to shell --mode manual|auto  # 有边界的迁移
 ```
-retrofit             ⛔ 无 Task        e2e-test-flow    有 Task
-verify               ⛔ 无 Task        dev-workflow     有 Task
-test-run             ⛔ 无 Task        pipeline         有 Task
-codebase-insight     ⛔ 无 Task
-code-self-describe   ⛔ 无 Task
-```
 
-**六个路径类消费方里五个物理上无法派发子 Agent**，而自己读声明又是 `no-bypass` 禁止的。整个委托架构在当前工具权限模型下不成立，除非同时给五个只读 skill 开子 Agent 派发权——那是个比本方案本身更大的治理变更（R5 F-404）。
-
-本稿要委托的三个入口（`pipeline` / `retrofit` / `realign` 由 pipeline 承载）**都有 Task**，已验证。
-
-**连带消失的 R5 阻塞项**：F-403（current-only 回归）随「字段位置不变」消失；F-404 随「消费方零改动」消失；F-405 / F-406 / F-407 全是 `--check` 输出契约的问题，随之消失。
-
-### 1.2 breaking change 的边界
-
-本稿不用「add-only」为自己背书——第 5 稿那么做过，被判名不副实（R5 F-401）。诚实说明：
-
-- **迁移七步删除重写**（§5）。旧实现的两个致命缺陷（前置门挡住唯一真实场景、Step 4 从远端重 clone 丢工作）意味着它对目标场景本就不可用，重写不是回退。
-- `workspace-shell.md` **文件删除**。存活内容（探测步骤、detached HEAD 处置、指针漂移三成因）搬进 `references/probe-and-repair.md`，引用者改指针。
-- 其余一切不变：字段位置、消费方、`_shared/workspace-mode.md` 正文、`agent-memory`。
-
-## 2. skill 定位与接口
-
-**定位**：独立 skill（非 `ms-` 前缀），职责单一——维护工作区拓扑声明。不读 `docs/devdocs/`，不碰任何业务文档，**不对外提供查询接口**（那是配对 spec 的事）。
-
-**入口**：`/workspace-topology`，无 flag。交互式：读现状 → 展示 → AskUserQuestion 选动作。
-
-**输出**：`yaml-summary-v1`（`constraints.md §2`），`skill: workspace-topology`，私有字段落 `summary.details`：
+`inspect` 稳定摘要（`yaml-summary-v1` 的 `summary.details`）：
 
 ```yaml
-summary:
-  headline: "shell 模式，2 个代码根（无改动）"
-  details:
-    mode: shell
-    code_roots: [{name: web, path: web}, {name: api, path: api}]
-    changed: false
-    validation: []            # §3.2 校验表的 findings
-    root_residue: []          # §3.3
-    pointer_checks: []        # 指针一致性，供人读与 health 提示
-blockers: []
-output_files: []
+schema: workspace-context.v1
+mode: shell
+workspace_root: /abs/path
+docs_dir: docs                    # 固定不变量，非可配置字段
+code_roots:
+  - {name: api, path: services/api}
+  - {name: web, path: web}
 ```
 
-调用方（`pipeline` / `retrofit`）只需要知道「跑完了、有没有 blocker」，不消费 `details` 做分支——**本稿不建立任何机器消费契约**。
+调用方只依赖这些字段，不关心 `.gitmodules` 怎么解析、迁移分几步、配置写在哪。
 
-## 3. 声明与校验
+### 2.2 传播机制：走握手 `inputs`，不做 Task 嵌套
 
-### 3.1 字段位置不变
+**实测约束**（前六轮 R5 发现）：六个路径类消费方里五个的 `allowed-tools` **没有 `Task`**——
+
+```
+retrofit  ⛔   verify  ⛔   test-run  ⛔   codebase-insight  ⛔   code-self-describe  ⛔
+e2e-test-flow ✅   dev-workflow ✅   pipeline ✅
+```
+
+它们物理上无法派发子 Agent 去调 `inspect`。两条常见解法都不好：给五个只读 skill 加 `Task` 是能力扩张；让 `verify` 这类原子 skill 再派发子 Agent，与 `constraints.md §3` 的「编排层 → 原子 skill」分层相悖。
+
+**采用第三条**：`constraints.md §3` 的最小握手协议本就有 `inputs` 字段。
+
+- **编排层**（`pipeline` / `feature` / `bugfix` / `dev-workflow`，均有 `Task`）在流程开头调一次 `inspect`，把 `workspace_context` 随握手下传
+- **原子 skill** 从 `inputs.workspace_context` 读，**不需要 `Task`、不嵌套、不改权限**
+- **单跑**（用户直接 `/ms-verify`，无编排层）：无 `workspace_context` → 按 `inline` 缺省 + ℹ️ 提示「shell 项目请经编排层调用」。shell 是少数场景，单跑原子 skill 本就是次要路径
+
+消费方依赖的是**入参形状**，不是声明文件或 `.gitmodules` —— 「依赖接口而非实现」照样成立。
+
+这需要在 `constraints.md §3` 的握手字段表新增一行 `workspace_context`（可选）。
+
+### 2.3 验证契约
+
+**每次写入后重新执行 `inspect`**，核对配置、`.gitmodules`、实际目录、分支状态与子模块指针。⛔ 不得以「命令退出码为 0」代表完成。
+
+### 2.4 commit 所有权
+
+「谁干活谁提交」逐层落实：
+
+| 谁 | 提交什么 |
+|---|---|
+| `workspace-topology` | **自己产生的**：`.gitmodules`、`workspace:` 元数据块、迁移中的文件搬运 |
+| `ms-dev-workflow` | 它产生的代码与 DevDocs 状态 |
+| `ms-bugfix` | 修复代码与 bug 文档 |
+| `pipeline` / `retrofit` / `realign` | **只编排，不替被委托 skill 提交** |
+
+⛔ 本 skill **不得**变成「所有流程统一调它代提交」——那反而违背「谁干活谁提交」。现有 N+1 提交纪律留在 `references/protocol.md`，由干活的 skill 按条文执行。
+
+## 3. 元数据
+
+### 3.1 独立命名空间
 
 ```yaml
 ---
+workspace:
+  mode: shell
+  code_roots: [web, api]
 devdocs:
   docs_layout_version: layout.v1
-  workspace_mode: shell        # 位置不变
-  code_roots: [web, api]       # 位置不变，元素为 .gitmodules 的 submodule name
   initialized_at: "2026-08-05"
 ---
 ```
 
-非 DevDocs 项目会得到一个**只含这两字段的部分 `devdocs:` 块**。这不是本稿发明的——`workspace-shell.md` 探测第 5 步今天就明文规定了这个形态，并说明它「是合法的既知状态，不是意外」，消费方不得当 ⛔ 处理。
+**只抽 skill、不迁出 `devdocs:`，问题没有解决**——那只是把步骤换了位置，误触发依旧。这是本稿相对第 6 稿的核心修正。
 
-**写者**：`workspace-topology` 直接写。今天的链路是「pipeline 探测 → 塞进 `devdocs_frontmatter` 入参 → `agent-memory --update` 代写」，两个 skill 才落一个字段，因为 pipeline 不许写 `AGENTS.md`。新 skill 自己有写权限，链路缩短一环。
+### 3.2 兼容与迁移
 
-**`agent-memory` 的受管白名单不动**——`pipeline` / `retrofit` 不再传 workspace 字段后该路径自然休眠，不冲突。移除留给配对 spec。
+| 情形 | 行为 |
+|---|---|
+| 只有 `workspace:` 块 | 正常读取 |
+| 只有旧 `devdocs.workspace_mode` / `code_roots` | **只读兼容**；首次 `reconcile` 时迁移到 `workspace:` 并删除旧字段 |
+| 两处并存且**一致** | 迁移并删除旧字段 |
+| 两处并存且**冲突** | ⛔ 阻塞，由用户裁决以哪处为准 |
+| 字段跨两处拆分（如 `mode` 在新、`code_roots` 在旧） | ⛔ 阻塞——拼接两处声明会让「以哪处为准」失去单一答案 |
+| 都没有 | `inline`，零影响 |
 
-- `workspace/docs-root`：文档根**恒为** `<仓库根>/docs/`，两种模式无差别，不设字段、不可配置。理由：可配置就会漂，而仓内 **310 处**（2026-08-21 实测）`docs/devdocs` 硬编码引用的正确性建立在这条常量上。
+`code_roots` 比较按**集合**语义，顺序无意义。
 
-### 3.2 校验（fail-closed，沿用现有全表）
+### 3.3 所有权
+
+- `workspace-topology` 拥有 `workspace:` 块
+- `agent-memory` **停止管理** `workspace_mode` / `code_roots`，改为**原样保留** `workspace:` 块（不得覆写、不得删除）
+- `layout-metadata-schema.md` 删除 workspace 字段——它不属于 layout 元数据
+
+### 3.4 校验（fail-closed）
 
 | 情形 | 行为 |
 |------|------|
-| 无 `workspace_mode` 字段 | 视为 `inline` —— 存量项目零影响 |
 | `shell` 但 `code_roots` 缺失 / 为空 | ⛔ |
-| 某 name 不在 `.gitmodules` | ⛔，提示修声明 |
-| `code_roots` 有重复 name | ⛔（第 5 稿 R5 F-406 补入） |
-| name 在 `.gitmodules` 但工作区目录为空（未 `submodule update --init`） | ⛔（运行时校验门）；health 只读扫描降级 ⚠️ |
-| 解析出的两个 path 互为前缀（嵌套子模块） | ⛔ |
+| 某 name 不在 `.gitmodules` | ⛔ |
+| `code_roots` 有重复 name | ⛔ |
+| name 在 `.gitmodules` 但工作区目录为空 | ⛔（运行时）；health 只读扫描降级 ⚠️ |
+| 解析出的两个 path 互为前缀 | ⛔ |
 | 某 path 为 `.` / 含 `..` / 等于 `docs` | ⛔ |
 | `inline` 却出现 `code_roots` | ⚠️ 警告并忽略 |
 
-`code_roots` 比较一律按**集合**语义，顺序无意义（R5 F-406）。
+### 3.5 §0.3 的裁决
 
-### 3.3 §0.3 的裁决
+- `workspace/root-residue`：`shell` 下，仓库根不在 `docs/`、不属任何 `code_root` 的**已跟踪文件** → ℹ️ 列清单交用户判断。**不猜是不是源码，也不装作能猜。**
 
-- `workspace/root-residue`：`shell` 模式下，仓库根下不在 `docs/`、不属任何 `code_roots` 的**已跟踪文件** → ℹ️ 列清单，由用户判断。**不猜是不是源码，也不装作能猜。**
+同构矛盾也存在于零污染违约检测（`protocol.md` §5 要求判定「非源码路径」却禁止猜测），裁法一致。
 
-保留提示的价值（外壳仓不该有代码是真实约束），删掉它无法兑现的精确性。降 ⚠️→ℹ️ 是因为无法判定性质就不该要求确认。
+## 4. 可重入（`reconcile`）
 
-> ℹ️ `_shared/workspace-mode.md` §5 的零污染违约检测有**同构矛盾**（要求判定「非源码路径」，同时禁止猜测什么算源码）。裁法应一致，但**本稿不动该文件**，此项归配对 spec。
+**幂等**：重跑后状态一致则 no-op，**不产生空提交**。
 
-## 4. 可重入四动作（声明维护）
-
-**幂等判据**：读现状 → 若用户选「保持不变」，或调整后 frontmatter 与现状**逐字节相等** → 零文件写入，`details.changed: false`。
+**能做到真正幂等的范围**：
 
 | 动作 | 语义 |
 |---|---|
-| 首次声明 / 重新探测 | 扫 `.gitmodules` → AskUserQuestion 多选代码根（提示语必须说明「子模块也可能是素材 / vendor，不都算代码根」）→ 全不选 = `inline`。无 `.gitmodules` 时静默判 `inline`，不打扰用户 |
-| 切 mode（双向） | **声明跟随事实，不制造事实**。`inline→shell` 要求子模块已挂好；`shell→inline` 只删 `code_roots` 声明，子模块文件与 `.gitmodules` 一律不动 |
-| 新增子模块 | `git submodule add <url> <path>` + 追加 `code_roots`。属「管文件夹内部」，不越界。也支持「子模块已存在、只补声明」 |
-| 移除代码根 | **仅退声明**，绝不 `git submodule deinit` / `git rm` |
+| 重新探测 | 扫 `.gitmodules` → 多选代码根（提示语说明「子模块也可能是素材/vendor」）→ 全不选 = `inline` |
+| `shell → shell` 调整 `code_roots` | 纯声明变更 |
+| 已存在子模块加入管理范围 | 纯声明变更 |
+| 新增子模块 | 提供 URL/path 后 `git submodule add` |
+| 中断续做 | 从**实际 Git 状态**继续，不依赖「执行到第几步」的脆弱记录 |
+| legacy 字段迁移 | §3.2，一次性 |
 
-**写入后自校验**：立即跑 §3.2 全表，任一 ⛔ → 回滚本次写入并报告。
+**两个必须区分的界限**：
 
-**不自动提交**：只改工作区文件，`output_files` 列出改动 + `details.suggested_commit_message`。
+1. **「改声明」vs「改真实拓扑」**：`mode` 字段可以改，但 `inline → shell` 的真实拓扑变更是**仓库迁移**（§5），不是改字段。
+2. **「从 `code_roots` 移除」vs「删除子模块」**：前者仅表示「不再作为工作代码根」，纯声明；后者会改 `.gitmodules`、gitlink 和本地目录，是**另一项破坏性操作，必须单独确认**，且第一版不自动执行。
 
-## 5. inline→shell 迁移（双模式）
+**`shell → inline`**：第一版只提供手动规划，不承诺通用自动化（§1.3）。
 
-### 5.1 触发与两个模式
+## 5. 迁移（`migrate`）
 
-**仅由用户显式意图触发**（如「把这个项目转成外壳模式」），从交互式入口选择。skill **永不主动提议**——那是产品决策，不是规范差距。
+### 5.1 两个模式
 
-进入后第一件事是 AskUserQuestion 选模式，分界在**谁把代码仓挪进根目录**这个物理动作：
+用户要求：
 
-| 步骤 | 手动模式 | 自动模式 |
-|---|---|---|
-| 状态盘点（§5.2） | skill | skill |
-| 建根目录、把代码仓挪进去 | **用户**（skill 给出精确命令 + 保存迁移计划文件） | **skill** |
-| `git init` 根仓库 + 首次 commit | skill | skill |
-| 挂子模块 | skill | skill |
-| 提取 DevDocs 文档到根仓库 | skill | skill |
-| 从代码仓清掉 DevDocs 产物 | skill | skill |
-| 优化代码提交历史（§5.3） | skill | skill |
-| 写 `workspace_mode` 声明 | skill | skill |
-| 子模块切具名分支 | skill | skill |
+> 1. 手动模式：保存上下文，建议用户步骤，建一个根仓库，把开源项目放进去，剩余你来整理……
+> 2. 自动模式：也是建一个根仓库，把开源项目放进去……
 
-**手动模式的上下文保存**：skill 输出一份**迁移计划文件**（盘点结果 + 待办步骤 + 已确认项），落在用户指定路径或系统临时目录，**不进任何仓**。用户建好目录后重新调 skill 并指向该文件即可续做。
+**手动模式不是让用户手工做全部事情，而是让用户处理 Agent 无法安全跨越的工作区边界**（父目录写权限、cwd 迁移）：
 
-### 5.2 状态盘点取代前置门
+1. skill 输出**恢复胶囊**：源路径、分支、`HEAD`、remote、目标结构、文档清单、各项指纹
+2. 用户创建或打开目标父级目录，使其成为新的可写 workspace
+3. skill 恢复后完成：初始化外壳仓 → 添加子模块 → 迁移受管文档 → 写配置 → 生成代码仓迁出 commit 与外壳仓 commit → **逐项读回验证**
+4. push、分支选择、旧 checkout 删除**由用户执行**
 
-被删的七步有一道 Step 1 前置门：`git status --porcelain` 非空 ⛔、`rev-list @{u}..HEAD` 非 0 ⛔。**这道门会把唯一真实场景挡在门外**——clone 开源项目并用 DevDocs 开发过，状态必然是「工作区有未提交改动」或「有未推送提交」二选一。
+**恢复胶囊必须带失效检测**：记录 repo identity/realpath、`HEAD`、baseline、index 指纹、工作树清单、remote ref OID、递归子模块状态。恢复时重新盘点并比较，**任一漂移即让旧胶囊失效**，重新生成并确认受影响步骤。
 
-改为**盘点后分支处理**，不阻塞：
+**自动模式**仅在以下前置**全部满足**时启动：
 
-```bash
-git -C <R> status --porcelain              # DevDocs 产物在工作区？
-git -C <R> log --oneline <base>..HEAD      # 已提交？
-git -C <R> remote -v                       # remote 是上游还是自己的 fork？
-```
+- 父目录在当前写入范围内
+- 源仓干净、处于具名分支、存在 remote/upstream
+- 目标路径不存在或为空
+- 完整 dry-run 已列出路径、文件、提交并经确认
 
-三种形态分别对应 §5.3 的不同处置。**唯一保留的 ⛔**：目标根目录已存在且非空。
+### 5.2 两模式共同的禁止项
 
-### 5.3 优化代码提交历史
+⛔ rebase / filter / squash / force-push　⛔ 自动 push　⛔ 自动删除原 checkout
+⛔ 把代码仓自有文档一并迁走（§1.2）　⛔ 在 detached HEAD 上提交　⛔ 把已有脏改动混入迁移 commit
 
-范围含两件事：**摘掉 DevDocs 痕迹** + **把散乱开发提交整理成可提 PR 的序列**。
+### 5.3 挂子模块（实测确定的唯一正确序列）
 
-#### 三条硬安全线
+被删七步用 `git submodule add <remote URL>`，那是**从远端重新 clone**，本地未推送工作全丢。改用本地路径也不行——现代 git 直接 `fatal: transport 'file' not allowed`（CVE-2022-39253 后默认禁 file 传输）。
 
-1. **改写范围 = 只有你自己的提交**：`git merge-base <upstream>/<default-branch> HEAD`..HEAD。**上游历史零改动**。无 upstream remote（纯本地）时由用户指定基线 commit。
-2. **改写前强制备份**：`git branch backup/pre-migrate-<timestamp>`，并在报告里给出回滚命令。⛔ 备份失败不得继续。
-3. **改写后内容断言**：`git diff <backup> HEAD -- . ':!docs/devdocs' ':!docs/prd' ':!docs/codebase-insight.md' ':!AGENTS.md'` **必须为空**——即代码文件树末态逐字节相同，只有历史结构变了。⛔ 非空即回滚。
-
-#### 推送状态的三分处置
-
-| 范围内提交的推送状态 | 处置 |
-|---|---|
-| 未推送 | 直接改写 |
-| 已推送到**你自己的 fork** | ⚠️ 告知改写后需 `--force-with-lease`，确认后继续 |
-| 已推送到**上游** | ⛔ 该部分不得改写。只能用「不改历史」方式处理（补一个迁出 commit） |
-
-#### 两步执行
-
-**第一步 · 摘 DevDocs 痕迹**（机械，无判断）
-
-列出范围内所有触碰 `docs/devdocs` / `docs/prd` / `docs/codebase-insight.md` / `AGENTS.md` 的提交，分两类：
-
-- **纯 DevDocs 提交** → 整个 drop
-- **混合提交**（同时改了代码和 DevDocs 产物）→ 只摘那些路径，保留代码改动
-
-**第二步 · 整理成可提 PR 的序列**（判断题，⚠️ 逐组确认）
-
-把剩余代码提交按**逻辑变更**分组，一组 squash 成一个 commit，message 沿用该仓自身历史风格（委托 `/commit-convention`）。
-
-⛔ **分组不得自动决定**。每一组 AskUserQuestion 展示 before/after 让用户确认：
-
-```
-第 2 组 / 共 4 组
-  before:  a3 fix typo
-           a4 真正的实现
-           a5 忘了加测试
-  after:   feat: 支持 X（含单元测试）
-[确认 / 调整分组 / 拆开不合 / 跳过整理只摘痕迹]
-```
-
-「跳过整理只摘痕迹」是随时可退的出口——退出后仍拿到干净的历史，只是没整理。
-
-### 5.4 挂子模块：绝不用远端 URL
-
-被删的七步 Step 4 用 `git submodule add <R 的 remote URL>`，那是**从远端重新 clone 一份干净的**，本地未推送的工作全不在里面。
-
-改为挂**本地路径**：
+**实测通过的序列**（2026-08-24，本机 git）：
 
 ```bash
-git submodule add ./<R 目录名> <name>
+mkdir W && cd W && git init && git commit --allow-empty -m "chore: init shell workspace"
+mv ../myproj ./myproj                     # 先物理移动，工作区原样带过去
+git submodule add ./myproj myproj         # → "Adding existing repo at 'myproj' to the index"，不 clone
+git config -f .gitmodules submodule.myproj.url <子模块自身的 remote URL>
+git add .gitmodules myproj && git commit
 ```
 
-保住工作区现状。后续推送与 URL 修正由用户在需要时自行处理（`git config -f .gitmodules submodule.<name>.url <url>`）。
+实测结果：未推送提交、staged 文件、untracked 文件**全部保留**，子模块工作区状态原样，子模块保留自己的 `.git` 目录（不走 `.git/modules/`）。
 
-### 5.5 可逆性
+⚠️ **`.gitmodules` 的 url 修正是完成门，不是可选提醒**：`./myproj` 不指向当前磁盘目录，而是**相对外壳仓默认远端解析**，别人 clone 会得到不存在的嵌套 URL（git 官方说同级仓库应用 `../foo.git`）。第一版处置：无可访问 URL 时保留本地 url，但**阻止「迁移完成 / 可分享」状态**，并在报告中明确列出。
 
-除 §5.3 的历史改写（有备份分支兜底）与「从代码仓清掉 DevDocs 产物」外，**其余步骤只新增不删除**。清理步骤放在最后，此时根仓库已完整。
+⚠️ **挂载只登记 gitlink 指向的 commit**。「保住工作区现状」只对**当前这台机器**成立；别人 clone 只拿得到那个 commit。报告须列出「仅存在本机、尚未进入可达 commit」的成果。
 
-详细命令与分场景处置见 `references/inline-to-shell.md`。
+### 5.4 状态盘点取代前置门
+
+旧七步的 Step 1 前置门（`git status --porcelain` 非空 ⛔、`rev-list @{u}..HEAD` 非 0 ⛔）**会把唯一真实场景挡在门外**——clone 开源项目并用 DevDocs 开发过，状态必然二者居其一。
+
+改为盘点后分类处理。但**不是全部放行**，以下默认阻塞（它们会在移动之后才失败，恢复变成手工仓库手术）：
+
+- 未解决的 unmerged index
+- 进行中的 merge / rebase / cherry-pick
+- linked worktree / separate gitdir
+
+普通脏工作树（有未提交改动 / untracked）在完成 §5.5 快照后允许继续。
+
+### 5.5 备份
+
+⚠️ **`git branch backup/...` 只指向 `HEAD`**，不含 staged、unstaged、untracked、ignored、嵌套子模块脏工作树。目标场景中最重要的未提交成果**不在里面**。
+
+第一版做法：**保留原仓完整物理副本**，直到迁移后逐项读回验证全部通过。⛔ 禁止用 `reset --hard` 恢复脏工作树。
+
+物理迁移采用 **copy → 校验 → 切换 → 延迟删除**，不用直接 `mv`（跨文件系统移动非原子）。§5.3 的实测序列在有完整副本兜底时才可用 `mv` 简写。
+
+### 5.6 失败恢复
+
+失败后必须能通过**重新运行 `reconcile` / `migrate` 从实际状态恢复**，而不是依赖「执行到了第几步」的脆弱记录。
 
 ## 6. 影响面
 
-### 6.1 新建
+### 6.1 新建 / 搬迁
 
 ```
 skills/workspace-topology/
-  SKILL.md                          定位 / 单入口 / 四动作 / 声明 schema / 校验表
-  references/probe-and-repair.md    探测步骤 / detached HEAD 处置 / 指针漂移三成因
-  references/inline-to-shell.md     迁移双模式流程 / 分场景命令 / 历史改写安全线
+  SKILL.md                     三入口 / 幂等规则 / 提交所有权 / 输入输出契约
+  references/protocol.md       ← git mv skills/_shared/workspace-mode.md
+                                 （保留仍有效的校验、零污染、N+1 仓规则）
+  references/migration.md      ← git mv skills/pipeline/references/layout/workspace-shell.md
+                                 （重写：双模式、恢复胶囊、§5.3 实测序列；删迁移七步与历史优化）
 ```
 
-### 6.2 改动（3 文件）
+### 6.2 解除 DevDocs 所有权
 
-- `pipeline/SKILL.md:208` —— 整段探测说明替换为 `Task: /workspace-topology`；停止传 `devdocs_frontmatter` 的 workspace 字段
-- `retrofit/SKILL.md:177, 179` —— 同上；179 的「若上一步探测到工作区模式，一并写入」子句删除
-- `realign-scope-layout.md:82–85 / 156 / 229` —— 82–85 改委托；**156 迁移路由整行删除**（§0.2）；229 修复项指针改新 skill
-
-### 6.3 删除 + 指针改指（1 文件 + 其引用者）
-
-`pipeline/references/layout/workspace-shell.md` 删除。引用它的位置改指 `skills/workspace-topology/references/probe-and-repair.md`：
-
-| 引用者 | 行 |
+| 文件 | 动作 |
 |---|---|
-| `_shared/workspace-mode.md` | frontmatter `related`、正文 §17、§3 表、§7.3 |
-| `_shared/constraints.md` | 299（`workspace/pointer`） |
-| `dev-workflow/SKILL.md` | 301（detached HEAD 处置） |
-| `health-lint-implementation.md` | 405（指针漂移修复路径） |
-| `realign-scope-layout.md` | 156（**整行删除**，不改指针） |
-| `pipeline/SKILL.md` / `retrofit/SKILL.md` | 208 / 177（随 5.2 一并改） |
+| `_shared/constraints.md:292–299` | 删除 workspace 协议 SSOT 小节，改为指向新 skill 的一行 |
+| `_shared/constraints.md §3` | 握手字段表**新增** `workspace_context`（可选，§2.2） |
+| `layout/layout-metadata-schema.md:27–28, 45, 54` | 删除 workspace 字段——不属 layout 元数据 |
+| `agent-memory/SKILL.md:180–264` | 停止管理 `workspace_mode`/`code_roots`；改为原样保留 `workspace:` 块 |
+| `pipeline/SKILL.md:208` | 改委托 `/workspace-topology reconcile` |
+| `retrofit/SKILL.md:177, 179` | 同上 |
+| `realign-scope-layout.md:82–85, 156, 229` | 移除 workspace 迁移实现，最多提示转 `/workspace-topology` |
 
-⚠️ 这是**纯指针替换**，不改任何条文语义。`_shared/workspace-mode.md` 的内容一字不动。
+### 6.3 消费方改为读 `inputs.workspace_context`（10 处）
 
-### 6.4 文档
+`dev-flow` / `dev-workflow`（+ `task-orchestration.md` / `verification-flow.md`）/ `bugfix` / `test-run` / `verify` / `codebase-insight` / `code-self-describe` / `e2e-test-flow`
 
-`docs/architecture.md:283–296`、`docs/workflows.md:333`、本仓 `AGENTS.md` 当前状态节。
+⚠️ 本批只改**拓扑事实的获取方式**，不改任何算法。算法层的单仓假设（25 处）归配对 spec。
 
-**不改**：`_shared/workspace-mode.md` 正文、`agent-memory/SKILL.md`、`layout-metadata-schema.md`、全部消费方 skill、`docs/superpowers/specs/2026-08-05-*`、`docs/audits/*`。
+### 6.4 health 改为委托接口
 
-### 6.5 spec_version bump
+`realign-scope-health.md:33, 95, 167`、`health-lint-implementation.md:27, 389, 391, 405, 409, 453` —— 不再自行解析 `code_roots` 与 `mode`。
 
-| 文件 | 变更 | bump |
-|---|---|---|
-| 新 skill | 新建 | `workspace-topology.v1` |
-| `_shared/constraints.md` §10 `workspace/pointer` | 仅改指针目标 | **不 bump**（`realign/no-bump-copyedit`） |
-| `_shared/workspace-mode.md` | 仅改 `related` 与指针 | **不 bump**（同上） |
+### 6.5 文档
 
-## 7. 复杂度账
+`README.md`（39→40、17→18，增加独立入口）、`AGENTS.md`、`docs/architecture.md`、`docs/workflows.md:333`。
 
-| 项 | 增 | 减 |
-|---|---|---|
-| `skills/workspace-topology/`（SKILL + 2 references） | +约 220 行 | |
-| `workspace-shell.md` 删除（含旧迁移七步 170 行） | | −252 行 |
-| ↳ 存活内容已计入上方 +220 | | |
-| `realign-scope-layout.md:156` 迁移路由行 | | −1 行 |
-| `pipeline` / `retrofit` 传参管道 | | −约 8 行 |
-| **净** | | **约 −41 行** |
+**无需改动**：`.claude-plugin/plugin.json`（按整个 `skills/` 目录发现）、`scripts/deploy-skills.sh`（自动遍历带 `SKILL.md` 的目录）—— 已核。
 
-六稿的账：−120 → −50 → −40 → +2 → +68 → **本稿 −41**。
+### 6.6 spec_version bump
 
-比第 6 稿初版（−131）多出的约 90 行全在 `inline-to-shell.md`：双模式分工、状态盘点分支、历史改写的三条安全线与两步执行。**这部分是净新增能力**——旧七步虽有 170 行，但对目标场景不可用（§1.2）。
+`workspace-mode.v1` → `workspace-topology.v1`（搬迁 + 元数据命名空间变更）、`shared-constraints.v4` → `v5`（§3 握手字段 + §10 删除）、`agent-memory`、`layout-metadata-schema`。
 
-不建查询接口就不用写输出契约、不迁字段就不用写兼容层、不改消费方就不用写委托句 —— 负数仍然成立。
+## 7. 验证
 
-## 8. 验证
+**本仓**
 
-**本仓（可立即做）**
-
-1. `grep -rn "workspace-shell" skills/ docs/` —— 除历史 spec / 台账外零命中（指针已全部改指 `probe-and-repair.md`）
-2. `realign --scope=health` 的 `dead-link` rule 全过
-3. `git diff` 确认 `_shared/workspace-mode.md` 的改动**仅限** frontmatter `related` 与四处指针，正文零改动
-4. 新 SKILL.md ≤ 500 行（硬约束）
-5. 消费方零改动：`git diff --name-only` 不含 `verify` / `test-run` / `codebase-insight` / `e2e-test-flow` / `code-self-describe` / `dev-flow` / `bugfix` / `dev-workflow`（`dev-workflow/SKILL.md:301` 的纯指针替换是唯一例外，须在 diff 中肉眼确认只有一行）
+1. `grep -rn "workspace_mode\|workspace-shell" skills/` —— 现役消费方零命中（历史 spec / 台账不计）
+2. `grep -rn "\.gitmodules" skills/ | grep -v workspace-topology` —— 仅 `constraints.md` 的规则条文本身可出现
+3. 逐消费方确认显式使用 `inputs.workspace_context`，不读声明文件、不解析 `.gitmodules`
+4. `agent-memory` 跑一次，确认 `workspace:` 块**原样保留**
+5. 新 SKILL.md ≤ 500 行；`realign --scope=health` 的 `dead-link` rule 全过
 
 **真实项目（挂账）**
 
-6. 在 `chiaki-ng-dev`（已有 shell 声明）跑一次，确认展示现状、选「保持不变」时零写入、`pointer_checks` 与 `git submodule status` 一致
-7. 在一个无 `.gitmodules` 的 inline 项目跑一次，确认静默判 `inline`、不打扰、零写入
-8. 在一个非 DevDocs 项目（无 `docs/devdocs/`）跑一次，确认能创建只含两字段的部分 `devdocs:` 块且不触发任何 DevDocs 流程 —— **这是 §0.1 的验收**
-9. **迁移双模式验收（§0.2）**：造一个「clone 开源项目 + 已用 DevDocs 开发（工作区有改动 + 有未推送提交）」的仓，两种模式各跑一次：
-   - 确认**不被前置门挡住**（旧七步在此必 ⛔）
-   - 确认子模块挂的是本地路径、**未推送工作仍在**
-   - 确认历史改写前打了备份分支，改写后 §5.3 的内容断言为空
-   - 确认上游已推送的提交**未被改写**
-   - 手动模式：确认迁移计划文件落在仓外、用户建好目录后能续做
+6. `chiaki-ng-dev`（legacy 位置声明）跑 `reconcile`：确认迁移到 `workspace:`、旧字段删除、再跑 no-op 且**无空提交**
+7. 非 DevDocs 项目跑 `reconcile`：确认只产生 `workspace:` 块、不触发任何 DevDocs 流程 —— **§0.1 的验收**
+8. 「clone 开源项目 + 已用 DevDocs 开发（工作区脏 + 有未推送提交）」跑 `migrate` 两模式：不被前置门挡住、未推送工作仍在、`.gitmodules` url 未修正时**阻止「完成」状态**、历史**未被改写**
 
-## 9. 明确不做
+## 8. 待审查者重点质疑
 
-| 不做 | 理由 |
-|---|---|
-| skill 擅自决定外层目录路径 / 迁移作为声明设定的副作用发生 | §0.2；迁移改为显式双模式操作，路径由用户定（§5.1） |
-| 自动决定 squash 分组 | §5.3；「哪些该合」是判断题，逐组 AskUserQuestion，且随时可退到「只摘痕迹」 |
-| 改写上游已有的历史 | §5.3 安全线 1；改写范围恒为 `merge-base(upstream, HEAD)..HEAD` |
-| 用远端 URL `git submodule add` | §5.4；会丢本地未推送工作 |
-| `--check` 拓扑查询接口 | R5 F-404：五个路径类消费方无 `Task` 权限，委托架构不成立；→ 配对 spec |
-| `workspace/no-bypass` 禁令 | 同上——没有可用的委托入口就无从要求「必须委托」 |
-| 字段位置迁移到顶层 `workspace:` 块 | §0.1 附注；那是设计者加的诊断，非用户诉求，且引出 R5 F-403 回归 |
-| 任何消费方算法改动 | §1；→ 配对 spec 的 25 处 |
-| 封装提交侧（`--plan-commits` / 提交证据 / `review_diff_sources`） | R2 熔断；跨仓提交是有状态分布式事务，codex R3 独立确认该塌缩正确 |
-| `workspace-topology` 执行 `git commit` | 提交是干活 skill 的职责 |
-| 建 `workspace_baseline` 持久化基线 | R3 F-205 建议，R4 复审确认不采纳；该缺口今天就存在 |
-| 源码 / 测试路径分类器 | §3.3 |
-| 用「add-only」为本批背书 | §1.2；删迁移是有意的 breaking removal，R5 F-401 判第 5 稿的 add-only 定性名不副实 |
-
-## 10. 待审查者重点质疑（R6）
-
-前五轮共 36 条发现，其中 28 条源自本稿已删除的三个面（提交侧接口 / `--check` 查询接口 / 字段位置迁移）。§5 的迁移是**本稿新增、从未被审过**的面，请优先攻击它（第 6–8 问）。其余：
-
-1. **`pipeline` / `retrofit` 的委托改造是否真的零回归** —— 今天探测结果经 `devdocs_frontmatter` 传给 `agent-memory` 代写，改为新 skill 自写后，`agent-memory` 那一步的其余职责（工作流路由节、`initialized_at`）是否受影响；两者写同一个 `devdocs:` 块的时序是否会互相覆盖。
-2. **§5.3 的指针替换是否真是纯替换** —— `workspace-shell.md` 里除探测 / detached HEAD / 指针漂移三节外，是否还有别的内容被现有引用者依赖，删除后会丢。
-3. **§7 验证项 5 的「消费方零改动」是否可执行** —— `dev-workflow/SKILL.md:301` 是唯一例外。这个例外会不会在实施时扩散。
-4. **非 DevDocs 项目创建部分 `devdocs:` 块是否有副作用** —— 该块存在会不会让别的 skill（尤其 `pipeline` 的阶段检测、`health-lint` 的 `state/*` rule）误判该项目为 DevDocs 项目。
-5. **本稿是否仍有「设计者加的诊断」** —— §0.1 的附注承认了一处。请找出是否还有第二处：某个约束或字段的存在理由追溯不到用户诉求或既有缺陷。
-6. **§5.3 的内容断言是否真能兜住历史改写** —— `git diff <backup> HEAD -- . ':!docs/devdocs' …` 为空即通过。这个断言在「混合提交只摘部分路径」「squash 跨越文件重命名」「有 merge commit」三种情形下是否仍成立？
-7. **手动模式的续做是否真闭合** —— 迁移计划文件落在仓外，用户建好目录后重新调 skill 指向它。用户在这期间改了别的东西（比如又提交了几个 commit），计划文件里的盘点结果失效怎么办？
-8. **§5.2 删掉前置门后，有没有新的不安全输入能进来** —— 旧门虽然挡错了场景，但它确实拦住了「工作区脏时做仓库手术」。改为盘点分支后，哪些脏状态组合会导致中途失败且难以恢复？
+1. **§2.2 的握手传播是否真闭合** —— 单跑原子 skill 时按 `inline` 缺省 + ℹ️ 提示，shell 项目单跑会静默按错误拓扑工作。这个降级可接受吗？
+2. **§3.3 的所有权切换是否会与 `agent-memory` 的现有写入逻辑冲突** —— 它今天按字段白名单管理，改为「原样保留一个它不认识的块」是否需要新机制。
+3. **§5.5 的「完整物理副本」在大仓上是否现实** —— 开源项目动辄数 GB，副本 + 延迟删除的磁盘与时间代价。
+4. **§5.3 的 url 修正作为完成门** —— 用户没有 fork 时迁移永远停在「未完成」，这个状态会不会成为常态而失去意义。
+5. **21 处改动是否仍可一批落地** —— 前六轮 R4 F-307 曾判「不可分批发布」。本稿的消费方改动只涉及获取方式不涉及算法，这个判断是否随之变化。
