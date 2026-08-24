@@ -212,28 +212,28 @@ devdocs:
 
 ### 5.2 两模式共同的禁止项
 
-⛔ rebase / filter / squash / force-push　⛔ 自动 push　⛔ 自动删除原 checkout
+⛔ rebase / filter / squash / force-push　⛔ **静默** push（须问过用户，见 §5.3）　⛔ 自动删除原 checkout
 ⛔ 把代码仓自有文档一并迁走（§1.2）　⛔ 在 detached HEAD 上提交　⛔ 把已有脏改动混入迁移 commit
 
-### 5.3 挂子模块（实测确定的唯一正确序列）
+### 5.3 挂子模块
 
-被删七步用 `git submodule add <remote URL>`，那是**从远端重新 clone**，本地未推送工作全丢。改用本地路径也不行——现代 git 直接 `fatal: transport 'file' not allowed`（CVE-2022-39253 后默认禁 file 传输）。
+被删七步用 `git submodule add <remote URL>` 直接挂，那会**从远端重新 clone**，本地未推送的工作全丢。正确做法是**先把代码仓物理移进外壳仓，再登记**——目录已是有效 git 仓时，`submodule add` 会直接登记而不 clone。
 
-**实测通过的序列**（2026-08-24，本机 git）：
+**实测通过**（2026-08-24，本机 git）：
 
 ```bash
 mkdir W && cd W && git init && git commit --allow-empty -m "chore: init shell workspace"
-mv ../myproj ./myproj                     # 先物理移动，工作区原样带过去
-git submodule add ./myproj myproj         # → "Adding existing repo at 'myproj' to the index"，不 clone
-git config -f .gitmodules submodule.myproj.url <子模块自身的 remote URL>
+mv ../myproj ./myproj                                    # 先物理移动
+git submodule add https://github.com/you/myproj.git myproj
+# → "Adding existing repo at 'myproj' to the index"，不 clone
 git add .gitmodules myproj && git commit
 ```
 
-实测结果：未推送提交、staged 文件、untracked 文件**全部保留**，子模块工作区状态原样，子模块保留自己的 `.git` 目录（不走 `.git/modules/`）。
+实测结果：`.gitmodules` 记的就是传入的远程 URL；未推送提交、staged 文件、untracked 文件全部保留；子模块工作区状态原样。
 
-⚠️ **`.gitmodules` 的 url 修正是完成门，不是可选提醒**：`./myproj` 不指向当前磁盘目录，而是**相对外壳仓默认远端解析**，别人 clone 会得到不存在的嵌套 URL（git 官方说同级仓库应用 `../foo.git`）。第一版处置：无可访问 URL 时保留本地 url，但**阻止「迁移完成 / 可分享」状态**，并在报告中明确列出。
+⚠️ **收尾必须推送**。外壳仓记录的是代码仓当前所在的 commit；有提交没推送，别人 clone 外壳仓时 git 到远程找不到该 commit，直接报错退出（实测 `fatal: remote error: upload-pack: not our ref <sha>`）。
 
-⚠️ **挂载只登记 gitlink 指向的 commit**。「保住工作区现状」只对**当前这台机器**成立；别人 clone 只拿得到那个 commit。报告须列出「仅存在本机、尚未进入可达 commit」的成果。
+迁移末尾检查 `git -C <path> log @{u}..HEAD`，非空就问用户是否推送并推掉。没有推送权（clone 的开源仓）时先 fork 再推。**这不是新增机制，就是把该推的推掉。**
 
 ### 5.4 状态盘点取代前置门
 
@@ -249,11 +249,20 @@ git add .gitmodules myproj && git commit
 
 ### 5.5 备份
 
-⚠️ **`git branch backup/...` 只指向 `HEAD`**，不含 staged、unstaged、untracked、ignored、嵌套子模块脏工作树。目标场景中最重要的未提交成果**不在里面**。
+⚠️ `git branch backup/...` **只指向 `HEAD`**，不含 staged、unstaged、untracked。目标场景中最重要的未提交成果不在里面。
 
-第一版做法：**保留原仓完整物理副本**，直到迁移后逐项读回验证全部通过。⛔ 禁止用 `reset --hard` 恢复脏工作树。
+但也不必整份拷贝目录——那几个 G 基本是 `node_modules` / `build/` / `.venv` 这类被 ignore 的内容，可重新生成。三件套即可：
 
-物理迁移采用 **copy → 校验 → 切换 → 延迟删除**，不用直接 `mv`（跨文件系统移动非原子）。§5.3 的实测序列在有完整副本兜底时才可用 `mv` 简写。
+| 备什么 | 命令 |
+|---|---|
+| 已提交的历史（所有分支） | `git bundle create <仓外>/backup.bundle --all` |
+| 未提交的已跟踪改动 | `git diff HEAD > <仓外>/worktree.patch` |
+| 未跟踪且未被 ignore 的文件 | `git ls-files --others --exclude-standard -z \| tar --null -czf <仓外>/untracked.tgz -T -` |
+| 被 ignore 的文件 | **不备**，可重新生成 |
+
+本仓实测：整份拷贝 9.2M，`bundle --all` 1.7M。
+
+三件套落**仓外**，保留到迁移后读回验证通过。⛔ 禁止用 `reset --hard` 恢复脏工作树。
 
 ### 5.6 失败恢复
 
@@ -324,6 +333,6 @@ skills/workspace-topology/
 
 1. **§2.2 的握手传播是否真闭合** —— 单跑原子 skill 时按 `inline` 缺省 + ℹ️ 提示，shell 项目单跑会静默按错误拓扑工作。这个降级可接受吗？
 2. **§3.3 的所有权切换是否会与 `agent-memory` 的现有写入逻辑冲突** —— 它今天按字段白名单管理，改为「原样保留一个它不认识的块」是否需要新机制。
-3. **§5.5 的「完整物理副本」在大仓上是否现实** —— 开源项目动辄数 GB，副本 + 延迟删除的磁盘与时间代价。
-4. **§5.3 的 url 修正作为完成门** —— 用户没有 fork 时迁移永远停在「未完成」，这个状态会不会成为常态而失去意义。
+3. **§5.5 的三件套是否覆盖完整** —— bundle + patch + untracked tarball 之外，还有什么是 `reset --hard` 会毁掉而它没备的（如 `.git/` 下的 stash、reflog、rerere）。
+4. **§5.3 的推送收尾** —— clone 的开源仓需先 fork 才能推。skill 是引导用户 fork，还是只报告「有 N 个未推送提交」由用户自理。
 5. **21 处改动是否仍可一批落地** —— 前六轮 R4 F-307 曾判「不可分批发布」。本稿的消费方改动只涉及获取方式不涉及算法，这个判断是否随之变化。
