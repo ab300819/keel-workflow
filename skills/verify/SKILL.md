@@ -133,7 +133,7 @@ metadata:
 
 验证代码实现是否正确——AC 满足度、设计符合度、追溯完整性。
 
-> `workspace_mode: shell` 时实现代码扫描范围是各 `code_roots` 路径，不是仓库根。外壳仓根下（`docs/` 之外）出现源码文件 → ⚠️ 提示「外壳仓不该有代码」。代码根解析见 [_shared/workspace-mode.md](../_shared/workspace-mode.md)。
+> 实现代码扫描范围是 `workspace_context.code_roots` 各路径（`inline` 时为单项 `.`，**调用方不分支**）。仓库根下不在 `docs/`、不属任何代码根的**已跟踪文件** → ℹ️ 列清单交用户判断，⛔ 不预判哪个算源码。代码根取自 握手 `workspace_context`（[_shared/constraints.md](../_shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。
 
 ### B1：AC 满足度审查
 

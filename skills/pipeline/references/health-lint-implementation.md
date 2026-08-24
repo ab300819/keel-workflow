@@ -24,7 +24,7 @@
 | `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
 | `submodule/pointer-drift` | ⛔ / ⚠️ | a 结构正确性 | v1+v2（仅 shell）| ❌（manual_decision）|
 
-> 6 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 `workspace_mode: shell` 下生效，`inline` 项目报 `not_applicable`。
+> 6 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` 项目报 `not_applicable`。
 
 ---
 
@@ -386,9 +386,9 @@ Phase B：扫描引用 + 范围编号展开
 
 **目的**：检测外壳仓记录的子模块指针与子模块实际状态不一致，防止「代码已提交但追溯链断裂」静默累积。
 
-**检测对象**：`AGENTS.md` 的 `code_roots` 解析出的每个子模块路径。
+**检测对象**：握手 `workspace_context.code_roots` 里的每个 `path`（⛔ 不自行读声明文件、不解析 `.gitmodules`，见 [_shared/constraints.md](../../_shared/constraints.md) `workspace/context-over-declaration`）。
 
-**适用性门**：读 `AGENTS.md` 的 `workspace_mode`；非 `shell`（含字段缺失）→ 输出 finding `{ status: not_applicable }`，早退。
+**适用性门**：`workspace_context.code_roots` 为单项 `.`（即 `inline`）或字段缺失 → 输出 finding `{ status: not_applicable }`，早退。
 
 **判据**：对每个路径跑 `git submodule status`，按首字符分派；命中 `+`（有漂移）再用 `git -C <path> merge-base --is-ancestor <recorded> <actual>`（及反向）判祖先关系区分成因：
 
@@ -402,12 +402,12 @@ Phase B：扫描引用 + 范围编号展开
 | `+`，记录领先子模块（反向 `is-ancestor` 成立） | 未 update（本地滞后） | ⚠️ warning |
 | `+`，两方向都不成立 | 分叉（互无祖先关系） | ⛔ blocker，须 AskUserQuestion 人工裁定，不自动选 |
 
-**修复路径**：**不可自动修复**。三种成因的具体处置命令见 [layout/workspace-shell.md § 指针漂移修复](layout/workspace-shell.md#指针漂移修复)（本文不重复）。
+**修复路径**：**不可自动修复**。三种成因的具体处置命令见 [workspace-topology/references/migration.md § 指针漂移修复](../../workspace-topology/references/migration.md#指针漂移修复)（本文不重复）。
 
 **误报与边界**：
 
-- 子模块目录为空（未 `submodule update --init`）→ 报 ⚠️ 而非 ⛔，因为这是本地环境问题不是仓库问题；不与 [_shared/workspace-mode.md § 校验规则](../../_shared/workspace-mode.md#3-校验规则fail-closed) 的 ⛔ 冲突——那条是**运行时校验门**（要用代码根干活，目录空了就得停），本 rule 是**只读扫描**报告，适用范围不同
-- `.gitmodules` 中存在但不在 `code_roots` 里的子模块（素材 / vendor）**不扫**
+- 子模块目录为空（未 `submodule update --init`）→ 报 ⚠️ 而非 ⛔，因为这是本地环境问题不是仓库问题；不与 [workspace-topology/references/protocol.md § 校验规则](../../workspace-topology/references/protocol.md#3-校验规则fail-closed) 的 ⛔ 冲突——那条是**运行时校验门**（要用代码根干活，目录空了就得停），本 rule 是**只读扫描**报告，适用范围不同
+- 素材 / vendor 子模块**不扫**——它们本就不在 `workspace_context.code_roots` 里，本 rule 看不到
 
 ---
 
@@ -450,7 +450,7 @@ notes: |
 - `state/forbidden-content`：按 (file, line) 元组 hash；baseline 中存在的视为存量，新增的报告为 violation
 - `health/dead-link`：baseline 中已知死链不重复报；新增死链一律 ⛔
 - `design/adr-only-revision`：baseline 不适用（按 commit 时间窗判定，本身就是增量语义）
-- `submodule/pointer-drift`：按 (code_root name, 漂移类型) 元组去重；baseline 中已知漂移不重复报，新增漂移一律按第 4 步算法定性的严重度（warning 或 blocker）报告。仅 `workspace_mode: shell` 生效
+- `submodule/pointer-drift`：按 (code_root name, 漂移类型) 元组去重；baseline 中已知漂移不重复报，新增漂移一律按第 4 步算法定性的严重度（warning 或 blocker）报告。仅 shell 拓扑生效
 
 ## 退出码（CLI 集成）
 
@@ -461,7 +461,7 @@ notes: |
 | 2 | 有 blocker 违规（state/total-size-cap / state/line-length-cap / health/dead-link 新增 / submodule/pointer-drift）|
 | 3 | lint 自身错误（git 不可用 / baseline 文件损坏 / report stale）|
 
-> `submodule/pointer-drift` 按成因分级，同一条 rule 可能落在退出码 1 或 2：漏 bump / 未 update / 未初始化 → ⚠️ warning（退出码 1）；分叉 → ⛔ blocker（退出码 2）。仅 `workspace_mode: shell` 生效，`inline` 项目报 `not_applicable`，不计入任一退出码。
+> `submodule/pointer-drift` 按成因分级，同一条 rule 可能落在退出码 1 或 2：漏 bump / 未 update / 未初始化 → ⚠️ warning（退出码 1）；分叉 → ⛔ blocker（退出码 2）。仅 shell 拓扑生效，`inline` 项目报 `not_applicable`，不计入任一退出码。
 
 错误码（细分诊断，写入 finding.error_code）：
 
@@ -471,7 +471,7 @@ notes: |
 | `health/baseline-missing` | `--since-baseline` 但 `.health-baseline.yml` 不存在 |
 | `health/baseline-corrupt` | baseline schema 不匹配或 YAML 解析失败 |
 | `health/manual-pending` | `--apply` 时存在 `status: pending` 的 manual_decision |
-| `health/git-unavailable` | git 命令失败或 repo 不在 git 控制下（影响 dead-link / adr-only-revision / submodule/pointer-drift，仅 `workspace_mode: shell` 时后者适用）|
+| `health/git-unavailable` | git 命令失败或 repo 不在 git 控制下（影响 dead-link / adr-only-revision / submodule/pointer-drift，仅 shell 拓扑时后者适用）|
 | `health/scan-timeout` | 扫描超过性能阈值（见下表）|
 
 ## 性能预期
@@ -545,4 +545,4 @@ notes: |
 |------|------|
 | 2026-05-22 | 初始版本（health scope 4 条 [新增] rule 落地：state/* + dead-link）|
 | 2026-05-25 | 新增 `design/adr-only-revision`（维度 a 结构正确性），落地 system-design 增量修订正文偏差检测 |
-| 2026-08-05 | 新增 `submodule/pointer-drift`（维度 a 结构正确性，仅 `workspace_mode: shell` 生效），落地 devdocs 工作区模式外壳仓子模块指针漂移检测 |
+| 2026-08-05 | 新增 `submodule/pointer-drift`（维度 a 结构正确性，仅 shell 拓扑生效），落地 devdocs 工作区模式外壳仓子模块指针漂移检测 |

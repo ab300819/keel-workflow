@@ -285,7 +285,7 @@ npm test
 
 ## Step 7: 提交
 
-> `workspace_mode: shell` 时提交走 N+1 仓协议（含 detached HEAD 前置门与跨仓 Recovery），见 [_shared/workspace-mode.md § N+1 仓提交协议](../_shared/workspace-mode.md)。修复代码提交进对应子模块（commit message 沿用该仓风格、**不带 BUG-XX 编号**），bugfix 日志提交进外壳仓。
+> `workspace_context.code_roots` 多于一项（shell 拓扑）时提交走 N+1 仓协议（含 detached HEAD 前置门与跨仓 Recovery），见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根路径取自 握手 `workspace_context`（[_shared/constraints.md](../_shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。修复代码提交进对应子模块（commit message 沿用该仓风格、**不带 BUG-XX 编号**），bugfix 日志提交进外壳仓。
 
 ### 提交前检查
 

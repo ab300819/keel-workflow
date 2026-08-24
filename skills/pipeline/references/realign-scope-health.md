@@ -30,7 +30,7 @@
 
 | 维度 | 检查内容 | 依赖能力 | 状态 |
 |------|----------|----------|------|
-| a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订、子模块指针一致性（仅 `workspace_mode: shell`）| ms-verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）+ `submodule/pointer-drift`（[新增]，仅 shell）| [新增] |
+| a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订、子模块指针一致性（仅 shell 拓扑）| ms-verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）+ `submodule/pointer-drift`（[新增]，仅 shell）| [新增] |
 | b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
 | c 过大文档识别（含 state-hygiene 子项）| size 三档（byte 阈值 / 单行长度）+ state-hygiene（内嵌禁用模式）| `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
 | d SSOT 遵从 | 占位/索引不复制权威源内容 | `ssot/no-restatement` | [FUTURE] (layout.v2 才启用) |
@@ -92,7 +92,7 @@ docs/devdocs/.health-report.md
    - `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` → 维度 c
    - `health/dead-link` → 维度 b
    - `design/adr-only-revision` → 维度 a（基于 git 历史扫描最近 30 天 commit）
-   - `submodule/pointer-drift` → 维度 a（仅 `workspace_mode: shell`；`inline` 报 not_applicable）
+   - `submodule/pointer-drift` → 维度 a（仅 shell 拓扑；`inline` 报 not_applicable，判据见 health-lint-implementation.md 该 rule 的适用性门）
 5. 若项目为 layout.v2 → 追加 ssot-lint 调用获取维度 d 数据；layout.v1 → 维度 d 报 `skipped: requires layout.v2`。
 6. 加权评分输出（见下方"评分契约"）。
 7. 写入 `.health-report.md`，stdout 打印摘要 + 下一步建议命令。
@@ -164,7 +164,7 @@ manual_decisions:
 
 | 违规 rule | route_to_scope | 修复路径 |
 |----|----|----|
-| health-lint 全部 rule（清单见 [health-lint-implementation.md](health-lint-implementation.md) Rule 集表；`submodule/pointer-drift` 仅 `workspace_mode: shell` 适用）| `health` | health scope `--apply` 直接处理（`health/dead-link` 手动修复；`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
+| health-lint 全部 rule（清单见 [health-lint-implementation.md](health-lint-implementation.md) Rule 集表；`submodule/pointer-drift` 仅 shell 拓扑适用）| `health` | health scope `--apply` 直接处理（`health/dead-link` 手动修复；`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
 | `ssot/*` (`current-md-size` / `file-size-cap` / `modules-size-cap`) | `layout` | 拆分走 layout scope |
 | `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
 | PRD↔DevDocs 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |

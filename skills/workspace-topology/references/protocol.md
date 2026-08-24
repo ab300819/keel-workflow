@@ -1,43 +1,46 @@
 ---
-title: 工作区模式协议 SSOT（inline / shell）
+title: 工作区拓扑协议（inline / shell）
 status: 引入新协议，跨 skill 强制
 scope: 文档仓与代码仓的拓扑关系
 related:
   - skills/_shared/constraints.md（§10 指针）
-  - skills/pipeline/references/layout/layout-metadata-schema.md（frontmatter schema）
-  - skills/pipeline/references/layout/workspace-shell.md（操作手册）
+  - skills/workspace-topology/SKILL.md（入口与声明 schema）
+  - skills/workspace-topology/references/migration.md（操作手册）
 generated_at: 2026-08-05
-spec_version: workspace-mode.v1
+spec_version: workspace-topology.v1
 ---
 
-# 工作区模式协议 SSOT（inline / shell）
+# 工作区拓扑协议（inline / shell）
 
-本文是 `workspace_mode` 维度的协议正文 SSOT。该维度描述**文档仓与代码仓的拓扑关系**，与 `docs_layout_version` / `id_scheme` / `traceability_version` 三层版本号正交——docs 内部结构不因模式而变，不进 layout 版本矩阵。
+本文是工作区拓扑维度的协议正文。该维度描述**文档仓与代码仓的拓扑关系**，与 `docs_layout_version` / `id_scheme` / `traceability_version` 三层版本号正交——docs 内部结构不因模式而变，不进 layout 版本矩阵。
 
-本文不覆盖：探测步骤、inline→shell 迁移流程、故障修复手册。这些操作细节归 [layout/workspace-shell.md](../pipeline/references/layout/workspace-shell.md)。
+本文不覆盖：入口、声明 schema、校验的交互形态（见 [../SKILL.md](../SKILL.md)），也不覆盖探测步骤、迁移流程、故障修复手册（见 [migration.md](migration.md)）。
 
 ## 1. 模式枚举与缺省
 
-外壳仓根下依然是 `docs/devdocs/`，仓内 280 处 `docs/devdocs` 硬编码引用原样成立。真正改变的只有两件事：
+外壳仓根下依然是 `docs/devdocs/`，仓内 310 处 `docs/devdocs` 硬编码引用原样成立。**文档根在两种模式下恒为 `<仓库根>/docs/`，是固定不变量，不设配置字段。** 真正改变的只有两件事：
 
 1. **代码根 ≠ 仓库根** —— 碰代码的 skill 现在假设代码在 cwd 根
 2. **N+1 个 git 仓** —— 文档提交进外壳仓，代码提交进各子模块仓，外壳仓额外跟子模块指针
 
-项目根 `AGENTS.md` 已有的 `devdocs:` 段新增字段：
+声明在项目根 `AGENTS.md` frontmatter 的**独立 `workspace:` 块**——这是仓库级事实，不是 DevDocs 事实：
 
 ```yaml
 ---
-devdocs:
+workspace:
+  mode: shell                  # 可选，枚举 inline|shell，缺省 inline
+  code_roots: [web, api]       # shell 时必填，≥1 项，元素为 .gitmodules 的 submodule name
+devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有 workspace: 块
   docs_layout_version: layout.v1
   id_scheme: id.v1
   traceability_version: trace.v0
-  workspace_mode: shell        # 可选，枚举 inline|shell，缺省 inline
-  code_roots: [web, api]       # shell 时必填，≥1 项，元素为 .gitmodules 的 submodule name
   initialized_at: "2026-08-05"
 ---
 ```
 
-- `workspace/mode-enum`：`workspace_mode` 是二值枚举 `inline` | `shell`，声明在项目根 `AGENTS.md` 的 `devdocs:` frontmatter。**缺省 `inline`**——无此字段的存量项目行为完全不变，docs 路径不因模式而变。
+- `workspace/mode-enum`：`mode` 是二值枚举 `inline` | `shell`，声明在项目根 `AGENTS.md` 的独立 `workspace:` frontmatter 块。**缺省 `inline`**——无此块的存量项目行为完全不变，docs 路径不因模式而变。
+- `workspace/docs-root`：文档根恒为 `<仓库根>/docs/`，两种模式无差别，**不设字段、不可配置**。
+- `workspace/legacy-location`：旧版本把字段放在 `devdocs.workspace_mode` / `devdocs.code_roots`，**只读兼容**；迁移与冲突处置见 [../SKILL.md § legacy 兼容](../SKILL.md)。
 
 ## 2. `code_roots` 与真源
 
@@ -57,7 +60,7 @@ devdocs:
 | 无 `workspace_mode` 字段 | 视为 `inline` —— 现存所有项目零影响 |
 | `shell` 但 `code_roots` 缺失 / 为空 | ⛔ 阻塞 |
 | 某 name 不在 `.gitmodules` | ⛔ 阻塞，提示修 frontmatter |
-| name 在 `.gitmodules` 但工作区目录为空 | ⛔ 阻塞（**运行时校验门**场景：要用代码根干活，目录空了就得停），提示 `git submodule update --init <path>`；health 只读扫描同一情形降级为 ⚠️，见 [health-lint-implementation.md § submodule/pointer-drift](../pipeline/references/health-lint-implementation.md#submodulepointer-drift) |
+| name 在 `.gitmodules` 但工作区目录为空 | ⛔ 阻塞（**运行时校验门**场景：要用代码根干活，目录空了就得停），提示 `git submodule update --init <path>`；health 只读扫描同一情形降级为 ⚠️，见 [health-lint-implementation.md § submodule/pointer-drift](../../pipeline/references/health-lint-implementation.md#submodulepointer-drift) |
 | 解析出的两个 path 互为前缀（嵌套子模块） | ⛔ 阻塞 |
 | 某 path 为 `.` / 含 `..` / 等于 `docs` | ⛔ 阻塞 |
 | `inline` 却出现 `code_roots` | ⚠️ 警告并忽略，不阻塞 |
@@ -66,9 +69,14 @@ devdocs:
 
 ## 4. 归属判定
 
-某文件属于哪个代码根，用**解析后路径的前缀匹配**。落在仓库根下、不属任何 `code_roots` 且不在 `docs/` 里的源码文件 → ⚠️ 提示（外壳仓不该有代码）。此判定同时是第 6 节提交分组的依据。
+某文件属于哪个代码根，用**解析后路径的前缀匹配**。此判定同时是第 6 节提交分组的依据。
 
-- `workspace/root-attribution`：文件归属代码根按解析后路径的前缀匹配判定；落在仓库根、不属任何 `code_roots` 且不在 `docs/` 内的源码文件 → ⚠️ 提示（外壳仓不该有代码）。该判定同时是第 6 节提交分组的依据。
+落在仓库根下、不属任何 `code_roots` 且不在 `docs/` 里的**已跟踪文件** → ℹ️ 列清单交用户判断。
+
+⛔ **不猜哪个算源码。** 上游仓目录约定各异，静态白名单会误伤——这与 §5「不做静态白名单猜测『什么算源码』」是同一条纪律，此前两节互相矛盾，现统一为「列出来，让人看」。
+
+- `workspace/root-attribution`：文件归属代码根按解析后路径的前缀匹配判定，该判定同时是第 6 节提交分组的依据。
+- `workspace/root-residue`：仓库根下不属任何 `code_roots` 且不在 `docs/` 内的已跟踪文件 → ℹ️ 列清单交用户判断，**不预判类别**。
 
 ## 5. 零污染写入范围
 
@@ -85,9 +93,9 @@ devdocs:
 | layout.v2 的 `@satisfies` / `@verifies` 代码注释 | — | shell 下**禁用**。本仓现役 layout.v1 本就未启用，此条为前瞻约束，防未来升 v2 时污染上游 |
 | `.claude/settings.local.json`、`.remember/` | 外壳仓 | 参考仓既有实践 |
 
-**违约检测**：dev-workflow / bugfix 提交前，对每个变更子模块跑 `git status --porcelain`，出现非源码/测试路径的变更 → ⚠️ 列出并 AskUserQuestion（提交 / 排除 / 终止）。**不做静态白名单猜测「什么算源码」** —— 上游仓目录约定各异，猜会误伤。
+**违约检测**：dev-workflow / bugfix 提交前，对每个变更子模块跑 `git status --porcelain`，**列出全部变更路径清单**交用户判断（⚠️ AskUserQuestion：提交 / 排除 / 终止）。**不预先判定哪条是「非源码」** —— 上游仓目录约定各异，静态白名单会误伤。裁法与 §4 `workspace/root-residue` 一致。
 
-- `workspace/no-pollution`：LLM 不主动往 `code_roots` 写任何非代码文件；已存在的 `AGENTS.md`/`CLAUDE.md` 照读照尊重，写入范围见上表。提交前对每个变更子模块跑 `git status --porcelain` 做违约检测，出现非源码/测试路径变更 → ⚠️ 列出并 AskUserQuestion（提交 / 排除 / 终止），不做静态白名单猜测。
+- `workspace/no-pollution`：LLM 不主动往 `code_roots` 写任何非代码文件；已存在的 `AGENTS.md`/`CLAUDE.md` 照读照尊重，写入范围见上表。提交前对每个变更子模块跑 `git status --porcelain` 做违约检测，**列出全部变更路径**并 AskUserQuestion（提交 / 排除 / 终止），⛔ 不预判类别、不做静态白名单猜测。
 
 ## 6. N+1 仓提交协议
 
@@ -130,7 +138,7 @@ devdocs:
 
 ## 7. 工作区洁净检查（gitlink 排除）
 
-`ms-dev-workflow` 的 N+1 工作区遍历（外壳仓 + 各 `code_roots` 各跑一次 `git status --porcelain`，检出「不相关变更」后 AskUserQuestion：stash / 忽略 / 终止，见 [task-orchestration.md § 断点续做状态机](../dev-workflow/references/task-orchestration.md)）在外壳仓这一层必须排除 gitlink 条目，否则同一件事会被双重报告，且 gitlink 条目不适用 stash。
+`ms-dev-workflow` 的 N+1 工作区遍历（外壳仓 + 各 `code_roots` 各跑一次 `git status --porcelain`，检出「不相关变更」后 AskUserQuestion：stash / 忽略 / 终止，见 [task-orchestration.md § 断点续做状态机](../../dev-workflow/references/task-orchestration.md)）在外壳仓这一层必须排除 gitlink 条目，否则同一件事会被双重报告，且 gitlink 条目不适用 stash。
 
 ### 7.1 现象：gitlink 条目与普通文件条目在 porcelain v1 里同形
 
@@ -159,5 +167,5 @@ $ git status --porcelain=2        # 更细粒度格式能看出区别，但工�
 
 ### 7.3 排除规则
 
-- `workspace/gitlink-exclusion`：外壳仓层面的工作区洁净扫描跳过匹配 code_root 路径的条目（判据见 §7.2）。该条目代表的信号分别交给：指针是否漂移 → `submodule/pointer-drift` health rule（[workspace-shell.md § 指针漂移修复](../pipeline/references/layout/workspace-shell.md#指针漂移修复)）；子模块内部是否有不相关变更 → 该 code_root 自身那一轮 `git -C <path> status --porcelain` 扫描。**不得**在外壳仓扫描与 code_root 扫描里对同一件事各报一次。
+- `workspace/gitlink-exclusion`：外壳仓层面的工作区洁净扫描跳过匹配 code_root 路径的条目（判据见 §7.2）。该条目代表的信号分别交给：指针是否漂移 → `submodule/pointer-drift` health rule（[migration.md § 指针漂移修复](migration.md#指针漂移修复)）；子模块内部是否有不相关变更 → 该 code_root 自身那一轮 `git -C <path> status --porcelain` 扫描。**不得**在外壳仓扫描与 code_root 扫描里对同一件事各报一次。
 - `workspace/no-stash-gitlink`：gitlink 条目**不适用**「stash / 忽略 / 终止」三选一，尤其**绝不提供 stash 选项**。理由：`git stash` 对未提交的子模块指针状态与普通文件的处理方式不同——不存在"把 gitlink 这个条目本身暂存掉"的语义，实际效果是暂存子模块内已 `git add` 的变更（若有），子模块工作区本身未 `add` 的脏内容不受影响；用户会误以为"暂存"消除了这件事，但状态原样存在。gitlink 条目只能引导用户去对应 code_root 内部处理（`git -C <path> ...`）。

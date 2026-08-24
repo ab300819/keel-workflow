@@ -170,52 +170,50 @@ bypass_reason: <用户提供的原因>
 
 ### devdocs frontmatter 写入(可选)
 
-**触发条件**:调用方(`retrofit` / `pipeline init`,未来可能还有 `realign --scope=layout`)随 `Task: /agent-memory --update` 传入 `devdocs_frontmatter`,嵌在 [constraints.md](../_shared/constraints.md) §3 最小握手协议的 `inputs` 里,完整信封例如:
+**触发条件**:调用方随 `Task: /agent-memory --update` 传入 `devdocs_frontmatter`,嵌在 [constraints.md](../_shared/constraints.md) §3 最小握手协议的 `inputs` 里:
 
 ```yaml
 skill: agent-memory
 mode: update
 inputs:
   devdocs_frontmatter:
-    workspace_mode: shell        # 或 inline
-    code_roots: [web, api]       # workspace_mode=shell 时必填
+    initialized_at: "2026-08-07"
 expected_output: yaml-summary-v1
 ```
 
-**未传入此字段时(当前全部存量项目 + inline 路径):本节全部步骤跳过,AGENTS.md 不新增 frontmatter,行为与现状完全一致。**
+**未传入此字段时(当前全部存量项目):本节全部步骤跳过,AGENTS.md 不新增 frontmatter,行为与现状完全一致。**
 
-**受管字段白名单**(按字段而非块标记界定受管边界 —— YAML frontmatter 不支持 HTML 注释,不能沿用正文的 `<!-- agent-memory:managed -->` 体例):当前 `workspace_mode`、`code_roots`、`initialized_at`。白名单外的 `devdocs:` 字段(`docs_layout_version`/`id_scheme`/`traceability_version`/`upgraded_at`/`upgraded_from`/`legacy_annotation_grace_period`)**本次不写** —— 那批字段的执行接口仍是 FUTURE(见 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md));但下方写入算法本身是通用的,未来这些字段落地时只需把字段名加入白名单即可直接复用,不必重新设计机制。字段清单、枚举值、校验规则的权威源是 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 + [workspace-mode.md](../_shared/workspace-mode.md) §3;本节只定义"怎么写",不重复"有哪些字段"。
+> ⛔ **`workspace:` 块不受本 skill 管理。** 工作区拓扑（`mode` / `code_roots`）是**仓库级事实**,由 [/workspace-topology](../workspace-topology/SKILL.md) 自己写自己的块。本 skill 遇到 `workspace:` 块一律**原样保留**——不解析、不比较、不覆写、不删除,连键序和缩进都不动。历史上这两个字段曾在本 skill 的受管白名单里(经 `devdocs.workspace_mode` / `devdocs.code_roots`),现已移除。
+
+**受管字段白名单**(按字段而非块标记界定受管边界 —— YAML frontmatter 不支持 HTML 注释,不能沿用正文的 `<!-- agent-memory:managed -->` 体例):当前仅 `initialized_at`。白名单外的 `devdocs:` 字段(`docs_layout_version`/`id_scheme`/`traceability_version`/`upgraded_at`/`upgraded_from`/`legacy_annotation_grace_period`)**本次不写** —— 那批字段的执行接口仍是 FUTURE(见 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md));下方写入算法本身是通用的,未来这些字段落地时只需把字段名加入白名单即可复用。字段清单与校验规则的权威源是 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1;本节只定义"怎么写",不重复"有哪些字段"。
 
 **写入步骤**:
 
 1. **定位/插入 frontmatter 块**:
    - AGENTS.md 首行已是 `---` → 已有 frontmatter,解析到下一个 `---` 为止的 `devdocs:` YAML 段
    - AGENTS.md 不存在 → 先完成本次 `--update` 首次创建流程,再在生成结果最前面插入 frontmatter
-   - AGENTS.md 存在但无 frontmatter(包括首行是 HTML 注释等正文内容,如本仓当前 `AGENTS.md` 首行 `<!-- 由 /agent-memory 生成... -->`)→ 在**文件最前面**插入新 frontmatter 块,原有全部内容整体下移,不改写原内容一个字符(schema 硬规则:frontmatter 必须紧贴文件起始,无 leading 空行 / heading)
+   - AGENTS.md 存在但无 frontmatter(包括首行是 HTML 注释等正文内容)→ 在**文件最前面**插入新 frontmatter 块,原有全部内容整体下移,不改写原内容一个字符(schema 硬规则:frontmatter 必须紧贴文件起始,无 leading 空行 / heading)
 2. **合并白名单字段**:
    - 传入值与已有值相同 → no-op(幂等)
    - `initialized_at` 已存在 → 不可修改;调用方传入不同值 → ⛔ 不写入,报告冲突
    - `initialized_at` 不存在 → 首次写入补当天 ISO 日期
-   - 其余白名单字段(`workspace_mode`/`code_roots`):不同则按传入值覆盖
-   - 白名单外字段:原样保留 key/value/原始顺序,不比较、不改动
-3. **写入前校验**:按 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 校验规则 + [workspace-mode.md](../_shared/workspace-mode.md) §3 fail-closed 全表逐条检查;任一不通过 → ⛔ 本步骤不写入,`blockers` 报告具体规则 + 冲突值,frontmatter 保持原状(**不回滚步骤 3 已完成的 AGENTS.md 正文更新,也不阻塞步骤 4~6**;整体 `status` 按 `partial` 处理,`summary.details.devdocs_frontmatter: blocked`)
+   - 白名单外字段(含整个 `workspace:` 块):原样保留 key/value/原始顺序,不比较、不改动
+3. **写入前校验**:按 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 校验规则逐条检查;任一不通过 → ⛔ 本步骤不写入,`blockers` 报告具体规则 + 冲突值,frontmatter 保持原状(**不回滚已完成的 AGENTS.md 正文更新,也不阻塞后续步骤**;整体 `status` 按 `partial` 处理,`summary.details.devdocs_frontmatter: blocked`)
 
-   **明确(避免 fail-closed 惯性误判为阻塞)**:`devdocs:` 段首次创建时,`docs_layout_version`/`id_scheme`/`traceability_version`/`initialized_at` 等白名单外必填字段本就不存在(它们的执行接口是 FUTURE,本节根本不写它们,见上方白名单说明)。这种"三层版本号缺失"**不是**本步骤的 ⛔ 判据——按 [layout-metadata-schema.md §1「缺失时的行为」](../pipeline/references/layout/layout-metadata-schema.md#缺失时的行为),devdocs 段不完整只 ⚠️ 警告 + 建议补全,不阻塞。本步骤的 ⛔ 仅针对 §1「校验规则」子节列出的规则本身、以及 workspace-mode.md §3 fail-closed 全表本身不满足的情形(如 `initialized_at` 冲突改值、frontmatter 未紧贴文件起始、`code_roots` 的 name 不在 `.gitmodules` 等),不包含"必填字段尚未齐全"这一类。
-4. 校验通过 → 写入 frontmatter,其余 AGENTS.md 正文流程(步骤 4~6)照常继续
+   **明确(避免 fail-closed 惯性误判为阻塞)**:`devdocs:` 段首次创建时,三层版本号等白名单外必填字段本就不存在(它们的执行接口是 FUTURE)。这种"缺失"**不是** ⛔ 判据——按 [layout-metadata-schema.md §1「缺失时的行为」](../pipeline/references/layout/layout-metadata-schema.md#缺失时的行为),devdocs 段不完整只 ⚠️ 警告 + 建议补全,不阻塞。
+4. 校验通过 → 写入 frontmatter,其余 AGENTS.md 正文流程照常继续
 
-**示例**(本仓 `AGENTS.md` 传入 `workspace_mode: shell, code_roots: [web]` 后的结果形态):
+**示例**(`workspace:` 块由 workspace-topology 写入,本 skill 原样保留;本 skill 只补 `devdocs.initialized_at`):
 
 ```markdown
 ---
-devdocs:
-  workspace_mode: shell
+workspace:
+  mode: shell
   code_roots: [web]
+devdocs:
   initialized_at: "2026-08-07"
 ---
 <!-- 由 /agent-memory 生成，请通过该命令更新 -->
-
-# AI Agent Skills
-...
 ```
 
 ### 分流规则
@@ -229,7 +227,7 @@ devdocs:
 | 代码约定、提交格式 | AGENTS.md | 跨工具一致 |
 | 编号状态 (max F/US/AC/T/ADR) | `.claude/rules/devdocs-state.md` | Claude 专属运行态 |
 | 完整需求/设计/测试详情 | 留在 `docs/devdocs/` | 太详细，不适合记忆文件 |
-| `workspace_mode` / `code_roots` / `initialized_at` | AGENTS.md devdocs frontmatter | 治理字段，仅调用方显式传入 `devdocs_frontmatter` 时写入；schema 权威见 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 |
+| `initialized_at` | AGENTS.md devdocs frontmatter | 治理字段，仅调用方显式传入 `devdocs_frontmatter` 时写入；schema 权威见 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 |
 
 ## `--restructure` 工作流程
 
@@ -261,7 +259,7 @@ devdocs:
 - 位置：项目根目录
 - 模板：[templates/memory-template.md](templates/memory-template.md)
 - 约束：不超过 60 行，工具无关
-- 可选 devdocs frontmatter（`workspace_mode`/`code_roots`/`initialized_at`）：仅调用方传入 `devdocs_frontmatter` 时写入，见 [devdocs frontmatter 写入(可选)](#devdocs-frontmatter-写入可选)
+- 可选 devdocs frontmatter（`initialized_at`）：仅调用方传入 `devdocs_frontmatter` 时写入；`workspace:` 块原样保留不动，见 [devdocs frontmatter 写入(可选)](#devdocs-frontmatter-写入可选)
 
 ### CLAUDE.md
 

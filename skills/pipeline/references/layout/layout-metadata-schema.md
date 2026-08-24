@@ -24,10 +24,6 @@ devdocs:
     docs_layout_version: layout.v1
     id_scheme: id.v1
     traceability_version: trace.v0
-  workspace_mode: shell                   # 可选，枚举 inline / shell，缺省 inline
-  code_roots: [web, api]                  # workspace_mode=shell 时必填，≥1 项
-                                          # 元素为 .gitmodules 的 submodule name（非路径）
-                                          # 路径解析：git config -f .gitmodules submodule.<name>.path
   legacy_annotation_grace_period: null    # 可选，layout.v2 期间 legacy @satisfies/@verifies 注释截止删除日期
                                           # null = 使用默认（layout.v2 升级日 + 6 个月）
                                           # ISO 日期（如 "2026-12-31"）= 显式覆盖默认
@@ -42,7 +38,7 @@ devdocs:
 - `initialized_at` 一旦写入不可修改
 - `upgraded_at` 每次执行 `/ms-pipeline realign --scope=layout` 后自动更新
 - frontmatter 段必须紧贴文件起始（无 leading 空行 / heading）
-- `workspace_mode` 与 `docs_layout_version` / `id_scheme` / `traceability_version` **正交**，无版本依赖；`workspace_mode` / `code_roots` 的字段枚举与 fail-closed 校验规则见 [_shared/workspace-mode.md § 校验规则](../../../_shared/workspace-mode.md#3-校验规则fail-closed)（全表权威，本文件不复制）
+- **工作区拓扑（`inline` / `shell`）不属 layout 元数据**——它是仓库级事实，与三层版本号正交且无版本依赖，已独立为 `AGENTS.md` 的 `workspace:` 块，由 [/workspace-topology](../../../workspace-topology/SKILL.md) 拥有。本文不定义其字段、不校验其取值。
 
 ### 缺失时的行为
 
@@ -51,7 +47,7 @@ devdocs:
 | AGENTS.md 不存在 | skill surface "无 DevDocs 治理标记，建议 `/ms-pipeline init`" |
 | AGENTS.md 存在但无 devdocs 段 | skill 视为 `layout.v0`（隐式），按 `on_incompatible` 字段处理 |
 | devdocs 段不完整（缺字段）| skill surface 警告 + 建议补全；不阻塞 |
-| `workspace_mode` / `code_roots` 相关全部情形 | 见 [_shared/workspace-mode.md § 校验规则](../../../_shared/workspace-mode.md#3-校验规则fail-closed)（fail-closed 全表，唯一权威源） |
+| 工作区拓扑相关全部情形 | 不在本文范围，见 [/workspace-topology](../../../workspace-topology/SKILL.md) |
 
 ## 2. Skill frontmatter（layout 兼容性声明）
 

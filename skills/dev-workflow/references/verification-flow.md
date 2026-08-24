@@ -351,7 +351,7 @@ drain 侧定位规则（不新增状态，全部复用已有 trailer）：
 1. 用 Commit 1 的 `Review-Batch-Id: <id>` trailer + 提交标题中的任务编号（`<type>(T-XX): ...`）定位该任务 Commit 1 的 SHA。
 2. 外审输入 = 该 Commit 1 的 diff。**Commit 2 是纯文档提交，不入外审输入。**
 3. T2 通道 drain 侧须传入显式 diff 内容或 commit 范围（契约见 [external-reviewer-integration.md](../../adversarial-review/references/external-reviewer-integration.md)）。
-4. **`workspace_mode: shell`**：Commit 1 按 `code_root` 拆成 N 个子模块 commit（见 [workspace-mode.md N+1 仓提交协议](../../_shared/workspace-mode.md)）。drain 侧须**逐 code_root 定位并拼接**；外壳仓 Commit 2（文档 + 指针 bump）不参与。
+4. **代码根多于一项时**：Commit 1 按代码根拆成 N 个子模块 commit（见 [protocol.md N+1 仓提交协议](../../workspace-topology/references/protocol.md)）。drain 侧须**逐 code_root 定位并拼接**；外壳仓 Commit 2（文档 + 指针 bump）不参与。
 5. diff 为空（任务确无代码变更）→ 记 `drain.empty_diff`，跳过 Phase 4 但**不判 `EXT_REVIEWED`**——无审查即无证据。
 
 **默认轮次**：`max_rounds=3`（dev-workflow 嵌入收紧值）。`--external-rounds N` 覆盖上限 5（对齐 /adversarial-review 自身默认）。

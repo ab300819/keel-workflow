@@ -6,7 +6,7 @@ related:
   - AGENTS.md（yaml-summary-v1 原始定义）
   - skills/prd/references/governance/prd-revision-policy.md（PRD 修订边界）
   - skills/pipeline/references/layout/*（DevDocs 治理 SSOT）
-  - skills/_shared/workspace-mode.md（工作区模式协议正文）
+  - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
 generated_at: 2026-05-18
 spec_version: shared-constraints.v4
 ---
@@ -123,11 +123,13 @@ skill: <target-ms-skill>
 task: <明确任务>
 mode: read | dry-run | apply | update
 inputs: []
+workspace_context: {}          # 可选，见 task/workspace-context
 allowed_paths: []
 expected_output: yaml-summary-v1
 ```
 
 - `task/handshake-minimum`：`task`、`mode`、`inputs`、`allowed_paths`、`expected_output` 是推荐最小握手字段。
+- `task/workspace-context`：**编排层**在流程开头调一次 `/workspace-topology inspect`，把返回的拓扑上下文（`mode` / `docs_dir` / `code_roots`）经本字段下传。被委托 skill 从此字段读代码根与 docs 根，**不自行读取声明文件、不解析 `.gitmodules`**。字段缺失（用户单跑原子 skill、无编排层）时按 `inline` 缺省并 ℹ️ 提示。契约见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
 - `task/mode-honored`：子 Agent 不得越过传入 `mode`；`read` / `dry-run` 不得产生写入。
 - `task/blocker-propagation`：子 Agent 返回 `failed` 或含 `⛔` blocker 时，编排层必须停止对应分支并 surface recovery。
 
@@ -289,14 +291,14 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 - `layered-memory/review-lens`：因此三层分离**主要靠人工 review lens 承载，不是自动兜底**。审查时发现某文件同时承载两层以上内容（典型：state 文件里塞决策理由或数据明细），即提示拆到对应层。
 - `layered-memory/no-auto-detection`：**不做**"关键词扫描自动判定章节混杂"——即原 health 维度 e / Plan B 检测面。该方向已**废弃**（`[废弃]`，原标 [FUTURE]）：复杂度不匹配收益，skill 宜简。**不再保留为 FUTURE 触发项**（区别于 trace.v1 / layout.v2 / 维度 d，后三者仍为封存 FUTURE）。
 
-## 10. 工作区模式（inline / shell）
+## 10. 工作区拓扑（inline / shell）
 
-> 本节**仅声明协议层共性与指针**（遵 `doc/reference-over-copy`）。完整协议正文见 [workspace-mode.md](workspace-mode.md)——该文件引入新执行语义，故独立成文，不并入本文。
+> 本节**仅声明跨 skill 共性与指针**。完整协议正文、入口与迁移手册归 [workspace-topology](../workspace-topology/SKILL.md) —— 该维度是**仓库级事实**，不是 DevDocs 事实，故不住在本文也不住在 layout 元数据里。
 
-- `workspace/mode-enum`：`workspace_mode` 二值枚举 `inline` | `shell`，声明在项目根 `AGENTS.md` 的 `devdocs:` frontmatter。**缺省 `inline`**——无此字段的存量项目行为完全不变。
-- `workspace/code-roots-source`：`shell` 模式下 `code_roots` 必填，元素为 `.gitmodules` 的 submodule **name**；路径与 URL 的唯一真源是 `.gitmodules`，不在 frontmatter 复制。
-- `workspace/orthogonal-to-layout`：本维度与 `docs_layout_version` / `id_scheme` / `traceability_version` **正交**——docs 内部结构不因模式而变，不进 layout 版本矩阵。
-- `workspace/pointer`：字段 schema 见 [layout/layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1；探测、迁移与故障处置见 [layout/workspace-shell.md](../pipeline/references/layout/workspace-shell.md)。
+- `workspace/single-entry`：工作区拓扑的唯一入口是 `/workspace-topology`（`inspect` / `reconcile` / `migrate`）。
+- `workspace/default-inline`：缺省 `inline`；无声明的项目行为完全不变。
+- `workspace/context-over-declaration`：需要代码根路径或 docs 根的 skill 从握手的 `workspace_context` 读（见 §3 `task/workspace-context`），**⛔ 不得自行读取声明文件或解析 `.gitmodules`**。
+- `workspace/pointer`：协议正文（校验全表、零污染、N+1 仓提交、gitlink 排除）见 [workspace-topology/references/protocol.md](../workspace-topology/references/protocol.md)；迁移与故障处置见 [references/migration.md](../workspace-topology/references/migration.md)。
 
 ## 11. 作用域匹配（评审边界 ≥ 影响边界）
 

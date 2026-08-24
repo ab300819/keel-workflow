@@ -330,15 +330,16 @@ DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory --upd
 
 逐项映射后:9 项 superpowers 能力 DevDocs 已有等价或更强;唯一内化项 = ms-bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
 
-## 文档与代码分仓（workspace_mode: shell）
+## 文档与代码分仓（shell 拓扑）
 
 **什么时候用**：维护 fork 的开源项目，或自有项目计划公开——DevDocs 的需求 / 设计 / 任务 / 洞察都是私有产物，不该进代码仓。
 
 **怎么开**：
 
-- **新项目**：`/ms-pipeline init`。若仓内有 `.gitmodules`，会问你哪些子模块是代码根
-- **已有外壳仓但没跑过 DevDocs**（如手工建好的 `xxx-dev`）：`/ms-retrofit`
-- **现有单仓要拆开**：直接说「把这个项目转成外壳模式」，走 `realign --scope=layout` 的七步迁移，第 2 步会先给你完整 dry-run 计划
+- **任何时候**：`/workspace-topology`。独立 skill，**不拉起 DevDocs**，非 DevDocs 项目也能用。有 `.gitmodules` 就问你哪些子模块是代码根，没有就静默判 `inline`
+- **新项目 / 改造已有项目**：`/ms-pipeline init` 与 `/ms-retrofit` 会在生成 `docs/devdocs/` 后自动委托上面那个 skill，不用你单独跑
+- **现有单仓要拆开**：`/workspace-topology migrate --to shell`，先选手动还是自动模式（分界在谁把代码仓挪进根目录），执行前给完整 dry-run 计划
+- **后期要改**：再跑一次 `/workspace-topology` 就行——幂等，状态一致时零改动。增删代码根、新增子模块都在这里
 
 **开了之后有什么不同**：
 

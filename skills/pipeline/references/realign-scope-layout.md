@@ -79,10 +79,7 @@ docs/devdocs/.realign-plan.md
 5. 根据 [layout/aliases-yml-schema.md](layout/aliases-yml-schema.md) 生成候选 alias，不修改现有文件。
 6. 根据 [layout/code-decoupling-implementation.md](layout/code-decoupling-implementation.md) 生成候选 trace 条目。
 7. 输出 `.realign-plan.md`，并在 stdout 打印 plan 摘要与下一步命令。
-8. **工作区模式核对**：读 `AGENTS.md` 的 `workspace_mode`。
-   - 无字段且仓内存在 `.gitmodules` → 在 plan 中列为「可选项：未声明工作区模式」，dry-run 展示，**不自动改**
-   - 有 `workspace_mode: shell` → 跑 [`workspace/fail-closed`](../../_shared/workspace-mode.md#3-校验规则fail-closed) 全表校验，失配项进 plan 的修复清单
-   - 有 `workspace_mode: inline` → 无操作
+8. **工作区拓扑核对**：`Task: /workspace-topology inspect`（只读）。返回的 findings 中的失配项进 plan 的修复清单；若返回 `undeclared_submodules` 非空（仓内有 `.gitmodules` 条目但未进声明）→ plan 中列为「可选项：未声明工作区拓扑」，dry-run 展示，**不自动改**。本 scope 不自行读取声明文件、不解析 `.gitmodules`（`workspace/context-over-declaration`）。
 
 ### Plan 文件契约
 
@@ -153,7 +150,6 @@ validation_probes:
 | 编号映射歧义 | 旧编号可映射到多个新编号，例如 `F-01 → FEAT-001` 或 `FEAT-005` | 展示候选来源、引用次数、推荐理由 |
 | PRD 引用受影响 | PRD mapping 或 `docs/prd/**` 引用旧 DevDocs 编号/路径 | 展示受影响引用、旧引用、新引用候选 |
 | 文件名冲突 | 目标路径已存在且内容不是同一 owner | 展示两个文件摘要，提供改名/合并/停止选项 |
-| 工作区模式迁移 | 用户显式要求 inline → shell | 走 [workspace-shell.md § inline → shell 迁移](layout/workspace-shell.md#inline--shell-迁移) 的七步流程，第 2 步 dry-run 计划必须确认后才动文件 |
 
 `--apply` 遇到未确认决策时必须暂停并逐项问询。headless 场景不得跳过这些项；只能返回 `status: interrupted` 或 `partial`。
 
@@ -226,7 +222,7 @@ validation_probes:
 2. 为编号文件写入 layout metadata schema 要求的 `id/type/status/summary/links` 等字段。
 3. 更新项目级 DevDocs frontmatter：`docs_layout_version: layout.v2`、`id_scheme: id.v2`、`traceability_version: trace.v1`、`upgraded_from`、`upgraded_at`。
 4. 保留 `.devdocs-realign-ack` 机制；dry-run 不写 ack，apply 完成或用户选择 no-realign 时按 [realign.md](realign.md) 更新 ack。
-5. 修复 `workspace_mode` / `code_roots` 失配（如 name 已从 `.gitmodules` 移除）：按 [`workspace/fail-closed`](../../_shared/workspace-mode.md#3-校验规则fail-closed) 提示的方向修正，**每项 AskUserQuestion 确认**。
+5. 修复工作区拓扑声明失配（如 name 已从 `.gitmodules` 移除）：委托 `Task: /workspace-topology reconcile`，由它按 [`workspace/fail-closed`](../../workspace-topology/references/protocol.md#3-校验规则fail-closed) 处置，**每项 AskUserQuestion 确认**。
 6. 写入 `.realign-applied.log` Phase 5 记录并单独 commit。
 
 失败处理：`⛔ 停止`，提示 `git reset --hard <checkpoint_commit>`；不得只升级声明而保留 v1 输出结构。

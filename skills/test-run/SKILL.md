@@ -69,7 +69,7 @@ metadata:
 
 ## 执行流程
 
-> `workspace_mode: shell` 时测试命令在各 `code_root` 目录下执行（`git -C <path>` 或 cd 进去），不在仓库根。多代码根时逐个执行并在报告中按 root 分组。测试报告写外壳仓 `docs/devdocs/05-test-report.md`。代码根解析见 [_shared/workspace-mode.md](../_shared/workspace-mode.md)。
+> 测试命令在 `workspace_context.code_roots` 各路径下执行（`inline` 时为单项 `.`，即仓库根，**调用方不分支**）。代码根多于一项时逐个执行并在报告中按 root 分组。测试报告恒写 `<workspace_context.docs_dir>/devdocs/05-test-report.md`。代码根取自 握手 `workspace_context`（[_shared/constraints.md](../_shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。
 
 ```text
 1. 读取测试用例文档

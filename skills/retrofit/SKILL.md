@@ -174,9 +174,9 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 **关键规则**：改造不是终点，必须通过后续 Skill 进入正常开发循环。推荐先用 `/ms-requirements --context` 补充背景信息。
 
-**工作区模式探测（`retrofit` 路径）**：改造成功、`docs/devdocs/` 生成后、`agent-memory --update` 之前，执行一次工作区模式探测，步骤见 [../pipeline/references/layout/workspace-shell.md § 探测](../pipeline/references/layout/workspace-shell.md#探测)（本文不重复算法）。无 `.gitmodules` 时静默判定 `inline`，不打扰用户；有条目则 AskUserQuestion 后，将探测结果通过 `devdocs_frontmatter` 输入（`workspace_mode` / `code_roots`）随下一步 `Task: /agent-memory --update` 一并传入，字段契约见 [agent-memory/SKILL.md](../agent-memory/SKILL.md) § devdocs frontmatter 写入(可选)。
+**工作区拓扑（`retrofit` 路径）**：改造成功、`docs/devdocs/` 生成后，执行 `Task: /workspace-topology reconcile`。该 skill 自己写 `AGENTS.md` 的 `workspace:` 块，无 `.gitmodules` 时静默判 `inline`。见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
 
-**记忆同步(成功路径必做)**:改造成功、`docs/devdocs/` 生成后,执行 `Task: /agent-memory --update` 同步 AGENTS.md(DevDocs 项目会包含工作流路由节;若上一步探测到工作区模式,一并写入 `devdocs:` frontmatter)。写 AGENTS.md 走 agent-memory 的窄例外(见下方约束「Write 工具仅用于写入 docs/devdocs/」),本 Skill 不直接 Write 该文件。失败语义:ℹ️ 不阻塞改造交付,blockers 记入报告。
+**记忆同步(成功路径必做)**:改造成功、`docs/devdocs/` 生成后,执行 `Task: /agent-memory --update` 同步 AGENTS.md(DevDocs 项目会包含工作流路由节)。写 AGENTS.md 走 agent-memory 的窄例外(见下方约束「Write 工具仅用于写入 docs/devdocs/」),本 Skill 不直接 Write 该文件。失败语义:ℹ️ 不阻塞改造交付,blockers 记入报告。
 
 ---
 

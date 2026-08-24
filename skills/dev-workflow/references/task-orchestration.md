@@ -133,16 +133,16 @@ Step 5: 工作区决策
             选项："暂存(stash)后继续" / "忽略继续" / "终止"
 ```
 
-`workspace_mode: shell` 时状态检测扩为五重，详见 [../../_shared/workspace-mode.md](../../_shared/workspace-mode.md)：「工作区」维遍历 N+1 个仓，「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」，新增第五维「指针一致性」（不一致 → 进 Step 1.5 证据复核不直接跳过）。**Step 1.5 证据复核（A/B/C/D1/D2/E）不变**——与仓库拓扑无关。
+握手 `workspace_context.code_roots` 多于一项时状态检测扩为五重，详见 [../../workspace-topology/references/protocol.md](../../workspace-topology/references/protocol.md)：「工作区」维遍历 N+1 个仓，「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」，新增第五维「指针一致性」（不一致 → 进 Step 1.5 证据复核不直接跳过）。**Step 1.5 证据复核（A/B/C/D1/D2/E）不变**——与仓库拓扑无关。
 
-shell 模式下「工作区」维的遍历：
+代码根多于一项时「工作区」维的遍历：
 
 ```bash
 git status --porcelain                                    # 外壳仓
-for p in <各 code_root path>; do git -C "$p" status --porcelain; done
+for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelain; done
 ```
 
-**外壳仓输出需排除 gitlink 条目**：路径恰好等于某个 code_root 解析出的 path 的条目（如 ` M chiaki-ng`）不算外壳仓自身的「不相关变更」——它代表的信号已被上面 `for` 循环对该 code_root 的独立扫描覆盖，指针是否漂移则由 `submodule/pointer-drift` health rule 负责；判据、成因见 [../../_shared/workspace-mode.md § 7 工作区洁净检查](../../_shared/workspace-mode.md#7-工作区洁净检查gitlink-排除)。
+**外壳仓输出需排除 gitlink 条目**：路径恰好等于某个 code_root 解析出的 path 的条目（如 ` M chiaki-ng`）不算外壳仓自身的「不相关变更」——它代表的信号已被上面 `for` 循环对该 code_root 的独立扫描覆盖，指针是否漂移则由 `submodule/pointer-drift` health rule 负责；判据、成因见 [../../workspace-topology/references/protocol.md § 7 工作区洁净检查](../../workspace-topology/references/protocol.md#7-工作区洁净检查gitlink-排除)。
 
 排除 gitlink 条目后，任一仓有不相关变更 → 按现有 AskUserQuestion（stash / 忽略 / 终止）处理，**提示文案须标明是哪个仓**；**gitlink 条目本身不进入这个三选一，尤其不得提供 stash 选项**（理由同上指针）。
 
