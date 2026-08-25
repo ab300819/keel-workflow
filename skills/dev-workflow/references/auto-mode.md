@@ -35,11 +35,17 @@
 
 | 条件 | 检测方式 | 失败处理 |
 |------|----------|----------|
-| 工作区洁净或续做 | `git status --porcelain` 为空，**或**变更属于执行队列首个任务（续做豁免） | 不属于首任务的脏工作区 → fail-fast |
+| 工作区洁净或续做 | **每个代码根**的 `git status --porcelain` 均为空，**或**变更属于执行队列首个任务（续做豁免） | 不属于首任务的脏工作区 → fail-fast |
 | 依赖状态 | 无"进行中"的前置依赖 | fail-fast，报告阻塞链 |
 | 任务文档存在 | `04-dev-tasks*.md` 可读 | fail-fast |
 | 编号完整 | 任务包含关联 F/AC/UT 编号 | fail-fast |
 
+> **「每个代码根」怎么遍历**：路径取自握手 `workspace_context.code_roots`（[_shared/constraints.md](../../_shared/constraints.md) §3 `task/workspace-context`）。`mode` 为 `inline` 时它是单项、就是仓库根，遍历退化为今天的一次检查，**行为不变**。
+>
+> `mode` 不是 `inline` 时还须**额外检查本仓（文档仓）自身**，但要排除代码根对应的条目——那些条目代表的是代码根内部的状态，已经在各自那一轮里查过了，重复报告会让用户以为有两处问题（判据与排除规则见 [workspace-topology/references/protocol.md §7](../../workspace-topology/references/protocol.md#7-工作区洁净检查gitlink-排除)）。
+>
+> ⛔ **只查本仓是无人值守下最危险的一种失败**：本仓（只有文档）干净、代码根里一堆未提交改动时会被判成「洁净」，然后无人值守地一路跑下去。
+>
 > **续做豁免**：fail-fast 后工作区可能残留失败任务的未提交变更。前置校验检测到非空工作区时，
 > 对比变更文件与执行队列首个任务的"涉及文件"字段——若匹配则判定为续做场景，放行至断点检测（Step 4a）处理。
 
@@ -117,7 +123,7 @@
 5. **循环依赖终止** — 报错终止（不变）
 6. **标注删减检测**（layout.v1 legacy only）— 修复中若 legacy retained 的 `@verifies`/`@testcase` 被移除，视为 Blocker；layout.v2 项目追溯在 traceability.yml，此检测不适用
 7. **断言数量不减** — 修复后断言总数 ≥ 修复前
-8. **工作区洁净校验** — 每任务 Commit 2 后 `git status --porcelain` 必须为空，非空则 fail-fast
+8. **工作区洁净校验** — 每任务 Commit 2 后**每个代码根**的 `git status --porcelain` 均须为空，非空则 fail-fast
 9. **漂移防护** — 禁止自动猜测补齐缺失内容，统一 fail 并记录
 10. **Phase 4 外部对抗审查**（audit profile inline；fast/guarded 延后 drain）— 状态机见上方指针；`--headless` 下任何非 `EXT_REVIEWED` → fail-fast
 
@@ -153,8 +159,8 @@ if not all_passed:
 
 | 时机 | 检测 | 失败处理 |
 |------|------|----------|
-| 批量启动前 | `git status --porcelain` 为空，或变更属于首任务（续做豁免） | 不属于首任务 → fail-fast |
-| 每任务 Commit 2 后 | `git status --porcelain` 为空 | fail-fast |
+| 批量启动前 | **每个代码根**的 `git status --porcelain` 均为空，或变更属于首任务（续做豁免） | 不属于首任务 → fail-fast |
+| 每任务 Commit 2 后 | **每个代码根**的 `git status --porcelain` 均为空 | fail-fast |
 
 ## 检查点文件
 

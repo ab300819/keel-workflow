@@ -1,6 +1,26 @@
 # shell 模式单仓假设审计 + workspace 声明 cutover
 
-> 状态：**第 1 稿 · 待立项** · 日期：2026-08-21
+> 状态：**部分实施** · 第 1 稿 2026-08-21 · 立项裁定 2026-08-25
+>
+> **2026-08-25 裁定：不做全量矩阵盘点，只修静默失败的两条。**
+>
+> 理由：§2.2 的矩阵是 7 类操作 × 39 个 skill ≈ 270 格，产出是一份清单，而清单里的条目**今天一个都不影响使用**——本仓与多数项目跑 `inline`，`scan_targets` 恰好等于 `[.]`，所有单仓假设碰巧成立。按「静默失败优先」只取两条：它们不报错、后果最重、位置明确。
+>
+> | 条目 | 状态 |
+> |---|---|
+> | §3 O2「audit 档外审用工作区 diff」 | ✅ 已修（`verification-flow.md`）：`mode` 不是 `inline` 时逐 `code_root` 取并拼接 |
+> | §3 O6「headless 洁净门用仓根 `git status`」 | ✅ 已修（`auto-mode.md` 4 处）：遍历每个代码根 + 本仓侧排除代码根条目 |
+> | 其余 23 个已知条目 | ⏸️ 缓做，等真踩到 |
+> | §2 全量矩阵盘点 | ⏸️ 不做 |
+> | §4 P2 迁移 + cutover | ⏸️ 不做（依赖 P1 完成） |
+>
+> **⚠️ 两条修复未经真实验证**：本仓跑 `inline`，这些改动在 `inline` 下行为完全不变（`code_roots` 单项，遍历退化为一次）。要验证须在真实 `shell` 项目上实跑。
+>
+> **2026-08-25 补充：`linked` 拓扑让 §3 O3 从「有时错」变成「永远错」**。`codebase-insight` 的缓存键是 `commit_hash != git rev-parse HEAD`：`shell` 下本仓 HEAD 随子模块指针 bump 而变，只在「代码改了但没 bump」的窗口期误命中；`linked` 下代码根不归本仓、**没有指针**，本仓 HEAD 与代码变更完全无关 → 缓存永不失效。`verify` 的 `verified_commit` freshness 与 `schema-drift` 判据同根因。见 [2026-08-25 linked 方案](2026-08-25-workspace-topology-linked-mode-design.md)。
+>
+> **⚠️ §3 的条目位置有一处失效**：`_shared/workspace-mode.md` 已在 2026-08-21 的抽取中并入 `skills/workspace-topology/references/protocol.md`，该条目需重新定位。
+>
+> 原第 1 稿内容如下，未改动。
 > **配对 spec**：[抽取 workspace-topology（add-only 批）](2026-08-21-workspace-topology-skill-design.md) —— 本稿是它 cutover 的前置条件
 > 来源：该 spec 的 codex 审查 R2 F-108 / R3 F-204 / R4 F-302 / R4 F-304，以及审查过程中的自查发现
 

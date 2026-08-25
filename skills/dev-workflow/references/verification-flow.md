@@ -339,12 +339,16 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 
 Phase 4 有两条触发路径，**工作区 diff 只对其中一条有效**：
 
+> ⚠️ 下表第一列的 `inline` 是**触发模式**的名字（audit 档在 Commit 1 之前触发），与拓扑 `workspace_context.mode` 的 `inline` **同名但无关**。本节提到拓扑时一律写全 `mode` 为 `inline`。
+
 | 触发模式 | 发生时点 | diff 源 |
 |---------|---------|--------|
 | **inline**（audit） | Commit 1 **之前** | 工作区 diff（`uncommitted: true`）——此时工作区改动即本任务改动 |
 | **drain**（fast/guarded，经 `/ms-verify --review-drain`） | Commit 1 **之后** | **该任务 Commit 1 的提交 diff** |
 
 > ⛔ **drain 路径禁止使用工作区 diff**。Commit 1 已落盘时工作区为空，沿用 `uncommitted: true` 会让外审收到**空 diff**（即"审了但什么都没看到"）。
+>
+> ⛔ **`mode` 不是 `inline` 时，audit 档的工作区 diff 须逐 `code_root` 取并拼接**：`for root in code_roots: git -C <root> diff`。此时代码改动全在各代码根自身的仓里，本仓（外壳仓）的工作区 diff **只有一行子模块指针变化**（`linked` 下连这行都没有）——直接用它同样是空审，与上一条 drain 的失效形态相同、成因不同。
 
 drain 侧定位规则（不新增状态，全部复用已有 trailer）：
 
