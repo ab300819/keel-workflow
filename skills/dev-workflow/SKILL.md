@@ -297,9 +297,9 @@ spec_version_notes: |
 - [ ] **提交前必须通过完成检查**
 - [ ] 提交后更新状态：**audit → 已完成**；**fast/guarded → `review_pending`**（经 `/ms-verify --review-drain` 通过才转已完成）
 - [ ] `--single-commit` 可将代码+文档合并为单次提交
-- [ ] **代码根多于一项时展开为 N+1 仓提交**：Commit 1 拆成每个有变更的代码根一个 commit，Commit 2 是外壳仓一次 commit（文档 + 所有变更子模块的指针 bump）。协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根取自握手 `workspace_context.code_roots`（`inline` 为单项 `.`，退化为今天的 Commit 1 + Commit 2）
+- [ ] **`mode` 不是 `inline` 时展开为 N+1 仓提交**：Commit 1 拆成每个有变更的代码根一个 commit，Commit 2 是外壳仓一次 commit（文档 + 所有变更子模块的指针 bump；`linked` 下无指针，仅文档）。协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根取自握手 `workspace_context.code_roots`（`inline` 时为单项，`path` = 仓库根绝对路径，退化为今天的 Commit 1 + Commit 2）。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
 - [ ] **提交前必过 detached HEAD 门**：每个变更的子模块代码根 `git -C <path> symbolic-ref -q HEAD` 失败即 ⛔ 阻塞，处置见 [workspace-topology/references/migration.md § detached HEAD 处置](../workspace-topology/references/migration.md#detached-head-处置)
-- [ ] **代码根多于一项时 `--single-commit` 不可用**：跨仓无法合并为单 commit，⚠️ 忽略该 flag 并提示
+- [ ] **`mode` 不是 `inline` 时 `--single-commit` 不可用**：跨仓无法合并为单 commit，⚠️ 忽略该 flag 并提示
 
 ### 断点续做约束
 
@@ -310,7 +310,7 @@ spec_version_notes: |
 - [ ] 旧任务（前版本完成，无 A/D1/D2/E 产物）→ AskUserQuestion：复核续做 / 登记豁免原因 / 终止
 - [ ] 进行中任务分析续做起点（精确定位：S1~S11 + S1.5；S12 后置同步单独判定，含续做 Agent 判定）
 - [ ] 文档状态 + 证据复核 + Git 历史 + 工作区四重验证
-- [ ] **代码根多于一项时状态检测扩为五重**：「工作区」维遍历 N+1 个仓；「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」；新增第五维「指针一致性」，不一致 → 进 Step 1.5 证据复核不直接跳过。**「证据复核」维（A/B/C/D1/D2/E）不变**——它复核 AC 表 / 测试 / trace / 对抗验证证据，与仓库拓扑无关
+- [ ] **`mode` 不是 `inline` 时状态检测扩为五重**：「工作区」维遍历 N+1 个仓；「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」；新增第五维「指针一致性」，不一致 → 进 Step 1.5 证据复核不直接跳过。**「证据复核」维（A/B/C/D1/D2/E）不变**——它复核 AC 表 / 测试 / trace / 对抗验证证据，与仓库拓扑无关
 
 > 详见 [task-orchestration.md](references/task-orchestration.md)
 

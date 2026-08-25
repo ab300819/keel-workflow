@@ -133,9 +133,9 @@ Step 5: 工作区决策
             选项："暂存(stash)后继续" / "忽略继续" / "终止"
 ```
 
-握手 `workspace_context.code_roots` 多于一项时状态检测扩为五重，详见 [../../workspace-topology/references/protocol.md](../../workspace-topology/references/protocol.md)：「工作区」维遍历 N+1 个仓，「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」，新增第五维「指针一致性」（不一致 → 进 Step 1.5 证据复核不直接跳过）。**Step 1.5 证据复核（A/B/C/D1/D2/E）不变**——与仓库拓扑无关。
+握手 `workspace_context.mode` 不是 `inline` 时状态检测扩为五重，详见 [../../workspace-topology/references/protocol.md](../../workspace-topology/references/protocol.md)：「工作区」维遍历 N+1 个仓，「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」，新增第五维「指针一致性」（不一致 → 进 Step 1.5 证据复核不直接跳过）。**Step 1.5 证据复核（A/B/C/D1/D2/E）不变**——与仓库拓扑无关。
 
-代码根多于一项时「工作区」维的遍历：
+`mode` 不是 `inline` 时「工作区」维的遍历：
 
 ```bash
 git status --porcelain                                    # 外壳仓

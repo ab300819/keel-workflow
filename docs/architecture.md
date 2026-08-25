@@ -293,4 +293,4 @@ docs/
 └── api/                          # 子模块 = code_root
 ```
 
-docs 内部结构不因模式而变，文档根两种模式下恒为 `<仓库根>/docs/`，故本维度与 layout 版本正交，也不属 layout 元数据。它是**仓库级事实**，由独立 skill [/workspace-topology](../skills/workspace-topology/SKILL.md) 拥有。
+docs 内部结构不因模式而变，文档根三种模式下恒为 `<仓库根>/docs/`，故本维度与 layout 版本正交，也不属 layout 元数据。它是**仓库级事实**，由独立 skill [/workspace-topology](../skills/workspace-topology/SKILL.md) 拥有。

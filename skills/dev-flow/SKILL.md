@@ -130,7 +130,7 @@ execution_contract:
 
 ## 提交规范
 
-> `workspace_context.code_roots` 多于一项（shell 拓扑）时，「一项一 commit」展开为 N+1 仓，协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根路径取自 握手 `workspace_context`（[_shared/constraints.md](../_shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。
+> `workspace_context.mode` 不是 `inline` 时（即代码不在本仓），「一项一 commit」展开为 N+1 仓，协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根路径取自 握手 `workspace_context`（[_shared/constraints.md](../_shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
 
 - 用户要求提交或批量模式逐项提交时：**原子提交**，一项一 commit，遵循 `/commit-convention`
 - 文件移动/删除遵循 `/git-safety`（git mv/rm）

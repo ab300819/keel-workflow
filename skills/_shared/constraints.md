@@ -129,7 +129,7 @@ expected_output: yaml-summary-v1
 ```
 
 - `task/handshake-minimum`：`task`、`mode`、`inputs`、`allowed_paths`、`expected_output` 是推荐最小握手字段。
-- `task/workspace-context`：**编排层**在流程开头调一次 `/workspace-topology inspect`，把返回的拓扑上下文（`mode` / `docs_dir` / `code_roots`）经本字段下传。被委托 skill 从此字段读代码根与 docs 根，**不自行读取声明文件、不解析 `.gitmodules`**。字段缺失（用户单跑原子 skill、无编排层）时按 `inline` 缺省并 ℹ️ 提示。契约见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
+- `task/workspace-context`：**编排层**在流程开头调一次 `/workspace-topology inspect`，把返回的 `workspace-context.v2` 经本字段下传（`mode`（`inline` | `shell` | `linked`）/ `workspace_root` / `docs_dir` / `code_roots` / `missing_code_roots`）。被委托 skill 从此字段读代码根与 docs 根，**不自行读取声明文件、不解析 `.gitmodules`**。三种 mode 下 `code_roots` 元素形状一致（`name` / `path` / `declared_path`，`path` 为解析后的绝对路径），**调用方不分支**。`missing_code_roots` 非空表示有声明了但解析不到的代码根，⚠️ 报告即可、不阻塞。字段缺失（用户单跑原子 skill、无编排层）时按 `inline` 缺省并 ℹ️ 提示。契约见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
 - `task/mode-honored`：子 Agent 不得越过传入 `mode`；`read` / `dry-run` 不得产生写入。
 - `task/blocker-propagation`：子 Agent 返回 `failed` 或含 `⛔` blocker 时，编排层必须停止对应分支并 surface recovery。
 
@@ -291,12 +291,12 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 - `layered-memory/review-lens`：因此三层分离**主要靠人工 review lens 承载，不是自动兜底**。审查时发现某文件同时承载两层以上内容（典型：state 文件里塞决策理由或数据明细），即提示拆到对应层。
 - `layered-memory/no-auto-detection`：**不做**"关键词扫描自动判定章节混杂"——即原 health 维度 e / Plan B 检测面。该方向已**废弃**（`[废弃]`，原标 [FUTURE]）：复杂度不匹配收益，skill 宜简。**不再保留为 FUTURE 触发项**（区别于 trace.v1 / layout.v2 / 维度 d，后三者仍为封存 FUTURE）。
 
-## 10. 工作区拓扑（inline / shell）
+## 10. 工作区拓扑（inline / shell / linked）
 
 > 本节**仅声明跨 skill 共性与指针**。完整协议正文、入口与迁移手册归 [workspace-topology](../workspace-topology/SKILL.md) —— 该维度是**仓库级事实**，不是 DevDocs 事实，故不住在本文也不住在 layout 元数据里。
 
 - `workspace/single-entry`：工作区拓扑的唯一入口是 `/workspace-topology`（`inspect` / `reconcile` / `migrate`）。
-- `workspace/default-inline`：缺省 `inline`；无声明的项目行为完全不变。
+- `workspace/default-inline`（id 沿用历史命名，语义已反转）：**`inline` 不是兜底默认，它需要正面证据。** 无声明时**问用户**定出 `mode` 与代码根（见 [workspace-topology/SKILL.md § 无声明时：问，不猜](../workspace-topology/SKILL.md#无声明时问不猜)），答案落声明后不再问。⛔ 不做自动判定——仓库形状是产品决策。已落声明的项目行为完全不变。
 - `workspace/context-over-declaration`：需要代码根路径或 docs 根的 skill 从握手的 `workspace_context` 读（见 §3 `task/workspace-context`），**⛔ 不得自行读取声明文件或解析 `.gitmodules`**。
 - `workspace/pointer`：协议正文（校验全表、零污染、N+1 仓提交、gitlink 排除）见 [workspace-topology/references/protocol.md](../workspace-topology/references/protocol.md)；迁移与故障处置见 [references/migration.md](../workspace-topology/references/migration.md)。
 

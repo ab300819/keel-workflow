@@ -24,7 +24,7 @@
 | `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
 | `submodule/pointer-drift` | ⛔ / ⚠️ | a 结构正确性 | v1+v2（仅 shell）| ❌（manual_decision）|
 
-> 6 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` 项目报 `not_applicable`。
+> 6 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
 
 ---
 
@@ -388,7 +388,7 @@ Phase B：扫描引用 + 范围编号展开
 
 **检测对象**：握手 `workspace_context.code_roots` 里的每个 `path`（⛔ 不自行读声明文件、不解析 `.gitmodules`，见 [_shared/constraints.md](../../_shared/constraints.md) `workspace/context-over-declaration`）。
 
-**适用性门**：`workspace_context.code_roots` 为单项 `.`（即 `inline`）或字段缺失 → 输出 finding `{ status: not_applicable }`，早退。
+**适用性门**：`workspace_context.mode` 为 `inline` 或 `linked`，或字段缺失 → 输出 finding `{ status: not_applicable }`，早退。`linked` 的代码根不归本仓所有、无 gitlink，指针漂移概念不适用。
 
 **判据**：对每个路径跑 `git submodule status`，按首字符分派；命中 `+`（有漂移）再用 `git -C <path> merge-base --is-ancestor <recorded> <actual>`（及反向）判祖先关系区分成因：
 
@@ -461,7 +461,7 @@ notes: |
 | 2 | 有 blocker 违规（state/total-size-cap / state/line-length-cap / health/dead-link 新增 / submodule/pointer-drift）|
 | 3 | lint 自身错误（git 不可用 / baseline 文件损坏 / report stale）|
 
-> `submodule/pointer-drift` 按成因分级，同一条 rule 可能落在退出码 1 或 2：漏 bump / 未 update / 未初始化 → ⚠️ warning（退出码 1）；分叉 → ⛔ blocker（退出码 2）。仅 shell 拓扑生效，`inline` 项目报 `not_applicable`，不计入任一退出码。
+> `submodule/pointer-drift` 按成因分级，同一条 rule 可能落在退出码 1 或 2：漏 bump / 未 update / 未初始化 → ⚠️ warning（退出码 1）；分叉 → ⛔ blocker（退出码 2）。仅 `shell` 拓扑生效，`inline` / `linked` 项目报 `not_applicable`，不计入任一退出码。
 
 错误码（细分诊断，写入 finding.error_code）：
 

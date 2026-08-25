@@ -4,21 +4,44 @@
 
 本文是 工作区拓扑的**操作手册**，回答"具体怎么操作"；协议正文（模式枚举、`code_roots` 真源、fail-closed 校验表、归属判定、零污染范围、N+1 仓提交协议、Recovery 格式等"规则是什么"）的唯一权威源是 [protocol.md](protocol.md)，本文不重复其规则表格，引用规则时以指针链接代替。
 
-## 探测
+> **本手册仅覆盖 `inline` ↔ `shell`。** `linked` 任何方向都不参与 `migrate`——判据是所有权：`inline` 与 `shell` 同在「本仓拥有代码」的前提内，迁移只改挂法不改归属；`linked` 跨的是所有权边界。
+>
+> | 方向 | 实际要做的事 | 为什么不做 |
+> |---|---|---|
+> | `→ linked` | clone / 建 worktree / 移动目录 / 决定放哪 | 这是「造」，属独立的 provisioning 决策 |
+> | `linked →` | 吞并一个不属于本仓的仓库 | 本 skill 无权处置它不拥有的东西 |
+>
+> 需要转换时由用户自行完成物理改造，再跑 `reconcile` 重新声明。
 
-**执行时机**：`reconcile`（用户直接跑，或由 `ms-pipeline init` / `ms-retrofit` / `realign --scope=layout` 委托）。**其余场景只认已有声明，不重新探测**（fail-closed）。
+## 确认拓扑
+
+**执行时机**：`reconcile`（用户直接跑，或由 `ms-pipeline init` / `ms-retrofit` / `realign --scope=layout` 委托），以及 `inspect` 遇到无声明时。**已有声明的场景直接读声明，不再问。**
+
+⛔ **不做自动判定** —— 仓库形状是产品决策，不是能从文件布局推出来的事实。扫描只用于给选项排预设（见 [../SKILL.md § 无声明时：问，不猜](../SKILL.md)）。
 
 **步骤**：
 
-1. `test -f .gitmodules` —— 不存在则判定 `inline`，**不追问用户**，结束
-2. 列出全部 submodule name：
+1. AskUserQuestion 问 `mode`：`inline` / `shell` / `linked` 三选一。
+   - 扫到 `.gitmodules` 有条目 → `shell` 排前面
+   - 仓根有自己的文件（`git ls-files -s` 排掉 mode 为 160000 的子模块记录后仍有剩余，且不只是 `docs/` 与 `README*` / `AGENTS.md` / `CLAUDE.md` / `LICENSE*` / `CONTRIBUTING*` / `CHANGELOG*` / `.gitignore` / `.gitmodules` / `.gitattributes` 这类元文件）→ `inline` 排前面
+   - 都没扫到 → 三个平铺
+   - **预设猜错无所谓，用户会选**
+
+2. 按 `mode` 问代码根：
+
+   **`inline`** —— 不用问，代码根就是仓库根。
+
+   **`shell`** —— 先列出全部 submodule name：
    `git config -f .gitmodules --name-only --get-regexp '^submodule\..*\.path$' | sed 's/^submodule\.//; s/\.path$//'`
-3. 无条目 → 判定 `inline`，结束
-4. 有条目 → AskUserQuestion **多选**：哪些是代码根？
+   再 AskUserQuestion **多选**：哪些子模块是代码根？
    - 选项逐个列出 `<name>（路径：<path>）`
    - 提示语必须说明「子模块也可能是素材 / vendor，不都算代码根」
-   - 允许全不选 → 判定 `inline`
-5. 写入仓库根 `AGENTS.md` frontmatter 的**独立 `workspace:` 块**：**仅** `mode` + `code_roots` 两个字段。
+
+   **`linked`** —— AskUserQuestion 问路径，可多个，相对 / `~/` / 绝对都接受。每个路径记 `name` + `path`。
+   - ⛔ 不建 worktree、不 clone、不动被引用的目录——只登记声明
+   - 路径解析不到目录 → 当场告知并让用户改，不静默接受
+
+3. 写入仓库根 `AGENTS.md` frontmatter 的**独立 `workspace:` 块**：**仅** `mode` + `code_roots` 两个字段。
 
    ```yaml
    ---
@@ -28,13 +51,25 @@
    ---
    ```
 
+   `linked` 形状（元素为对象，`path` 必填）：
+
+   ```yaml
+   ---
+   workspace:
+     mode: linked
+     code_roots:
+       - name: api
+         path: ../pool/api
+   ---
+   ```
+
    **`devdocs:` 块不碰**——三层版本号、`initialized_at` 都不在本 skill 的写入范围内，它们归 `agent-memory` 与 layout 元数据机制。⛔ 不代写、不伪造：三层版本号没有可靠来源，伪造比缺失更糟。
 
    `AGENTS.md` 已有 frontmatter → 在其中新增/更新 `workspace:` 块，其余 key 原样保留（含键序）。无 frontmatter（首行是 HTML 注释等正文）→ 在**文件最前面**插入，原有内容整体下移，不改写原内容一个字符。`AGENTS.md` 不存在 → 只创建含该块的 frontmatter，不生成正文（正文归 `agent-memory`）。
 
    **非 DevDocs 项目只有 `workspace:` 块，没有 `devdocs:` 块**——这是合法的正常状态，消费方不得当异常处理。
 
-6. 写入后立即跑一次校验（`workspace/fail-closed` 全表，见 [protocol.md](protocol.md#3-校验规则fail-closed)），任一 ⛔ 则**回滚本次写入**并报告。
+4. 写入后立即跑一次校验（`workspace/fail-closed` 全表，见 [protocol.md](protocol.md#3-校验规则fail-closed)），任一 ⛔ 则**回滚本次写入**并报告。
 
 ## detached HEAD 处置
 

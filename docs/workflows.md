@@ -336,7 +336,7 @@ DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory --upd
 
 **怎么开**：
 
-- **任何时候**：`/workspace-topology`。独立 skill，**不拉起 DevDocs**，非 DevDocs 项目也能用。有 `.gitmodules` 就问你哪些子模块是代码根，没有就静默判 `inline`
+- **任何时候**：`/workspace-topology`。独立 skill，**不拉起 DevDocs**，非 DevDocs 项目也能用。没有声明就问你一次：仓库是 `inline` / `shell` / `linked` 哪种，代码根在哪，答案记进 `AGENTS.md`，此后不再问
 - **新项目 / 改造已有项目**：`/ms-pipeline init` 与 `/ms-retrofit` 会在生成 `docs/devdocs/` 后自动委托上面那个 skill，不用你单独跑
 - **现有单仓要拆开**：`/workspace-topology migrate --to shell`，先选手动还是自动模式（分界在谁把代码仓挪进根目录），执行前给完整 dry-run 计划
 - **后期要改**：再跑一次 `/workspace-topology` 就行——幂等，状态一致时零改动。增删代码根、新增子模块都在这里

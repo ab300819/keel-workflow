@@ -151,7 +151,7 @@ schema_version: "1.0"
 
 ### 多代码根
 
-盘点范围是 `workspace_context.code_roots` 各路径（`inline` 时为单项 `.`，即仓库根，**本 skill 不按拓扑分支**）。代码根取自 握手 `workspace_context`（[_shared/constraints.md](../_shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。**代码根多于一项时**：
+盘点范围是 `workspace_context.code_roots` 各路径（`inline` 时为单项，`path` = 仓库根绝对路径，**本 skill 不按拓扑分支**）。代码根取自 握手 `workspace_context`（[_shared/constraints.md](../_shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。**代码根多于一项时**：
 
 - **逐个代码根盘点**，产出的模块 / 接口 / 数据对象一律带 `<label>/` 前缀限定，避免跨仓重名混淆
 - **必须额外产出「仓间关系」小节**：依赖方向（谁调谁）、接口契约面（跨仓的 API / 消息 / 共享数据结构）、版本耦合点（改一边必须同改另一边的地方）。多代码根场景的价值主要在此——单仓时这节不存在

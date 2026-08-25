@@ -113,7 +113,7 @@ git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-s
 | E2E 实测 | `/e2e-test-flow` | 已有用例文档 → 对运行中系统黑盒实测（接口+UI，只读观测 DB），产出 HTML 评审面板 |
 | Markdown 规范 | `/markdown-style` | 标记与排版审查（markdownlint + GB/T 15834 中文排版 + LLM 排版毛病），只报告不改语意 |
 | Python 工具链 | `/python-spec` | 本机 mise+uv 规范：项目 / 脚本 / 临时使用 + 三道护栏诊断（已有 repo 沿用其工具链） |
-| 仓库拓扑 | `/workspace-topology` | 声明代码与文档同仓（inline）还是文档在外壳仓、代码作子模块（shell）；幂等可重入，含单仓→外壳布局的双模式迁移 |
+| 仓库拓扑 | `/workspace-topology` | 声明代码与文档同仓（inline）、代码作子模块（shell），还是代码根在本仓之外只持有引用（linked）；幂等可重入，含单仓→外壳布局的双模式迁移 |
 | 文档信息组织 | `/doc-organization` | 五条指导原则：当前状态与变更历史分离、编号先定义、引言职责、结论单一出处、写给缺上下文的读者 |
 | 先例扫描 | `/prior-art-scan` | 开工前查 GitHub 同类项目 → 维护度评估 → 缺口分类 → 六路径决策（只读，产出单文件 md）|
 | UI 调度 / 自描述 / 记忆 / 报告 | `/ui-orchestrator` / `/code-self-describe` / `/agent-memory` / `/work-report` | 专项工具 |
