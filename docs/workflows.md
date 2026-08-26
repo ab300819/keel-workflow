@@ -35,7 +35,7 @@
     ├── 为每个分片生成指纹（用于后续变更追踪）
     ├── 逐块 brainstorm 澄清（深度自适应）
     ├── 跨块综合：提取术语表、共享约束、冲突检测
-    └── 成熟度评估 + 就绪检查（6 项门控）
+    └── 成熟度评估 + 就绪检查
 ```
 
 > 200~2000 字之间的输入，系统会主动询问你走哪条路径。
@@ -57,7 +57,7 @@
 #### 产出与衔接
 
 - 产出文件：`docs/prd/requirements/FR-XX-*.md` + `index.md`（扁平、单需求脚手架）
-- 成熟度达到 `ready` 后，运行 `/ms-requirements` 进入 DevDocs（它会自己找到 PRD 产物）
+- 成熟度达到 `ready` 后，说「把 PRD 导进 DevDocs」——编排层会带着 PRD 产物路径调用 `/ms-requirements`
 - 需求 close（上线）后，`docs/prd/` 脚手架可由 `/ms-prd clear`（或 `/ms-pipeline close` 末步）清理 —— 代码 + DevDocs 才是事实源
 
 ---
@@ -88,7 +88,7 @@
     ├── 从设计模块映射为可执行任务
     ├── 按层分类：🔴 核心逻辑 / 🟡 API / 🟢 UI / ⚪ 基础设施
     ├── 构建任务依赖图
-    ├── 每个任务控制在 ≤4h
+    ├── 每个任务可独立验收
     └── 输出 04-dev-tasks.md
 ```
 
@@ -246,7 +246,7 @@
     ↓
 /ms-test-cases          AC → UT/IT/E2E 测试用例
     ↓
-/ms-dev-tasks           设计 → T-XX 任务（≤4h，依赖图）
+/ms-dev-tasks           设计 → T-XX 任务（可独立验收，依赖图）
     ↓
 /ms-verify             就绪检查（⛔ P1 必须修复）
     ↓

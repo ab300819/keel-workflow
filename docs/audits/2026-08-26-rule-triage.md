@@ -578,3 +578,49 @@ spec: docs/superpowers/specs/2026-08-26-devdocs-rule-triage-and-runlog-design.md
 | 项 | 说明 |
 |---|---|
 | `AGENTS.md` 83 行 vs `agent-memory:281` 的 60 行上限 | 真违例。删哪些内容属项目记忆的取舍，需用户裁定，未擅自处理 |
+
+---
+
+## 收尾审查（外部）驱动的修复
+
+一次性总审查报出 7 类问题，全部核实属实并已修复：
+
+### 误删 2 条，已恢复
+
+| 位置 | 恢复内容 | 判据 |
+|---|---|---|
+| `compound` | 模式描述必须具体可操作 | 只要求「含问题背景 / 解决方式 / 适用条件 / 禁忌条件」时，模型会把栏目填成「加强测试、保持模块化」这类结构完整但不可执行的总结。原判 D5 有误——这是 K1 |
+| `prd-parser` | 摘要必须逐块列出标题与行数 | 只说「展示摘要并确认」时，模型面对长拆分结果会稳定压缩列表；用户无从判断分块边界是否合理 |
+
+> 两条都属同一误判：**把「看起来像通用建议」的纠偏护栏当成了 D5。** 判别方法是问「删掉后模型会退回什么行为」，而不是看措辞像不像常识。
+
+### 权威链断口：SOLID 收敛没贯穿
+
+`system-design/SKILL.md` 已改为「除 DIP 外均为启发式、非硬阻断」，但三个仍被加载的 references 继续强制旧规则——同一份设计会因读取位置不同得到相反裁决。已同步收敛 `design-review.md` / `solid-principles-guide.md` / `plan-drafts.md`，三处适用下限全部删除，改为「每条『— 不适用』须说明场景」。
+
+### 阈值只删了 checklist 镜像，本体仍在
+
+已补删：`tar-rubric` 的 ≤4h、`feature` 的 1-3 个任务（两处 + references 两处）、`requirements` 的每 US 2-3 条 AC、`test-cases` 的 P0 故事至少 1 个 E2E（含两个模板）、`workflows.md` 的 ≤4h。
+
+> 教训：**删 checklist 条目不等于删规则。** 同一约束常同时存在于 checklist、正文表格、模板三处。
+
+### 我自己制造的两处矛盾
+
+| 矛盾 | 修法 |
+|---|---|
+| `gate/two-senses` 说禁令不需 recovery，同文件 §7 `recovery/blocker-required` 仍说「每个 `⛔` 必须附 recovery」 | 后者收窄到门控 |
+| `runlog.md` 我写「用 `⛔` 表达『别这么做』正是稀释该标记的典型用法」，而 `gate/two-senses` 恰好把这种用法合法化 | 改写为「本节条目是对机制自身设计的约束，既非门控也非禁令」 |
+
+### 授权协议冲突
+
+`task/consent-at-action` 原文要求「写入版本控制的持久决策必须就地确认」，与 `confirm/no-need-explicit-request` 及无人值守自动提交直接冲突——执行者只能违反一边。
+
+已收窄为**超出用户已授权范围**的决策才需就地确认：授权「无人值守跑完」时提交代码是被授权的工作本身，不重复确认；而「这次先别升级」被落成永久静默的 `.devdocs-realign-ack` 是范围外决策，必须当场确认。
+
+### 归一化层没有落点
+
+`task/intent-normalization` 要求把结果写入握手并持久化，但最小握手无对应字段。已补 `normalized_intent`（`ceremony` / `review_profile` / `unattended` / `granted_scope`）与持久化位置（随断点检查点保存，续做时原样恢复不重新推断）。
+
+### 其余
+
+`prd` 的「ready 门槛 6 项」实际只有 5 项（含 `workflows.md` 同步）、`workflows.md` 声称 `/ms-requirements` 会自己找到 PRD（实际依赖编排层传路径）、`dev-workflow` 运行模式表仍暴露 8 个协议参数——均已修。

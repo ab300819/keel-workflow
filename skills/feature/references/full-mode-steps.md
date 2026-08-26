@@ -165,7 +165,7 @@ docs/devdocs/
 - dev-workflow 自动附加 `--review`（所有任务强制对抗式验证）
 - Step 6 完成后自动追加 `/ms-verify --docs`（文档层间对齐检查）
 
-> 轻量模式同样支持 Step 6，通过委托 `/ms-dev-workflow` 衔接 1-3 个任务的开发。轻量模式自身不编写实现代码。
+> 轻量模式同样支持 Step 6，通过委托 `/ms-dev-workflow` 衔接少量任务的开发。轻量模式自身不编写实现代码。
 
 ## 编排规范（子 Agent 调度）
 
@@ -187,4 +187,4 @@ docs/devdocs/
 3. **异常回退**：子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项询问用户
 4. **不自行排障**：编排层不读取子技能的完整输出文档来尝试修复
 
-> 轻量模式因任务简单（1-3 个任务），**文档步骤**（Step 1-4）直接在 feature 上下文内执行，不启动子 Agent。Step 6 开发衔接仍需委托 `/ms-dev-workflow`。
+> 轻量模式因任务简单，**文档步骤**（Step 1-4）直接在 feature 上下文内执行，不启动子 Agent。Step 6 开发衔接仍需委托 `/ms-dev-workflow`。

@@ -1,6 +1,6 @@
 ---
 name: ms-dev-workflow
-description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and --headless unattended mode (无人值守). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "开始写代码", "开始开发", "--review", "--headless", "无人值守". NOT for task breakdown (use ms-dev-tasks), bug fixes (use ms-bugfix), or non-DevDocs plan/prompt-driven development (use dev-flow).
+description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and unattended mode (无人值守，由用户明示授权触发). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "开始写代码", "开始开发", "无人值守", "别问我". NOT for task breakdown (use ms-dev-tasks), bug fixes (use ms-bugfix), or non-DevDocs plan/prompt-driven development (use dev-flow).
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, Task
 metadata:
   patterns: [pipeline, reviewer]
@@ -61,7 +61,7 @@ spec_version_notes: |
 
 ## 触发条件
 
-用户开始/批量/继续开发任务（v1: T-01/T-01~T-05/F-001/--all；v2 [FUTURE]: TASK-01/TASK-01~TASK-05/FEAT-001/--all）；关键词如"开发任务"、"执行任务"、"开始 T-XX / TASK-XX"、"批量开发"、"继续开发"。
+用户开始/批量/继续开发任务（v1: T-01 / T-01~T-05 / F-001 / 「把剩下的都跑完」；v2 [FUTURE]: TASK-01 / TASK-01~TASK-05 / FEAT-001）；关键词如"开发任务"、"执行任务"、"开始 T-XX"、"批量开发"、"继续开发"、"无人值守"。
 
 ## 运行模式
 
@@ -74,18 +74,11 @@ spec_version_notes: |
 | 枚举 | `T-01,T-03,T-07`（v1）/ `TASK-01,TASK-03,TASK-07`（v2 [FUTURE]）| 执行指定任务列表 |
 | 功能点 | `F-001`（v1）/ `FEAT-001`（v2 [FUTURE]）| 通过 `关联需求` 字段反查所有关联任务 |
 | 用户故事 | `US-001`（v1）/ `STORY-001`（v2 [FUTURE]）| 同上 |
-| 全部 | `--all` | 所有 `状态∈{待开发,进行中}` 的任务（跳过 `review_pending`；后者由 `/ms-verify --review-drain` 收集） |
-| 轻量入口 | `--inline "<任务定义>" --ac "<验收标准>"` | 无 04 文档也可进入:按 [inline-entry.md](references/inline-entry.md) 物化 stub(01 AC 条目 + 04 任务条目)后转单任务路径;review_profile 下限 guarded |
-| 无人值守 | `--headless` | 批量模式 + 全自动决策（fail-fast） |
-| 自动提交 | `--auto-commit` | 测试通过自动提交，仅 Blocker 时暂停（与 `--headless` 互斥） |
-| 单次提交 | `--single-commit` | 代码+文档合并为单次提交；适合无文档变更或后续 `/ms-sync` 已合并 |
-| 上下文重置 | `--context-reset N` | 每 N 个任务后编排器重置上下文（默认 3，仅批量模式） |
-| 跳过 trace 校验 | `--skip-trace="<原因>"` | 单任务模式关闭 `--affected` 后置校验；必须带 reason，写入 `Skip-Trace-Reason:` 尾注 |
-| 外部对抗审查（Phase 4） | `--external-review` | fast/guarded 任务显式叠加 inline Phase 4（audit 默认 inline 触发，无需此 flag；fast/guarded 不加则默认 defer → drain） |
-| 外部对抗审查轮次 | `--external-rounds N` | 覆盖 Phase 4 默认 `max_rounds=3`；上限 5（对齐 /adversarial-review skill 的 max_rounds） |
-| 规范升级回扫 | `--realign` | 已完成任务按新 spec_version 查漏补缺；**独立于 12 种续做信号**，不覆盖原证据，仅追加补齐+`Realigned-From` 尾注。详见 [references/realign.md](references/realign.md)。推荐用户入口：`/ms-pipeline realign`。 |
-| 强制档位 | `--review-profile=<fast\|guarded\|audit>` | 覆盖风险分类器自动判档;仅允许**升档**或带理由降档(降档写 `Profile-Downgrade-Reason:` 尾注) |
-| 关闭延后 | `--no-defer-review` | 强制本次独立审查 inline(等价临时 audit 审查时机),用于不想留 `review_pending` 的场景 |
+| 轻量入口 | 直接描述任务 + 验收标准 | 无 04 文档也可进入:按 [inline-entry.md](references/inline-entry.md) 物化 stub(01 AC 条目 + 04 任务条目)后转单任务路径;review_profile 下限 guarded |
+
+> **协议参数不在用户面。** 无人值守 / 自动提交 / 审查档位 / 外部审查轮次 / 上下文重置 / 单次提交 / 跳过追溯，都由编排层从你的自然语言归一化后下传（[`task/intent-normalization`](../_shared/constraints.md)），你不需要记参数名。
+>
+> **授权要你开口**：无人值守和自动提交不是默认行为，须明说；反过来，超出你授权范围的不可逆动作一律在发生时就地确认（[`task/consent-at-action`](../_shared/constraints.md)）。
 
 ### 统一编排流程
 
@@ -94,7 +87,7 @@ spec_version_notes: |
 ## 前置条件
 
 - 任务文档：`docs/devdocs/04-dev-tasks.md`,且任务已定义并包含:关联需求、验收标准、测试方法
-- **或** `--inline "<任务定义>" --ac "<验收标准>"`:按 [inline-entry.md](references/inline-entry.md) 物化 stub 后进入 S1;Test Agent 输入中 02/03 字段标 `—(inline)`,以 S1.5 Sprint Contract 为测试输入约束
+- **或**直接给出任务定义与验收标准（无需参数）:按 [inline-entry.md](references/inline-entry.md) 物化 stub 后进入 S1;Test Agent 输入中 02/03 字段标 `—(inline)`,以 S1.5 Sprint Contract 为测试输入约束
 
 ## 工作流程
 
@@ -246,9 +239,6 @@ spec_version_notes: |
 
 | review_profile（层级→风险输入映射） | 默认前置验证 | Phase 1~3 自审 | Phase 4 外部对抗 | 手动控制 |
 |---------|-------------------------------|---------------|------------------|---------|
-| **audit**（≈🔴 高风险） | `/ms-verify --impl` inline | **inline 自动触发** | **inline 自动触发**（T1 → T2 降级链，全失败 fail-fast） | `--external-rounds N`；Phase 1~3 / Phase 4 / `--impl` 均不可跳过 |
-| **guarded**（≈🟡 中风险） | `/ms-verify --impl` inline | **默认 defer → drain**（风险触发可 inline） | **默认 defer → drain** | `--review`/`--external-review` 临时叠加 inline；`--no-defer-review` 强制 inline |
-| **fast**（默认 低风险） | 仅质量地板（不跑前置验证） | **defer → drain** | **defer → drain** | `--review`/`--external-review` 临时叠加 inline；`--no-defer-review` 强制 inline |
 | UI 任务（不分档） | 有设计稿另跑 `/ms-verify --ui --impl`（不随 profile 变） | 同所属档 | 同所属档 | 同所属档 |
 
 > defer → drain = 延后到 `/ms-verify --review-drain`，任务期间标 `review_pending`。`/ms-dev-tasks` 拆分时的 🔴🟡🟢⚪ 标记映射为初始 review_profile（audit/guarded/guarded/fast 的风险输入之一），执行期可只升不降。
@@ -294,7 +284,7 @@ spec_version_notes: |
 
 > 详见 [task-orchestration.md](references/task-orchestration.md)
 
-### `--auto-commit` 约束
+### 自动提交约束（协议参数 `auto_commit`）
 
 - [ ] **测试全部通过且无 Blocker 时自动提交，不询问**
 - [ ] **出现 Blocker 或测试失败时暂停询问**
@@ -326,7 +316,7 @@ spec_version_notes: |
 - [ ] 全量/受影响测试失败不回滚已提交任务（原子提交已落盘）
 - [ ] --headless / --auto-commit 模式：记录警告到交付报告，不中断
 
-### 无人值守约束（--headless）
+### 无人值守约束（协议参数 `unattended`）
 
 - [ ] **工作区必须洁净**（启动前 + 每任务 Commit 2 后校验）
 - [ ] **前置依赖不得处于"进行中"状态**（否则 fail-fast）
