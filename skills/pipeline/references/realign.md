@@ -49,7 +49,7 @@
    Phase 2（A 类 DevDocs 主链路）:
      ms-requirements → ms-system-design → ms-test-cases → ms-dev-tasks → ms-dev-workflow
    Phase 3（B 类旁路，若文件存在）:
-     ms-insights → ms-onboard
+     ms-insights → ms-onboard → ms-retrofit（仅当 docs/devdocs/00-baseline.md 存在，见「与 ms-retrofit 的边界」）
    ```
    每阶段补齐作为下一阶段 context。B 类为可选（根据文件存在性判断是否调用）。
 4. **汇总**：yaml-summary-v1 信封汇总各子 skill 的 `summary.details`，向用户呈现"N 个产物、M 个任务、K 处差距补齐"。
@@ -263,7 +263,7 @@ dev-workflow 的 realign 在任务正文追加一行：`Realigned-From: <old_spe
 | 场景 | 归属 |
 |---|---|
 | 无 DevDocs → DevDocs 首次化 | **retrofit**（现状不变） |
-| 阶段 2 起：产物无 frontmatter 或无 F/US/AC 体系 | **retrofit**（M1 流程） |
+| 阶段 2 起：产物无 frontmatter 或无 F/US/AC 体系（**基线项目除外**：有 `00-baseline.md` 且无 `01`~`04` 时属终态，retrofit 会驳回） | **retrofit**（M1 流程） |
 | 阶段 1：产物无 frontmatter（尚未引入元数据） | **realign**（用户显式 --realign 时按 legacy 全量扫描） |
 | 已合规 DevDocs + 单个 skill 的 spec_version 升级 | **realign**（本契约） |
 | 已合规 DevDocs + 跨多 spec 大版本升级 | `ms-pipeline realign` 依次调度各 skill realign |

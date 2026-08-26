@@ -135,10 +135,16 @@ metadata:
 | 预期行为 | 用户输入 | 建议 |
 | 实际行为 | 用户输入 | **必须** |
 | 发现来源 | 测试编号/手动测试/用户反馈 | **必须** |
-| 关联功能 | F-XXX / AC-XXX | **必须** |
+| 关联功能 | F-XXX / AC-XXX，或 `baseline` | **必须** |
 | Issue 编号 | 用户输入 | 可选 |
 
 如信息不足，使用 AskUserQuestion 询问。
+
+**基线项目的 Bug**：基线项目（有 `00-baseline.md` 且无 `01`~`04`；`05-bugfix-log.md` 等其他产物不影响判定）修的是基线前的存量代码，
+它没有 F 编号，也**不该临时编一个**——临时编号是「推导出没人决定过的结论」的老毛病。
+此时「关联功能」填 `baseline`，回归测试仍必须写，`@verifies` 标注对象从 `AC-XXX` 换成 `BUG-XXX`。
+
+`bugfix/SKILL.md` 已近 500 行硬限，本段为等量替换，勿再扩写。
 
 ### 复杂度评估
 
@@ -179,7 +185,7 @@ should [预期行为] when [触发条件]
 
 ```typescript
 /**
- * @verifies AC-XXX   // 关联的验收标准（必须，确保 trace 可追溯）
+ * @verifies AC-XXX   // 验收标准（必须）；基线项目无 AC 时用 @verifies BUG-XXX
  * @verifies BUG-XXX  // Bug 编号（保留，用于 Bug 追踪）
  * @testcase UT-XXX
  */
@@ -237,7 +243,7 @@ npm test
 | 属性 | 内容 |
 |------|------|
 | **发现来源** | UT-XXX / IT-XXX / E2E-XXX / 手动测试 / 用户反馈 |
-| **关联功能** | F-XXX, AC-XXX |
+| **关联功能** | F-XXX, AC-XXX（或 `baseline`：涉及基线前代码） |
 | **Issue** | #123（如有）|
 | **严重程度** | P0 / P1 / P2 |
 | **修复日期** | YYYY-MM-DD |
@@ -278,7 +284,7 @@ npm test
 | 字段 | 说明 | 必填 |
 |------|------|------|
 | 发现来源 | 哪个测试/谁发现的 | **必须** |
-| 关联功能 | 涉及哪个功能点（F-XXX / AC-XXX） | **必须** |
+| 关联功能 | 涉及哪个功能点（F-XXX / AC-XXX）；基线前的存量代码填 `baseline` | **必须** |
 | 根因分析 | 技术层面的原因 | **必须** |
 | 解决方案 | 如何修复的 | **必须** |
 | 回归测试 | 新增的测试编号 | **必须** |
@@ -402,7 +408,7 @@ Fixes #123
 
 - [ ] 测试名称描述 Bug 场景
 - [ ] 测试覆盖 Bug 的触发条件
-- [ ] 测试必须添加 @verifies AC-XXX 标注（关联的验收标准，确保 trace 可追溯）
+- [ ] 测试必须添加 @verifies AC-XXX 标注（基线项目无 AC 时用 BUG-XXX）
 - [ ] 测试必须添加 @verifies BUG-XXX 标注（Bug 编号）
 - [ ] 禁止弱断言（参考 `/testing-guide`）
 
@@ -424,7 +430,7 @@ summary:
   details:
     bug_id: BUG-XXX
     complexity: simple | complex
-    related: { feature: F-XXX, ac: AC-XXX }
+    related: { feature: F-XXX | baseline, ac: AC-XXX | null }
     test_added: [UT-025]
     commit_hash: "abc1234"
 blockers: []

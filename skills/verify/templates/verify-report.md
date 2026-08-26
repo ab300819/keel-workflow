@@ -13,6 +13,10 @@
 **verified_commit**：<git rev-parse HEAD 输出，供 pipeline 判断 freshness>
 **验证维度**：<--docs / --impl / --ui / 全部>
 **验证范围**：<T-XX / F-XXX / 全量>
+**coverage_scope**：<post-baseline（附 adoption_commit: <hash>）/ full>
+
+> `post-baseline` 表示覆盖率**只统计 `adoption_commit` 之后的变更**，不含基线前的存量代码。
+
 **关联文档**：01-requirements.md, 02-system-design.md, 03-test-cases.md
 
 ---

@@ -30,7 +30,7 @@ DevDocs 工作流（含重构）:
     │
     ├── UI 重构 → /ui-orchestrator (UI 约束)
     │
-    ├── 不可测试 → /ms-retrofit (逆向分析)
+    ├── 不可测试 → /ms-retrofit (建基线) → 确认目标行为
     │                    │
     │                    ├── /ms-requirements
     │                    ├── /ms-system-design

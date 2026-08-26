@@ -1,6 +1,6 @@
 ---
 name: ms-codebase-insight
-description: 只读分析现有代码库，输出系统边界、核心模块、公开接口、关键数据对象和技术约束。供 prd 和 dev/test 流程委托调用，了解已有系统现状。触发词：代码分析、系统现状、codebase analysis、existing system、代码盘点。NOT for 需求推导（use ms-retrofit）、项目上下文（use ms-onboard）。
+description: 只读分析现有代码库，输出系统边界、核心模块、公开接口、关键数据对象和技术约束。供 prd 和 dev/test 流程委托调用，了解已有系统现状。触发词：代码分析、系统现状、codebase analysis、existing system、代码盘点。NOT for 需求定义（use ms-requirements）、项目基线（use ms-retrofit）、项目上下文（use ms-onboard）。
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion, Write
 metadata:
   patterns: [generator]
@@ -21,13 +21,13 @@ user-invocable: true
 
 **最常见用法**: `/ms-codebase-insight`
 
-**不适合?** 需求推导→`/ms-retrofit`，项目交接→`/ms-onboard`
+**不适合?** 需求定义→`/ms-requirements`，项目基线→`/ms-retrofit`，项目交接→`/ms-onboard`
 
 ## 与其他 skill 的边界
 
 | skill | 职责 | codebase-insight 不做的 |
 |-------|------|------------------------|
-| ms-retrofit | 逆向生成 DevDocs 文档（F/US/AC） | 需求推导、编号分配 |
+| ms-retrofit | 建立项目基线（`00-baseline.md`：目的边界 / 外部硬约束 / 护栏 / 已知未知） | 问人、判断意图、给不确定性定安全默认动作 |
 | ms-onboard | 项目上下文 + 进度 + 待办 | 进度追踪、待办汇总 |
 | code-self-describe | 模块级 CLAUDE.md + 依赖图 | 文件级描述、依赖图生成 |
 | ms-verify `--schema-drift` | 扫描 A/B 类 DevDocs 产物的 `spec_version` 元数据 | 本 skill 的 `schema_version + commit_hash` 独立机制**被 `--schema-drift` 读取并在主报告独立章节呈现**（不并入 A/B 类主统计，不纳入 realign 编排；失效后由本 skill 自身 `--force` 处理，见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 ms-codebase-insight 的关系） |

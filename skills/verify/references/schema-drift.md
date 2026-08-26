@@ -15,9 +15,15 @@
 | `docs/devdocs/03-test-*.md`（含 `03-test-cases.md` 与 `03-test-unit.md` / `03-test-integration.md` / `03-test-e2e.md` 拆分文件） | ms-test-cases | `skills/test-cases/references/realign.md` |
 | `docs/devdocs/04-dev-tasks*.md` | ms-dev-tasks | `skills/dev-tasks/references/realign.md` |
 | `docs/devdocs/05-insights.md` | ms-insights | `skills/insights/references/realign.md` |
+| `docs/devdocs/00-baseline.md` | ms-retrofit | `skills/retrofit/references/realign.md` |
 | `docs/devdocs/00-context.md` | ms-onboard | `skills/onboard/references/realign.md` |
 | `docs/prd/chunks/*.md` | ms-prd-parser | `skills/prd-parser/references/realign.md` |
 | `docs/prd/requirements/*.md` | ms-prd-brainstorm | `skills/prd-brainstorm/references/realign.md` |
+
+⛔ **`00-baseline.md` 只做结构性 drift 检测**（缺失章节 / frontmatter 字段），
+realign **不得改写**其带 `用户确认` / `已有文档` / `推导待确认` 标注的正文——
+那些内容问人和挖证据才得来，重生成产不出来。详见
+[retrofit/references/realign.md](../../retrofit/references/realign.md)。
 
 **独立扫描（在主报告独立章节呈现，不并入 A/B 类产物主统计）**：
 - `docs/codebase-insight.md` — 按其自有 `schema_version + commit_hash` 字段扫描（ms-codebase-insight 独立机制；判据：`schema_version` 不匹配 skill 常量或 `commit_hash` 与 git HEAD 不一致 = 需要重扫，由 ms-codebase-insight 自身处理，**不**纳入 realign 编排）

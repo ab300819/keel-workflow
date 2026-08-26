@@ -158,7 +158,7 @@ generated_at: 2026-04-23T10:30:00+08:00
 ## 1. 项目概述
 
 ### 1.1 项目目标
-<从 01-requirements.md 提取>
+<从 01-requirements.md 提取；不存在时从 00-baseline.md 的「项目目的与边界」提取，并保留其来源标注>
 
 ### 1.2 核心功能
 | 编号 | 功能 | 状态 |
@@ -391,7 +391,7 @@ Agent: [展示现有文档内容]
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| DevDocs 不存在 | `/ms-retrofit` | 先从代码逆向生成文档 |
+| DevDocs 不存在 | `/ms-retrofit` | 先建立项目基线（`00-baseline.md`） |
 | 进度信息过时 | `/ms-sync` | 先同步文档状态 |
 | 需要详细任务 | `/ms-dev-tasks` | 查看完整任务列表 |
 | 记忆文件同步 | `/agent-memory` | 更新 AGENTS.md;DevDocs 项目同步时包含工作流路由节 |

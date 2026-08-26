@@ -73,6 +73,10 @@ metadata:
      └── UT/IT/E2E 测试  ←→   └── 测试文件
 ```
 
+**基线项目的追溯范围**：项目存在 `docs/devdocs/00-baseline.md` 时，追溯矩阵与覆盖率必须标注
+`coverage_scope: post-baseline` 并写明 `adoption_commit`——追溯从接管点之后开始，基线前的存量
+代码不在 F→US→AC→测试 链路内。不标注会把局部覆盖率误报成全系统覆盖率。
+
 **核心原则**：
 - 文档是计划，代码是实现
 - 偏差是正常的，关键是及时同步
@@ -299,6 +303,8 @@ summary:
       satisfies_found: X
       verifies_found: X
       coverage: "XX%"
+      coverage_scope: "post-baseline | full"    # post-baseline 时必填 adoption_commit
+      adoption_commit: ""                        # coverage_scope 为 post-baseline 时填
     audit_results:
       orphan_ids: []
       missing_tests: []

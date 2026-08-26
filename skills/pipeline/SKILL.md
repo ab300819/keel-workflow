@@ -103,6 +103,7 @@ user-invocable: true
 
 | 检测项 | 路由建议 |
 |------|---------|
+| 有 `00-baseline.md` 且无 `01`~`04`（基线已建，尚无需求） | 有新需求 → `/ms-feature`；补充背景 → `/ms-requirements --context` |
 | verify-report（`--impl` / 全部，通过） | `/ms-sync` 或 `/ms-compound` |
 | 有代码提交 + 任务进行中 | 继续 `/ms-dev-workflow` |
 | 有 01~04 + readiness-report 通过 | `/ms-dev-workflow` |
@@ -111,6 +112,8 @@ user-invocable: true
 | 有 01 + 02 | `/ms-test-cases` |
 | 仅 `01-requirements.md` | `/ms-system-design` |
 | `05-insights.md` 含 ⏳ 待确认条目 | `/ms-insights` 确认后进入 system-design 或 dev-tasks |
+
+⛔ 「基线态」必须排在表首。基线项目 `docs/devdocs/` 存在会进入这张表，但除这一行外**匹配不到任何行**——原表最短的一行是「仅 `01-requirements.md`」，基线项目会直接落空。
 
 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
 

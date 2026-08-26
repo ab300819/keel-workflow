@@ -55,9 +55,9 @@ spec_version_notes: |
 |------|---------|------|
 | **轻量** | Bug fix、小改动、配置变更 | → `/ms-bugfix`（已有） |
 | **标准** | 新功能、需求变更 | → 完整 Requirements→Design→Tests→Tasks→Dev |
-| **探索** | 原型、技术调研 | → 允许跳过部分验证，事后 `/ms-retrofit` 补文档 |
+| **探索** | 原型、技术调研 | → 允许跳过部分验证，事后由用户确认目标行为后补建 AC |
 
-> **探索模式最小行为验证**：可跳过文档强制（AC/追溯标注/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；写入 Commit 1 `Exploration-Mode: true` 尾注便于 `/ms-retrofit` 补 AC。无证据 ⛔ 阻止提交。
+> **探索模式最小行为验证**：可跳过文档强制（AC/追溯标注/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；写入 Commit 1 `Exploration-Mode: true` 尾注，便于事后由用户确认目标行为后补建真实 AC。无证据 ⛔ 阻止提交。
 
 ## 触发条件
 

@@ -268,6 +268,7 @@ docs/
 │
 ├── devdocs/                      # DevDocs 流程产出
 │   ├── 00-context.md             # 项目上下文（/ms-onboard）
+│   ├── 00-baseline.md            # 项目基线（接手记录，retrofit 产出）
 │   ├── 01-requirements.md        # 需求文档
 │   ├── 02-system-design*.md      # 系统设计
 │   ├── 03-test-*.md              # 测试用例

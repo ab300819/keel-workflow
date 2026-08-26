@@ -143,6 +143,11 @@ metadata:
 2. 通过 `@satisfies` 标注（layout.v1 legacy）或 `traceability.yml`（layout.v2 [FUTURE]）+ 代码搜索定位实现
 3. **语义判断**实现是否匹配 AC 描述（不仅检查标注存在性）
 4. 对每条 AC 给出判定：✅ 满足 / ⚠️ 部分满足 / ❌ 未满足
+5. **标注覆盖范围**：读 `docs/devdocs/00-baseline.md` 的 `adoption_commit`——
+   - 基线存在 → 报告写 `coverage_scope: post-baseline`，并附 `adoption_commit`
+   - 基线不存在 → 写 `coverage_scope: full`
+
+⛔ 基线项目的「AC 覆盖率 100%」**只覆盖 `adoption_commit` 之后的变更**，不标注就会被读成全系统覆盖率。存量代码占比越大，这个误读越危险——它会让一个基本没有测试的老项目显得「测试覆盖完美」。
 
 **辅助判断**：如存在最新 `05-test-report.md`，用实际测试通过率辅助判断 AC 满足度——测试全部通过的 AC 可提高判定信心，测试失败的 AC 需重点审查。
 

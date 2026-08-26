@@ -1,7 +1,7 @@
 ---
 name: ms-retrofit
-description: Retrofit existing projects to DevDocs workflow, or migrate old DevDocs to new standards. Reverse-engineer code into structured documentation. Use when users want to adapt existing projects, migrate documentation, standardize documents, or upgrade DevDocs version. Triggers on "retrofit", "改造", "适配", "迁移", "标准化", "逆向", "升级文档", "existing project", "已有项目", "从代码生成文档". NOT for initializing new projects (use ms-pipeline) or adding features to existing DevDocs (use ms-feature).
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
+description: Retrofit existing projects to DevDocs workflow, or migrate old DevDocs to new standards. For projects without docs, establish a project baseline recording what code cannot answer. Use when users want to adapt existing projects, take over legacy code, migrate documentation, standardize documents, or upgrade DevDocs version. Triggers on "retrofit", "改造", "适配", "迁移", "标准化", "基线", "摸底", "接手项目", "升级文档", "existing project", "已有项目". NOT for initializing new projects (use ms-pipeline), adding features to existing DevDocs (use ms-feature), or code inventory (use ms-codebase-insight).
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, Task
 metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
@@ -24,6 +24,8 @@ metadata:
 
 **最常见用法**: `/ms-retrofit`（自动检测项目状态）
 
+`/ms-retrofit --realign`   → 规范升级回扫：00-baseline.md 按当前 baseline.v1 查漏补缺（⛔ 只补结构，不改带来源标注的正文）。推荐用户入口 /ms-pipeline realign
+
 **不适合?** 新项目→`/ms-pipeline init`，加功能→`/ms-feature`
 
 ## 触发条件
@@ -31,7 +33,7 @@ metadata:
 - 用户希望将现有项目适配 DevDocs 流程
 - 用户需要标准化项目文档
 - 用户要迁移或升级已有 DevDocs 文档
-- 项目缺少文档，需要从代码逆向生成
+- 项目缺少文档，需要建立可维护的基线
 
 ## 与 realign 的边界
 
@@ -39,37 +41,34 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 ## 工作流程
 
-```
+```text
 1. 扫描项目结构
    │
    ▼
 2. 检测项目状态
    │
-   ├── 无 DevDocs ──────────────────┐
-   │                                │
-   ├── 有 DevDocs（旧版）────┐      │
-   │                         │      │
-   └── 有 DevDocs（符合规范）│      │
-       → 无需改造            │      │
-                             ▼      ▼
-3. 分析（按检测结果分支）
+   ├── 无 docs/devdocs/ ──────────────────► 建立项目基线
    │
-   ├── 版本迁移：规范检查 + 生成差异清单
-   └── 新项目：自动识别文档 + 结构分析
+   ├── 有 00-baseline.md 且无 01~04 ────► 基线已建，终态，无需改造
+   │
+   ├── 有 DevDocs（符合规范）────────────► 无需改造
+   │
+   └── 有 DevDocs（旧版）────────────────► 版本迁移
    │
    ▼
-4. 呈现分析结果 + 改造策略（AskUserQuestion）
-   │              让用户选择执行分支
-   ▼
-5. 用户确认 → 按分支执行
-   │
-   ├── 版本迁移：更新迁移文档 → 生成/更新 docs/devdocs/
-   └── 新项目：
-       ├── 确认识别/手动指定 → 生成 DevDocs 文档
-       └── 代码逆向推导 → 展示推导结果 → 用户二次确认 → 生成 DevDocs 文档
+3. 呈现方案 + AskUserQuestion 确认
    │
    ▼
-6. 生成改造报告
+4. 执行
+   │
+   ├── 建立基线：调查 → 校验 → 推导 → 提问 → 落盘 00-baseline.md
+   └── 版本迁移：更新迁移文档 → 生成/更新 docs/devdocs/
+   │
+   ▼
+5. 收尾
+   │
+   ├── 基线路径：不产报告（建立记录已在基线内）
+   └── 版本迁移：生成 00-retrofit-report.md
 ```
 
 ---
@@ -90,18 +89,18 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 **选择性迁移追加交互**：用户选择选项 2 后，展示差异清单并让用户勾选要迁移的文档/章节，确认范围后再执行。
 
-### 新项目改造场景
+### 建立基线场景
 
-展示项目概况（类型、技术栈、规模）和文档识别结果后，让用户选择：
+展示调查覆盖面和校验结果后，让用户选择：
 
-> 项目结构识别结果如下，请确认或调整：
-> 1. **确认识别结果**，开始生成文档
-> 2. **手动指定**模块/路径
-> 3. **代码逆向推导**后再确认（推导完成后会再次展示结果供确认）
+> 调查与校验结果如下，请确认或调整：
+> 1. **确认调查结果**，开始建立基线
+> 2. **补充材料**（指定被漏掉的文档 / issue / 历史资料）后再调查
+> 3. **调整基线范围**（哪些节先建、哪些标未知）
 
 ### 方案必须包含
 
-**新项目改造**：项目概况（类型、技术栈、规模）→ 文档识别结果 → 改造方式（文档转换/逆向推导/混合）→ 推导范围和粒度 → 预估产出（F/US/AC 数量）→ 风险与注意
+**建立基线**：调查覆盖面（已挖的材料来源）→ 校验结果（已佐证 / 未可验 / 与代码矛盾 各几条）→ 待提问项清单 → 预估「未知」比例 → 风险与注意
 
 **版本迁移**：规范检查结果 → 迁移动作清单（含影响范围和风险）→ 迁移方式（完整/选择性/仅报告）
 
@@ -110,23 +109,43 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 - 用户选择前：只展示方案，不写入任何文件
 - 用户选择后：按分支生成 `docs/devdocs/` 下的文档
 - **选择性迁移**：必须在用户指定迁移范围后才能执行，不可猜测范围
-- **代码逆向推导**：推导完成后必须再次展示结果供用户确认，确认后才能写入文档
+- **基线草案**：落盘前必须展示带来源标注的草案供用户确认；用户未表态的条目保持 `推导待确认`，不得升格
 
 ## 项目状态检测
 
 ### 检测逻辑
 
-```
-1. 检查 docs/devdocs/ 目录是否存在
+```text
+0. 带 --realign 标志？
    │
-   ├── 不存在 → 新项目改造流程
+   ├── 是 → 直接进 realign 子流程（见 references/realign.md），跳过下方全部检测
+   │        ⛔ 只补结构（缺失章节 / frontmatter 字段），不改带来源标注的正文
    │
-   └── 存在 → 检查规范符合性
+   └── 否 → 继续
+   │
+   ▼
+1. docs/devdocs/ 是否存在？
+   │
+   ├── 不存在 → 建立项目基线
+   │
+   └── 存在 → 有 00-baseline.md 且无 01~04？
        │
-       ├── 符合当前规范 → 无需改造
+       ├── 是 → 基线已建（第三终态）→ 无需改造，提示下一步 /ms-feature
        │
-       └── 不符合 → 版本迁移流程
+       └── 否 → 规范符合性检查
+           │
+           ├── 符合当前规范 → 无需改造
+           │
+           └── 不符合 → 版本迁移流程
 ```
+
+⛔ **「基线已建」是与「符合规范」并列的第三种终态，不是「旧版待迁移」。**
+
+基线项目一项编号都没有，若直接进规范符合性检查，会被判成「缺少 F/US/AC 编号 ⚠️ 需迁移」，
+于是版本迁移流程**试图把刚建好的基线项目迁回旧的编号形态**——用户第二次跑 `/ms-retrofit`
+就会撞上这个死循环。判据必须在规范检查**之前**短路。
+
+判据是**存在性**不是排他性：基线项目允许有 05-bugfix-log.md、00-context.md 等其他产物，它们不影响「基线已建」的判定。只看 01~04 在不在。
 
 ### 规范符合性检查清单
 
@@ -153,26 +172,32 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 ---
 
-## 新项目改造流程（无 DevDocs）
+## 建立项目基线（无 DevDocs）
 
-当项目没有 DevDocs 文档时执行。完整 Step 1-5 详细规范（扫描位置 / 识别规则 / 用户确认 / 代码逆向推导示例 / 测试用例推导 / 输出文件结构）见 [references/new-project-retrofit.md](references/new-project-retrofit.md)。
+当项目没有 DevDocs 文档时执行。完整流程（调查范围 / 校验规则 / 来源标注 / 提问纪律 / 落盘）见 [references/new-project-retrofit.md](references/new-project-retrofit.md)，产物形状见 [templates/baseline-template.md](templates/baseline-template.md)。
+
+**基线只记录重扫代码无法重建的信息。** 模块 / 接口 / 数据对象 / 技术栈归 `docs/codebase-insight.md`；当前进度 / 待办归 `docs/devdocs/00-context.md`。
 
 要点：
-- Step 1 扫描常见文档位置（docs/ / README / design/ / tests/）
-- Step 2 自动识别（按关键词匹配文档类型）
-- Step 3 用户确认三选项（确认识别 / 手动指定 / 代码逆向）
-- Step 4 代码逆向推导（路由→F、API→US、测试→AC/UT/IT/E2E）
-- Step 5 生成 DevDocs 完整目录结构
+
+- Step 1 调查：委托 `ms-codebase-insight` 摸排 + README / CHANGELOG / git 提交信息 / issue·PR / 实跑构建测试
+- Step 2 校验：拿代码检验文档里每条可验证陈述 → `已佐证` / `未可验` / `与代码矛盾`
+- Step 3 推导：起草带依据标注的草案，每条写清「据什么」
+- Step 4 提问：只问推不出、依据薄弱、或校验出矛盾的项；⛔ 每题必须有「我也不清楚」出口
+- Step 5 落盘：`docs/devdocs/00-baseline.md`，不产 `01`~`04`
+
+**存量代码不编号。** `01-requirements.md` 由首次 `/ms-feature` 创建，`F-001` 从新需求起。
+改造完成到首个需求之间，`/ms-board`、`/ms-test-cases`、`/ms-verify` 会拒绝运行——**这是正确行为**，还没有需求，当然不能评审需求。
 
 ---
 
 ## 改造报告
 
-改造完成后必须生成 `00-retrofit-report.md`，包含改造概览、文档状态、编号分配、待完善项、下一步建议。
+**仅版本迁移路径生成** `00-retrofit-report.md`，包含迁移动作清单（改了哪些编号、重命名了哪些文件）。详细模板参见 [templates/retrofit-report-template.md](templates/retrofit-report-template.md)。
 
-详细模板参见 [templates/retrofit-report-template.md](templates/retrofit-report-template.md)。
+**基线路径不产报告**：原报告的「编号分配」表整张作废（不再产编号）、「文档状态」表塌成一行（只产一份基线），剩下的「待完善项」与「下一步建议」已并入基线的「建立记录」节——它跟着基线走，下次读基线的人才看得到这份基线的局限。
 
-**关键规则**：改造不是终点，必须通过后续 Skill 进入正常开发循环。推荐先用 `/ms-requirements --context` 补充背景信息。
+**关键规则**：基线不是终点。有新需求 → `/ms-feature`；补充项目背景或把 `推导待确认` 升为 `用户确认` → `/ms-requirements --context`（写入 `00-baseline.md`）。
 
 **工作区拓扑（`retrofit` 路径）**：改造成功、`docs/devdocs/` 生成后，执行 `Task: /workspace-topology reconcile`。该 skill 自己写 `AGENTS.md` 的 `workspace:` 块，无声明时问一次 mode 与代码根并落声明。见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
 
@@ -184,9 +209,11 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 需求审查 | `/ms-requirements` | 审查改造后的需求文档 |
-| 设计审查 | `/ms-system-design` | 审查系统设计 |
-| 测试用例 | `/ms-test-cases` | 完善测试用例设计 |
+| 代码盘点 | `/ms-codebase-insight` | 建立基线 Step 1 委托，产出清单层供提问出候选 |
+| 基线增量补全 | `/ms-requirements --context` | 把 `未知` / `推导待确认` 升为 `用户确认` |
+| 需求审查 | `/ms-requirements` | 审查需求文档（基线项目须先有 `01`，由首次 `/ms-feature` 创建） |
+| 设计审查 | `/ms-system-design` | 审查系统设计（同上，须先有需求文档） |
+| 测试用例 | `/ms-test-cases` | 完善测试用例设计（同上，须先有需求文档） |
 | 新增功能 | `/ms-feature` | 改造后添加新功能 |
 | Bug 修复 | `/ms-bugfix` | 改造后修复问题 |
 | 测试质量 | `/testing-guide` | 检查测试有效性 |
@@ -204,15 +231,15 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 ### 方案确认约束
 
 - [ ] **扫描项目 + 检测状态后，必须展示方案并等待用户选择执行分支**
-- [ ] **方案必须包含改造策略和预估产出（新项目）或迁移动作清单（版本迁移）**
+- [ ] **方案必须包含改造策略和调查覆盖面与预估未知比例（建立基线）或迁移动作清单（版本迁移）**
 - [ ] **用户确认方案后才能开始文档改造**
 - [ ] 用户要求调整时，更新方案后重新确认
 
 ### 检测约束
 
-- [ ] **必须先检测项目状态（无 DevDocs / 旧版 / 符合规范）**
+- [ ] **必须先检测项目状态（无 DevDocs / 基线已建 / 旧版 / 符合规范）**
 - [ ] 必须扫描常见文档目录
-- [ ] 识别结果必须让用户确认
+- [ ] 调查与校验结果必须让用户确认
 
 ### 迁移约束
 
@@ -221,26 +248,27 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 - [ ] 文件重命名必须使用 `git mv`
 - [ ] 不得删除原有文档的有效内容
 
-### 编号约束
+### 基线内容约束
 
-- [ ] **必须为所有功能点分配 F-XXX 编号**
-- [ ] **必须为所有用户故事分配 US-XXX 编号**
-- [ ] **必须为所有验收标准分配 AC-XXX 编号**
-- [ ] **必须为所有测试用例分配 UT/IT/E2E-XXX 编号**
-- [ ] 编号必须连续，不得跳号
+- [ ] **⛔ `00-baseline.md` 不得出现模块表 / 接口表 / 数据对象表 / 依赖图 / 技术栈清单 / 目录结构树**（→ `codebase-insight.md`）
+- [ ] **⛔ 不得出现当前分支 / 未提交改动 / 完成率 / 待办**（→ `00-context.md`）
+- [ ] **⛔ 不得从实现细节推导出「必须保持此行为」**——最大的危害不是过时，是把实现偶然性写成设计意图
+- [ ] **⛔ 不得出现没有来源标注的断言**；推不出就标 `未知`
+- [ ] **⛔ `推导待确认` 不得因用户沉默而升格为 `用户确认`**
+- [ ] **⛔ 每次提问必须提供「我也不清楚」出口**，且选它不算失败——不给出口，用户被迫瞎选产生的假信息比标 `未知` 更糟
+- [ ] 护栏节三要素（决定 / 约束哪些改动 / 依据）**缺一不写**
+- [ ] 「已知未知」每条必须写出「确认前的安全默认动作」
 
 ### 输出约束
 
 - [ ] 输出目录统一为 `docs/devdocs/`
-- [ ] 文件命名遵循 DevDocs 规范
-- [ ] 必须生成改造报告
-- [ ] 逆向推导内容必须标注 `[从代码推导]`
+- [ ] 基线路径只产 `00-baseline.md`，不产 `01`~`04`
 
 ---
 
 ## 错误处理
 
-详见 [references/error-handling.md](references/error-handling.md)（无法识别文档、项目无文档、迁移冲突）
+详见 [references/error-handling.md](references/error-handling.md)（调查材料不足、项目无任何文档、迁移冲突）
 
 ---
 
@@ -252,40 +280,43 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 skill: ms-retrofit
 status: success | failed | partial
 summary:
-  headline: "项目改造完成，逆向提取 3 功能点"
+  headline: "项目基线已建立，5 项未知待补"
   details:
-    docs_generated:
-      - docs/devdocs/01-requirements.md
-      - docs/devdocs/02-system-design.md
-    features_extracted: X
-    apis_extracted: X
-    coverage:
-      requirements: "XX%"
-      design: "XX%"
-      tests: "XX%"
+    path: baseline | version-migration
+    baseline_established: true
+    adoption_commit: "a1b2c3d"
+    counts:
+      用户确认: X
+      已有文档: X
+      推导待确认: X
+      未知: X
+    evidence_conflicts: X
+    build: "pass | fail | none"
+    tests: "pass | fail | none"
 blockers: []
 output_files:
-  - docs/devdocs/00-retrofit-report.md
-new_ids:
-  features: [F-001~F-003]
-  stories: [US-001~US-006]
-  acceptance: [AC-001~AC-012]
+  - docs/devdocs/00-baseline.md
+new_ids: {}
 next_recommended:
-  skill: ms-requirements
-  args: "--context"
+  skill: ms-feature
+  args: ""
 ```
 
 ## 输出文件
 
-```
+**基线路径**：
+
+```text
 docs/devdocs/
-├── 00-retrofit-report.md    # 改造报告
-├── 01-requirements.md       # 需求文档（含编号）
-├── 02-system-design.md      # 系统设计
-├── 02-system-design-api.md  # API 设计（如需要）
-├── 03-test-cases.md         # 测试用例概览 + 追溯矩阵
-├── 03-test-unit.md          # 单元测试（含 UT-XXX）
-├── 03-test-integration.md   # 集成测试（含 IT-XXX）
-├── 03-test-e2e.md           # E2E 测试（含 E2E-XXX）
-└── 04-dev-tasks.md          # 开发任务（含 T-XX）
+└── 00-baseline.md          # 项目基线（唯一产物）
+```
+
+附带（由委托的 skill 各自产出，不由本 skill 写）：`docs/codebase-insight.md`（`ms-codebase-insight`）、`AGENTS.md` 的领域术语与架构决策节（`agent-memory`）。
+
+**版本迁移路径**：
+
+```text
+docs/devdocs/
+├── 00-retrofit-report.md    # 迁移报告
+└── <按迁移范围更新的既有 01~04 文档>
 ```

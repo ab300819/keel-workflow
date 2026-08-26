@@ -69,7 +69,7 @@ migration: /ms-pipeline realign --scope=layout
 |------|----------|------|
 | **初始模式** | 默认入口且无 `01-requirements.md` | 从零创建需求文档 |
 | **增量模式** | 默认入口且已有 `01-requirements.md` | 扫描编号 + 追加功能点/用户故事/验收标准 |
-| **背景信息模式** | `--context` 或用户要补充背景 | 追加/更新"背景与目标"章节 |
+| **背景信息模式** | `--context` 或用户要补充背景 | 基线项目：升格 `00-baseline.md` 的 `未知`/`推导待确认` 条目；否则追加/更新"背景与目标"章节 |
 | **产品导入模式** | `--from-prd` + index 路径 | 消费 ms-prd 输出的结构化需求包 |
 | **设计资产更新模式** | `--update-design` 或 pipeline design 委托 | 写入 / 合并 design_context，不触发需求拆解 |
 
@@ -130,7 +130,7 @@ migration: /ms-pipeline realign --scope=layout
 |---|---|---|---|
 | 初始模式 | 无 `01-requirements.md`；输入 `< 200` 字且无结构化标记时先建议 `/ms-prd`，并 AskUserQuestion 确认继续或切换 | 0.5 设计资产感知（按 prd/references/design-context.md 探测协议，询问设计稿和组件库并写入 `## 设计资产`）→ 收集原始需求（记录原话/关键表述、来源、日期）→ 理解需求 + 探索代码库（如适用）→ 呈现需求拆解方案 + 轻量假设挑战 → 用户确认 → 识别功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）→ 编写用户故事（v1: US-XXX / v2 [FUTURE]: STORY-XXX）→ 编写 AC-XXX（design_context 存在时，UI 相关 US 自动补充 hover/disabled/error/loading/empty 等交互状态 AC）→ 生成追溯矩阵 | 初始方案确认后才写入；轻量假设挑战仅初始模式 + 非 `--from-prd` + 非快速通过意图，问题为：去掉此功能用户最大损失、MVP 最小可用集、6 个月后是否仍重要；`--from-prd` 跳过（prd 层已做 4 题产品视角挑战），快速通过时跳过并提示风险 |
 | 增量模式 | 已有 `01-requirements.md`；读取已有 design_context，无则按 design-context.md 探测协议询问 | 扫描现有 F/US/AC 最大编号 → 收集新增原始需求并追加到 `## 0. 原始需求`（历史文档缺章节则标注"缺失历史原始需求"后继续）→ 读取已有上下文 / codebase-insight（如存在）→ 理解新增需求 → 追加功能点/用户故事/验收标准，延续编号并标注增量版本和日期 → 更新追溯矩阵 → 用户确认 | 返回新增编号列表（供调用方使用）；不得删除或覆盖既有内容 |
-| 背景信息模式 | `--context` 或用户要补充背景；不涉及功能点生成，跳过设计资产探测 | 读取现有文档并提取"背景与目标"章节 → 收集背景信息（AskUserQuestion、用户直接输入、Read 文件路径、WebFetch URL 摘要）→ 合并到"背景与目标"章节，补充"技术约束"和"参考资料"子章节 → 更新文档 → 用户确认 | 不写入 `## 0. 原始需求`，除非用户提供的是需求原话而非背景补充 |
+| 背景信息模式 | `--context` 或用户要补充背景；不涉及功能点生成，跳过设计资产探测 | **先定写入目标**：`docs/devdocs/00-baseline.md` 存在 → 写基线（定位标为 `未知` / `推导待确认` 的条目 → 收集信息 → 用户明确说了才升为 `用户确认` 并补依据，⛔ 沉默不升格 → 更新条目）；否则 → 写 `01-requirements.md §1`（读取现有文档并提取"背景与目标"章节 → 收集背景信息，含 AskUserQuestion、用户直接输入、Read 文件路径、WebFetch URL 摘要 → 合并到"背景与目标"章节，补充"技术约束"和"参考资料"子章节 → 更新文档 → 用户确认）。⛔ 基线存在时不得创建 `01-requirements.md` | 不写入 `## 0. 原始需求`，除非用户提供的是需求原话而非背景补充 |
 
 ### 设计资产更新模式
 
@@ -298,7 +298,7 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 - [ ] 历史文档若无该章节，标注"缺失历史原始需求"后继续
 
 ### 背景信息模式约束
-- [ ] **必须先读取现有"背景与目标"章节内容**
+- [ ] **必须先读取写入目标的现有内容**（基线项目读 `00-baseline.md` 的对应节；否则读 `01-requirements.md` 的"背景与目标"章节）
 - [ ] **不得删除或覆盖现有背景信息**
 - [ ] **新增内容必须标注更新日期**
 - [ ] **URL 引用必须使用 WebFetch 提取摘要，不能仅记录链接**
@@ -343,8 +343,8 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 | 新功能需求 | `/ms-feature` | 被调用：新功能触发需求追加 |
 | 洞察转化 | `/ms-insights` | 被调用：改进建议转化为需求 |
 | Bug 暴露需求 | `/ms-bugfix` | 被调用：Bug 修复发现需求缺失 |
-| 项目改造 | `/ms-retrofit` | 被调用：逆向推导生成需求 |
-| **改造后补充背景** | `/ms-retrofit` | **后续**：逆向完成后用 `--context` 补充背景 |
+| 项目改造 | `/ms-retrofit` | 前置：建立项目基线（存量代码不编号，本 skill 的 F-001 从新需求起） |
+| **基线增量补全** | `/ms-retrofit` | **后续**：基线建立后用 `--context` 补齐 `未知` / `推导待确认` 条目 |
 | 设计阶段 | `/ms-system-design` | 后续：需求确认后进入设计 |
 | 上下文生成 | `/ms-onboard` | 后续：背景信息会被提取到上下文摘要 |
 
@@ -377,7 +377,7 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 |----------|------------|
 | 初始模式 | `/ms-system-design` 进入系统设计 |
 | 增量模式 | `/ms-system-design` 增量设计或 `/ms-test-cases` 补充测试 |
-| 背景信息模式 | 继续 `/ms-requirements` 定义功能点，或 `/ms-system-design` 设计 |
+| 背景信息模式 | 基线项目 → `/ms-feature`（首个需求，创建 `01`）；否则继续 `/ms-requirements` 定义功能点，或 `/ms-system-design` 设计 |
 
 > **提示**：文档变更较大时，建议运行 `/agent-memory` 同步记忆文件。
 

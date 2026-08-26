@@ -51,7 +51,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 
 | 场景 | 协作 Skill | 说明 |
 |------|------------|------|
-| 代码无法测试 | `/ms-retrofit` | 逆向分析后重写 |
+| 代码无法测试 | `/ms-retrofit` | 建立基线记录现状与外部约束，再与用户确认目标行为后重写 |
 | UI 重构 | `/ui-orchestrator` | 应用 UI 约束规范 |
 | 代码质量检查 | `/code-quality` | 应用 MTE 原则 |
 | 需要文档化 | DevDocs 流程 | 生成规范文档 |
@@ -90,7 +90,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
    ▼
 5. 重写流程（如需要）
    │
-   └── 调用 /ms-retrofit 逆向 → 生成文档 → 重新实现
+   └── /ms-retrofit 建基线 → 与用户确认目标行为 → 正常 DevDocs 流程 → 重新实现
    │
    ▼
 6. 验证与报告
@@ -413,7 +413,7 @@ docs/devdocs/
 
 - [ ] UI 重构必须应用 `/ui-orchestrator` 约束
 - [ ] 代码重构必须应用 `/code-quality` MTE 原则
-- [ ] 重写时必须使用 `/ms-retrofit` 生成文档
+- [ ] 重写前必须用 `/ms-retrofit` 建立基线，并与用户确认目标行为后才能定需求
 
 ### 文档约束
 

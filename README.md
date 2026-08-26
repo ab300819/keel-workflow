@@ -62,7 +62,7 @@ git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-s
 **例 3 — 接手别人的项目**
 ```
 /ms-onboard --read       # 只读生成项目上下文摘要
-/ms-retrofit             # 需要规范化时，从代码逆向生成 DevDocs
+/ms-retrofit             # 需要规范化时，建立项目基线（00-baseline.md）
 ```
 
 **例 4 — 已有用例文档，要对运行中系统跑一遍黑盒实测**

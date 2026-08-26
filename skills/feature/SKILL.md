@@ -26,11 +26,19 @@ metadata:
 ## 前置条件
 
 - 已存在 DevDocs 文档目录：`docs/devdocs/`
-- 至少存在 `01-requirements.md`
+- 存在 `01-requirements.md` **或** `00-baseline.md`
 
-如不存在，建议：
+**有 `00-baseline.md` 且无 `01-requirements.md`（基线项目）时**：本 skill 创建 `01-requirements.md`，`F-001` 从这个新需求起。
+存量代码不编号——基线项目的历史实现不进编号体系，只有基线之后的真实变更才有 F/US/AC。
+
+如两者都不存在，建议：
+
 - 新项目 → `/ms-requirements`
-- 已有代码无文档 → `/ms-retrofit`
+- 已有代码无文档 → `/ms-retrofit`（建立项目基线）
+
+> ⛔ 这条前置条件曾写死「至少存在 `01-requirements.md`」，与 `/ms-retrofit` 的「基线已建，无需改造」
+> 终态构成死循环：想加新功能 → feature 说去跑 retrofit → retrofit 说基线已建 → 回到 feature。
+> 基线项目必须能从这里进入。
 
 ## 快速开始
 
@@ -96,6 +104,10 @@ Lite（以上均无）→ 轻量模式
 
 建议使用完整模式。[完整/轻量]
 ```
+
+⛔ **基线项目的首个需求强制走完整/标准档**：`docs/devdocs/00-baseline.md` 存在且无 `01-requirements.md` 时，
+自动档位检测结果一律提升至标准档。轻量模式 Step 1 要读 `01-requirements.md` 取 AC 最大编号、
+且约束「不新建 F-XXX 仅追加到现有功能」——基线项目两者都不成立。Lite 从第二个需求起可用。
 
 ## 核心理念
 
