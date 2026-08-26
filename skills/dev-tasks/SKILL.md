@@ -50,7 +50,7 @@ migration: /ms-pipeline realign --scope=layout
 
 **一句话**: 将系统设计拆分为可执行的开发任务，按 🔴🟡🟢⚪ 分层标记（层级为风险输入），并提议初始 `review_profile`（执行强度由 review_profile 决定）。
 
-**最常见用法**: `/ms-dev-tasks`（标准模式）、`/ms-dev-tasks --fast`（跳过逐步确认）
+**最常见用法**: `/ms-dev-tasks`。想少确认几步直接说，不必记参数。
 
 **不适合?** 执行任务→`/ms-dev-workflow`，设计还没做→`/ms-system-design`
 
@@ -58,15 +58,14 @@ migration: /ms-pipeline realign --scope=layout
 
 ```bash
 /ms-dev-tasks                  → 标准模式（逐步确认）
-/ms-dev-tasks --fast           → 跳过逐步确认，直接生成，仅最终确认
 /ms-dev-tasks --realign[=scope] → 规范升级回扫（任务结构/字段差距补齐；不改任务状态）。详见 [references/realign.md](references/realign.md)；推荐 `/ms-pipeline realign`
 ```
 
-### `--fast` 模式
+### 快速档
 
 - 使用合理默认值（不询问任务粒度偏好等）
 - 仅保留最终写入前的 1 次确认
-- 默认行为不变，`--fast` 是 opt-in
+- 默认为标准档；快速档由用户意图触发（「直接生成」「别一步步问」），不默认启用
 
 ## 工作流程
 
@@ -99,9 +98,6 @@ migration: /ms-pipeline realign --scope=layout
 ### 一致性自检
 
 每个功能点的任务设计完成后，对比检查：
-- [ ] TAR 三字段是否与首批一致（无缺项）
-- [ ] 文件路径是否具体到文件名（非"相关文件"等模糊描述）
-- [ ] 任务粒度是否一致（无超过 4 小时的任务）
 
 ## 输出文件
 
@@ -182,14 +178,11 @@ docs/devdocs/
 
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /ms-dev-workflow 执行编码）
-- [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
 - [ ] Bash 工具仅用于只读操作（如查看目录结构），不得执行代码修改
-- [ ] 编码实现由 `/ms-dev-workflow` 负责，本 Skill 不涉及
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/task-template.md](templates/task-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）
 
 ### 基础约束
 
-- [ ] **单个任务必须在 4 小时内可完成**
 - [ ] **必须指定任务依赖**
 - [ ] **必须按依赖排序，不能有循环依赖**
 - [ ] **文件路径必须具体，不能写"相关文件"**
@@ -197,7 +190,6 @@ docs/devdocs/
 - [ ] 优先级：P0（阻塞）、P1（重要）、P2（次要）
 - [ ] 任务编号格式：v1 用 `T-XX` / v2 [FUTURE] 用 `TASK-XX`（顺序编号；按项目 `AGENTS.md devdocs.id_scheme` 选择）
 - [ ] 后批次任务详细程度不低于首批次（TAR 完整性、路径具体性、粒度一致性）
-- [ ] 每个功能点完成后执行一致性自检
 
 ### 需求追溯约束
 
@@ -218,10 +210,6 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 
 在呈现给用户确认前，加载 [references/tar-rubric.md](references/tar-rubric.md) 并自动验证：
 
-- [ ] TAR 三字段完整（测试方法 + 验收标准 + Review 要点）
-- [ ] 文件路径具体到文件名
-- [ ] 预估 ≤ 4h
-- [ ] 依赖无环（拓扑排序验证）
 
 自检不通过项自动修复后再呈现用户，不增加用户交互步骤。
 

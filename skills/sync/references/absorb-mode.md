@@ -110,7 +110,7 @@ interface ICacheService {
 ## 无法自动处理
 
 - `src/utils/helper.ts` - 无法确定关联的功能点
-  - 建议：手动补充或使用 `/ms-feature --lite`
+  - 建议：手动补充或使用 `/ms-feature`（说明是小改动）
 ```
 
 ## 典型使用场景

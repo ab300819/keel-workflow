@@ -66,17 +66,14 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 - [ ] **每个测试必须有 ≥1 个具体断言**
 - [ ] **禁止弱断言作为唯一断言** (`toBeDefined`, `toBeTruthy`, `not.toBeNull`)
-- [ ] **测试名称必须描述预期行为**
 - [ ] **测试依据来自需求，不是代码**
 - [ ] 只 Mock 外部依赖，不 Mock 内部实现
-- [ ] 每个测试只验证一个行为
 
 > 详细指南见 [templates/unit-testing.md](templates/unit-testing.md)
 
 ### 覆盖率约束
 
 - [ ] **行/分支覆盖率达标**（阈值与分级见[核心阈值表](#核心阈值表)）
-- [ ] 覆盖率是必要条件，不是充分条件
 
 ### 变异测试约束（推荐）
 
@@ -96,14 +93,12 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 - [ ] **P0 场景必须 100% 覆盖**
 - [ ] 使用显式等待，禁止硬编码延时
-- [ ] 测试必须可独立运行
 
 > 详细指南见 [templates/e2e-testing.md](templates/e2e-testing.md)
 
 ### 需求追溯约束
 
 - [ ] 每个需求必须有对应测试
-- [ ] 测试代码应标注需求ID
 
 > 模板见 [templates/traceability-matrix.md](templates/traceability-matrix.md)
 
@@ -193,9 +188,6 @@ describe('UserService', () => {
 - [ ] **必须使用 `test.skip()` 或 `test.todo()` 标记未实现测试**
 - [ ] **必须添加 `@verifies` 和 `@testcase` 标注**
 - [ ] **必须按功能点 (F-XXX) 组织 describe 结构**
-- [ ] **必须在注释中提示 AAA 结构**
-- [ ] 测试名称必须描述预期行为
-- [ ] 一个测试只验证一个 AC
 
 ### 与 DevDocs 协作
 
@@ -280,8 +272,6 @@ test('createUser 应该抛出错误当 email 为 null', () => {
 - [ ] **分支分析在需求驱动测试之后执行**（先 AC 测试，后分支补充）
 - [ ] **补充测试必须标注 @covers-branch**（区分需求驱动和分支补充）
 - [ ] **补充测试使用 BCA-XXX 编号**（不占用 UT/IT/E2E 编号空间）
-- [ ] **补充测试同样遵循断言质量约束**（禁止弱断言）
-- [ ] 分支分析不改变需求驱动测试的优先级
 - [ ] **业务逻辑分支应回溯为 AC 对应的正式测试（UT/IT/E2E），不保留为 BCA 编号**
 
 > 详细分析流程和示例见 [templates/branch-coverage-analysis.md](templates/branch-coverage-analysis.md)

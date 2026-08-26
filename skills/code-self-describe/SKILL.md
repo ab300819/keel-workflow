@@ -257,7 +257,6 @@ AI 搜索到第五层文件时，已自动加载前四层 CLAUDE.md，对整个�
 - [ ] **模块级 CLAUDE.md 必须基于实际代码分析生成**
 - [ ] **头部注释必须基于实际 import/export 分析**
 - [ ] 不为空目录或配置目录生成 CLAUDE.md
-- [ ] 不为第三方依赖目录生成描述（node_modules, vendor 等）
 
 ### 更新约束
 
@@ -278,7 +277,6 @@ AI 搜索到第五层文件时，已自动加载前四层 CLAUDE.md，对整个�
 - [ ] **忽略构建产物**（dist/, build/, __pycache__/ 等）
 - [ ] **忽略依赖目录**（node_modules/, vendor/, Pods/ 等）
 - [ ] **忽略测试目录的 CLAUDE.md 生成**（测试文件仍生成头部注释）
-- [ ] 可通过参数指定扫描范围
 
 ## Skill 协作
 

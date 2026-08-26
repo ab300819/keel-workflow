@@ -161,7 +161,6 @@ execution_contract:
 ## 约束清单
 
 - [ ] **三硬门控不可跳过**：Contract / Red-Green（测试可行时）/ Verify（两 verdict 均必过）
-- [ ] **测试冻结**：实现阶段改测试文件 → ⛔ Blocker
 - [ ] **Fresh-Context Review 必须是新上下文子 Agent**，不得由实现者自评
 - [ ] **契约外发现不顺手改**，进 deferred 清单
 - [ ] **无自动测试不伪造 TDD**，降级证据须声明原因

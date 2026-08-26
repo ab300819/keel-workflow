@@ -44,7 +44,7 @@ metadata:
 
 **一句话**: 在已有 DevDocs 项目中追加新功能，自动编排需求/设计/测试/任务。
 
-**最常见用法**: `/ms-feature "功能描述"`（自动选档位）、`/ms-feature --fast "功能描述"`
+**最常见用法**: `/ms-feature "功能描述"`（自动选档位）。想强制某档或少确认，直接说。
 
 **不适合?** 新项目→`/ms-pipeline init`，修 Bug→`/ms-bugfix`，已有代码无文档→`/ms-retrofit`
 
@@ -54,10 +54,6 @@ metadata:
 
 ```bash
 /ms-feature "功能描述"             → 自动检测模式（Lite/Standard/Deep）
-/ms-feature --lite "功能描述"      → 强制轻量模式
-/ms-feature --deep "功能描述"      → 强制深度模式（强制 review + docs 验证）
-/ms-feature --fast "功能描述"      → 连续执行 Step 1-5，仅最终汇总确认
-/ms-feature --lite --fast "功能描述" → 轻量 + 快速组合
 /ms-feature F-XX realign           → 只对齐 F-XX 关联产物（调度 system-design/test-cases/dev-tasks/dev-workflow --realign=F-XX）；共享契约见 [../pipeline/references/realign.md](../pipeline/references/realign.md)
 ```
 
@@ -115,7 +111,7 @@ Lite（以上均无）→ 轻量模式
 新功能开发 = 延续编号 + 追加文档 + 影响分析 + 回归保护
 ```
 
-## 轻量模式流程 (--lite)
+## 轻量模式流程
 
 ```text
 1. 扫描编号
@@ -252,39 +248,28 @@ Lite（以上均无）→ 轻量模式
 
 - [ ] **必须延续现有编号，不得重复**
 - [ ] **必须先扫描现有文档获取最大编号**
-- [ ] 编号格式保持一致（F-XXX, US-XXX, AC-XXX）
 
 ### 文档约束
 
 - [ ] **追加内容必须标注功能版本和日期**
 - [ ] **不得删除或覆盖现有内容**
-- [ ] 追加位置必须正确（章节末尾）
-- [ ] 格式必须与现有文档一致
 
 ### 分步编排约束（完整模式）
 
 - [ ] **默认每步完成后等待用户确认**
-- [ ] **`--fast` 模式：Step 0 扫描照常，Step 1-4 连续执行不逐步确认，Step 5 生成功能日志后展示汇总做 1 次确认**
 - [ ] **不得跳过步骤（除非用户明确要求）**
-- [ ] 用户可在任意步骤选择"终止"（`--fast` 下可 Ctrl+C）
-- [ ] 每步只关注当前文档的编号和格式
 - [ ] 步骤间传递的信息仅限：新增编号列表
 - [ ] **完整模式 Step 1-4、Step 4.5、Step 6 必须通过 Task tool 启动子 Agent**
 - [ ] **步骤间只传递 YAML 摘要 + 编号列表，不传递文档全文**
 - [ ] **⛔ 禁止继续：文档阶段（Step 0-5）不得产出实现代码**（恢复方式：将代码产出移至 Step 6 dev-workflow 委托）
-- [ ] **编码仅在 Step 6（dev-workflow 委托）中发生**
 
 ### 轻量模式约束
 
 - [ ] **仅更新 01-requirements.md 和 04-dev-tasks.md**
 - [ ] **不新建 F-XXX，仅追加 AC 到现有功能**
-- [ ] 任务数量限制 1-3 个
 - [ ] 检测到架构影响时必须提示用户
-- [ ] **⛔ 禁止继续：轻量模式 Step 1-4 为文档阶段，不得编写实现代码**（恢复方式：衔接 /ms-dev-workflow）
-- [ ] Write 操作仅限 `docs/devdocs/` 下的 Markdown 文档
-- [ ] 需要编码时必须衔接 `/ms-dev-workflow`
 
-### 深度模式约束（--deep）
+### 深度模式约束
 
 - [ ] **dev-workflow 衔接时自动附加 `--review`**（所有任务强制对抗式验证）
 - [ ] **开发完成后自动执行 `/ms-verify --docs`**（文档层间对齐）

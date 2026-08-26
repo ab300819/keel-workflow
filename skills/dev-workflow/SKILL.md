@@ -128,13 +128,7 @@ spec_version_notes: |
 
 ### 骨架生成约束
 
-- [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）
-- [ ] **接口骨架必须添加追溯标注**（layout.v1 legacy — layout.v2 起改用 traceability.yml；本约束在 v1 项目仍生效）
-- [ ] **未实现方法必须抛出 Error 并注明任务编号**
-- [ ] **测试骨架必须使用 skip/todo 标记**
-- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**（layout.v1 legacy）
-
-详见 [skeleton-examples.md](references/skeleton-examples.md)
+判据清单见 [skeleton-examples.md](references/skeleton-examples.md)（接口签名完整性 / 追溯标注 / 未实现方法抛错 / 测试骨架 skip 标记）。
 
 ## 分层 TDD 模式
 
@@ -213,13 +207,10 @@ spec_version_notes: |
 
 ### 分层 TDD 约束
 
-- [ ] **所有任务遵循统一执行流程（S1~S11 + S1.5 Contract；S12 为 Commit 2 后置同步）**
 - [ ] **audit/guarded 任务强制 test-first**（双 Agent 红绿 + 测试冻结）；**质量地板 5 条所有 profile 恒定**
-- [ ] **各 review_profile 的 S1~S11 强制程度见 [execution-flow.md](references/execution-flow.md) 矩阵；层级标签仅作风险输入**
 - [ ] **Test Agent 先写测试，Impl Agent 后写实现**（物理隔离）
 - [ ] **Test Agent 断言来自行为契约 + 03-test-\*.md，Impl Agent 禁止读取 03-test-\*.md**
 - [ ] **Impl Agent 严禁修改 Test Agent 产出的测试代码**（疑似缺陷须 AskUserQuestion 确认）
-- [ ] TDD 任务必须包含红-绿-重构三步骤（跨越 Test Agent → 编排器 → Impl Agent）
 - [ ] □/○ 步骤跳过时必须在提交信息中记录原因
 
 ### 完成检查约束
@@ -229,9 +220,6 @@ spec_version_notes: |
 - [ ] **Phase 4 `ext_review_state` 必须为 `EXT_REVIEWED`（audit 任务 inline 触发）或未触发 Phase 4 时 `EXT_REVIEWED`/空** 才能进入 Commit 1；fast/guarded 延后 drain 期间提交状态为 `review_pending`；`EXT_UNRESOLVED` / `EXT_BLOCKED` ⛔ 阻塞（恢复方式见 [verification-flow.md 真值表](references/verification-flow.md)）
 - [ ] **声称 vs 实际 diff 交叉验证必做**（所有层级 S8 必做，不再是 --review 才触发）
 - [ ] **测试通过判定排除 skipped / todo**（skipped/todo 计数 > 0 → ⛔ 禁止继续，除非任务文档显式豁免并记录原因）
-- [ ] **Review 要点自查完成**
-- [ ] 代码追溯标注完整
-- [ ] 代码分支覆盖分析完成（可选，**补充性质**，使用 `/testing-guide` 分支分析；业务逻辑分支应回溯为 AC 对应的正式测试）
 
 > **AC 完备性表模板、AC 类型分类（行为型/视觉型/结构型）、AC 类型 × 证据类型分级矩阵、Step 1.5 [A] 可复核判据** 见 [verification-flow.md AC 完备性章节](references/verification-flow.md)。违反分级表 → S8 直接 ⛔ 判失败（恢复方式：补测试断言或走豁免枚举）。
 
@@ -279,24 +267,18 @@ spec_version_notes: |
 
 - [ ] **Blocker 必须修复后才能提交**；每个 Phase 声明审查角色；结果分级（Blocker/Suggestion）
 - [ ] **audit 默认 inline 触发 Phase 1~3+4**；**fast/guarded 延后 drain**（任务期间标 `review_pending`）；修复 Blocker 后重新运行验证
-- [ ] **审查无跳过通道**：不存在跳过 Phase 1~3 / Phase 4 的参数（见上方「无 skip 通道」）
 - [ ] **drain 侧外审必须用 Commit 1 的提交 diff**，⛔ 不得用工作区 diff（否则收到空 diff，等于未审）；见 [verification-flow.md § diff 源](references/verification-flow.md)
 
 ### 依赖解析约束
 
-- [ ] **执行前必须完成依赖解析**
 - [ ] **循环依赖必须报错终止**（列出循环路径）
-- [ ] **已完成依赖跳过**，不重复执行
-- [ ] 自动补充未完成的前置依赖到执行队列
 - [ ] "进行中"依赖通过 AskUserQuestion 询问用户
 
 ### 原子提交约束
 
 - [ ] **每个任务独立提交**，不跨任务合并
 - [ ] **代码提交和文档提交分离**（Commit 1: 代码，Commit 2: 文档状态 + trace 同步结果）
-- [ ] **提交前必须通过完成检查**
 - [ ] 提交后更新状态：**audit → 已完成**；**fast/guarded → `review_pending`**（经 `/ms-verify --review-drain` 通过才转已完成）
-- [ ] `--single-commit` 可将代码+文档合并为单次提交
 - [ ] **`mode` 不是 `inline` 时展开为 N+1 仓提交**：Commit 1 拆成每个有变更的代码根一个 commit，Commit 2 是外壳仓一次 commit（文档 + 所有变更子模块的指针 bump；`linked` 下无指针，仅文档）。协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根取自握手 `workspace_context.code_roots`（`inline` 时为单项，`path` = 仓库根绝对路径，退化为今天的 Commit 1 + Commit 2）。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
 - [ ] **提交前必过 detached HEAD 门**：每个变更的子模块代码根 `git -C <path> symbolic-ref -q HEAD` 失败即 ⛔ 阻塞，处置见 [workspace-topology/references/migration.md § detached HEAD 处置](../workspace-topology/references/migration.md#detached-head-处置)
 - [ ] **`mode` 不是 `inline` 时 `--single-commit` 不可用**：跨仓无法合并为单 commit，⚠️ 忽略该 flag 并提示
@@ -308,15 +290,12 @@ spec_version_notes: |
 - [ ] **存在完成痕迹的任务必须通过 Step 1.5 五项证据复核才允许跳过**：[A] AC 表可复核 / [B] 测试无 skip/todo / [C] trace 矩阵按需维护的索引——缺失记 `trace_pending` 增量补齐，不作为放行硬门 / [D1] Phase 1~3 内置对抗式验证证据（audit 任务必查）/ [D2] Phase 4 外部对抗审查证据（audit 任务必查，`ext_review_state=EXT_REVIEWED` 且 L2 yaml 可读）/ [E] 后置测试证据（`Skip-Trace-Reason` 不得作为放行）
 - [ ] **Git 历史有 code+doc commit 但任务状态非已完成**：不再直接跳过，改为进入 Step 1.5 证据复核路径
 - [ ] 旧任务（前版本完成，无 A/D1/D2/E 产物）→ AskUserQuestion：复核续做 / 登记豁免原因 / 终止
-- [ ] 进行中任务分析续做起点（精确定位：S1~S11 + S1.5；S12 后置同步单独判定，含续做 Agent 判定）
-- [ ] 文档状态 + 证据复核 + Git 历史 + 工作区四重验证
 - [ ] **`mode` 不是 `inline` 时状态检测扩为五重**：「工作区」维遍历 N+1 个仓；「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」；新增第五维「指针一致性」，不一致 → 进 Step 1.5 证据复核不直接跳过。**「证据复核」维（A/B/C/D1/D2/E）不变**——它复核 AC 表 / 测试 / trace / 对抗验证证据，与仓库拓扑无关
 
 > 详见 [task-orchestration.md](references/task-orchestration.md)
 
 ### `--auto-commit` 约束
 
-- [ ] **交互模式（非 headless），用户仍可观察过程**
 - [ ] **测试全部通过且无 Blocker 时自动提交，不询问**
 - [ ] **出现 Blocker 或测试失败时暂停询问**
 - [ ] 与 `--headless` 互斥（`--headless` 已包含自动提交语义）
@@ -324,21 +303,17 @@ spec_version_notes: |
 
 ### 记忆文件同步约束
 
-- [ ] **任务完成后检查项目根目录是否存在 AGENTS.md**
 - [ ] **仅允许更新 `## 当前状态` 章节**（活跃任务编号、进度统计）
 - [ ] **禁止修改结构性章节**（Project Overview、Skill Architecture、Conventions 等由 /agent-memory 管理）
 - [ ] CLAUDE.md 通过 @AGENTS.md 自动导入，无需同步
 - [ ] 仅做文本替换，不调用 /agent-memory
-- [ ] 格式须与 `/agent-memory` 模板保持一致
 - [ ] 若 AGENTS.md 不存在则跳过
 
 ### 编排隔离约束
 
-- [ ] **每任务双 Agent：Test Agent（骨架+测试）→ 红色验证 → Impl Agent（实现+重构）**
 - [ ] **Test Agent 禁读 src/ 已有实现；Impl Agent 禁读 03-test-\*.md、01-requirements.md**
 - [ ] **编排器在 Impl Agent 完成后 diff 测试文件，有变更即为 ⛔ Blocker**
 - [ ] **主 Agent 只做编排和决策，不直接执行 TDD**
-- [ ] **依赖扩展后 >1 任务时，自动升级为批量编排**
 
 ### 全量测试验证约束
 
@@ -349,7 +324,6 @@ spec_version_notes: |
 - [ ] **`--skip-trace` 收紧**：理由必须写入 Commit 1 `Skip-Trace-Reason:` 尾注，批量交付报告单列（便于事后补跑）
 - [ ] **使用 `--skip-trace` 的任务自动标 `postcheck_pending`**，不得进入"已完成可跳过"态（恢复方式：补跑 `/ms-test-run --affected` 或 `--trace`，Step 1.5 [E] 才放行）
 - [ ] 全量/受影响测试失败不回滚已提交任务（原子提交已落盘）
-- [ ] 交互模式：AskUserQuestion 询问是否修复失败测试
 - [ ] --headless / --auto-commit 模式：记录警告到交付报告，不中断
 
 ### 无人值守约束（--headless）

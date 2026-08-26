@@ -36,7 +36,11 @@ spec_version: shared-constraints.v5
 
 ### 硬规则
 
-- `gate/recovery-required`：每个 `⛔ 禁止继续` 必须附带 recovery；缺 recovery 的 `⛔` 视为不合格门控。
+- `gate/two-senses` `[新增]`：`⛔` 有**两种合法语义**，此前从未写下，导致「43 / 302 条不合规」这类误判反复出现：
+  - **门控**：`⛔ 禁止继续：<阻塞事实>` —— 流程在此停下，存在一个待解除的阻塞态，**必须附 recovery**
+  - **禁令**：`⛔ <不得 / 禁止 / 严禁做某事>` —— 没有阻塞态，正确做法就是不做它，**不需要 recovery**（无从「恢复」）
+  - ⛔ 不得因为一条 `⛔` 不是门控形式就判它不合规；也不得把禁令改写成门控来「补 recovery」——那会造出一个不存在的阻塞态。
+- `gate/recovery-required`：每个**门控**（`⛔ 禁止继续`）必须附带 recovery；缺 recovery 的门控视为不合格。禁令不受此条约束。
 - `gate/confirm-recovery-required`：每个 `⚠️ 必须确认` 必须说明用户需要确认什么，以及确认后的合法路径。
 - `gate/advice-non-blocking`：`ℹ️ 建议` 不得写成阻塞条件；如必须阻塞，应升级为 `⛔` 或 `⚠️`。
 - `gate/no-private-severity`：共享层不定义 P1/P2/P3、health score 等私有严重度；这些只可作为触发条件上下文，不可替代三类门控。
@@ -134,6 +138,12 @@ expected_output: yaml-summary-v1
 - `task/handshake-minimum`：`task`、`mode`、`inputs`、`allowed_paths`、`expected_output` 是推荐最小握手字段。
 - `task/workspace-context`：**编排层**在流程开头调一次 `/workspace-topology inspect`，把返回的 `workspace-context.v2` 经本字段下传（`mode`（`inline` | `shell` | `linked`）/ `workspace_root` / `docs_dir` / `code_roots` / `missing_code_roots`）。被委托 skill 从此字段读代码根与 docs 根，**不自行读取声明文件、不解析 `.gitmodules`**。三种 mode 下 `code_roots` 元素形状一致（`name` / `path` / `declared_path`，`path` 为解析后的绝对路径），**调用方不分支**。`missing_code_roots` 非空表示有声明了但解析不到的代码根，⚠️ 报告即可、不阻塞。字段缺失（用户单跑原子 skill、无编排层）时按 `inline` 缺省并 ℹ️ 提示。契约见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
 - `task/mode-honored`：子 Agent 不得越过传入 `mode`；`read` / `dry-run` 不得产生写入。
+- `task/intent-normalization` `[新增]`：**用户面不承认子指令**（`--fast` / `--deep` 一类偏好词不再作为用户必须打对的语法）。用户以自然语言表达意图，由**编排层**归一化为显式协议参数后下传：
+  - 归一化结果写入本握手，**子 Agent 只读归一化字段，不得自行解读用户原话**；原话只进 runlog 的 `entry` 作审计线索
+  - 歧义**只问一次**，答案落盘并随断点恢复一同持久化；反复追问等价于把记忆负担改成对话负担
+  - ⛔ **授权不可由模型自行升格**。「跑快点」不等于授权无人值守提交；缺省取最保守档
+  - 协议参数（`--from-prd` / `--review-drain` / `--schema-drift` / `--force-code-docs` / `--review-profile` / `--no-realign` 等）**保留**，但只存在于编排层与子 Agent 之间，用户无需知道它们存在
+- `task/consent-at-action` `[新增]`：不可逆 / 外发 / **降低验证强度** / **写入版本控制的持久决策**，一律在**动作发生的那一刻**确认，不依赖入口 flag。判据：入口处打的一个词，是比动作当下的确认更弱的同意——它反映不了用户看到 dry-run 结果后的判断，也覆盖不了执行中途才暴露的不可逆性。
 - `task/blocker-propagation`：子 Agent 返回 `failed` 或含 `⛔` blocker 时，编排层必须停止对应分支并 surface recovery。
 
 ## 4. FUTURE 执行状态标注规范

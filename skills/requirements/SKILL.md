@@ -255,15 +255,11 @@ MVP 范围： / 非目标： / 删减理由：
 
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /ms-dev-workflow 执行编码）
-- [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
-- [ ] 用户确认方案后，执行文档编写（非代码实现）
-- [ ] 编码实现由 `/ms-dev-workflow` 负责，本 Skill 不涉及
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/requirements-template.md](templates/requirements-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md) § 当前 spec_version）
 
 ### 功能点约束
 - [ ] 每个功能点必须有唯一编号（v1: `F-XXX` / v2 [FUTURE]: `FEAT-XXX`；按项目 `AGENTS.md devdocs.id_scheme` 选择）
 - [ ] 功能点必须标注优先级 (P0/P1/P2)
-- [ ] 功能点描述应简洁明确
 
 ### 用户故事约束
 - [ ] 每个用户故事必须关联到功能点
@@ -275,14 +271,11 @@ MVP 范围： / 非目标： / 删减理由：
 INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](references/ac-quality-rubric.md)，执行时按需加载。
 
 - [ ] 每个验收标准必须有唯一编号 (AC-XXX)
-- [ ] 每个用户故事至少有 2 条验收标准
 - [ ] 验收标准必须可量化、可验证
 - [ ] 必须描述验证方式
 
 ### 追溯约束
 - [ ] 必须提供追溯矩阵
-- [ ] 所有功能点必须有对应的用户故事
-- [ ] 所有用户故事必须有对应的验收标准
 
 ### 增量模式约束
 - [ ] **必须先扫描现有编号，延续编号**
@@ -299,18 +292,13 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 
 ### 背景信息模式约束
 - [ ] **必须先读取写入目标的现有内容**（基线项目读 `00-baseline.md` 的对应节；否则读 `01-requirements.md` 的"背景与目标"章节）
-- [ ] **不得删除或覆盖现有背景信息**
-- [ ] **新增内容必须标注更新日期**
 - [ ] **URL 引用必须使用 WebFetch 提取摘要，不能仅记录链接**
 - [ ] **文件引用必须使用 Read 验证文件存在**
 - [ ] 敏感信息（密钥、密码、内部 URL）不得写入文档
-- [ ] 参考资料必须注明用途和关联性
 
 ### 方案确认约束
 - [ ] **初始模式：理解需求 + 探索代码后，必须展示方案并等待用户确认**
-- [ ] **方案必须包含功能点划分和范围边界**
 - [ ] **用户确认方案后才能开始编号分配和文档写入**
-- [ ] 用户要求调整时，更新方案后重新确认
 - [ ] 增量模式和背景信息模式无需方案确认
 - [ ] 轻量假设挑战（3 题）仅在初始模式 + 非 `--from-prd` + 非快速通过意图时触发
 - [ ] `--from-prd` 跳过假设挑战（prd 层已做 4 题产品视角挑战）
@@ -321,10 +309,7 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 
 在呈现给用户确认前，加载 [references/ac-quality-rubric.md](references/ac-quality-rubric.md) 并自动验证：
 
-- [ ] 每条 AC 可量化可验证（非模糊描述）
-- [ ] 每个 US 有 ≥ 2 条 AC
 - [ ] GWT 格式完整（使用 GWT 时 Given/When/Then 三要素均存在）
-- [ ] INVEST 六项检查通过
 
 自检不通过项自动修复后再呈现用户，不增加用户交互步骤。
 
@@ -334,7 +319,6 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 
 ### 上下文管理约束
 - [ ] 后批次 US/AC 详细程度不低于首批次（格式完整性、量化程度、覆盖密度）
-- [ ] 每个功能点完成后执行一致性自检
 
 ## Skill 协作
 

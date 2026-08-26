@@ -57,7 +57,7 @@ user-invocable: true
 /ms-pipeline realign        → 规范升级入口（统一 realign 维度）
 ```
 
-子命令内部参数（如 `feature --deep`）仍由对应入口透传和解释，不作为 pipeline 顶层入口暴露。
+档位与详略由自然语言决定，编排层归一化后下传（[`task/intent-normalization`](../_shared/constraints.md)），用户不需要记参数。
 
 ### realign 参数语法
 
@@ -145,9 +145,9 @@ user-invocable: true
 
 | 档位 | 特征 | 流程深度 | 路由 |
 |------|------|----------|------|
-| **Lite** | 单文件改动、无新接口、配置变更、UI 微调 | requirements(增量) → dev-tasks → dev-workflow | `/ms-feature --lite` 或 `/ms-pipeline bugfix` |
+| **Lite** | 单文件改动、无新接口、配置变更、UI 微调 | requirements(增量) → dev-tasks → dev-workflow | `/ms-feature "<描述>"`（说明是小改动） 或 `/ms-pipeline bugfix` |
 | **Standard** | 多文件改动、新接口、新模块 | 全流程（requirements → design → tests → tasks → dev） | `/ms-pipeline feature` |
-| **Deep** | 跨模块架构变更、安全相关、核心数据模型变更 | 全流程 + 强制 `--review` + 强制 `ms-verify --docs` | `/ms-pipeline feature --deep` |
+| **Deep** | 跨模块架构变更、安全相关、核心数据模型变更 | 全流程 + 强制独立审查 + 强制文档对齐验证 | `/ms-pipeline feature`（说明是架构级变更） |
 
 **自动检测信号**：
 
@@ -317,15 +317,12 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | **Bug 修复** | **ms-bugfix** | **代码** | **✅** |
 
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码，仅写入 `docs/devdocs/` 下的 Markdown 文档**（恢复方式：将代码产出移至 dev-workflow/bugfix 阶段）
-- [ ] **编码仅在 ms-dev-workflow 和 ms-bugfix 阶段发生**
-- [ ] 编排器不得在文档阶段启动编码操作
 
 ### 编排约束
 
 - [ ] **pipeline 仅负责路由和衔接，不复制任何原子 skill 的逻辑**
 - [ ] **每个阶段必须委托给对应的原子 skill 执行**
 - [ ] **阶段间传递的信息仅限：新增编号列表、状态摘要、文件路径**
-- [ ] 用户可在任意阶段退出 pipeline
 
 ### 提问式调度约束
 
@@ -344,7 +341,6 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 ### 编排约束（子 Agent）
 
 - [ ] **调用其他技能时必须通过 Task tool 启动子 Agent**
-- [ ] **阶段间只传递 YAML 摘要 + 文件路径**
 - [ ] **子 Agent 失败时展示阻塞项询问用户，不自行排障**
 - [ ] **每个子 Agent 自行读取前置文档，编排层不传递全文**
 
@@ -353,7 +349,7 @@ DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
 | 入口 | 编排的 Skill 链 |
 |------|----------------|
 | init | requirements → system-design → test-cases → dev-tasks → **verify --readiness** → dev-workflow → verify → sync |
-| feature | feature(含 readiness + dev-workflow) → verify → sync（--deep 时 dev-workflow 强制 --review + verify 含 --docs） |
+| feature | feature(含 readiness + dev-workflow) → verify → sync（深度档时 dev-workflow 强制独立审查 + verify 含 --docs） |
 | bugfix | bugfix / (dev-tasks → dev-workflow) → verify → sync |
 | verify | verify --docs/--impl/--ui |
 | insights | 见下方 insights 流程图 |

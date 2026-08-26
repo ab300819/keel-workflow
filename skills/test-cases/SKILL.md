@@ -101,15 +101,14 @@ migration: /ms-pipeline realign --scope=layout
 ## 运行模式
 
 - `/ms-test-cases` → 标准模式（逐步确认）
-- `/ms-test-cases --fast` → 跳过逐步确认，直接生成，仅最终确认
 - `/ms-test-cases --realign[=scope]` → 规范升级回扫（结构/字段差距补齐；缺失测试类型传递给 dev-workflow）。详见 [references/realign.md](references/realign.md)；推荐 `/ms-pipeline realign`
 
-### `--fast` 模式
+### 快速档
 
 - 跳过测试类型选择的逐步确认
 - 自动根据 AC 性质选择最佳测试类型
 - 仅保留最终写入前的 1 次确认
-- 默认行为不变，`--fast` 是 opt-in
+- 默认为标准档；快速档由用户意图触发，不默认启用
 
 ## 工作流程
 
@@ -159,8 +158,6 @@ migration: /ms-pipeline realign --scope=layout
 ### 一致性自检
 
 每个功能点完成后，对比检查：
-- [ ] 表格字段是否与首批一致（无缺列）
-- [ ] 输入/输出是否有具体值（非"正常输入"等模糊描述）
 - [ ] 场景覆盖是否包含正常 + 异常路径
 
 ## 输出文件
@@ -318,45 +315,35 @@ docs/devdocs/
 
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码或测试代码文件**（恢复方式：使用 /ms-dev-workflow 执行编码）
-- [ ] Write 工具仅用于写入 `docs/devdocs/` 下的 Markdown 文档
-- [ ] 测试用例以文档形式（表格/文字）描述，不生成 `.test.ts`/`.spec.ts` 等代码文件
-- [ ] 编码和测试编写由 `/ms-dev-workflow` 负责，本 Skill 不涉及
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/test-cases-template.md](templates/test-cases-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）
 
 ### 追溯约束
 - [ ] 每个验收标准至少有 1 个测试用例覆盖
 - [ ] 必须生成追溯矩阵
-- [ ] 追溯矩阵必须覆盖所有 AC
 
 ### 用例设计约束
-- [ ] 测试用例必须关联验收标准编号
 - [ ] 每个用例必须有明确的预期结果
 - [ ] 优先级必须标注 (P0/P1/P2)
 - [ ] 后批次用例详细程度不低于首批次（字段完整性、具体值、场景覆盖）
-- [ ] 每个功能点完成后执行一致性自检
 
 ### 覆盖约束
 
 AC 质量评估标准详见 [../requirements/references/ac-quality-rubric.md](../requirements/references/ac-quality-rubric.md)，验证 AC→测试覆盖时参照。
 
 - [ ] P0 验收标准必须 100% 测试覆盖（本 skill P0-P2 为**用例优先级**，与 ms-verify 问题严重度 P 级同名不同义）
-- [ ] P0 用户故事必须有 E2E 测试
 - [ ] 单元测试覆盖率目标按 [`/testing-guide` 核心阈值表](../testing-guide/SKILL.md#核心阈值表) 执行
 
 ### Generator 自检（用户确认前自动执行）
 
 在呈现给用户确认前，加载 [../requirements/references/ac-quality-rubric.md](../requirements/references/ac-quality-rubric.md) 并自动验证：
 
-- [ ] 每条 AC 至少有 1 个测试用例覆盖
 - [ ] 测试用例的输入/输出有具体值（非"正常输入"等模糊描述）
-- [ ] P0 AC 覆盖率 100%
 
 自检不通过项自动修复后再呈现用户，不增加用户交互步骤。
 
-### 质量约束（参考 `/testing-guide`）
-- [ ] 测试名称必须描述预期行为
-- [ ] 禁止弱断言（toBeDefined, toBeTruthy 不能作为唯一断言）
-- [ ] Mock 只用于外部依赖
+### 质量约束
+
+断言质量判据（测试命名 / 禁弱断言 / Mock 边界）以 [`/testing-guide`](../testing-guide/SKILL.md) 为权威，本文不镜像。
 
 ## Skill 协作
 
