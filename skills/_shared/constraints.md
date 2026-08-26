@@ -7,8 +7,9 @@ related:
   - skills/prd/references/governance/prd-revision-policy.md（PRD 修订边界）
   - skills/pipeline/references/layout/*（DevDocs 治理 SSOT）
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
+  - skills/_shared/runlog.md（运行日志：形状、纪律、判决点）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v4
+spec_version: shared-constraints.v5
 ---
 
 # 共享约束 SSOT
@@ -16,6 +17,7 @@ spec_version: shared-constraints.v4
 本文是 T-106 识别的重复规则的共享 SSOT 提取，用于后续 skill 引用切换。
 
 - `doc/status-extraction`：本文只整理仓库已有重复规则，不引入新的 status、标记、流程类别或执行语义。
+  - ⚠️ **已知例外**：`§11 作用域匹配` 与 `§3 task/runlog-append` 是后续新增的跨切面规则，非现状提取。二者均按 `future/use-new` 标 `[新增]`。本条 charter 与实际已不一致——重写它属于治理面改动，归 `docs/superpowers/specs/2026-08-26-devdocs-rule-triage-and-runlog-design.md` §4.2 B1 一并处理，此处只作标注。
 - `doc/no-immediate-impact`：现有 `skills/*/SKILL.md` 不会因本文创建而自动改变；引用切换是后续独立任务。
 - `doc/reference-over-copy`：已有详细 spec 优先保留在原位置，本文只声明协议层共性与指针。
 - `doc/private-rule-boundary`：skill 私有规则不得提升到共享层；例如 Sprint Contract、verify P 级评分、具体 layout 迁移算法仍归各自 skill 或 references 文件维护。
@@ -106,6 +108,7 @@ next_recommended:
 - `task/yaml-summary-required`：被委托的 ms- skill 必须以 yaml-summary-v1 返回结果。
 - `task/no-implicit-apply`：子 Agent 的 `next_recommended` 只表示建议，不代表编排层可自动执行下一步。
 - `task/private-fields-in-details`：子 Agent 私有输出必须放入 `summary.details`，避免污染编排层通用字段。
+- `task/runlog-append` `[新增]`：编排层收到子 Agent 的 yaml-summary 后，**原样**追加一条到 `<docs_dir>/devdocs/.runlog.yaml`。**不设门禁**——写失败静默跳过，不得因此阻断流程；**子 Agent 不自行写入**。信封不改、字段不增，形状与判决点见 [runlog.md](runlog.md)。**本规则自带死期（2026-11-30），到期未读即作废。**
 
 ### success / failed 判定
 

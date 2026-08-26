@@ -156,7 +156,7 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
 
 7. **更新自描述**：运行 /code-self-describe --update
 8. **提交决策（按 review_profile 分支）**：
-   - **audit**：前置门禁 `int_review_state=INT_REVIEWED` ∧ `ext_review_state=EXT_REVIEWED` 均满足才允许提交；任一为 `*_PENDING` / `*_UNRESOLVED` / `*_BLOCKED` → ⛔ 阻塞提交（恢复动作见各自 canonical state 定义）
+   - **audit**：前置门禁 `int_review_state=INT_REVIEWED` ∧ `ext_review_state=EXT_REVIEWED` 均满足才允许提交；任一为 `*_UNRESOLVED` / `*_BLOCKED` → ⛔ 阻塞提交（恢复动作见各自 canonical state 定义）
    - **fast/guarded**：独立审查（Phase 1~3+4）已延后，不等 INT/EXT_REVIEWED；质量地板 + `/ms-verify --impl`（guarded）无 Blocker 即可提交
    - `--headless` 模式：自动提交（安全不变量已在前置步骤保证）
    - `--auto-commit` 模式：测试通过 + 无 Blocker 时自动提交

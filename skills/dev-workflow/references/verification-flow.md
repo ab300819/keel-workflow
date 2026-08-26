@@ -433,7 +433,7 @@ fallback_events: []                                                           # 
 **Step 1.5 [D2] 一致性校验**（对齐上表 schema）：
 - L2 yaml 文件存在且可被 YAML 解析
 - 所有**必需键**均存在（`ext_review_state` / `status` / `blockers` / `rounds` / `health_scores` / `external_review_channel_used` / `breaker_reason`）
-- `ext_review_state` 属于 canonical enum 的 4 个值之一
+- `ext_review_state` 属于 canonical enum 的 3 个值之一（`EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED`）
 - `health_scores` 长度等于 `rounds`
 - `blockers` 为数组类型
 - 任一失败 → `EXT_UNRESOLVED`（真值表规则 2）
