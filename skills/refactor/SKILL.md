@@ -308,7 +308,13 @@ npx stryker run --mutate '<target-path>'
 
 #### UI 代码重构
 
-UI 重构检查点（Tailwind 默认值 / 可访问组件原语 / 动画仅 transform-opacity / prefers-reduced-motion / 空状态）以 [`/ui-orchestrator`](../ui-orchestrator/SKILL.md) 为权威，调用它执行，本文不镜像。
+UI 重构走 [`/ui-orchestrator`](../ui-orchestrator/SKILL.md) 路由到对应的 UI skill 执行。布局 / token / 交互状态 / 空状态等审查判据见 [dev-workflow 的 ui-quality-checklist](../dev-workflow/references/ui-quality-checklist.md)。
+
+重构特有、上述两处都不覆盖的三条：
+
+- [ ] 动画只使用 `transform` / `opacity`（其余属性触发重排，重构中最易引入性能回归）
+- [ ] 遵循 `prefers-reduced-motion`
+- [ ] 优先使用组件库已有的可访问原语，不自己实现交互控件
 
 ### 4.3 小步重构原则
 
