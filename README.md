@@ -17,9 +17,6 @@
 # npx（跨工具通用）
 npx skills add ab300819/skills --list          # 列出所有 skill
 npx skills add ab300819/skills@code-quality     # 安装单个
-
-# 本地部署
-git clone https://github.com/ab300819/skills.git && bash skills/scripts/deploy-skills.sh
 ```
 
 ---
