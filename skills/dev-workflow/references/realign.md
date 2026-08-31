@@ -5,7 +5,7 @@
 
 ## 当前 spec_version
 
-**`devflow.v2`**（v1→v2:新增 `--inline` 轻量入口,见 Migration Matrix）
+**`devflow.v3`**（v2→v3：追溯改反向依赖，代码内不写 DevDocs 编号，见 Migration Matrix）
 
 ## 与 12 种续做信号的关系（重要）
 
@@ -22,6 +22,13 @@
 > Step 1.5 的证据复核（AC 表 / 测试 / trace / 外审 / 后置测试）**不得**把 schema_drift 当作复核失败判据。schema_drift 必须走本文件的独立子流程。
 
 ## Migration Matrix（spec_version 演进）
+
+### v2 → v3（反向依赖）
+
+| 分级 | 变更项 | 修复动作 | 判据 |
+|---|---|---|---|
+| restructuring | 删除「代码追溯标注规范」节；S2-S3 骨架不再写 `@requirement`/`@satisfies`/`@verifies`/`@testcase` | 无回扫动作——**存量标注留着不清理**（删除是纯风险、无收益）；新任务走新规则 | SKILL.md 存在「代码追溯标注规范」节 |
+| restructuring | 「标注删减检测」改为「用例删减检测」（快照对象从标注集合改为测试用例名集合）| 无存量差距；下次运行即生效 | verification-flow / auto-mode 仍写「标注删减」 |
 
 ### v1 → v2
 
@@ -118,5 +125,5 @@
 
 ## 与 retrofit 的边界
 
-- 任务无追溯标注（代码/测试无 `@satisfies AC-xxx`）→ 归 **retrofit**
+- 任务在追溯矩阵中无「变更来源」→ 归 **retrofit**
 - 任务已完成 + 追溯完整 + spec_version 落后 → 归 **realign**

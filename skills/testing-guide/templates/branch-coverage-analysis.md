@@ -136,7 +136,6 @@ async function processOrder(order: Order): Promise<OrderResult> {
 ```typescript
 /**
  * @covers-branch processOrder:null-order-guard
- * @testcase BCA-001
  */
 test('processOrder 应该抛出错误当 order 为 null', async () => {
   await expect(processOrder(null)).rejects.toThrow('Order is required');
@@ -144,7 +143,6 @@ test('processOrder 应该抛出错误当 order 为 null', async () => {
 
 /**
  * @covers-branch processOrder:empty-items-guard
- * @testcase BCA-002
  */
 test('processOrder 应该返回 empty 状态当订单无商品', async () => {
   const order = { items: [], cancelled: false };
@@ -157,8 +155,6 @@ test('processOrder 应该返回 empty 状态当订单无商品', async () => {
 
 /**
  * ↓ BCA 发现业务逻辑分支：需先在 03-test-*.md 补齐 AC 和测试编号，再写正式测试
- * @verifies AC-??? - 中价值订单折扣（待需求/测试文档补齐）
- * @testcase UT-???
  */
 test('processOrder 应该应用 5% 折扣当总额在 500-1000 之间', async () => {
   const order = { items: [{ price: 600, quantity: 1 }], cancelled: false };
@@ -168,8 +164,6 @@ test('processOrder 应该应用 5% 折扣当总额在 500-1000 之间', async ()
 
 /**
  * ↓ BCA 发现业务逻辑分支：需先在 03-test-*.md 补齐 AC 和测试编号，再写正式测试
- * @verifies AC-??? - 无折扣路径（待需求/测试文档补齐）
- * @testcase UT-???
  */
 test('processOrder 应该无折扣当总额 ≤ 500', async () => {
   const order = { items: [{ price: 100, quantity: 1 }], cancelled: false };
@@ -179,7 +173,6 @@ test('processOrder 应该无折扣当总额 ≤ 500', async () => {
 
 /**
  * @covers-branch processOrder:database-error-handling
- * @testcase BCA-003
  */
 test('processOrder 应该抛出 OrderProcessingError 当数据库错误', async () => {
   mockSaveOrder.mockRejectedValue(new DatabaseError('connection failed'));
@@ -189,7 +182,6 @@ test('processOrder 应该抛出 OrderProcessingError 当数据库错误', async 
 
 /**
  * @covers-branch processOrder:unknown-error-rethrow
- * @testcase BCA-004
  */
 test('processOrder 应该重抛未知错误', async () => {
   const unknownError = new Error('unknown');

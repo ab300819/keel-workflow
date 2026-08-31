@@ -110,12 +110,12 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 ### 标注规范
 
-测试代码必须包含追溯标注，用于 `/ms-sync` 扫描：
+⛔ **测试代码不写 DevDocs 编号标注。** 追溯由 `ms-dev-workflow` 的 Commit 2 写入文档侧的追溯矩阵（`<repository>@<sha>`），代码保持干净——一个没有 DevDocs 上下文的维护者读到 `@verifies AC-001` 只会困惑。
+
+测试要自说明的是**行为**，不是编号：
 
 ```typescript
 /**
- * @verifies AC-XXX - 验收标准描述
- * @testcase UT/IT/E2E-XXX
  */
 test('测试名称', () => {
   // 测试代码
@@ -124,8 +124,6 @@ test('测试名称', () => {
 
 | 标注 | 用途 | 必须性 |
 |------|------|--------|
-| `@verifies AC-XXX` | 关联验收标准 | **必须** |
-| `@testcase UT/IT/E2E-XXX` | 测试用例编号 | **必须** |
 
 ### 骨架生成流程
 
@@ -136,7 +134,6 @@ test('测试名称', () => {
 生成测试骨架
         ├── describe 结构（按功能点分组）
         ├── test.skip() 占位（每个测试用例）
-        ├── @verifies/@testcase 标注
         └── // TODO: 实现测试 注释
         │
         ▼
@@ -154,8 +151,6 @@ test('测试名称', () => {
 describe('UserService', () => {
   describe('createUser', () => {
     /**
-     * @verifies AC-001 - 邮箱格式校验
-     * @testcase UT-001
      */
     test.skip('应该拒绝无效邮箱格式', () => {
       // TODO: 实现测试
@@ -165,16 +160,12 @@ describe('UserService', () => {
     });
 
     /**
-     * @verifies AC-002 - 密码强度校验
-     * @testcase UT-002
      */
     test.skip('应该拒绝弱密码', () => {
       // TODO: 实现测试
     });
 
     /**
-     * @verifies AC-003 - 用户名唯一性
-     * @testcase UT-003
      */
     test.skip('应该拒绝重复用户名', () => {
       // TODO: 实现测试
@@ -186,7 +177,7 @@ describe('UserService', () => {
 ### 骨架生成约束
 
 - [ ] **必须使用 `test.skip()` 或 `test.todo()` 标记未实现测试**
-- [ ] **必须添加 `@verifies` 和 `@testcase` 标注**
+- [ ] **测试名必须说明验证的行为**（不靠编号标注，靠名字自说明）
 - [ ] **必须按功能点 (F-XXX) 组织 describe 结构**
 
 ### 与 DevDocs 协作
@@ -235,7 +226,7 @@ Step 1: 分析代码分支
                 │
                 ▼
 Step 2: 映射现有测试
-        ├── 匹配 @verifies 标注的 AC 覆盖范围
+        ├── 匹配文档追溯矩阵的 AC 覆盖范围
         ├── 分析每个测试实际触发的分支
         └── 标记已覆盖/未覆盖分支
                 │
@@ -252,7 +243,6 @@ Step 3: 生成补充测试
 ```typescript
 /**
  * @covers-branch createUser:null-email-guard
- * @testcase BCA-001
  */
 test('createUser 应该抛出错误当 email 为 null', () => {
   // Arrange
@@ -265,7 +255,6 @@ test('createUser 应该抛出错误当 email 为 null', () => {
 | 标注 | 用途 | 必须性 |
 |------|------|--------|
 | `@covers-branch <函数>:<分支描述>` | 标记覆盖的代码分支 | **必须** |
-| `@testcase BCA-XXX` | 分支补充测试编号 | **必须** |
 
 ### 分支覆盖分析约束
 

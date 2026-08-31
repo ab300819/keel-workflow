@@ -247,10 +247,10 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 
 ### 标注删减检测
 
-修复前快照所有 `@verifies` 和 `@testcase` 标注集合。
+修复前快照所有测试用例名集合。
 修复后重新扫描。若任何标注被移除，视为新增 Blocker：
 
-> "🚫 Blocker: 修复过程中移除了 @verifies AC-003 标注（文件: tests/user.test.ts:20）"
+> "🚫 Blocker: 修复过程中删除了测试用例 `should reject invalid email`（文件: tests/user.test.ts:20）"
 
 ### 断言数量不减检测
 
@@ -277,7 +277,7 @@ dev-workflow 私有判定（**不可从上游推导**，故保留）：
 | 黑名单注释 / 命名，**本次 diff 新增或修改** | 🚫 Blocker | 上游无 diff 范围概念，见 `review/diff-only` |
 | 黑名单注释 / 命名，**本次未触碰的存量**；public API 缺契约注释 | 💡 Suggestion | 同上，见 `review/legacy-suggestion` |
 | AC 无对应测试 | 🚫 Blocker | DevDocs 追溯要求，非覆盖率阈值，不可用覆盖率达标抵消 |
-| 缺 `@verifies` 标注（核心逻辑） | 🚫 Blocker | 同上 |
+| 核心逻辑无对应测试 | 🚫 Blocker | 同上 |
 
 ---
 

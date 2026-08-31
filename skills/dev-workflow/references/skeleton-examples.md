@@ -11,14 +11,10 @@
 
 /**
  * 用户服务
- * @requirement F-001 - 用户注册
  */
 export class UserService {
   /**
    * 创建用户
-   * @satisfies AC-001 - 邮箱格式校验
-   * @satisfies AC-002 - 密码强度校验
-   * @satisfies AC-003 - 用户名唯一性
    */
   async createUser(dto: CreateUserDTO): Promise<User> {
     throw new Error('Not implemented: T-02');
@@ -26,7 +22,6 @@ export class UserService {
 
   /**
    * 获取用户
-   * @satisfies AC-004 - 用户查询
    */
   async getUser(id: string): Promise<User | null> {
     throw new Error('Not implemented: T-03');
@@ -41,8 +36,6 @@ export class UserService {
 
 describe('UserService', () => {
   /**
-   * @verifies AC-001 - 邮箱格式校验
-   * @testcase UT-001
    */
   test.skip('createUser 应该拒绝无效邮箱格式', () => {
     // TODO: 实现测试
@@ -52,16 +45,12 @@ describe('UserService', () => {
   });
 
   /**
-   * @verifies AC-002 - 密码强度校验
-   * @testcase UT-002
    */
   test.skip('createUser 应该拒绝弱密码', () => {
     // TODO: 实现测试
   });
 
   /**
-   * @verifies AC-003 - 用户名唯一性
-   * @testcase UT-003
    */
   test.skip('createUser 应该拒绝重复用户名', () => {
     // TODO: 实现测试
@@ -126,8 +115,6 @@ Test Agent 产出，Impl Agent 不可修改。注意：断言来源（UT 编号�
 
 describe('UserService.createUser', () => {
   /**
-   * @verifies AC-001 - 邮箱格式校验
-   * @testcase UT-001
    */
   test('应拒绝无效邮箱格式', async () => {
     // Arrange
@@ -138,8 +125,6 @@ describe('UserService.createUser', () => {
   });
 
   /**
-   * @verifies AC-001 - 邮箱格式校验（成功路径）
-   * @testcase UT-004
    */
   test('有效邮箱应创建成功并返回 User', async () => {
     // Arrange
@@ -163,5 +148,5 @@ describe('UserService.createUser', () => {
 - [ ] **接口骨架必须添加追溯标注**
 - [ ] **未实现方法必须抛出 Error 并注明任务编号**
 - [ ] **测试骨架必须使用 skip/todo 标记**
-- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**
+- [ ] **测试名必须说明验证的行为**（⛔ 不写 DevDocs 编号标注）
 - [ ] **测试骨架 S3 可含纯 AAA 占位**（`// Arrange` / `// Act` / `// Assert`，不带来源）；**S4 后不得保留来源记录式注释**

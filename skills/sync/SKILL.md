@@ -126,7 +126,7 @@ metadata:
 
 无参数调用时自动执行三段流程：
 
-1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注，与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](references/trace-mode.md)
+1. **trace 阶段**：校验追溯矩阵的「变更来源」列（⛔ 不扫描代码——代码里没有 DevDocs 编号）。详见 [trace-mode.md](references/trace-mode.md)
 2. **audit 阶段**：检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号。详见 [audit-mode.md](references/audit-mode.md)
 3. **check 阶段**：输出偏差报告与 health report；schema drift 诊断统一委托 `/ms-verify --schema-drift`，本 Skill 只合并其结果。
 

@@ -6,7 +6,7 @@ metadata:
   patterns: [pipeline, reviewer]
   interaction: multi-turn
   handoff: yaml-summary-v1
-spec_version: 3.1
+spec_version: 3.2
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
         P1 S9 并行化、P2 批量 Batch-Id trailer 标记 [FUTURE]，待 Phase 2 实施；
@@ -16,6 +16,8 @@ spec_version_notes: |
   3.0 = 修复延后外审空 diff(Phase 4 按 inline/drain 分离 diff 源)+ 删 skip 参数族
         (2 flag / INT_PENDING·EXT_PENDING 2 enum 值 / 2 trailer / 双 skip 禁令)+ 删最低发现数门槛
   3.1 = 删 External-Review-Channel trailer(派生自 L2 external_review_channel_used,无门禁消费者)
+  3.2 = 追溯改反向依赖:删「代码追溯标注规范」节 + S2-S3 骨架不写 DevDocs 编号 +
+        标注删减检测改用例删减检测(devflow.v2→v3;存量标注留着不清理,只约束新增)
         + 删与「分层 TDD 模式」档位表重复的「触发条件」表
 ---
 
@@ -89,7 +91,7 @@ spec_version_notes: |
 |------|--------|
 | S1 读取任务定义 | 从 `04-dev-tasks.md` 获取任务、F/AC/UT/IT/E2E 关联 |
 | S1.5 Sprint Contract | Test Agent 基于 AC + 当前代码上下文生成可执行验收契约（函数签名、返回值类型、边界条件、异常场景）；编排器裁剪过度契约、补足遗漏契约，确认后作为测试输入约束 |
-| S2-S3 骨架 | 接口骨架 + 测试骨架，含 `@requirement`/`@satisfies`/`@verifies`/`@testcase` 标注 |
+| S2-S3 骨架 | 接口骨架 + 测试骨架；⛔ 代码内不写任何 DevDocs 编号，追溯由 Commit 2 写入文档 |
 | S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0`；注释遵循 [`/code-quality` 注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式/来源记录式注释，含修复循环），日志遵循 [日志规范](../code-quality/SKILL.md#日志规范)（安全红线/级别纪律/禁 log-and-throw）|
 | S8 完成检查 | 质量地板 5 条 + AC 完备性表（fast 证据摘要 / audit 完整 AC 类型×证据矩阵）+ 声称 vs 实际 diff 交叉验证；缺证据或未关联大块 diff → ⛔ 禁止继续 |
 | S9 前置验证 | guarded/audit `/ms-verify --impl`；fast 仅质量地板（不跑前置验证）；🟢 UI 任务有设计稿时另跑 `/ms-verify --ui --impl` 对齐设计稿（不随 profile 变） |
@@ -100,11 +102,6 @@ spec_version_notes: |
 | Commit 2 后置 | `/ms-sync` 更新 trace + 文档提交；若有 AGENTS.md 仅更新“当前状态”；批量默认 `/ms-compound` |
 
 步骤状态（S1~S11 + S1.5）用于断点恢复；详细矩阵、S12 后置同步和状态标记见 [execution-flow.md](references/execution-flow.md)。
-
-## 代码追溯标注规范
-
->
-> **标注类型**：`@requirement F-XXX`（功能点）/ `@satisfies AC-XXX`（接口）/ `@verifies AC-XXX`（测试用例）/ `@testcase UT/IT/E2E-XXX`（测试编号）。**强制性**：公共接口 + 测试文件每用例**必须**标注；内部实现可选。
 
 ## 自顶向下开发模式
 

@@ -257,7 +257,7 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 4. **执行任务时必须使用 `/ms-dev-workflow`**
 5. 支持按功能点（`F-XXX`）或用户故事（`US-XXX`）批量执行
 
-> **重要**：直接写代码而不使用 dev-workflow 会导致代码缺失 `@satisfies`/`@verifies` 标注，
+> **重要**：直接写代码而不使用 dev-workflow 会导致追溯矩阵的「变更来源」列不被写入，
 > 使 `/ms-sync` 无法自动追溯，破坏文档↔代码的闭环。
 
 ## 参考资料

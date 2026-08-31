@@ -119,7 +119,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 |------|------|
 | 变更日志式 | 注释描述本轮变更过程而非代码当前状态（信号词：本次/新增/修改/修复/已按要求；描述业务规则的"新增用户走邀请码通道"合法） |
 | 对审查者说话 | "此处已修复""按要求处理"等面向 reviewer/agent 而非未来读者的话 |
-| 来源记录式/注释式追溯 | 记录"来自 UT-XX/AC-XX/后置条件/行为契约"等过程来源；`@satisfies`/`@verifies`/`@testcase`/`@requirement` 追溯标注 |
+| 来源记录式/注释式追溯 | 记录"来自 UT-XX/AC-XX/后置条件/行为契约"等过程来源。⛔ **不得新增** `@satisfies` / `@requirement` / `@verifies` / `@testcase` 标注——指向外部系统的编号引用，对没有 DevDocs 上下文的维护者是纯噪音，DevDocs 丢失后更是指向虚空的指针；追溯走文档侧（反向依赖）。存量标注留着不清理，只约束新增 |
 | 复述代码 | 只是翻译紧邻代码（`// 校验邮箱` + `validateEmail(email)`） |
 | 注释掉的代码 | 整段旧实现注释保留且无 issue/迁移理由 |
 | 过量注释 | 同函数连续注释 >3 行，或变更块注释行 > 可执行代码行，且不属白名单 |

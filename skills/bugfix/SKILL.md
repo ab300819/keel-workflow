@@ -140,7 +140,7 @@ metadata:
 
 **基线项目的 Bug**：基线项目（有 `00-baseline.md` 且无 `01`~`04`；`05-bugfix-log.md` 等其他产物不影响判定）修的是基线前的存量代码，
 它没有 F 编号，也**不该临时编一个**——临时编号是「推导出没人决定过的结论」的老毛病。
-此时「关联功能」填 `baseline`，回归测试仍必须写，`@verifies` 标注对象从 `AC-XXX` 换成 `BUG-XXX`。
+此时「关联功能」填 `baseline`，回归测试仍必须写；追溯写进文档侧的 Bug 记录，⛔ 代码内不写编号标注。
 
 `bugfix/SKILL.md` 已近 500 行硬限，本段为等量替换，勿再扩写。
 
@@ -183,9 +183,6 @@ should [预期行为] when [触发条件]
 
 ```typescript
 /**
- * @verifies AC-XXX   // 验收标准（必须）；基线项目无 AC 时用 @verifies BUG-XXX
- * @verifies BUG-XXX  // Bug 编号（保留，用于 Bug 追踪）
- * @testcase UT-XXX
  */
 describe('Bug fix: BUG-XXX <Bug 描述>', () => {
   it('should <预期行为> when <条件>', () => {
@@ -397,8 +394,6 @@ Fixes #123
 
 ### 测试约束
 
-- [ ] 测试必须添加 @verifies AC-XXX 标注（基线项目无 AC 时用 BUG-XXX）
-- [ ] 测试必须添加 @verifies BUG-XXX 标注（Bug 编号）
 - [ ] 禁止弱断言（参考 `/testing-guide`）
 
 ### 提交约束

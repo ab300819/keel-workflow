@@ -241,7 +241,7 @@ T-02 ─┘           │
 
 ## Definition of Done
 
-- [ ] 代码已提交（含 `@satisfies`/`@verifies` 标注）
+- [ ] 代码已提交
 - [ ] 所有关联测试通过
 - [ ] 文档已同步（`/ms-sync`）
 - [ ] 代码审查已完成（Review 要点已检查）

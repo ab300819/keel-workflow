@@ -4,9 +4,16 @@
 
 ## 当前 spec_version
 
-**`test.v1`**（MVP 起点）
+**`test.v2`**（v1→v2：追溯矩阵改反向依赖，见 Migration Matrix）
 
 ## Migration Matrix（spec_version 演进）
+
+### v1 → v2（反向依赖）
+
+| 分级 | 变更项 | 修复动作 | 判据 |
+|---|---|---|---|
+| restructuring | 追溯矩阵「入口代码 / 测试代码」两列（`src/user.ts:15` 行号）合并为「变更来源」一列（`<repository>@<sha>` + 一句话描述）| AskUserQuestion 呈现 before/after；存量行号无法自动转换为 sha，逐 AC 由用户确认写入或标待补 | 表头含「入口代码」或「测试代码」列 |
+| restructuring | 数据源从「扫描代码 `@satisfies`/`@verifies` 标注」改为「Commit 2 写入文档」| 存量矩阵保留原值不动，新增 AC 走新流程；⛔ 不批量回填 | §3 说明段仍写「标注扫描」|
 
 ### v1 → v2（保留字段，未来启用）
 

@@ -96,7 +96,7 @@ FR/NFR 内容修订
 
 ## 诚实边界
 
-- [现状] PRD 不直接追代码，不写 `@satisfies`、不维护代码位置、不承担测试覆盖验证。
+- [现状] PRD 不直接追代码，不维护代码位置、不承担测试覆盖验证。
 - [现状] PRD 通过 `--from-prd` 把 FR/NFR 交给 DevDocs；之后的 F/US/AC、测试、任务和代码追溯由 DevDocs skill 负责。
 - [FUTURE] 若未来需要 PRD 到代码的直连视图，应作为报告/查询能力建立在 DevDocs trace 之上，而不是让 PRD 文件直接写代码引用。
 
