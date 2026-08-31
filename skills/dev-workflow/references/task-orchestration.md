@@ -83,10 +83,10 @@
 - 下游**仅允许低风险叶子任务(fast)**继续;
 - 下游一旦触及公共 API / schema / 迁移 / 权限 / 安全 / 跨模块契约 → **进入前强制先 `/ms-verify --review-drain`**;
 - 硬阈值:`pending 数 ≤ 3 视为可接受;> 3(≥4)/ 依赖深度 > 1 / sprint 关闭前必须 = 0`;
-- 超数量 / 依赖深度 / `Review-Due` 超期 → **强制 drain**(不静默升 audit)。`Review-Due` 超期判定:有 sprint→sprint close 时;无 sprint→`当前日期 > due` 或 `pending 数 > 3` 任一。
+- 超数量 / 依赖深度 / 台账 `due` 超期 → **强制 drain**(不静默升 audit)。台账 `due` 超期判定:有 sprint→sprint close 时;无 sprint→`当前日期 > due` 或 `pending 数 > 3` 任一。
 
 ### 执行期 review_profile 复核(只升不降)
-dev-workflow 执行某任务前,按实际改动廉价复核风险信号(反向依赖计数 ≥ 5 / 实际 diff > 150 行 / 触及 > 5 文件 / 命中 audit 信号),据此**可升档**(fast→guarded→audit);**降档须显式 `--review-profile` 并写 `Profile-Downgrade-Reason:` 尾注**(该尾注由 Step 1.5 复核与 batch 报告消费,不得无人复核)。风险信号清单 SSOT 见 /ms-dev-tasks。
+dev-workflow 执行某任务前,按实际改动廉价复核风险信号(反向依赖计数 ≥ 5 / 实际 diff > 150 行 / 触及 > 5 文件 / 命中 audit 信号),据此**可升档**(fast→guarded→audit);**降档须显式 `--review-profile` 并写台账 `profile_downgrade_reason`**(由 Step 1.5 复核与 batch 报告消费,不得无人复核)。风险信号清单 SSOT 见 /ms-dev-tasks。
 
 ## 3. 断点续做状态机
 
@@ -104,8 +104,8 @@ Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判
         ├── [C] trace 矩阵作为索引按需维护——缺失不阻塞放行,记 trace_pending 供后续 /ms-sync 增量补齐(不再是提交前阻塞门)
         ├── [D1] 对抗式验证 Phase 1~3 证据：**audit 任务**须有 Phase 1~3 综合报告；缺失 → `INT_UNRESOLVED`。fast/guarded 的延后内审由 [F] review_pending + drain 覆盖，不在 [D1] 判定。
         ├── [D2] Phase 4 外部对抗审查证据：**audit 任务**必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 尾注由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；fast/guarded 不在 [D2] 判定（其延后外审经 [F] review_pending + drain 闭合）。
-        ├── [E] 后置测试证据（任一即可）：单任务为 `/ms-test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/ms-test-run --trace` 执行记录；若 Commit 1 带 `Skip-Trace-Reason:` 尾注且补跑未完成 → `postcheck_pending`
-        ├── [F] review_pending 检测:Commit 1 带 `Pending-Reason: deferred-*` 且无对应 drain verdict → 任务为 `review_pending`,**非"已完成"**,不得跳过;须经 `/ms-verify --review-drain` 转 `已完成`
+        ├── [E] 后置测试证据（任一即可）：单任务为 `/ms-test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/ms-test-run --trace` 执行记录；若台账有 `skip_trace_reason` 且补跑未完成 → `postcheck_pending`
+        ├── [F] review_pending 检测:台账 `pending_reason: deferred-*` 且无对应 drain verdict → 任务为 `review_pending`,**非"已完成"**,不得跳过;须经 `/ms-verify --review-drain` 转 `已完成`
         ├── A~F 全部可复核(含 [F] 无未清 review_pending)（[D1] `INT_REVIEWED` ∧ [D2] `EXT_REVIEWED` 或均未触发）→ 跳过该任务
         └── 任一不可复核 → 进入"复核续做"（续做信号表对应 pending/state 之一）
             └── 旧任务迁移（前版本完成，A/D1/D2/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
@@ -182,7 +182,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 详见 [realign.md](realign.md)（policy re-evaluation 子流程）。
 
 ### review_pending 被新需求覆盖
-**禁止原地覆盖**。新需求触及同一 `review_pending` 任务 → 要么先 `/ms-verify --review-drain`(转已完成或 fix-forward)再改,要么创建依赖/替代任务并保留原 pending 审查链路(原 `Review-Batch-Id` 不丢)。
+**禁止原地覆盖**。新需求触及同一 `review_pending` 任务 → 要么先 `/ms-verify --review-drain`(转已完成或 fix-forward)再改,要么创建依赖/替代任务并保留原 pending 审查链路(原 `batch` 不丢)。
 
 ### 续做模式行为
 
@@ -228,7 +228,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 │  6.5 独立审查分支(按 review_profile):                       │
 │     ├── audit → Phase 1~3 + Phase 4 inline fail-fast,审过才提交 │
 │     └── fast/guarded → 跳过 inline 独立审查,标 review_pending  │
-│  6.9 Commit 1(代码;fast/guarded 带 Review-Batch-Id/Review-Due/Pending-Reason 尾注)│
+│  6.9 Commit 1(纯代码)+ 台账记 batch/due/pending_reason(fast/guarded)      │
 │  7. 更新 04-dev-tasks*.md 状态:audit→已完成;fast/guarded→review_pending(drain 通过后才转已完成)│
 │  8. /ms-sync                                │
 │  9. Commit 2: docs(T-XX): 更新任务状态+追踪      │

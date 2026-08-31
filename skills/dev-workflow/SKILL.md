@@ -6,7 +6,7 @@ metadata:
   patterns: [pipeline, reviewer]
   interaction: multi-turn
   handoff: yaml-summary-v1
-spec_version: 3.2
+spec_version: 3.3
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
         本 skill 不做任务并行（S9 并行化）——前置依赖 worktree 隔离协议
@@ -18,6 +18,8 @@ spec_version_notes: |
   3.1 = 删 External-Review-Channel trailer(派生自 L2 external_review_channel_used,无门禁消费者)
   3.2 = 追溯改反向依赖:删「代码追溯标注规范」节 + S2-S3 骨架不写 DevDocs 编号 +
         标注删减检测改用例删减检测(devflow.v2→v3;存量标注留着不清理,只约束新增)
+  3.3 = commit 模板重定(Why + Tests 两项,词法级禁占位)+ 7 个流程 trailer 迁到
+        任务台账(主体是任务不是 commit);drain 改读台账 commits 字段,不再 grep git log
         + 删与「分层 TDD 模式」档位表重复的「触发条件」表
 ---
 
@@ -51,7 +53,7 @@ spec_version_notes: |
 | **标准** | 新功能、需求变更 | → 完整 Requirements→Design→Tests→Tasks→Dev |
 | **探索** | 原型、技术调研 | → 允许跳过部分验证，事后由用户确认目标行为后补建 AC |
 
-> **探索模式最小行为验证**：可跳过文档强制（AC/追溯标注/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；写入 Commit 1 `Exploration-Mode: true` 尾注，便于事后由用户确认目标行为后补建真实 AC。无证据 ⛔ 阻止提交。
+> **探索模式最小行为验证**：可跳过文档强制（AC/追溯标注/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；写入任务台账 `exploration_mode: true`，便于事后由用户确认目标行为后补建真实 AC。无证据 ⛔ 阻止提交。
 
 ## 触发条件
 
@@ -98,7 +100,7 @@ spec_version_notes: |
 | S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：**audit inline fail-fast**；**fast/guarded 延后**到 `/ms-verify --review-drain`，任务期间标 `review_pending`；`--review` 可临时叠加 inline |
 | S9 Phase 4 | 外部对抗审查 embedded-headless（独立审查）：**audit inline**；**fast/guarded 延后** drain；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态 `EXT_REVIEWED`/`EXT_UNRESOLVED`/`EXT_BLOCKED`（与 `review_pending` 区分） |
 | S10 自描述 | `/code-self-describe --update`（`workspace_context.capabilities.code_metadata_write_policy` 为 `explicit_opt_in` 时**默认跳过**——自描述产物写在代码目录内，违反零污染红线。跳过须在 yaml 摘要里以 ℹ️ 记录 `skipped: code_metadata_write_policy=explicit_opt_in`。用户显式 `--force-code-docs` 才执行） |
-| S11 Commit 1 | 代码提交，遵循 `/commit-convention`，Phase 4 触发时必须写 `External-Review-Verdict` |
+| S11 Commit 1 | 代码提交，遵循「提交信息格式」；Phase 4 触发时把 `ext_review_state` 写进任务台账 |
 | Commit 2 后置 | `/ms-sync` 更新 trace + 文档提交；若有 AGENTS.md 仅更新“当前状态”；批量默认 `/ms-compound` |
 
 步骤状态（S1~S11 + S1.5）用于断点恢复；详细矩阵、S12 后置同步和状态标记见 [execution-flow.md](references/execution-flow.md)。
@@ -255,7 +257,7 @@ spec_version_notes: |
 
 - [ ] **每个任务开始前执行状态检测**（6 步流水线：Step 1 / 1.5 证据复核 / 2~5）
 - [ ] **不相关变更必须警告用户**（AskUserQuestion：stash/忽略/终止）
-- [ ] **存在完成痕迹的任务必须通过 Step 1.5 五项证据复核才允许跳过**：[A] AC 表可复核 / [B] 测试无 skip/todo / [C] trace 矩阵按需维护的索引——缺失记 `trace_pending` 增量补齐，不作为放行硬门 / [D1] Phase 1~3 内置对抗式验证证据（audit 任务必查）/ [D2] Phase 4 外部对抗审查证据（audit 任务必查，`ext_review_state=EXT_REVIEWED` 且 L2 yaml 可读）/ [E] 后置测试证据（`Skip-Trace-Reason` 不得作为放行）
+- [ ] **存在完成痕迹的任务必须通过 Step 1.5 五项证据复核才允许跳过**：[A] AC 表可复核 / [B] 测试无 skip/todo / [C] trace 矩阵按需维护的索引——缺失记 `trace_pending` 增量补齐，不作为放行硬门 / [D1] Phase 1~3 内置对抗式验证证据（audit 任务必查）/ [D2] Phase 4 外部对抗审查证据（audit 任务必查，`ext_review_state=EXT_REVIEWED` 且 L2 yaml 可读）/ [E] 后置测试证据（`skip_trace_reason` 不得作为放行）
 - [ ] **Git 历史有 code+doc commit 但任务状态非已完成**：不再直接跳过，改为进入 Step 1.5 证据复核路径
 - [ ] 旧任务（前版本完成，无 A/D1/D2/E 产物）→ AskUserQuestion：复核续做 / 登记豁免原因 / 终止
 - [ ] **`mode` 不是 `inline` 时状态检测扩为五重**：「工作区」维遍历 N+1 个仓；「Git 历史」维收紧为「外壳仓存在带该 T-XX 的 commit **且** body 记录的子模块 SHA 与当前指针一致」；新增第五维「指针一致性」，不一致 → 进 Step 1.5 证据复核不直接跳过。**「证据复核」维（A/B/C/D1/D2/E）不变**——它复核 AC 表 / 测试 / trace / 对抗验证证据，与仓库拓扑无关
@@ -289,7 +291,7 @@ spec_version_notes: |
 - [ ] **单任务模式完成后必须调用 `/ms-test-run --affected`**（受变更影响的测试，基于 git diff，见 `/ms-test-run` SKILL）
    - `--affected` 无匹配时（ms-test-run 返回"建议运行全量"）→ 回退 `/ms-test-run --trace`
    - 单任务不得完全跳过该校验，除非显式 `--skip-trace="<原因>"` 并登记
-- [ ] **`--skip-trace` 收紧**：理由必须写入 Commit 1 `Skip-Trace-Reason:` 尾注，批量交付报告单列（便于事后补跑）
+- [ ] **`--skip-trace` 收紧**：理由必须写入任务台账 `skip_trace_reason`，批量交付报告单列（便于事后补跑）
 - [ ] **使用 `--skip-trace` 的任务自动标 `postcheck_pending`**，不得进入"已完成可跳过"态（恢复方式：补跑 `/ms-test-run --affected` 或 `--trace`，Step 1.5 [E] 才放行）
 - [ ] 全量/受影响测试失败不回滚已提交任务（原子提交已落盘）
 - [ ] --headless / --auto-commit 模式：记录警告到交付报告，不中断
@@ -313,28 +315,53 @@ Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）�
 > 详见 [execution-flow.md](references/execution-flow.md) 完整步骤和强制矩阵
 ## 提交信息格式
 
-遵循 `/commit-convention` 规范，格式如下：
+⛔ **commit 里不写任何 DevDocs 编号与流程状态。** 判据：每条信息，一个不知道
+DevDocs 存在的维护者都能读懂并用上。任务编号、AC 编号、审查批次、降档理由这些
+对他是纯噪音——它们的主体是**任务**，归任务台账（见下）。
 
-```markdown
-<type>(T-XX): <任务名称>
+```
+<type>(<scope>): <描述可观察结果的一句话>
 
-- <完成内容1>
-- <完成内容2>
-
-关联: F-XXX, AC-XXX
-测试: UT-XXX, IT-XXX 通过
-External-Review-Verdict: <EXT_REVIEWED | EXT_UNRESOLVED | EXT_BLOCKED>（Phase 4 触发时必填，含 rounds 和 health_scores）
-Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
-Profile-Downgrade-Reason: <使用 --review-profile 降档时必填；Step 1.5 复核校验降档理由是否合规；batch 交付报告按 `Review-Batch-Id` 聚合 review_pending 清单>
-Review-Batch-Id: <fast/guarded 任务标 review_pending 时填写 batch ID；消费者：/ms-verify --review-drain 批量交付报告>
-Review-Due: <review_pending 任务的计划 drain 截止时间；消费者：batch 交付报告>
-Pending-Reason: <review_pending 或 trace_pending 的延后原因；消费者：Step 1.5 复核 + batch 交付报告>
-Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
+Why: <只写代码和 diff 表达不了的决策、约束、取舍>
+Tests: <实际执行过的精确命令>
 ```
 
-**合法 `External-Review-Verdict` 枚举**：`EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED`。禁用 `CONVERGED` / `DEGRADED` / `SKIPPED` 等非 canonical 词汇。
+| 规则 | 强制 | 怎么查 |
+|---|:---:|---|
+| 标题描述可观察结果，⛔ 不带 `T-`/`F-`/`AC-`/`UT-` 编号 | ⛔ | 词法 |
+| `Tests` 由**实际执行记录生成**精确命令 | ⛔ | 机器生成，⛔ 不允许手填「已测试」 |
+| ⛔ 禁占位文本：模板原文、`TODO`、`N/A`、「相关修改」、「测试通过」 | ⛔ | **词法检查，不是语义校验** |
+| `Why` 只写取舍；机械变更 ⛔ 不强迫编造 | 软 | 不判 |
+| ⛔ 不复述 diff | — | git 已经存了 |
+| commit 保持原子 | 软 | 小而单一的 diff 比四段空泛说明更容易恢复上下文 |
+
+**禁占位文本是防填空的主力**：它拿到了大部分收益，却仍只是词法检查。⛔ 用纯格式
+规则**保证不了** `Why` 有价值——策略是把必须手写的主观内容压到一个字段，其余证据
+自动产生，⛔ 不假装格式校验等于内容质量。
 
 **type 类型**：feat | fix | refactor | test | docs | chore
+
+## 任务台账（流程状态的唯一载体）
+
+原先挂在 Commit 1 尾注的 7 个流程字段全部迁到 `04-dev-tasks.md` 的任务条目。
+它们的语义本来就是「**T-07 这个任务**的外审还欠着」——主体是任务不是 commit。
+
+| 字段 | 何时填 | 语义 |
+|---|---|---|
+| `commits` | Commit 1 落盘后由 Commit 2 写入 | `<repository>@<full-sha>`，可多条 |
+| `review_state` | fast/guarded 延后时 | `pending` / `done` |
+| `batch` / `due` | 同上 | 批次 ID / `sprint:<id>` 或 `due:YYYY-MM-DD` |
+| `pending_reason` | 同上 | `deferred-fast` / `deferred-guarded` |
+| `ext_review_state` | audit Phase 4 | `EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED` |
+| `profile_downgrade_reason` | 显式降档时 | 降档理由（升档不需要）|
+| `skip_trace_reason` | `--skip-trace` 时 | 跳过后置 trace 校验的原因 |
+| `exploration_mode` | 探索模式 | `true` + 证据/豁免原因 |
+
+⛔ **绑任务编号，不绑 commit hash。** squash / rebase 改 hash 时，`commits` 字段
+的考古索引会失效（回到代码事实重建），但**门控状态不受影响**——这是分开绑的理由。
+
+**合法 `ext_review_state` 枚举**：`EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED`。
+禁用 `CONVERGED` / `DEGRADED` / `SKIPPED` 等非 canonical 词汇。
 
 ## 子 Agent 摘要格式
 

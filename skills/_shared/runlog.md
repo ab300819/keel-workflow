@@ -106,15 +106,14 @@ new_ids: {}
 
 ## 已有埋点：先读再埋
 
-**最高价值的记录已经在 git 里，且从未被读过。** 以下 commit trailer 在语义上就是「我绕过了这道门，理由如下」：
+**最高价值的记录已经在任务台账里，且从未被读过。** 以下字段在语义上就是「我绕过了这道门，理由如下」：
 
-| trailer | 记录 |
+| 字段 | 记录 |
 |---|---|
-| `Profile-Downgrade-Reason` | 风险分档被人为降档 |
-| `Skip-Trace-Reason` | 追溯校验被关闭 |
-| `SSOT-Lint-Skip-Reason` | SSOT 检查被跳过 |
-| `Pending-Reason` | 审查被延后 |
-| `Exploration-Mode` | 整套文档强制被豁免 |
+| `profile_downgrade_reason` | 风险分档被人为降档 |
+| `skip_trace_reason` | 追溯校验被关闭 |
+| `pending_reason` | 审查被延后 |
+| `exploration_mode` | 整套文档强制被豁免 |
 
 一条被规律性绕过的门，就是一条设计错了的门。此项零新增成本。
 

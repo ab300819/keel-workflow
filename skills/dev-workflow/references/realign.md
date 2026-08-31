@@ -5,7 +5,7 @@
 
 ## 当前 spec_version
 
-**`devflow.v3`**（v2→v3：追溯改反向依赖，代码内不写 DevDocs 编号，见 Migration Matrix）
+**`devflow.v4`**（v3→v4：commit 模板重定 + 流程状态迁任务台账，见 Migration Matrix）
 
 ## 与 12 种续做信号的关系（重要）
 
@@ -22,6 +22,14 @@
 > Step 1.5 的证据复核（AC 表 / 测试 / trace / 外审 / 后置测试）**不得**把 schema_drift 当作复核失败判据。schema_drift 必须走本文件的独立子流程。
 
 ## Migration Matrix（spec_version 演进）
+
+### v3 → v4（commit 模板 + 任务台账）
+
+| 分级 | 变更项 | 修复动作 | 判据 |
+|---|---|---|---|
+| restructuring | commit 模板由「标题 + 完成内容 + 关联/测试 + 7 个 trailer」改为「标题 + Why + Tests」| 存量 commit ⛔ 不改写（历史不可变）；新 commit 走新模板 | — |
+| restructuring | 7 个流程 trailer 迁到 `04-dev-tasks.md` 任务条目 | 存量 `review_pending` 任务：从其 Commit 1 尾注读出 `Review-Batch-Id`/`Review-Due`/`Pending-Reason` 回填台账后再 drain | 任务标 `review_pending` 但台账无 `batch` |
+| restructuring | drain 定位 Commit 1 由「grep git log 找 trailer」改为「读台账 `commits`」| 同上，回填 `commits` 字段 | 台账无 `commits` 且任务已提交 |
 
 ### v2 → v3（反向依赖）
 

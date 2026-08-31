@@ -347,9 +347,9 @@ Phase 4 有两条触发路径，**工作区 diff 只对其中一条有效**：
 >
 > ⛔ **`mode` 不是 `inline` 时，audit 档的工作区 diff 须逐 `code_root` 取并拼接**：`for root in code_roots: git -C <root> diff`。此时代码改动全在各代码根自身的仓里，本仓（外壳仓）的工作区 diff **只有一行子模块指针变化**（`linked` 下连这行都没有）——直接用它同样是空审，与上一条 drain 的失效形态相同、成因不同。
 
-drain 侧定位规则（不新增状态，全部复用已有 trailer）：
+drain 侧定位规则（读任务台账，⛔ 不 grep git log）：
 
-1. 用 Commit 1 的 `Review-Batch-Id: <id>` trailer + 提交标题中的任务编号（`<type>(T-XX): ...`）定位该任务 Commit 1 的 SHA。
+1. 从 `04-dev-tasks.md` 任务条目的 `commits` 字段取该任务 Commit 1 的 `<repository>@<sha>`。
 2. 外审输入 = 该 Commit 1 的 diff。**Commit 2 是纯文档提交，不入外审输入。**
 3. T2 通道 drain 侧须传入显式 diff 内容或 commit 范围（契约见 [external-reviewer-integration.md](../../adversarial-review/references/external-reviewer-integration.md)）。
 4. **`mode` 不是 `inline` 时**：Commit 1 按代码根拆成 N 个 commit（见 [protocol.md N+1 仓提交协议](../../workspace-topology/references/protocol.md)）。drain 侧须**逐 code_root 定位并拼接**；外壳仓 Commit 2（文档 + 指针 bump）不参与。
@@ -410,7 +410,7 @@ audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `r
 | 层级 | 存储位置 | 权威性 | 生成时机 |
 |------|---------|-------|---------|
 | L2 摘要（**唯一权威**） | `docs/devdocs/audit/<T-XX>-external-review.yaml` | **Step 1.5 [D2] 唯一消费源**，schema 见下方"L2 最小必需 schema" | Phase 4 调度器每轮结束产出 |
-| L1 尾注（**派生**） | Commit 1 message trailer | L1 由 L2 自动派生（`External-Review-Verdict` 值直接读自 L2 的 `ext_review_state`，`health_scores` / rounds / channel 等也从 L2 读取），不作为独立校验来源 | Commit 1 生成时读 L2 填充 |
+| L1 台账（**派生**） | 任务条目 `ext_review_state` | L1 由 L2 自动派生（值直接读自 L2 的 `ext_review_state`，`health_scores` / rounds / channel 等也从 L2 读取），不作为独立校验来源 | Commit 2 写文档时读 L2 填充 |
 | L3 原始（**可选调试**） | `docs/devdocs/audit/<T-XX>-external-review-raw/<round-N>.txt` | 调度器保存每轮 codex 原始输出以便人工 debug，**不是门禁要求**——缺失或损坏不影响状态判定 | Phase 4 调度器可选产出 |
 
 **L2 最小必需 schema**（Phase 4 调度器必须产出；缺键视为 L2 无效）：
@@ -443,7 +443,7 @@ fallback_events: []                                                           # 
 
 ### review_pending 状态
 - fast/guarded 任务 Commit 1 落盘后,独立审查(Phase 1~3 + Phase 4)未做 → 任务标 `review_pending`(**独立状态**——含义是"已提交待集中审",区别于 `EXT_UNRESOLVED` 的"审过但未通过")。
-- Commit 1 尾注:`Review-Batch-Id` / `Review-Due`(格式 `sprint:<id>` 或 `due:YYYY-MM-DD`,默认落盘日+3 工作会话)/ `Pending-Reason: deferred-fast|deferred-guarded`。
+- 任务台账字段:`batch` / `due`(格式 `sprint:<id>` 或 `YYYY-MM-DD`,默认落盘日+3 工作会话)/ `pending_reason: deferred-fast|deferred-guarded`。⛔ 不写 commit 尾注。
 - 转移:`review_pending` --(drain 无 Blocker)--> `已完成`;有 Blocker → fix-forward(见下)。
 
 ### `/ms-verify --review-drain` 集中清审
@@ -460,7 +460,7 @@ fallback_events: []                                                           # 
 | T1/T2 全失败 | 保持 `review_pending`(EXT_UNRESOLVED) | 非0 | `drain.channel_failure` |
 | L2 yaml 无效 | 保持 `review_pending` | 非0 | `drain.invalid_evidence` |
 | **Commit 1 diff 为空** | 保持 `review_pending`,**不判 `EXT_REVIEWED`** | 非0 | `drain.empty_diff` |
-| **Commit 1 SHA 无法定位** | 保持 `review_pending`(缺 `Review-Batch-Id` 或标题无任务编号) | 非0 | `drain.commit_not_found` |
+| **台账无 `commits` 记录，或 sha 解析不到** | 保持 `review_pending` | 非0 | `drain.commit_not_found` |
 | 用户中断 | 已处理落定,余下保持 `review_pending` | 130 | `drain.interrupted_at` |
 | headless fail-fast | 保持 `review_pending` | 非0 | `drain.headless_halt` |
 

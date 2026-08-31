@@ -65,6 +65,8 @@ T-02 ─┘           │
 | **TDD 模式** | ⚪ 不适用 |
 | **关联需求** | F-001, AC-001 |
 | **涉及文件** | `src/db/schema.ts` |
+| **commits** | `<repository>@<full-sha>`（Commit 2 写入；可多条）|
+| **审查状态** | `review_state` / `batch` / `due` / `pending_reason` / `ext_review_state`（按需填，见 [dev-workflow §任务台账](../../dev-workflow/SKILL.md)）|
 
 **执行步骤**：
 1. [ ] 实现基础设施

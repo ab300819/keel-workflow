@@ -106,7 +106,7 @@
 | 8 | 自动补充依赖 | 静默记录（不变） |
 | 9 | 全量测试失败 | 记录到交付报告，标记 ⚠️ 警告（不 fail-fast，任务已提交） |
 | 10 | Phase 4 外部对抗审查（全场景） | 见下方 Phase 4 状态机指针 |
-| 11 | batch 完成 / pending 超阈值 / Review-Due 到期 | **自动 `/ms-verify --review-drain`**（不"告警"等人）；drain 失败 → fail-fast 输出续做命令 |
+| 11 | batch 完成 / pending 超阈值 / 台账 `due` 到期 | **自动 `/ms-verify --review-drain`**（不"告警"等人）；drain 失败 → fail-fast 输出续做命令 |
 
 ### Phase 4 在 headless 下的状态机
 

@@ -165,9 +165,10 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
    - **audit**：提交后更新 04-dev-tasks*.md 状态为 `已完成`
    - **fast/guarded**：提交后更新 04-dev-tasks*.md 状态为 `review_pending`（独立审查延后），在 Commit 1 尾注附加：
      ```
-     Review-Batch-Id: <batch-id>
-     Review-Due: <YYYY-MM-DD>
-     Pending-Reason: deferred-fast | deferred-guarded
+     任务台账（04-dev-tasks.md 条目）：
+     batch: <batch-id>
+     due: <YYYY-MM-DD>
+     pending_reason: deferred-fast | deferred-guarded
      ```
      `/ms-verify --review-drain` 通过后（无 Blocker）才转 `已完成`
    - 运行 /ms-sync
@@ -176,25 +177,18 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
 
 ## 提交信息格式
 
-遵循 `/commit-convention` 规范（标题/type 权威）；trailer 字段语义权威见 [_shared/constraints.md §Commit trailers 协议](../../_shared/constraints.md)，本块为模板呈现与填写时机：
+⛔ **commit 里不写任何 DevDocs 编号与流程状态**——权威见 [SKILL.md §提交信息格式](../SKILL.md) 与 §任务台账。
 
 ```
-<type>(T-XX): <任务名称>
+<type>(<scope>): <描述可观察结果的一句话>
 
-- <完成内容1>
-- <完成内容2>
-
-关联: F-XXX, AC-XXX
-测试: UT-XXX, IT-XXX 通过
-External-Review-Verdict: <audit profile Phase 4 inline 时必填：EXT_REVIEWED | EXT_UNRESOLVED | EXT_BLOCKED；含 rounds 和 health_scores>
-Review-Batch-Id: <fast/guarded profile 延后时必填；audit 省略>
-Review-Due: <fast/guarded profile 延后时必填（格式 YYYY-MM-DD）；audit 省略>
-Pending-Reason: <fast/guarded profile 延后时必填：deferred-fast | deferred-guarded；audit 省略>
-Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
-Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他情况省略此行>
+Why: <只写代码和 diff 表达不了的决策、约束、取舍>
+Tests: <实际执行过的精确命令>
 ```
 
-**type 类型**：以 `/commit-convention` 为权威（feat/fix/refactor 等枚举不在此重述）；上方 `Review-Batch-Id` 等尾注为 DevDocs 专有 trailer 协议，归本文件管辖
+流程状态（`batch` / `due` / `pending_reason` / `ext_review_state` / `skip_trace_reason` / `exploration_mode` / `profile_downgrade_reason`）写 `04-dev-tasks.md` 的任务条目，⛔ 不写 commit 尾注。
+
+**type 类型**：以 `/commit-convention` 为权威。
 
 ## TodoWrite 集成
 
