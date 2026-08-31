@@ -349,7 +349,7 @@ Phase 4 有两条触发路径，**工作区 diff 只对其中一条有效**：
 
 drain 侧定位规则（读任务台账，⛔ 不 grep git log）：
 
-1. 从 `04-dev-tasks.md` 任务条目的 `commits` 字段取该任务 Commit 1 的 `<repository>@<sha>`。
+1. 从 `04-dev-tasks.md` 任务条目的 `commits` 字段取该任务 Commit 1 的 `<repository>@<sha>`；sha 解析不到时按 `patch_id` 找等价提交（三级降级链见 [SKILL.md §任务台账](../SKILL.md)）。
 2. 外审输入 = 该 Commit 1 的 diff。**Commit 2 是纯文档提交，不入外审输入。**
 3. T2 通道 drain 侧须传入显式 diff 内容或 commit 范围（契约见 [external-reviewer-integration.md](../../adversarial-review/references/external-reviewer-integration.md)）。
 4. **`mode` 不是 `inline` 时**：Commit 1 按代码根拆成 N 个 commit（见 [protocol.md N+1 仓提交协议](../../workspace-topology/references/protocol.md)）。drain 侧须**逐 code_root 定位并拼接**；外壳仓 Commit 2（文档 + 指针 bump）不参与。
@@ -460,7 +460,7 @@ fallback_events: []                                                           # 
 | T1/T2 全失败 | 保持 `review_pending`(EXT_UNRESOLVED) | 非0 | `drain.channel_failure` |
 | L2 yaml 无效 | 保持 `review_pending` | 非0 | `drain.invalid_evidence` |
 | **Commit 1 diff 为空** | 保持 `review_pending`,**不判 `EXT_REVIEWED`** | 非0 | `drain.empty_diff` |
-| **台账无 `commits` 记录，或 sha 解析不到** | 保持 `review_pending` | 非0 | `drain.commit_not_found` |
+| **台账无 `commits` 记录，或 sha 与 `patch_id` 都定位不到** | 保持 `review_pending`；Recovery 见 [SKILL.md §任务台账](../SKILL.md) 降级链 | 非0 | `drain.commit_not_found` |
 | 用户中断 | 已处理落定,余下保持 `review_pending` | 130 | `drain.interrupted_at` |
 | headless fail-fast | 保持 `review_pending` | 非0 | `drain.headless_halt` |
 
