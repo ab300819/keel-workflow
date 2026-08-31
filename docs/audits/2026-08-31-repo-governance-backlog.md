@@ -6,7 +6,7 @@
 >
 > 本文是 2026-08-31 逐条复查后的**存活项**。
 
-## 1. 存活项（4 条）
+## 1. 存活项（3 条）
 
 ### 1.1 `idea-mcp-workflow` 引用不存在的 MCP 工具名
 
@@ -41,12 +41,6 @@
 
 需要定的：skill 元设计 / 协议调整 / DevDocs skill 开发时，哪个是唯一 process owner；何时允许 superpowers 产物作为输入；明确禁止双重门控。
 
-### 1.4 `ms-iteration-policy` 仍在默认发现集
-
-`user-invocable: false`、声明为 internal、只由 `/ms-pipeline realign --scope=layout` 调度、自身 330 行。仍占 metadata 上下文，且用户会看到一个声明了但不能独立执行的入口。
-
-三个选项：沉进 `pipeline/references/` ／ 发行 manifest 排除 ／ 维持现状但确认三个目标客户端都真正尊重 `user-invocable: false`。
-
 ## 2. 已解决 / 已证伪（勿再照原文去修）
 
 | 交接原文 | 2026-08-31 复查 |
@@ -55,6 +49,7 @@
 | §3.2 短名残留 `bugfix` vs `ms-bugfix` | **零残留** |
 | §3.3 README 安装命令路径错 | **该判断本身是错的**：`git clone …/skills.git` 会建出 `skills/`，故 `bash skills/scripts/deploy-skills.sh` 路径正确 |
 | §3.4 部署脚本用 basename 命名 | 已由 `01816e8` **删除脚本**解决——它没人跑（实际安装走 `npx skills`），跑一次反而会在 22 个正确副本旁造出 22 个错名链接 |
+| 1.4 `ms-iteration-policy` 仍在默认发现集 | **已解决**：2026-08-31 随 layout.v2 删除——它 `user-invocable: false`，唯一调用者是 layout.v2 的 `realign --scope=layout`，依赖坍塌成孤儿。反模式诊断救成 `00-baseline.md` §2.1 的一条纪律 |
 | §8 六大入口瘦身 | 本轮规则收敛顺带做了一部分（dev-workflow 422→386、system-design 465→441、verify 446→436），但交接要的**结构性重排**未做 |
 | §7.2 单一 process owner | 部分覆盖：本轮建的 `task/intent-normalization` 是 **skill 内部**的意图→参数归一化，不是 **skill 之间**的 owner 仲裁。§7.3 那层仍空（见 1.3）|
 
