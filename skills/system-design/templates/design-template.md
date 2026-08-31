@@ -9,13 +9,26 @@ Use this template to generate `docs/devdocs/02-system-design.md`.
 ```yaml
 ---
 generated_by: ms-system-design
-spec_version: design.v1
+spec_version: design.v2
 generated_at: <ISO-8601 timestamp, e.g. 2026-04-23T10:30:00+08:00>
 ---
 ```
 
 ```markdown
 # 系统设计：<功能名称>
+
+## 0. 摘要
+
+> 给三个月后回来的人、和新会话里接手的 agent 看。**这节写不出来，说明设计还没想清。**
+> 通篇最多 8 行，不用编号、不用黑话。
+
+- **要解决什么**：<一句话。不要复述 F-XXX，说人话>
+- **怎么解决**：<一句话，讲清关键手法>
+- **定了哪些方向**：
+  - <方向一句话> → 详见 ADR-XXX
+  - <方向一句话> → 详见 ADR-XXX
+- **还没定的**：<`⏳` 汇总的一句话版；没有写"无">
+- **最可能后悔的地方**：<一条，写具体场景，例如"如果日订单超过 50 万，这套单表方案得拆"；真没有写"无">
 
 ## 1. 运行平台
 

@@ -93,7 +93,7 @@
 
 ## Dry-run 样例（首次调用 vs 二次调用）
 
-> **说明**：以下为**未来示意**样例（假设 system-design 已发生首次 bump 到 `design.v2`），当前仓库所有 skill 的 `spec_version` 常量仍为 v1 首版、Migration Matrix 均为"保留字段，未来启用"，尚未真实触发过 realign。样例用于展示报告格式与幂等性，而非实际运行结果。
+> **说明**：以下为**示意**样例，用于展示报告格式与幂等性，非实际运行结果。`design.v1 → design.v2` 已是真实演进（2026-08-31，§0 摘要节，见 [system-design/references/realign.md](../../system-design/references/realign.md)）；其余 skill 的 `spec_version` 常量仍为 v1 首版、Migration Matrix 仍为"保留字段，未来启用"。本仓尚未真实触发过 realign 执行。
 
 **假想场景**：仓库有 3 个产物，其中 `02-system-design.md` 是 `design.v1`（假设常量已升至 `design.v2`），`04-dev-tasks.md` 是 `tasks.v1`（当前常量 `tasks.v1`，无 drift），`00-context.md` 缺 frontmatter（legacy）。
 
