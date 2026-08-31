@@ -112,6 +112,21 @@ metadata:
 
 检查 F → 设计模块映射、AC → 实现路径、设计孤立项。
 
+#### 设计内部自洽（独立重算）
+
+> **为什么这层是唯一关口**：`/ms-system-design` 已把「结构对不对」移出用户确认界面（见其「何时需要你拍板」）——模块划分、接口契约、数据模型不再有人过目。无岔路时甚至没有任何人工确认发生。
+>
+> ⛔ **不得引用 02 里的「原则校验表」「边界自查」「对抗性设计审查」作为通过依据。** 那三张表是**生产方自填**的，属被审对象。只读表等于没审——与「被测者书写测量记录」是同一失效模式。以下各项必须**从 02 正文重新算一遍**。
+
+| 检查 | 怎么算 | 命中 |
+|------|--------|------|
+| 接口引用可解析 | §4 模块表「对外接口引用」「依赖接口引用」列的每个 `I*(§5.x)` → §5 中确有该接口 | **P1** |
+| 接口有归属 | §5 每个接口 → 至少被一个模块的「对外接口引用」声明 | P2 |
+| 数据模型有消费者 | §8 每个实体 → 在 §4 / §5 / §9 中被提及 | P3 |
+| 不适用须有场景 | 02「设计审查」节的原则校验表中，标 `—`（不适用）的条目缺一句话场景说明（规则出处 [solid-principles-guide.md](../system-design/references/solid-principles-guide.md)：「场景说不出来自然写不下去」）| P2 |
+| §0 摘要存在 | 文档有 `## 0. 摘要` 且五项非空（`design.v2` 起必填）| P2 |
+| §0 与正文不矛盾 | 「最可能后悔的地方」写"无"，但全文存在 `⏳` 未决项 | P2 |
+
 **设计文档内部一致性**（ADR ↔ 正文同期修订）：委托 health-lint `design/adr-only-revision` 同款算法（详见 [pipeline/references/health-lint-implementation.md](../pipeline/references/health-lint-implementation.md#designadr-only-revision)）。
 
 | 维度 | 说明 |
@@ -307,7 +322,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 
 | 报告 | 适用维度 | 必填字段 / 章节 |
 |------|----------|----------------|
-| `docs/devdocs/verify-report.md` | `--docs` / `--impl` / `--ui` | 验证时间、`verified_commit`、验证维度、验证范围、关联文档、验证结果摘要（各维度 P1/P2/P3/状态）、对应 A/B/C 章节、问题汇总、修复路由 |
+| `docs/devdocs/verify-report.md` | `--docs` / `--impl` / `--ui` | 验证时间、`verified_commit`、验证维度、验证范围、关联文档、验证结果摘要（各维度 P1/P2/P3/状态）、**「要你知道的」人话摘要**（有 P1/P2 时必填，全绿时删除）、对应 A/B/C 章节、问题汇总、修复路由 |
 | `docs/devdocs/readiness-report.md` | `--readiness` | 验证时间、验证维度、验证范围、关联文档、D1-D4 就绪度摘要、D1-D4 明细、问题汇总、修复路由 |
 
 `--impl` 报告必须包含 CE 三问；触发 IT 断言完备性检查时必须填写 B4。字段与 A/B/C 类示例见 [templates/verify-report.md](templates/verify-report.md)，就绪报告见 [templates/readiness-report.md](templates/readiness-report.md)。
