@@ -405,7 +405,6 @@ F6 解释了 F1 为何能长期存在：**没人能机械查，所以没人发�
 - §4.3 的 C2 / C3 目前只有方向没有形状，须待 B1 产出后另开方案。
 - ⚠️ **A4 在本仓不可执行，判决点时钟在本仓也不会走。** 本仓是 skill 规格库、自身不跑 DevDocs：304 个提交中**零个真 trailer**（`Exploration-Mode` 等几处命中均为 commit body 里提到功能名，非实际尾注）。既有 trailer 的聚合统计与 runlog 的 60 条计数，都只能在**消费 DevDocs 的项目**里产生。这意味着判决点实际由 `2026-11-30` 这个日期驱动，而非条数。
 - ⚠️ **`task/runlog-append` 与 `constraints.md` 的 `doc/status-extraction` charter 冲突**——该 charter 声明「不引入新的执行语义」，而本规则引入了。已按 `future/use-new` 标 `[新增]` 并在 charter 处注明例外（`§11 作用域匹配` 是同类先例）。charter 本身与实际已不一致，修正未做。
-</content>
 
 ## 10. 外部评审记录
 

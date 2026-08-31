@@ -48,9 +48,9 @@ T3 使用 Task 子 Agent 为首选（无条件可用）
 
 - `primary_method` 只在首次探测时确定
 - 每轮优先使用 `primary_method`；当轮失败则临时降级到下一级
-- 单轮失败只影响 `effective_method`，下一轮默认仍先尝试 `primary_method`
+- 单轮失败只影响本轮实际通道（`review_method`），下一轮默认仍先尝试 `primary_method`
 - 连续 2 轮失败 → 永久降级，更新 `primary_method` 为下一级
-- 报告记录 `primary_method`、`effective_method`、`fallback_events`（如有）
+- 报告记录 `primary_method`、`review_method`、`fallback_events`（如有）
 
 ---
 

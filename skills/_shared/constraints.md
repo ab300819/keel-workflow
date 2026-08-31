@@ -9,7 +9,7 @@ related:
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
   - skills/_shared/runlog.md（运行日志：形状、纪律、判决点）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v5
+spec_version: shared-constraints.v6
 ---
 
 # 共享约束 SSOT
@@ -400,7 +400,6 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 |---------|------|------|
 | `Review-Batch-Id` / `Review-Due` / `Pending-Reason` | fast/guarded 延后必填 | 见上方 review_pending |
 | `External-Review-Verdict` | audit Phase 4 inline 必填 | 值 = `ext_review_state`（由 L2 yaml 派生，L1 不作独立校验源） |
-| `External-Review-Channel` | audit Phase 4 inline 必填 | `T1` / `T2` / `none`（通道记录，非状态字段） |
 | `Skip-Trace-Reason` | 单任务 `--skip-trace` | 跳过后置 trace 校验的原因 |
 | `Exploration-Mode` | 探索模式 | `true` + 证据/豁免原因登记 |
 | `Profile-Downgrade-Reason` | 带理由降档时 | 降档理由（升档不需要） |

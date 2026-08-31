@@ -14,7 +14,7 @@ reads_traceability: [trace.v0, trace.v1]
 writes_traceability: trace.v0
 on_incompatible: block
 migration: /ms-pipeline realign --scope=layout
-spec_version: 3.0
+spec_version: 3.1
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
         P1 S9 并行化、P2 批量 Batch-Id trailer 标记 [FUTURE]，待 Phase 2 实施；
@@ -23,6 +23,8 @@ spec_version_notes: |
   2.0 = 重新定位(代码SSOT/文档记忆)+ review_profile 三档替代层级 + 质量地板恒定 + 独立审查延后 drain + review_pending 状态(Plan A)
   3.0 = 修复延后外审空 diff(Phase 4 按 inline/drain 分离 diff 源)+ 删 skip 参数族
         (2 flag / INT_PENDING·EXT_PENDING 2 enum 值 / 2 trailer / 双 skip 禁令)+ 删最低发现数门槛
+  3.1 = 删 External-Review-Channel trailer(派生自 L2 external_review_channel_used,无门禁消费者)
+        + 删与「分层 TDD 模式」档位表重复的「触发条件」表
 ---
 
 # 开发工作流
@@ -231,17 +233,7 @@ spec_version_notes: |
 
 > 以不同角色视角审查代码，模拟 "开发 → 审查 → 测试" 的多人协作模式。
 
-> **与 review_profile 的关系（重要）**：本节描述的是独立审查的**机制**（Phase 1~3/4、skip 参数、INT/EXT 状态），其**触发时机**现由 `review_profile` 决定：**audit** = 下表 🔴 行（inline 自动全套）；**fast/guarded** = Phase 1~3/4 **延后**到 `/ms-verify --review-drain`（任务期间标 `review_pending`），质量地板与 `/ms-verify --impl` 仍 inline。下表"层级"列读作"风险输入 → review_profile 映射"，不再是独立的流程开关。
-
-### 触发条件
-
-> **层级判定**：任务层级标记（🔴🟡🟢⚪）来自 `04-dev-tasks.md` 中的任务定义，由 `/ms-dev-tasks` 在任务拆分时根据任务分层规则分配，作为 `review_profile` 风险分类器的输入信号之一。
-
-| review_profile（层级→风险输入映射） | 默认前置验证 | Phase 1~3 自审 | Phase 4 外部对抗 | 手动控制 |
-|---------|-------------------------------|---------------|------------------|---------|
-| UI 任务（不分档） | 有设计稿另跑 `/ms-verify --ui --impl`（不随 profile 变） | 同所属档 | 同所属档 | 同所属档 |
-
-> defer → drain = 延后到 `/ms-verify --review-drain`，任务期间标 `review_pending`。`/ms-dev-tasks` 拆分时的 🔴🟡🟢⚪ 标记映射为初始 review_profile（audit/guarded/guarded/fast 的风险输入之一），执行期可只升不降。
+> **与 review_profile 的关系（重要）**：本节描述的是独立审查的**机制**（Phase 1~3/4、INT/EXT 状态），其**触发时机**由 `review_profile` 决定——档位表见上文「分层 TDD 模式」，本节不重复。
 
 **设计原则**：
 
@@ -348,7 +340,6 @@ Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）�
 关联: F-XXX, AC-XXX        # v1；v2 [FUTURE] 用 FEAT-XXX/STORY-XXX
 测试: UT-XXX, IT-XXX 通过
 External-Review-Verdict: <EXT_REVIEWED | EXT_UNRESOLVED | EXT_BLOCKED>（Phase 4 触发时必填，含 rounds 和 health_scores）
-External-Review-Channel: <T1 | T2 | none>（非状态字段，Phase 4 触发时记录实际通道）
 Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
 Profile-Downgrade-Reason: <使用 --review-profile 降档时必填；Step 1.5 复核校验降档理由是否合规；batch 交付报告按 `Review-Batch-Id` 聚合 review_pending 清单>
 Review-Batch-Id: <fast/guarded 任务标 review_pending 时填写 batch ID；消费者：/ms-verify --review-drain 批量交付报告>

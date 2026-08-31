@@ -189,7 +189,6 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
 关联: F-XXX, AC-XXX
 测试: UT-XXX, IT-XXX 通过
 External-Review-Verdict: <audit profile Phase 4 inline 时必填：EXT_REVIEWED | EXT_UNRESOLVED | EXT_BLOCKED；含 rounds 和 health_scores>
-External-Review-Channel: <audit profile Phase 4 inline 时必填：T1 | T2 | none（非状态字段）>
 Review-Batch-Id: <fast/guarded profile 延后时必填；audit 省略>
 Review-Due: <fast/guarded profile 延后时必填（格式 YYYY-MM-DD）；audit 省略>
 Pending-Reason: <fast/guarded profile 延后时必填：deferred-fast | deferred-guarded；audit 省略>

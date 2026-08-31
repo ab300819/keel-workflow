@@ -135,7 +135,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 
 **降级规则**：
 - 首选通道（`primary_method`）在首次探测时确定，每轮优先使用
-- 单轮失败临时降级（`effective_method`），下一轮仍先尝试首选通道
+- 单轮失败只是临时降级，下一轮仍先尝试首选通道
 - 连续 2 轮失败 → 永久降级，更新 `primary_method`
 
 ### S4 展示审查结论
@@ -172,9 +172,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 2. **语义兜底**：对未显式继承的 finding，Agent 做语义匹配——如果本质是同一问题，标注 `recurring_from: <原ID>`
 3. **新问题标识**：无法关联到任何上轮 finding 的，标注 `origin: new`
 
-每条 finding 的最终标注：`inherited`（继承原 ID）/ `recurring`（语义匹配复现）/ `new`（本轮新增）
-
-> `inherited` 和 `recurring` 在计分时统一按 recurring 乘数（×1.5）处理——两者都意味着问题跨轮未解决。
+每条 finding 的最终标注：`recurring`（跨轮复现，无论来自 ID 继承还是语义匹配，均以 `recurring_from` 记原 ID）/ `new`（本轮新增）。
 
 对每条发现：
 
@@ -202,7 +200,7 @@ confirmed: X
 rejected: X
 partial: X
 new_issues: X          # origin: new 的 finding 数
-recurring: X           # inherited + recurring 的 finding 数
+recurring: X           # 跨轮复现的 finding 数
 by_severity:
   P1: X
   P2: X
@@ -282,7 +280,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 
 | 来源 | 乘数 | 理由 |
 |------|------|------|
-| recurring / inherited（复现/继承） | ×1.5 | 问题跨轮未解决 |
+| recurring（跨轮复现） | ×1.5 | 问题跨轮未解决 |
 | new（新增） | ×2 | 修复引入新问题是严重信号 |
 | 其他 | ×1 | 首轮发现或已有问题 |
 
@@ -310,7 +308,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 > **⛔ 禁止继续：收敛检测或安全上限触发时必须执行熔断复盘，不得跳过**
 > 恢复方式：用户在复盘后选择继续/接受/回退/升级
 
-触发时执行以下 5 步：
+触发时执行以下 4 步：
 
 **1. 趋势数据展示**
 
@@ -351,18 +349,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 - 如果部分合理 → 建议保留 <X>，回退 <Y>
 ```
 
-**4. 收敛预测**
-
-```
-## 收敛预测
-
-基于当前趋势，预测继续审查的可能结果：
-- **乐观**：如果 <条件>，预计 N 轮内可收敛
-- **悲观**：如果 <问题模式> 持续，问题将继续发散
-- **建议**：继续 / 接受当前状态 / 升级处理
-```
-
-**5. 用户决策**
+**4. 用户决策**
 
 用 AskUserQuestion 让用户选择：
 - **继续审查**：解除安全上限（如适用，将 max_rounds 提升为 current_round + 3），带上根因分析的补充上下文进入下一轮
@@ -380,7 +367,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 
 ### 审查调度约束
 - [ ] 按 T1→T2→T3 优先级探测首选通道；每轮允许临时降级到下一级
-- [ ] 首选通道探测仅做一次（首次调用时）；记录 primary_method 和 effective_method
+- [ ] 首选通道探测仅做一次（首次调用时）；记录 primary_method 和 review_method
 - [ ] T1 通过 `which codex` + 冒烟调用检测；T2 连接失败时降级到 T3
 - [ ] T1 代码审查使用 `--output-schema` 获取结构化 JSON；JSON 解析失败时降级为文本解析
 - [ ] 连续 2 轮 primary_method 失败时永久降级
@@ -399,7 +386,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 - [ ] 第 2 轮起基于快照做趋势判断；score 未下降时必须在 S6 展示 ⚠️ 预警
 - [ ] ⛔ 第 3 轮起 score 未下降时必须触发熔断复盘
 - [ ] ⛔ 安全上限（默认 5 轮）触发时必须强制熔断，用户可在决策时解除
-- [ ] 熔断复盘必须包含趋势数据、根因分析、改动合理性评估和收敛预测
+- [ ] 熔断复盘必须包含趋势数据、根因分析和改动合理性评估
 
 ### 只读约束
 - [ ] 不修改任何被审查文件——只生成报告和修复建议
@@ -438,9 +425,8 @@ summary:
   details:
     review_target: "工作区 diff / 文件路径 / 方案描述"
     review_type: "代码审查 / 方案评审 / 文档审查"
-    review_method: codex-cli | codex-mcp | task-subagent   # 最后一轮实际使用的方式
+    review_method: codex-cli | codex-mcp | task-subagent   # 最后一轮实际生效的通道
     primary_method: codex-cli | codex-mcp | task-subagent  # 首次探测锁定的首选通道
-    effective_method: codex-cli | codex-mcp | task-subagent # 最后一轮实际生效的通道（= review_method）
     fallback_events: []          # 降级事件列表，如 ["R2: codex-cli→codex-mcp (timeout)"]
     rounds: 1
     health_scores: [22]          # 各轮健康分
