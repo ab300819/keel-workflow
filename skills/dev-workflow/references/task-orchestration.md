@@ -411,7 +411,7 @@ docs(T-XX): 更新任务状态并同步 trace
 
 > **inline 分支**(任务 `来源: inline`,见 [inline-entry.md](inline-entry.md)):`系统设计`/`测试用例` 两字段传 `—(inline)`;测试输入约束以 S1.5 Sprint Contract(AC + 当前代码上下文)为准——S1.5 本就是既有步骤,非新机制。`需求文档` 字段照常传 `01-requirements.md`(inline AC 定义于其 Inline stubs 区)。信息屏障不变。
 >
-> 📝 注释纪律（[`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)）：S3 骨架可用纯 AAA 占位（`// Arrange` / `// Act` / `// Assert`，不带来源）；S4 写完断言后必须删除来源记录式注释（"来自 UT-XX / 后置条件 / 行为契约"等）——测试名 + 断言本身表达预期，过程来源归 traceability.yml
+> 📝 注释纪律（[`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)）：S3 骨架可用纯 AAA 占位（`// Arrange` / `// Act` / `// Assert`，不带来源）；S4 写完断言后必须删除来源记录式注释（"来自 UT-XX / 后置条件 / 行为契约"等）——测试名 + 断言本身表达预期，⛔ 过程来源不进代码（追溯在文档侧）
 
 **输出**（Test Agent → 编排器）：
 

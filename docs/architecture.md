@@ -130,7 +130,6 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 
 | 命令 | 处理 |
 |------|------|
-| `/ms-verify --layout-drift` | → 合并到 `--schema-drift`（报告含 layout drift 段）|
 | `/ms-sync --schema-drift` | → 迁移到 `/ms-verify --schema-drift`，统一 drift 报告 |
 | `/ms-sync --check/--absorb` | → 合入 `/ms-sync` 默认流程 |
 

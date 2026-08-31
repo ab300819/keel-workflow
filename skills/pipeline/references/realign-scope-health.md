@@ -60,7 +60,7 @@
 
 ### 只读边界
 
-dry-run **不写入任何业务产物**（不动 docs/devdocs/*.md、不动 traceability.yml、不动 aliases.yml、不动 git）。唯一允许写入的文件是：
+dry-run **不写入任何业务产物**（不动 docs/devdocs/*.md、不动 git）。唯一允许写入的文件是：
 
 ```text
 docs/devdocs/.health-report.md
@@ -75,7 +75,6 @@ docs/devdocs/.health-report.md
 | `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路） |
 | `.claude/rules/devdocs-state.md` | 维度 c 中 `state-size` / `state-forbidden-content` 专属扫描 |
 | `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔DevDocs 编号引用） |
-| `traceability.yml` / `aliases.yml`（若存在） | 维度 b 编号引用核对 |
 
 ### 执行步骤
 
@@ -120,7 +119,7 @@ dimensions:
   c_oversize:
     score: <0-100>
     violations:
-      - rule_id: state/total-size-cap | state/line-length-cap | ssot/current-md-size
+      - rule_id: state/total-size-cap | state/line-length-cap
         file: <path>
         actual: <value>
         threshold: <value>
@@ -157,7 +156,6 @@ manual_decisions:
 | 违规 rule | route_to_scope | 修复路径 |
 |----|----|----|
 | health-lint 全部 rule（清单见 [health-lint-implementation.md](health-lint-implementation.md) Rule 集表；`submodule/pointer-drift` 仅 shell 拓扑适用）| `health` | health scope `--apply` 直接处理（`health/dead-link` 手动修复；`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
-| `ssot/*` (`current-md-size` / `file-size-cap` / `modules-size-cap`) | `layout` | 拆分走 layout scope |
 | `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
 | PRD↔DevDocs 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |
 
@@ -178,7 +176,6 @@ manual_decisions:
 | 决策 | 触发条件 | 问询要求 |
 |------|----------|----------|
 | 归档目标 | `state/total-size-cap` 违规 + 需要把内容拆出 | 展示拟归档段落 + 拟目标文件（task / ADR / archive），3 个候选 |
-| 引用提取 | `ssot/no-restatement` 检出长段落复制 | 展示原段落 + 权威源路径，确认替换为引用 |
 | state prose 修剪 | `state/forbidden-content` 检出 commit/LOC/codex 分数 | 展示违规片段 + 拟保留占位形态，确认动作 |
 | 跨产物影响 | 维度 b 死链涉及多个产物 | 展示受影响产物列表，确认是否一并修复 |
 
@@ -217,7 +214,7 @@ manual_decisions:
 #### Phase 3：维度 b 死链处理
 
 - 死链 → 用户确认是否补建目标文件 / 删除引用 / 标 `[FUTURE]`。
-- 孤立编号（仅在代码或仅在文档）→ 写入 `traceability.yml` 或在产物中补登记。
+- 孤立编号（仅在文档中被引用但无定义）→ 在产物中补登记，或删除该引用。
 
 #### Phase 4：维度 a 结构补齐
 
@@ -277,7 +274,7 @@ next_recommended:
 ## 与其他 scope 的边界
 
 - 维度 a 的 spec_version 差距 → 仅报告，**不补齐**；补齐走 `--scope=spec`（沿用现有 realign 主流程）。
-- 维度 c 中 `current-md-size` ≥ 1500 行 → 仅报告，**不拆分**；归档减量走 `/ms-sync --archive`。
+- 维度 c 中单文件 ≥ 1500 行 → 仅报告，**不拆分**；归档减量走 `/ms-sync --archive`。
 - 维度 b 的死链涉及 PRD ↔ DevDocs 编号映射 → 由 `--scope=prd-mapping` 处理。
 - 本 scope 自身只负责：可逆的小范围修复（state 修剪、引用替换、死链标注）。
 
