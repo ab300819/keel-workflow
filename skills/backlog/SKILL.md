@@ -39,12 +39,11 @@ writes_backlog: backlog.v1
 /ms-backlog --supersede <source_id>  # parked → superseded（可选）
 /ms-backlog --list[=status]          # 列出条目，默认全部
 /ms-backlog --init                   # 初始化 docs/devdocs/backlog.md（使用 templates/backlog-template.md）
-/ms-backlog --realign[=scope]        # [FUTURE] 按 references/realign.md 补齐结构差距
 ```
 
 ### 编排入口
 
-`/ms-pipeline backlog` [FUTURE] 应路由到本 skill，并传入：
+`/ms-pipeline backlog` 路由到本 skill，传入：
 
 ```yaml
 skill: ms-backlog
@@ -207,7 +206,6 @@ summary:
 - 主锚点：`source_id + entry_no`，例如 `F-01#1`。
 - `related_ids` 用于记录辅助关联，不改变主锚点。
 - `Change Log` 记录状态迁移，保留 `from_status` / `to_status` / `changed_at` / `changed_by_skill`。
-- [FUTURE] 原编号文件可增加只读反向链接表（backlog refs），但本 skill v1 不修改原编号文件。
 
 ## 不做什么
 

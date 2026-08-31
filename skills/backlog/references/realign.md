@@ -20,7 +20,7 @@
 
 ### 入口
 
-- 主入口：由 `/ms-pipeline realign` [FUTURE] 编排调度。
+- 主入口：由 `/ms-pipeline realign` 编排调度。
 - 底层直用：`/ms-backlog --realign[=scope]`，scope ∈ {frontmatter / index / entries / status-fields}。
 
 ### 流程

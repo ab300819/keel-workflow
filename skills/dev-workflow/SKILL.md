@@ -9,9 +9,9 @@ metadata:
 spec_version: 3.2
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
-        P1 S9 并行化、P2 批量 Batch-Id trailer 标记 [FUTURE]，待 Phase 2 实施；
-        并行化前置依赖 worktree 隔离协议（工作区所有权/文档 SSOT 合并/review-drain 回收），
-        触发 = 真实并行需求（2026-07-22 吸收评审结论，见 docs/workflows.md § 与 superpowers 共存）
+        本 skill 不做任务并行（S9 并行化）——前置依赖 worktree 隔离协议
+        （工作区所有权 / 文档 SSOT 合并 / review-drain 回收）尚未成立；
+        需要并行时手动用 worktree 隔离。见 docs/workflows.md § 与 superpowers 共存
   2.0 = 重新定位(代码SSOT/文档记忆)+ review_profile 三档替代层级 + 质量地板恒定 + 独立审查延后 drain + review_pending 状态(Plan A)
   3.0 = 修复延后外审空 diff(Phase 4 按 inline/drain 分离 diff 源)+ 删 skip 参数族
         (2 flag / INT_PENDING·EXT_PENDING 2 enum 值 / 2 trailer / 双 skip 禁令)+ 删最低发现数门槛
