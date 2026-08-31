@@ -184,7 +184,7 @@ Q3（feature/bugfix 追加，可选）:
 
 | 入口 | 适用边界 | 调用顺序 / 路由 | 必传摘要字段 |
 |------|---------|----------------|-------------|
-| `init` | 全新项目，从需求到开发的完整流程 | `ms-requirements` → `agent-memory --update`（治理委托，见下注）→ `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow`（批量）→ `ms-verify --docs --impl` → `ms-sync` | `output_files`、`new_ids.features`、`new_ids.acceptance`、各阶段 `status` |
+| `init` | 全新项目，从需求到开发的完整流程 | **发布状态提问**（见下注）→ `ms-requirements` → `agent-memory --update`（治理委托，见下注）→ `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow`（批量）→ `ms-verify --docs --impl` → `ms-sync` | `output_files`、`new_ids.features`、`new_ids.acceptance`、各阶段 `status` |
 | `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep | `ms-feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness + Step 6 dev-workflow）→ `ms-verify --docs --impl` → `ms-sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
 | `bugfix` | 修复 Bug；不改变 feature 入口语义 | 简单 Bug：`ms-bugfix` → `ms-verify --impl` → `ms-sync`；复杂 Bug：`ms-dev-tasks` → `ms-dev-workflow` → `ms-verify --impl` → `ms-sync` | Bug 范围、复杂度判定、修复文件、验证结果 |
 | `verify` | 任意阶段质量检查 | 有代码变更 → `ms-verify --impl`；有文档变更 → `ms-verify --docs`；有 UI 设计稿 → `ms-verify --ui`；不确定 → 询问用户；再路由到对应 skill 修复 | 检查维度、问题摘要、建议修复 skill |
@@ -203,6 +203,10 @@ Q3（feature/bugfix 追加，可选）:
 - **Deep 模式**：跨模块 / 架构 / 安全变更时，dev-workflow 所有任务强制 `--review`，feature 完成后额外执行 `ms-verify --docs`，并展示影响面摘要。
 - **Sprint Contract 协调**：`ms-test-cases` 产出的可执行验收契约作为 `ms-dev-workflow` 输入；pipeline 只传摘要、文件路径、新增编号，不内联测试全文。
 - **design 主动推送**：详细协议见 [../prd/references/design-context.md](../prd/references/design-context.md)；pipeline 不写文档，no-prd 不阻塞，且不中断当前 dev-workflow。
+- **发布状态提问（init 首步，源头治理）**：`init` 开始时 AskUserQuestion **问一次**「这个项目发布过吗」。未发布 → ⛔ 不套 semver，用 Sprint / 里程碑 / 待办池表达进度；已发布 → semver 是真契约，正常使用。结论由 `agent-memory --update` 写进 AGENTS.md「约定」节，后续 skill 据此决定怎么表达进度。
+  - 只问这一个问题，⛔ 不追问具体用哪种约定——那可以后面按需定，开工时多打断一次不值。
+  - 理由：版本号和进度是**自己造的现状**，代码里读不出来，天然需要有人定。没有真实发布节点可依时，版本号只能当占位符用，被大量引用后回潮难防；在源头问一次的成本远低于事后清理。
+  - 接手既有项目走 `ms-retrofit`，同一个问题在 `00-baseline.md` §2.1 问，两条路径结论都落 AGENTS.md。
 - **close 脚手架清理**：close 末步委托 `ms-prd clear` 清理 `docs/prd/` 一次性脚手架；先 dry-run 出范围 + 影响（孤儿 / 未同步项默认不删），⚠️ 必须确认后 `--apply` 删除；无 `docs/prd/` 时静默跳过。pipeline 只委托不自己删文件（见 ms-prd [清理脚手架](../prd/SKILL.md#清理脚手架close-收尾)）。
 - **realign 协调机制**：realign 非续做信号；restructuring 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；`--headless` 必须显式 `--realign` 或 `--no-realign`。
 - **工作区拓扑（`init`）**：`ms-requirements` 完成后（首次产生 `docs/devdocs/`）执行 `Task: /workspace-topology reconcile`。该 skill 自己写 `AGENTS.md` 的 `workspace:` 块，**不经 `agent-memory` 代写**——`devdocs_frontmatter` 入参不再传 workspace 字段。无声明时它问一次 mode 与代码根并落声明，此后不再问。另在流程开头调一次 `/workspace-topology inspect`，把结果经握手的 `workspace_context` 下传给各原子 skill（见 [_shared/constraints.md §3](../_shared/constraints.md) `task/workspace-context`）。retrofit 场景的路径由 [retrofit/SKILL.md](../retrofit/SKILL.md) 自己承载。

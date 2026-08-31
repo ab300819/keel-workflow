@@ -225,6 +225,7 @@ devdocs:
 | 活跃任务 + 进度 | AGENTS.md | 即时行动上下文 |
 | 领域术语、业务边界 | AGENTS.md | 高频稳定，防止误解 |
 | 代码约定、提交格式 | AGENTS.md | 跨工具一致 |
+| **发布状态 + 版本与进度约定** | AGENTS.md「约定」节 | 自己造的现状，代码里读不出来；所有 skill 都要据此决定怎么表达进度 |
 | 编号状态 (max F/US/AC/T/ADR) | `.claude/rules/devdocs-state.md` | Claude 专属运行态 |
 | 完整需求/设计/测试详情 | 留在 `docs/devdocs/` | 太详细，不适合记忆文件 |
 | `initialized_at` | AGENTS.md devdocs frontmatter | 治理字段，仅调用方显式传入 `devdocs_frontmatter` 时写入 §1 |
