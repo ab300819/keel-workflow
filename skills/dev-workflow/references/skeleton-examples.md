@@ -35,8 +35,6 @@ export class UserService {
 // tests/user.service.test.ts
 
 describe('UserService', () => {
-  /**
-   */
   test.skip('createUser 应该拒绝无效邮箱格式', () => {
     // TODO: 实现测试
     // Arrange: 准备无效邮箱
@@ -44,14 +42,10 @@ describe('UserService', () => {
     // Assert: 验证抛出 ValidationError
   });
 
-  /**
-   */
   test.skip('createUser 应该拒绝弱密码', () => {
     // TODO: 实现测试
   });
 
-  /**
-   */
   test.skip('createUser 应该拒绝重复用户名', () => {
     // TODO: 实现测试
   });
@@ -114,8 +108,6 @@ Test Agent 产出，Impl Agent 不可修改。注意：断言来源（UT 编号�
 // tests/user.service.test.ts
 
 describe('UserService.createUser', () => {
-  /**
-   */
   test('应拒绝无效邮箱格式', async () => {
     // Arrange
     const dto = { email: 'invalid', password: 'Strong1234', username: 'test' };
@@ -124,8 +116,6 @@ describe('UserService.createUser', () => {
     await expect(service.createUser(dto)).rejects.toThrow(ValidationError);
   });
 
-  /**
-   */
   test('有效邮箱应创建成功并返回 User', async () => {
     // Arrange
     const dto = { email: 'test@example.com', password: 'Strong1234', username: 'test' };
@@ -145,7 +135,7 @@ describe('UserService.createUser', () => {
 ## 骨架生成约束
 
 - [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）
-- [ ] **接口骨架必须添加追溯标注**
+- [ ] **接口骨架的方法名与签名必须自说明**（⛔ 不写 DevDocs 编号标注）
 - [ ] **未实现方法必须抛出 Error 并注明任务编号**
 - [ ] **测试骨架必须使用 skip/todo 标记**
 - [ ] **测试名必须说明验证的行为**（⛔ 不写 DevDocs 编号标注）

@@ -108,22 +108,21 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 > AI 驱动的自顶向下开发：先生成测试骨架，后填充实现。
 
-### 标注规范
+### 测试自说明规范
 
 ⛔ **测试代码不写 DevDocs 编号标注。** 追溯由 `ms-dev-workflow` 的 Commit 2 写入文档侧的追溯矩阵（`<repository>@<sha>`），代码保持干净——一个没有 DevDocs 上下文的维护者读到 `@verifies AC-001` 只会困惑。
 
-测试要自说明的是**行为**，不是编号：
+测试要自说明的是**行为**，不是编号——测试名就是它的文档：
 
 ```typescript
-/**
- */
-test('测试名称', () => {
-  // 测试代码
-});
+// ✅ 名字说清了「什么输入 → 什么结果」
+test('createUser 传入无效邮箱格式时抛出 ValidationError', () => { ... });
+
+// ❌ 名字什么都没说，失败时不提供任何诊断信息
+test('works', () => { ... });
 ```
 
-| 标注 | 用途 | 必须性 |
-|------|------|--------|
+⛔ **不写** `@verifies AC-XXX` / `@testcase UT-XXX` 这类编号标注——AC 与测试编号的映射在 `03-test-cases.md` 的追溯矩阵里，代码里不留第二份。
 
 ### 骨架生成流程
 
@@ -150,8 +149,6 @@ test('测试名称', () => {
 
 describe('UserService', () => {
   describe('createUser', () => {
-    /**
-     */
     test.skip('应该拒绝无效邮箱格式', () => {
       // TODO: 实现测试
       // Arrange: 准备无效邮箱
@@ -159,14 +156,10 @@ describe('UserService', () => {
       // Assert: 验证抛出 ValidationError
     });
 
-    /**
-     */
     test.skip('应该拒绝弱密码', () => {
       // TODO: 实现测试
     });
 
-    /**
-     */
     test.skip('应该拒绝重复用户名', () => {
       // TODO: 实现测试
     });
@@ -238,7 +231,7 @@ Step 3: 生成补充测试
         └── 遵循 AAA 结构和断言质量约束
 ```
 
-### 标注规范
+### 标注规范（@covers-branch）
 
 ```typescript
 /**

@@ -184,8 +184,6 @@ expected_output: yaml-summary-v1
   - 依据：layout.v2 挂了三个多月、一次没跑过，代价是 40 处双轨句 + 80 行 frontmatter 分摊到 10 个现役 skill；而 worktree 并行同样是封存，只有设计文档里一句备注，零税。
 - `future/no-runtime-assumption`：`[FUTURE]` 不阻塞阅读 spec，但阻塞实际调用；调用时应 fail-safe 或提示执行逻辑待落地。
 
-### 差异提示
-
 ## 5. 用户确认 / AskUserQuestion 规则
 
 ### 必须确认

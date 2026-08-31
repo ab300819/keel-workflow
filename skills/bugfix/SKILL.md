@@ -182,8 +182,6 @@ should [预期行为] when [触发条件]
 ### 测试结构
 
 ```typescript
-/**
- */
 describe('Bug fix: BUG-XXX <Bug 描述>', () => {
   it('should <预期行为> when <条件>', () => {
     // Arrange - 构造触发 Bug 的条件
