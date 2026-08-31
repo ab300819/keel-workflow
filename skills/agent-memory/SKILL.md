@@ -185,7 +185,7 @@ expected_output: yaml-summary-v1
 
 > ⛔ **`workspace:` 块不受本 skill 管理。** 工作区拓扑（`mode` / `code_roots`）是**仓库级事实**,由 [/workspace-topology](../workspace-topology/SKILL.md) 自己写自己的块。本 skill 遇到 `workspace:` 块一律**原样保留**——不解析、不比较、不覆写、不删除,连键序和缩进都不动。历史上这两个字段曾在本 skill 的受管白名单里(经 `devdocs.workspace_mode` / `devdocs.code_roots`),现已移除。
 
-**受管字段白名单**(按字段而非块标记界定受管边界 —— YAML frontmatter 不支持 HTML 注释,不能沿用正文的 `<!-- agent-memory:managed -->` 体例):当前仅 `initialized_at`。白名单外的 `devdocs:` 字段(`docs_layout_version`/`id_scheme`/`traceability_version`/`upgraded_at`/`upgraded_from`/`legacy_annotation_grace_period`)**本次不写** —— 那批字段的执行接口仍是 FUTURE(见 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md));下方写入算法本身是通用的,未来这些字段落地时只需把字段名加入白名单即可复用。字段清单与校验规则的权威源是 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1;本节只定义"怎么写",不重复"有哪些字段"。
+**受管字段白名单**(按字段而非块标记界定受管边界 —— YAML frontmatter 不支持 HTML 注释,不能沿用正文的 `<!-- agent-memory:managed -->` 体例):当前仅 `initialized_at`。白名单外的字段**不写**。下方写入算法本身是通用的,未来新增受管字段时只需把字段名加入白名单即可复用。本节只定义"怎么写"。
 
 **写入步骤**:
 
@@ -198,9 +198,9 @@ expected_output: yaml-summary-v1
    - `initialized_at` 已存在 → 不可修改;调用方传入不同值 → ⛔ 不写入,报告冲突
    - `initialized_at` 不存在 → 首次写入补当天 ISO 日期
    - 白名单外字段(含整个 `workspace:` 块):原样保留 key/value/原始顺序,不比较、不改动
-3. **写入前校验**:按 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 校验规则逐条检查;任一不通过 → ⛔ 本步骤不写入,`blockers` 报告具体规则 + 冲突值,frontmatter 保持原状(**不回滚已完成的 AGENTS.md 正文更新,也不阻塞后续步骤**;整体 `status` 按 `partial` 处理,`summary.details.devdocs_frontmatter: blocked`)
+3. **写入前校验**:校验规则逐条检查;任一不通过 → ⛔ 本步骤不写入,`blockers` 报告具体规则 + 冲突值,frontmatter 保持原状(**不回滚已完成的 AGENTS.md 正文更新,也不阻塞后续步骤**;整体 `status` 按 `partial` 处理,`summary.details.devdocs_frontmatter: blocked`)
 
-   **明确(避免 fail-closed 惯性误判为阻塞)**:`devdocs:` 段首次创建时,三层版本号等白名单外必填字段本就不存在(它们的执行接口是 FUTURE)。这种"缺失"**不是** ⛔ 判据——按 [layout-metadata-schema.md §1「缺失时的行为」](../pipeline/references/layout/layout-metadata-schema.md#缺失时的行为),devdocs 段不完整只 ⚠️ 警告 + 建议补全,不阻塞。
+   **明确(避免 fail-closed 惯性误判为阻塞)**:`devdocs:` 段首次创建时,白名单外的字段本就不存在。这种"缺失"**不是** ⛔ 判据——devdocs 段不完整只 ⚠️ 警告 + 建议补全,不阻塞。
 4. 校验通过 → 写入 frontmatter,其余 AGENTS.md 正文流程照常继续
 
 **示例**(`workspace:` 块由 workspace-topology 写入,本 skill 原样保留;本 skill 只补 `devdocs.initialized_at`):
@@ -227,7 +227,7 @@ devdocs:
 | 代码约定、提交格式 | AGENTS.md | 跨工具一致 |
 | 编号状态 (max F/US/AC/T/ADR) | `.claude/rules/devdocs-state.md` | Claude 专属运行态 |
 | 完整需求/设计/测试详情 | 留在 `docs/devdocs/` | 太详细，不适合记忆文件 |
-| `initialized_at` | AGENTS.md devdocs frontmatter | 治理字段，仅调用方显式传入 `devdocs_frontmatter` 时写入；schema 权威见 [layout-metadata-schema.md](../pipeline/references/layout/layout-metadata-schema.md) §1 |
+| `initialized_at` | AGENTS.md devdocs frontmatter | 治理字段，仅调用方显式传入 `devdocs_frontmatter` 时写入 §1 |
 
 ## `--restructure` 工作流程
 

@@ -10,8 +10,6 @@ metadata:
 
 # 测试执行
 
-> ℹ️ 本文件提及的 `@verifies` / `@testcase` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
-
 执行测试套件并生成测试报告，支持全量执行、按类型分层执行、按功能点关联执行和追溯验证。
 
 ## 快速开始

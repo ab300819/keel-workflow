@@ -6,21 +6,11 @@ metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
-reads_layout: [layout.v1, layout.v2]
-writes_layout: layout.v1
-reads_id_scheme: [id.v1, id.v2]
-writes_id_scheme: id.v1
-reads_traceability: [trace.v0, trace.v1]
-writes_traceability: trace.v0
-on_incompatible: block
-migration: /ms-pipeline realign --scope=layout
 ---
 
 # 系统设计
 
-> ℹ️ 编号双轨：v1 项目用 `F`/`ADR`/`AC`，v2 项目 [FUTURE] 用 `FEAT`/`ADR`/`AC`。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
-> ℹ️ 输出路径双轨：v1 写单文件 `02-system-design.md`；v2 [FUTURE] 写 `design/current.md` + `design/decisions/ADR-NNN.md`（current.md ≥ 1500 行拆到 `design/modules/`）。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 基于需求文档创建或更新系统设计文档，支持初始设计和增量设计两种模式。
 
@@ -65,7 +55,7 @@ migration: /ms-pipeline realign --scope=layout
 
 ## 设计模式检测
 
-启动时自动检测：`02-system-design.md` 不存在 → 初始设计模式；存在 → 检查是否有未覆盖的功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX），有则提示增量设计，无则询问用户意图。
+启动时自动检测：`02-system-design.md` 不存在 → 初始设计模式；存在 → 检查是否有未覆盖的功能点（F-XXX），有则提示增量设计，无则询问用户意图。
 
 ## 运行模式
 
@@ -114,7 +104,7 @@ migration: /ms-pipeline realign --scope=layout
 6. 生成 docs/devdocs/02-system-design.md 文档（含审查结论 + 原则校验表 + 关键选型 ADR）
       │
       ▼
-7. 验证覆盖 → 所有功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）都有对应模块/接口
+7. 验证覆盖 → 所有功能点（F-XXX）都有对应模块/接口
       │
       ▼
 8. 有岔路 → 拍板后定稿；无岔路 → 直接定稿
@@ -154,8 +144,8 @@ migration: /ms-pipeline realign --scope=layout
       │
       ▼
 2. 识别变更来源
-      ├── 新功能需求（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）
-      ├── 优化建议（v1: INS-XXX / v2 [FUTURE]: ADR/PATTERN/NOTE-XXX，归类见 ms-insights）
+      ├── 新功能需求（F-XXX）
+      ├── 优化建议（INS-XXX，归类见 ms-insights）
       └── 技术改进
       │
       ▼
@@ -327,7 +317,7 @@ docs/devdocs/
 1. **目标平台** - 平台、版本要求、部署环境
 2. **架构概览** - 高层架构图（**Mermaid**）
 3. **技术选型** - 技术选择及理由
-4. **模块设计** - 模块职责与依赖，**标注关联功能点**（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）
+4. **模块设计** - 模块职责与依赖，**标注关联功能点**（F-XXX）
 5. **核心接口** - **面向接口 (签名 + 行为契约)**: 方法签名 + 前置条件/后置条件/错误契约（**严禁包含具体实现逻辑**），标注关联功能点（v1: F-XXX / v2: FEAT-XXX）
 6. **设计模式** - 应用的模式及理由
 7. **代码落位原则** - 模块落位/接口-实现分离/命名约束（非完整目录树；详见 `references/code-structure-conventions.md`）

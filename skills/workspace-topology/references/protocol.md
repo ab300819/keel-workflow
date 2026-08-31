@@ -12,7 +12,7 @@ spec_version: workspace-topology.v2
 
 # 工作区拓扑协议（inline / shell / linked）
 
-本文是工作区拓扑维度的协议正文。该维度描述**文档仓与代码仓的拓扑关系**，与 `docs_layout_version` / `id_scheme` / `traceability_version` 三层版本号正交——docs 内部结构不因模式而变，不进 layout 版本矩阵。
+本文是工作区拓扑维度的协议正文。该维度描述**文档仓与代码仓的拓扑关系**——docs 内部结构不因模式而变。
 
 本文不覆盖：入口、声明 schema、校验的交互形态（见 [../SKILL.md](../SKILL.md)），也不覆盖探测步骤、迁移流程、故障修复手册（见 [migration.md](migration.md)）。
 
@@ -31,9 +31,6 @@ workspace:
   mode: shell                  # 枚举 inline|shell|linked；无此块时问用户，不缺省
   code_roots: [web, api]       # shell / linked 时必填，≥1 项；shell 元素为 submodule name，linked 须给 path
 devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有 workspace: 块
-  docs_layout_version: layout.v1
-  id_scheme: id.v1
-  traceability_version: trace.v0
   initialized_at: "2026-08-05"
 ---
 ```
@@ -110,7 +107,7 @@ devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有
 | 子模块内 `AGENTS.md` / `CLAUDE.md` | 子模块 | **不主动创建、不主动改**；已存在则读取并尊重其编码纪律 |
 | `code-self-describe` 的模块级 `CLAUDE.md` + 文件头注释 | — | shell 下**默认跳过**，仅 `--force-code-docs` 显式启用 |
 | dev-workflow 流程内的「自描述更新」步骤 | — | 同上，跳过时在 yaml 摘要里 ℹ️ 记录跳过原因 |
-| layout.v2 的 `@satisfies` / `@verifies` 代码注释 | — | shell 下**禁用**。本仓现役 layout.v1 本就未启用，此条为前瞻约束，防未来升 v2 时污染上游 |
+| `@satisfies` / `@verifies` 代码注释 | — | shell 下**禁用**——子模块是开源上游，DevDocs 元信息不得进入 |
 | `.claude/settings.local.json`、`.remember/` | 外壳仓 | 参考仓既有实践 |
 
 **违约检测**：dev-workflow / bugfix 提交前，对每个变更子模块跑 `git status --porcelain`，**列出全部变更路径清单**交用户判断（⚠️ AskUserQuestion：提交 / 排除 / 终止）。**不预先判定哪条是「非源码」** —— 上游仓目录约定各异，静态白名单会误伤。裁法与 §4 `workspace/root-residue` 一致。

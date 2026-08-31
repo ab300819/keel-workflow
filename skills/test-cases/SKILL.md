@@ -6,14 +6,6 @@ metadata:
   patterns: [generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
-reads_layout: [layout.v1, layout.v2]
-writes_layout: layout.v1
-reads_id_scheme: [id.v1, id.v2]
-writes_id_scheme: id.v1
-reads_traceability: [trace.v0, trace.v1]
-writes_traceability: trace.v0
-on_incompatible: block
-migration: /ms-pipeline realign --scope=layout
 ---
 
 # 测试用例设计
@@ -87,9 +79,7 @@ migration: /ms-pipeline realign --scope=layout
 
 ## 编号规范
 
-> ℹ️ 测试编号（UT/IT/E2E/Journey）**v1 和 v2 一致**（layout.v2 保留）；引用其他类型编号（如 AC / FEAT）走双轨，详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
-> ℹ️ 输出路径双轨：v1 写 `03-test-{unit,integration,e2e}.md` 三文件；v2 [FUTURE] 写 `tests/{UT,IT,E2E}/<ID>.md` 多文件 + 各自 `index.md`。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 | 类型 | 前缀 | 格式 | 示例 |
 |------|------|------|------|
@@ -221,7 +211,7 @@ docs/devdocs/
 
 ### 完整格式（开发阶段，含代码位置）
 
-> 代码位置由 `/ms-sync` 自动填充，基于代码中的 `@satisfies`/`@verifies` 标注扫描（**layout.v1 legacy** — layout.v2 起改用 `traceability.yml`，扫描机制由 [FUTURE] `/ms-sync --extract-trace` 替代）。
+> 代码位置由 `/ms-sync` 自动填充，基于代码中的 `@satisfies`/`@verifies` 标注扫描。
 
 ```markdown
 | AC 编号 | 验收标准 | 测试编号 | 入口代码 | 测试代码 | 状态 |
@@ -234,10 +224,10 @@ docs/devdocs/
 
 ### 代码位置字段说明
 
-| 字段 | 来源（layout.v1 legacy） | 说明 |
+| 字段 | 来源 | 说明 |
 |------|------|------|
-| 入口代码 | `@satisfies AC-XXX` 标注 | 实现该 AC 的方法位置（v2 起读 `traceability.yml`）|
-| 测试代码 | `@verifies AC-XXX` 标注 | 验证该 AC 的测试位置（v2 起读 `traceability.yml`）|
+| 入口代码 | `@satisfies AC-XXX` 标注 | 实现该 AC 的方法位置 |
+| 测试代码 | `@verifies AC-XXX` 标注 | 验证该 AC 的测试位置 |
 
 ### 状态说明
 

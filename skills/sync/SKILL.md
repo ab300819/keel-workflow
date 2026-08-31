@@ -49,7 +49,6 @@ metadata:
 
 - `check`：默认流程内置检查，不再暴露 `/ms-sync --check`
 - `absorb`：默认流程内置低风险吸收，不再暴露 `/ms-sync --absorb`
-- `extract-trace` / `refresh-traceability`：由 `/ms-pipeline realign --scope=layout` Phase 4 调度
 - `schema-drift`：迁移到 `/ms-verify --schema-drift`，sync 仅在 health report 合并 verify 产出的 drift 结果
 
 ### 模式对比
@@ -127,7 +126,7 @@ metadata:
 
 无参数调用时自动执行三段流程：
 
-1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注（**layout.v1 legacy** — layout.v2 起改读 `traceability.yml`，迁移由内部编排接口触发），与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](references/trace-mode.md)
+1. **trace 阶段**：扫描代码中的 `@satisfies`/`@verifies` 标注，与文档交叉验证，更新追溯矩阵代码位置列。详见 [trace-mode.md](references/trace-mode.md)
 2. **audit 阶段**：检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号。详见 [audit-mode.md](references/audit-mode.md)
 3. **check 阶段**：输出偏差报告与 health report；schema drift 诊断统一委托 `/ms-verify --schema-drift`，本 Skill 只合并其结果。
 

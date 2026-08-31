@@ -2,7 +2,7 @@
 
 > 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
 >
-> 与 [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) 的区别：ssot-lint 治理 layout.v2 的 SSOT 强约束（v1 报 `not_applicable`）；本文件 6 条 rule **layout.v1+v2 通用**，专门解决 devdocs-state 膨胀 + 死链两类痛点。
+> 本文件 6 条 rule 专门解决 devdocs-state 膨胀 + 死链两类痛点。
 
 ## 定位
 
@@ -10,8 +10,7 @@
 |---------|------|
 | health scope 入口与执行接口 | [realign-scope-health.md](realign-scope-health.md) |
 | **本文件**：[新增] rule 的检测算法、严重度、修复路径（清单见下方 Rule 集表）| health-lint-implementation.md |
-| layout.v2 专属 SSOT 强约束（12 条）| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) |
-| 既有偏差评分（layout.v1 legacy）| `../../sync/references/health-scoring.md` |
+| 既有偏差评分 | `../../sync/references/health-scoring.md` |
 
 ## Rule 集（[新增] 6 条）
 
@@ -24,7 +23,7 @@
 | `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
 | `submodule/pointer-drift` | ⛔ / ⚠️ | a 结构正确性 | v1+v2（仅 shell）| ❌（manual_decision）|
 
-> 6 条全部 [新增]，本 commit 推到可执行；不依赖 layout.v2 启用。layout.v1 项目（mic-en 等）可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+> 6 条全部 [新增]，可执行。项目可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
 
 ---
 
@@ -238,7 +237,6 @@ Phase A：构建编号定义索引（definition index）
        - heading：^(#{1,4})\s+(F|US|AC|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b
        - 表格行（首列）：^\|\s*(F|US|AC|...)-\d+[a-z]?\s*\|
        - 列表项 + 状态：^[-*]\s+\*?\*?(F|US|...)-\d+[a-z]?\b
-       - frontmatter id 字段（layout.v2）：^id:\s+(F|US|...)-\d+
   3. 收集为 index：{ id: <编号>, defined_in: [<file>:<line>, ...] }
   4. 从 state.md 的"当前最大"列收集 max_caps：{ F: F-028, AC: AC-210, ... }（仅用于 phase B 的 "out-of-range" 区分）
 
@@ -287,7 +285,7 @@ Phase B：扫描引用 + 范围编号展开
 
 ### `design/adr-only-revision`
 
-**目的**：检测系统设计文档（`02-system-design*.md` 或 layout.v2 `design/current.md`）的增量修订中，**ADR 章节有新增/修改但正文相关章节无同期更新**的反模式，对应 system-design/SKILL.md:336 的硬约束 `⛔ 禁止继续（增量设计）：仅追加 ADR 而正文相关章节未更新`。
+**目的**：检测系统设计文档（`02-system-design*.md`）的增量修订中，**ADR 章节有新增/修改但正文相关章节无同期更新**的反模式，对应 system-design/SKILL.md:336 的硬约束 `⛔ 禁止继续（增量设计）：仅追加 ADR 而正文相关章节未更新`。
 
 **背景**：用户实战反馈"每次修订只加增量修订记录、不改正文，正文偏差越来越大"。原硬约束依赖人工/Agent 自检，本 rule 把它落地为可自动扫描的检测。
 
@@ -295,7 +293,6 @@ Phase B：扫描引用 + 范围编号展开
 
 - `docs/devdocs/02-system-design.md` 主文档
 - `docs/devdocs/02-system-design-api.md` / `02-system-design-data.md`（v1 拆分文件）
-- `docs/devdocs/design/current.md`（layout.v2 [FUTURE]）
 
 **算法**（基于 line-range × heading-map，不依赖 git diff hunk header — 仓库无 markdown diff driver，hunk header 通常仅为 `@@ -x,y +x,y @@`）：
 
@@ -415,7 +412,7 @@ Phase B：扫描引用 + 范围编号展开
 
 ### Baseline 文件
 
-存量项目首次扫描违规量大，全量 ⛔ 阻断不可用。引入 baseline 机制（参考 ssot-lint baseline 设计但更轻量）：
+存量项目首次扫描违规量大，全量 ⛔ 阻断不可用。引入轻量 baseline 机制：
 
 位置：`<repo_root>/.claude/rules/.health-baseline.yml`（推荐 gitignore）
 
@@ -521,23 +518,9 @@ notes: |
 
 不提供单独的 `--health-lint` 入口，统一通过 health scope 调用。
 
-## 与 ssot-lint 的去重
-
-| 关注点 | 本文件（health-lint） | ssot-lint（layout.v2）|
-|--------|---------------------|---------------------|
-| 适用 layout | v1 + v2 | 仅 v2 |
-| 检测对象 | devdocs-state.md + 全产物死链 | layout.v2 owner / aliases.yml / traceability.yml 等 |
-| size 检测 | 按 byte（针对 state.md）+ 按行（针对全产物的单行）| 按行数（current.md ≥ 1500 / file ≥ 3000 / modules ≥ 800）|
-| restatement 检测 | 不做（v2 才有 SSOT 强约束）| `ssot/no-restatement` |
-| 调用入口 | `--scope=health` | `--scope=layout` 或独立 `--ssot-lint` |
-
-未来 layout.v2 启用后，`ssot/current-md-size` 与本文件 `state/*` 互补，不重叠。
-
 ## 历史项目兼容
 
-- **mic-en 等 layout.v1 项目**：本 6 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
-- 不依赖 `aliases.yml` / `traceability.yml`（这两个文件是 layout.v2 产物）。
-- 不依赖 `agents.md devdocs.docs_layout_version` 字段。
+- 本 6 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
 
 ## 变更日志
 

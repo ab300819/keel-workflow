@@ -6,14 +6,6 @@ metadata:
   patterns: [pipeline, reviewer]
   interaction: multi-turn
   handoff: yaml-summary-v1
-reads_layout: [layout.v1, layout.v2]
-writes_layout: layout.v1
-reads_id_scheme: [id.v1, id.v2]
-writes_id_scheme: id.v1
-reads_traceability: [trace.v0, trace.v1]
-writes_traceability: trace.v0
-on_incompatible: block
-migration: /ms-pipeline realign --scope=layout
 spec_version: 3.1
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
@@ -33,9 +25,7 @@ spec_version_notes: |
 
 > 本 skill 遵循共享约束 SSOT：门控标记、yaml-summary-v1、Task 委托、用户确认、Recovery 格式、只读 / dry-run、FUTURE 三态、realign / spec_version 见 [skills/_shared/constraints.md](../_shared/constraints.md)。本文件只描述 ms-dev-workflow 私有规则（11 步流程、Sprint Contract、headless 安全、Step 1.5 五项证据、Phase 1-4 外部审查、EXT 状态机、Commit 1/2 双 commit）。
 >
-> ℹ️ 编号双轨：v1 项目用 `T-XX`，v2 项目 [FUTURE] 用 `TASK-XX`。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
-> ℹ️ 输入路径双轨：v1 读 `04-dev-tasks.md` 找任务；v2 [FUTURE] 读 `tasks/<ID>.md` + 写回状态到该文件。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 > **权威文件唯一原则**（spec_version 1.1 起强制）：
 > - Phase 4 / 并行调度 / `diff_hash` / 重跑机制 → [verification-flow.md](references/verification-flow.md) 唯一权威
@@ -63,7 +53,7 @@ spec_version_notes: |
 
 ## 触发条件
 
-用户开始/批量/继续开发任务（v1: T-01 / T-01~T-05 / F-001 / 「把剩下的都跑完」；v2 [FUTURE]: TASK-01 / TASK-01~TASK-05 / FEAT-001）；关键词如"开发任务"、"执行任务"、"开始 T-XX"、"批量开发"、"继续开发"、"无人值守"。
+用户开始/批量/继续开发任务（T-01 / T-01~T-05 / F-001 / 「把剩下的都跑完」）；关键词如"开发任务"、"执行任务"、"开始 T-XX"、"批量开发"、"继续开发"、"无人值守"。
 
 ## 运行模式
 
@@ -71,11 +61,11 @@ spec_version_notes: |
 
 | 指定符 | 示例 | 说明 |
 |--------|------|------|
-| 单任务 | `T-03`（v1）/ `TASK-03`（v2 [FUTURE]）| 执行单个任务（现有行为） |
-| 范围 | `T-01~T-05`（v1）/ `TASK-01~TASK-05`（v2 [FUTURE]）| 执行范围内所有任务 |
-| 枚举 | `T-01,T-03,T-07`（v1）/ `TASK-01,TASK-03,TASK-07`（v2 [FUTURE]）| 执行指定任务列表 |
-| 功能点 | `F-001`（v1）/ `FEAT-001`（v2 [FUTURE]）| 通过 `关联需求` 字段反查所有关联任务 |
-| 用户故事 | `US-001`（v1）/ `STORY-001`（v2 [FUTURE]）| 同上 |
+| 单任务 | `T-03` | 执行单个任务（现有行为） |
+| 范围 | `T-01~T-05` | 执行范围内所有任务 |
+| 枚举 | `T-01,T-03,T-07` | 执行指定任务列表 |
+| 功能点 | `F-001` | 通过 `关联需求` 字段反查所有关联任务 |
+| 用户故事 | `US-001` | 同上 |
 | 轻量入口 | 直接描述任务 + 验收标准 | 无 04 文档也可进入:按 [inline-entry.md](references/inline-entry.md) 物化 stub(01 AC 条目 + 04 任务条目)后转单任务路径;review_profile 下限 guarded |
 
 > **协议参数不在用户面。** 无人值守 / 自动提交 / 审查档位 / 外部审查轮次 / 上下文重置 / 单次提交 / 跳过追溯，都由编排层从你的自然语言归一化后下传（[`task/intent-normalization`](../_shared/constraints.md)），你不需要记参数名。
@@ -99,7 +89,7 @@ spec_version_notes: |
 |------|--------|
 | S1 读取任务定义 | 从 `04-dev-tasks.md` 获取任务、F/AC/UT/IT/E2E 关联 |
 | S1.5 Sprint Contract | Test Agent 基于 AC + 当前代码上下文生成可执行验收契约（函数签名、返回值类型、边界条件、异常场景）；编排器裁剪过度契约、补足遗漏契约，确认后作为测试输入约束 |
-| S2-S3 骨架 | 接口骨架 + 测试骨架；layout.v1 legacy 使用 `@requirement`/`@satisfies`/`@verifies`/`@testcase`，layout.v2 改用 `traceability.yml` |
+| S2-S3 骨架 | 接口骨架 + 测试骨架，含 `@requirement`/`@satisfies`/`@verifies`/`@testcase` 标注 |
 | S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0`；注释遵循 [`/code-quality` 注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式/来源记录式注释，含修复循环），日志遵循 [日志规范](../code-quality/SKILL.md#日志规范)（安全红线/级别纪律/禁 log-and-throw）|
 | S8 完成检查 | 质量地板 5 条 + AC 完备性表（fast 证据摘要 / audit 完整 AC 类型×证据矩阵）+ 声称 vs 实际 diff 交叉验证；缺证据或未关联大块 diff → ⛔ 禁止继续 |
 | S9 前置验证 | guarded/audit `/ms-verify --impl`；fast 仅质量地板（不跑前置验证）；🟢 UI 任务有设计稿时另跑 `/ms-verify --ui --impl` 对齐设计稿（不随 profile 变） |
@@ -111,11 +101,10 @@ spec_version_notes: |
 
 步骤状态（S1~S11 + S1.5）用于断点恢复；详细矩阵、S12 后置同步和状态标记见 [execution-flow.md](references/execution-flow.md)。
 
-## 代码追溯标注规范（layout.v1 legacy）
+## 代码追溯标注规范
 
-> ⚠️ **layout.v2 起改用 [traceability.yml](../pipeline/references/layout/layout-metadata-schema.md#4-traceabilityyml-schematracev1) 外置追溯**。**禁止新增** `@satisfies` / `@verifies` 注释；legacy retained 注释允许保留直到 layout.v3。
 >
-> **layout.v1 标注类型**（仅历史代码兼容）：`@requirement F-XXX`（功能点）/ `@satisfies AC-XXX`（接口）/ `@verifies AC-XXX`（测试用例）/ `@testcase UT/IT/E2E-XXX`（测试编号）。**强制性**：公共接口 + 测试文件每用例**必须**标注；内部实现可选。
+> **标注类型**：`@requirement F-XXX`（功能点）/ `@satisfies AC-XXX`（接口）/ `@verifies AC-XXX`（测试用例）/ `@testcase UT/IT/E2E-XXX`（测试编号）。**强制性**：公共接口 + 测试文件每用例**必须**标注；内部实现可选。
 
 ## 自顶向下开发模式
 
@@ -329,15 +318,13 @@ Impl Agent 完成后，编排器执行：测试文件不可变校验（diff）�
 
 遵循 `/commit-convention` 规范，格式如下：
 
-> ℹ️ 提交标题与 `关联` 字段按项目 `AGENTS.md devdocs.id_scheme` 选择：v1 用 `T-XX/F-XXX/US-XXX`，v2 [FUTURE] 用 `TASK-XX/FEAT-XXX/STORY-XXX`。`AC/UT/IT/E2E` 编号双轨一致。
-
 ```markdown
-<type>(T-XX): <任务名称>   # v1；v2 [FUTURE] 用 (TASK-XX)
+<type>(T-XX): <任务名称>
 
 - <完成内容1>
 - <完成内容2>
 
-关联: F-XXX, AC-XXX        # v1；v2 [FUTURE] 用 FEAT-XXX/STORY-XXX
+关联: F-XXX, AC-XXX
 测试: UT-XXX, IT-XXX 通过
 External-Review-Verdict: <EXT_REVIEWED | EXT_UNRESOLVED | EXT_BLOCKED>（Phase 4 触发时必填，含 rounds 和 health_scores）
 Skip-Trace-Reason: <单任务使用 --skip-trace 时填写；其他情况省略此行>
@@ -358,7 +345,7 @@ Exploration-Mode: <探索模式设为 true 并登记证据/豁免原因；其他
 
 | details 字段 | 含义 |
 |---|---|
-| `task` | 任务编号，v1 `T-XX`，v2 [FUTURE] `TASK-XX` |
+| `task` | 任务编号 `T-XX` |
 | `commits.code` / `commits.docs` | Commit 1 代码提交、Commit 2 文档提交 |
 | `test_summary` | passed/failed/coverage |
 | `blockers_resolved` / `suggestions_skipped` | 本任务处理结果 |

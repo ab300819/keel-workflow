@@ -6,21 +6,11 @@ metadata:
   patterns: [generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
-reads_layout: [layout.v1, layout.v2]
-writes_layout: layout.v1
-reads_id_scheme: [id.v1, id.v2]
-writes_id_scheme: id.v1
-reads_traceability: [trace.v0, trace.v1]
-writes_traceability: trace.v0
-on_incompatible: block
-migration: /ms-pipeline realign --scope=layout
 ---
 
 # 开发任务
 
-> ℹ️ 编号双轨：v1 项目用 `T-XX`（关联 `F`/`US`），v2 项目 [FUTURE] 用 `TASK-XX`（关联 `FEAT`/`STORY`）。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
-> ℹ️ 输出路径双轨：v1 写单文件 `04-dev-tasks.md`；v2 [FUTURE] 写多文件 `tasks/TASK-NNN.md` + `tasks/index.md`（按 sprint 分组）。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 > 视角：项目经理 — 关注任务粒度合理性、依赖可行性与交付优先级，而非技术偏好。
 
@@ -88,7 +78,7 @@ migration: /ms-pipeline realign --scope=layout
 
 ### 分批原则
 
-按功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）分批设计任务，每批完成一个功能点的全部任务拆分。
+按功能点（F-XXX）分批设计任务，每批完成一个功能点的全部任务拆分。
 
 ### 质量锚点
 
@@ -189,12 +179,12 @@ docs/devdocs/
 - [ ] **文件路径必须具体，不能写"相关文件"**
 - [ ] **必须提供依赖关系图**
 - [ ] 优先级：P0（阻塞）、P1（重要）、P2（次要）
-- [ ] 任务编号格式：v1 用 `T-XX` / v2 [FUTURE] 用 `TASK-XX`（顺序编号；按项目 `AGENTS.md devdocs.id_scheme` 选择）
+- [ ] 任务编号格式：`T-XX`（顺序编号）
 - [ ] 后批次任务详细程度不低于首批次（TAR 完整性、路径具体性、粒度一致性）
 
 ### 需求追溯约束
 
-- [ ] **每个任务必须关联功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）和验收标准 (AC-XXX)**
+- [ ] **每个任务必须关联功能点（F-XXX）和验收标准 (AC-XXX)**
 - [ ] **每个任务必须关联测试用例 (UT/IT/E2E-XXX)**
 - [ ] 测试用例来自 `03-test-*.md` 文档
 - [ ] **TDD 执行步骤必须明确引用 AC 编号与对应的测试编号**
@@ -210,7 +200,6 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 ### Generator 自检（用户确认前自动执行）
 
 在呈现给用户确认前，加载 [references/tar-rubric.md](references/tar-rubric.md) 并自动验证：
-
 
 自检不通过项自动修复后再呈现用户，不增加用户交互步骤。
 
@@ -264,12 +253,12 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 用户确认任务文档后：
 1. 询问用户是否开始开发
 2. 如是，使用 TodoWrite 添加所有任务到追踪列表
-3. 建议从第一个任务开始，或使用批量模式：v1 `/ms-dev-workflow T-01~T-XX` / v2 [FUTURE] `/ms-dev-workflow TASK-01~TASK-XX`
+3. 建议从第一个任务开始，或使用批量模式：`/ms-dev-workflow T-01~T-XX`
 4. **执行任务时必须使用 `/ms-dev-workflow`**
-5. 支持按功能点（v1: `F-XXX` / v2 [FUTURE]: `FEAT-XXX`）或用户故事（v1: `US-XXX` / v2 [FUTURE]: `STORY-XXX`）批量执行
+5. 支持按功能点（`F-XXX`）或用户故事（`US-XXX`）批量执行
 
-> **重要**（layout.v1 legacy）：直接写代码而不使用 dev-workflow 会导致代码缺失 `@satisfies`/`@verifies` 标注，
-> 使 `/ms-sync` 无法自动追溯，破坏文档↔代码的闭环。layout.v2 起改用 `traceability.yml` 外置追溯。
+> **重要**：直接写代码而不使用 dev-workflow 会导致代码缺失 `@satisfies`/`@verifies` 标注，
+> 使 `/ms-sync` 无法自动追溯，破坏文档↔代码的闭环。
 
 ## 参考资料
 

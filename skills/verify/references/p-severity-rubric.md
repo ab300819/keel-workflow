@@ -1,7 +1,5 @@
 # P 级别判定标准（P-Severity Rubric）
 
-> ℹ️ 本文件提及的 `@satisfies` / `@verifies` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
-
 所有维度发现统一按优先级分级。
 
 > ⚠️ 术语消歧：本文 P 级 = ms-verify **问题严重度**；与 ms-test-cases / ms-dev-tasks / ms-insights 的 P0-P2 **优先级**（用例/任务/洞察排序）同名不同义，互不映射。

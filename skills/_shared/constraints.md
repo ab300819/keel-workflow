@@ -5,11 +5,10 @@ scope: 跨 skill 协议层共性
 related:
   - AGENTS.md（yaml-summary-v1 原始定义）
   - skills/prd/references/governance/prd-revision-policy.md（PRD 修订边界）
-  - skills/pipeline/references/layout/*（DevDocs 治理 SSOT）
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
   - skills/_shared/runlog.md（运行日志：形状、纪律、判决点）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v7
+spec_version: shared-constraints.v8
 ---
 
 # 共享约束 SSOT
@@ -31,7 +30,7 @@ spec_version: shared-constraints.v7
   ⛔ **不得因为「不知道该放哪」而放进本文。** 那是协议层膨胀的唯一真实成因——它让本文从「消除重复」变成「制造依赖」。
 - `doc/no-immediate-impact`：现有 `skills/*/SKILL.md` 不会因本文创建而自动改变；引用切换是后续独立任务。
 - `doc/reference-over-copy`：已有详细 spec 优先保留在原位置，本文只声明协议层共性与指针。
-- `doc/private-rule-boundary`：skill 私有规则不得提升到共享层；例如 Sprint Contract、verify P 级评分、具体 layout 迁移算法仍归各自 skill 或 references 文件维护。
+- `doc/private-rule-boundary`：skill 私有规则不得提升到共享层；例如 Sprint Contract、verify P 级评分仍归各自 skill 或 references 文件维护。
 - `doc/project-rule-boundary`：**项目实战发现不得提拔为 skill 级默认强制约束**。单项目的语言 / 框架 / 业务域细节（类名、字段名、分层契约、设计稿锚点、该项目的 commit 与编号）一律留在项目侧 `docs/devdocs/patterns/verify-blindspots.md` 等插件位，由消费方 skill 自动加载。判据：**规则的适用域必须 ≥ 它的强制域**——一个只在某语言/某业务成立的规则挂上 ⛔ 全局强制，会让所有不适用的项目误阻断，或迫使 agent 学会无视 ⛔ 标记（后者腐蚀全体系阻断标记的可信度）。skill 侧只保留语言与领域中立的判定 + 一句"插件位会被加载"。与 `doc/private-rule-boundary` 同向：前者管 skill→shared，本条管 project→skill。
 
 ## 1. 门控标记 SSOT
@@ -179,13 +178,13 @@ expected_output: yaml-summary-v1
 
 - `future/use-current`：描述当前仓库实际行为、当前默认路径、已存在命令时，用 `[现状]`。
 - `future/use-new`：描述本次新增的规范文本、字段或产物，且已在本仓库落地时，用 `[新增]`。
-- `future/use-future`：命令入口、runtime 检测、迁移执行、自动修复、CI 集成等尚未实现时，必须标 `[FUTURE]`。
+- `future/no-live-path-cost` [新增]：`[FUTURE]` **只许**表示**能力边界**（「本 skill 不做这件事」，永久有效、无到期日）。⛔ **不许**表示**待建工程**——「入口已声明、逻辑待落地」只有两个去处：现在做，或删掉入口。
+  - **封存不得在现役路径上留痕**：想清楚了但暂不做的东西，只许以一句备注存在于设计文档或 `spec_version_notes`；⛔ 不许声明命令入口、不许加 frontmatter 字段、不许在正文写「v1 这样 / v2 [FUTURE] 那样」的双轨句。
+  - 判据是**税**——这条封存有没有让现役读者付成本。付了就是非法，无论意图多合理。
+  - 依据：layout.v2 挂了三个多月、一次没跑过，代价是 40 处双轨句 + 80 行 frontmatter 分摊到 10 个现役 skill；而 worktree 并行同样是封存，只有设计文档里一句备注，零税。
 - `future/no-runtime-assumption`：`[FUTURE]` 不阻塞阅读 spec，但阻塞实际调用；调用时应 fail-safe 或提示执行逻辑待落地。
-- `future/source-of-truth`：layout 系列 FUTURE 执行状态以 `skills/pipeline/references/layout/docs-layout-migration.md` 的“执行接口落地状态（FUTURE）”为指针，不在本文复制。
 
 ### 差异提示
-
-- `future/difference-layout-id-trace`：layout/id/trace 双轨包含大量 skill 私有上下文；共享层只统一 `[FUTURE]` 标注语义，不统一具体迁移算法、编号前缀或 trace 写入规则。
 
 ## 5. 用户确认 / AskUserQuestion 规则
 
@@ -291,18 +290,15 @@ expected_output: yaml-summary-v1
 
 ### 升级入口统一
 
-- `realign/single-entry`：所有文档体系升级与健康度审查动作统一通过 `/ms-pipeline realign [--scope=<spec|layout|prd-mapping|health>]` 入口，不再以散落 flag 形式暴露给用户。
-- `realign/scope-enum-authority`：scope 枚举白名单与执行接口指针位于 `skills/pipeline/references/realign.md` § scope 专用执行接口；新增 scope 需 bump `realign.md` 的 `spec_version` 并同步 Migration Matrix。当前白名单：`spec` / `layout` / `prd-mapping` / `health`。
+- `realign/single-entry`：所有文档体系升级与健康度审查动作统一通过 `/ms-pipeline realign [--scope=<spec|prd-mapping|health>]` 入口，不再以散落 flag 形式暴露给用户。
+- `realign/scope-enum-authority`：scope 枚举白名单与执行接口指针位于 `skills/pipeline/references/realign.md` § scope 专用执行接口；新增 scope 需 bump `realign.md` 的 `spec_version` 并同步 Migration Matrix。当前白名单：`spec` / `prd-mapping` / `health`。
 - `realign/no-direct-user-call`：各 skill 内部 `--realign` 子动作（如 `/ms-system-design --realign=layer3-only`）属编排实现细节，不作为用户面命令暴露；用户面只承认 `/ms-pipeline realign` 入口。
-- `realign/deprecated-alias-one-version`:已存在的旧入口（如 `/ms-pipeline realign --docs-layout`）保留一个版本作为 deprecated alias，并在 SKILL.md 文档与运行时输出标注 deprecated；下一版本移除。
-- `realign/iteration-policy-internal`：`ms-iteration-policy` 是横切治理 skill，由 `/ms-pipeline realign --scope=layout` 编排调度，不作为用户直接调用入口；详见 `skills/iteration-policy/SKILL.md`。
+- `realign/deprecated-alias-one-version`:已存在的旧入口保留一个版本作为 deprecated alias，并在 SKILL.md 文档与运行时输出标注 deprecated；下一版本移除。
 
 ### 指针
 
 - `realign/shared-contract-pointer`：跨 skill realign 共性见 `skills/pipeline/references/realign.md`。
 - `realign/skill-specific-pointer`：各 skill 细则见 `skills/<skill>/references/realign.md`，本文不复制具体矩阵。
-- `realign/layout-pointer`：layout/id/trace 治理见 `skills/pipeline/references/layout/*`。
-- `realign/layout-execution-pointer`：`--scope=layout` 执行接口见 `skills/pipeline/references/realign-scope-layout.md`。
 - `realign/health-execution-pointer`：`--scope=health` 执行接口见 `skills/pipeline/references/realign-scope-health.md`。
 - `realign/prd-revision-pointer`：PRD 修订边界见 `skills/prd/references/governance/prd-revision-policy.md`。
 
@@ -318,14 +314,14 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 | 执行层 | 现在做什么、做到哪（任务、状态） | `04-dev-tasks*.md` + `.claude/rules/devdocs-state.md` |
 | 数据层 | 可追溯的事实（编号、链路、矩阵） | 追溯矩阵 / traceability / 编号体系 |
 
-- `layered-memory/v1-structural`：layout.v1 已为三层提供各自的 owner 位置（上表），原则的**结构基础已存在**；但这是位置约定，**不等于自动强制**。
+- `layered-memory/v1-structural`：编号文件结构已为三层提供各自的 owner 位置（上表），原则的**结构基础已存在**；但这是位置约定，**不等于自动强制**。
 - `layered-memory/symptom-rules`：现役 rule 只能捕捉**部分典型退化症状**——`state/total-size-cap`、`state/line-length-cap`（执行状态膨胀塞爆一个文件）、`design/adr-only-revision`（决策被就地改写、与正文混编）；**不能通用检测三层混写**（短决策理由塞进 state、数据明细塞进任务文件、非 ADR 章节混写都可能不触发）。把"抓文件膨胀"等同于"抓三层混写"是夸大。
 - `layered-memory/review-lens`：因此三层分离**主要靠人工 review lens 承载，不是自动兜底**。审查时发现某文件同时承载两层以上内容（典型：state 文件里塞决策理由或数据明细），即提示拆到对应层。
-- `layered-memory/no-auto-detection`：**不做**"关键词扫描自动判定章节混杂"——即原 health 维度 e / Plan B 检测面。该方向已**废弃**（`[废弃]`，原标 [FUTURE]）：复杂度不匹配收益，skill 宜简。**不再保留为 FUTURE 触发项**（区别于 trace.v1 / layout.v2 / 维度 d，后三者仍为封存 FUTURE）。
+- `layered-memory/no-auto-detection`：**不做**"关键词扫描自动判定章节混杂"——即原 health 维度 e / Plan B 检测面。该方向已**废弃**（`[废弃]`，原标 [FUTURE]）：复杂度不匹配收益，skill 宜简。**不再保留为 FUTURE 触发项**。
 
 ## 10. 工作区拓扑（inline / shell / linked）
 
-> 本节**仅声明跨 skill 共性与指针**。完整协议正文、入口与迁移手册归 [workspace-topology](../workspace-topology/SKILL.md) —— 该维度是**仓库级事实**，不是 DevDocs 事实，故不住在本文也不住在 layout 元数据里。
+> 本节**仅声明跨 skill 共性与指针**。完整协议正文、入口与迁移手册归 [workspace-topology](../workspace-topology/SKILL.md) —— 该维度是**仓库级事实**，不是 DevDocs 事实，故不住在本文。
 
 - `workspace/single-entry`：工作区拓扑的唯一入口是 `/workspace-topology`（`inspect` / `reconcile` / `migrate`）。
 - `workspace/default-inline`（id 沿用历史命名，语义已反转）：**`inline` 不是兜底默认，它需要正面证据。** 无声明时**问用户**定出 `mode` 与代码根（见 [workspace-topology/SKILL.md § 无声明时：问，不猜](../workspace-topology/SKILL.md#无声明时问不猜)），答案落声明后不再问。⛔ 不做自动判定——仓库形状是产品决策。已落声明的项目行为完全不变。
@@ -358,14 +354,12 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 
 ### 已标注语义差异点
 
-- `diff/layout-id-trace`：layout/id/trace 双轨在不同 skill 中混有读写布局、编号前缀、trace 来源等私有上下文；本文只统一 `[FUTURE]` 与“引用而非复制”的协议层表达。
 - `diff/readonly-generated-output`：`ms-codebase-insight` 是只读分析，但会写自身分析产物；`ms-onboard` 同时有 `--read` 与 `--update`，不能统一成“永不写入”。
 - `diff/numbering-scope`：编号唯一/续编规则在 FR、F、US、AC、UT、IT、E2E、T、INS 等对象间来源和续编策略不同，不能在本文强行统一。
 
 ### 本次跳过的规则
 
 - `skip/numbering-unique`：编号唯一/续编只保留指针，不提升为共享细则；理由是 PRD 编号、DevDocs 编号、测试编号和任务编号各有不同 SSOT 与链路。
-- `skip/layout-algorithm`：layout 拆分、aliases、traceability 写入、SSOT lint 算法不提升；理由是已有 `skills/pipeline/references/layout/*` 专门治理。
 - `skip/sprint-contract`：Sprint Contract 不提升；理由是 `ms-dev-workflow` 私有执行契约。
 - `skip/verify-scoring`：verify P 级评分、health score 不提升；理由是 `ms-verify` 私有评估模型。
 

@@ -5,9 +5,9 @@
 
 ## 定位
 
-本文件定义 `--scope=health` 的执行接口，让 LLM 能按统一入口对 DevDocs 文档体系做**主动健康度审查**，覆盖四大维度并把分散在 ms-verify / ms-sync / ssot-lint 的检查能力收敛为单一报告。
+本文件定义 `--scope=health` 的执行接口，让 LLM 能按统一入口对 DevDocs 文档体系做**主动健康度审查**，覆盖三大维度并把分散在 ms-verify / ms-sync 的检查能力收敛为单一报告。
 
-与 `--scope=spec`（spec_version 差距补齐）/ `--scope=layout`（layout.v1→v2 迁移）/ `--scope=prd-mapping`（PRD ↔ DevDocs 映射）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
+与 `--scope=spec`（spec_version 差距补齐）/ `--scope=prd-mapping`（PRD ↔ DevDocs 映射）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
 
 > **推/拉两个触发点**（解决"规则实装但没人跑"的断层）：
 > - **拉（全量）**：用户显式 `/ms-pipeline realign --scope=health` —— 本文件定义的完整 4 维扫描。
@@ -19,25 +19,21 @@
 | 文件 | 本 spec 的使用方式 |
 |------|-------------------|
 | [realign.md](realign.md) | 继承 realign 安全不变量、yaml-summary-v1 汇总方式 |
-| [health-lint-implementation.md](health-lint-implementation.md) | 调用 [新增] lint rule；rule 清单以该文件 Rule 集表为权威，layout.v1+v2 通用 |
-| [layout/ssot-lint-implementation.md](layout/ssot-lint-implementation.md) | layout.v2 启用后追加 `ssot/no-restatement` 等 [FUTURE] rule 到维度 d（数量与清单以该文件 rule 表为权威，当前 12 条）；v1 项目跳过 |
-| `../../sync/references/health-scoring.md` | 6 类偏差评分（layout.v1 legacy）作为子项 |
+| [health-lint-implementation.md](health-lint-implementation.md) | 调用 [新增] lint rule；rule 清单以该文件 Rule 集表为权威 |
+| `../../sync/references/health-scoring.md` | 6 类偏差评分作为子项 |
 | `../../verify/SKILL.md` | 调用 `--schema-drift` / `--docs` / `--impl` 已有能力 |
 | `../../agent-memory/templates/devdocs-state-template.md` | 占位 prose 边界约束（forbidden 字段） |
 | `../../_shared/constraints.md` | 继承 `⛔` / `⚠️` 门控、AskUserQuestion、yaml-summary-v1 |
 
-## 四大健康维度
+## 三大健康维度
 
 | 维度 | 检查内容 | 依赖能力 | 状态 |
 |------|----------|----------|------|
 | a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订、子模块指针一致性（仅 shell 拓扑）| ms-verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）+ `submodule/pointer-drift`（[新增]，仅 shell）| [新增] |
 | b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | ms-sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
 | c 过大文档识别（含 state-hygiene 子项）| size 三档（byte 阈值 / 单行长度）+ state-hygiene（内嵌禁用模式）| `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
-| d SSOT 遵从 | 占位/索引不复制权威源内容 | `ssot/no-restatement` | [FUTURE] (layout.v2 才启用) |
 
-> 本轮（layout.v1 项目可立即用）：维度 a/b/c 实装。维度 d 在 layout.v1 下报 `skipped: requires layout.v2 ssot-lint`；layout.v2 启用后自动激活。
->
-> **原维度 e「三层分离自动检测」已废弃**（不再保留为 FUTURE）：三层分离（决策/执行/数据）作为原则在 layout.v1 已由编号文件结构 + `state/*`、`design/adr-only-revision` 症状规则承载，无需独立的关键词扫描维度；审查时作**人工尺子**使用。权威见 [_shared/constraints.md §9 分层记忆原则](../../_shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
+> **原维度 d「SSOT 遵从」与维度 e「三层分离自动检测」均已废弃**（不再保留为 FUTURE）：维度 d 依赖已删除的 layout.v2 ssot-lint，无检测对象；三层分离（决策/执行/数据）作为原则已由编号文件结构 + `state/*`、`design/adr-only-revision` 症状规则承载，无需独立的关键词扫描维度；审查时作**人工尺子**使用。权威见 [_shared/constraints.md §9 分层记忆原则](../../_shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 >
 > [新增] rule 的算法与输出 schema 见 [health-lint-implementation.md](health-lint-implementation.md)（rule 清单与维度归属以该文件 Rule 集表为权威）。
 
@@ -59,8 +55,6 @@
 - 未传 `--dry-run` 也未传 `--apply` → 一律视为 `--dry-run`（安全默认）。
 - `--fix=<rule_id>` 必须配 `--dry-run` 或 `--apply`；单独 `--fix=` 视为 `--fix --dry-run`。
 - `--dry-run` 的"零写入"指**业务产物零写入**；`.health-report.md`、`stdout` 输出不算业务产物。
-
-`--target` 归一化沿用 `--scope=layout` 同款规则（详见 [realign-scope-layout.md](realign-scope-layout.md) § "--target 归一化"）。
 
 ## Dry-run 阶段
 
@@ -93,9 +87,8 @@ docs/devdocs/.health-report.md
    - `health/dead-link` → 维度 b
    - `design/adr-only-revision` → 维度 a（基于 git 历史扫描最近 30 天 commit）
    - `submodule/pointer-drift` → 维度 a（仅 shell 拓扑；`inline` 报 not_applicable，判据见 health-lint-implementation.md 该 rule 的适用性门）
-5. 若项目为 layout.v2 → 追加 ssot-lint 调用获取维度 d 数据；layout.v1 → 维度 d 报 `skipped: requires layout.v2`。
-6. 加权评分输出（见下方"评分契约"）。
-7. 写入 `.health-report.md`，stdout 打印摘要 + 下一步建议命令。
+5. 加权评分输出（见下方"评分契约"）。
+6. 写入 `.health-report.md`，stdout 打印摘要 + 下一步建议命令。
 
 ### Health Report 文件契约
 
@@ -104,7 +97,6 @@ docs/devdocs/.health-report.md
 ```yaml
 report_schema: realign-health-report.v1
 scope: health
-target_layout: layout.v1 | layout.v2
 repo_root: <absolute-or-relative-path>
 docs_root: docs/devdocs
 generated_at: <iso-timestamp>
@@ -134,7 +126,7 @@ dimensions:
         threshold: <value>
         severity: blocker | warning
         route_to_scope: health | spec | layout | prd-mapping  # health scope 是否能直接修复
-        route_recommended: <next 命令字符串，如 "/ms-pipeline realign --scope=layout --apply">
+        route_recommended: <next 命令字符串，如 "/ms-pipeline realign --scope=health --apply">
         route_note: <可选；解释为何跨 scope，如 "current.md >1500 拆分由 layout scope 处理">
   d_ssot:
     score: <0-100>
@@ -173,10 +165,9 @@ manual_decisions:
 
 权重随激活维度自动归一：
 
-| 场景 | a | b | c | d |
-|------|---|---|---|---|
-| layout.v1（本轮可用）| 0.30 | 0.40 | 0.30 | — |
-| layout.v2（d 启用）| 0.25 | 0.30 | 0.25 | 0.20 |
+| a | b | c |
+|---|---|---|
+| 0.30 | 0.40 | 0.30 |
 
 - 单维度评分 = (1 - violations_count / total_checks) × 100；无 violations 时为 100。
 - 跳过维度（status: skipped）权重不分摊到其他维度，从总和中剔除；其余维度按比例归一。
@@ -216,7 +207,6 @@ manual_decisions:
 #### Phase 1：维度 c 自动归档（state-size / size-cap）
 
 - 对 `state/total-size-cap` 违规：将超长行按 task ID 拆出，明细落到 `04-dev-tasks-pNN.md` 或 ADR 对应文件（依据 manual_decision），主文件保留 ≤200 字符占位。
-- 对 `ssot/current-md-size` 违规：触发 layout.v2 拆分（委托 `--scope=layout`），本 scope 不直接执行 v1→v2 迁移。
 - `state/line-length-cap` 违规：换行重排，不删除内容。
 
 #### Phase 2：维度 d 引用替换（no-restatement）
@@ -250,8 +240,7 @@ summary:
   details:
     scope: health
     total_score: <0.00-100.00>
-    dimensions_scored: [a, b, c]      # layout.v1；v2 追加 d
-    dimensions_skipped: [d]            # layout.v1 下 d 需 v2 ssot-lint
+    dimensions_scored: [a, b, c]
     violations_by_severity:
       blocker: <N>
       warning: <N>
@@ -272,7 +261,7 @@ next_recommended:
 | 违规分布 | next_recommended.args |
 |---|---|
 | 仅 health 路由违规 | `"realign --scope=health --apply"` |
-| 仅跨 scope 违规（无 health 路由） | 取占比最高的 scope，如 `"realign --scope=layout --apply"` |
+| 仅跨 scope 违规（无 health 路由） | 取占比最高的 scope，如 `"realign --scope=spec --apply"` |
 | 混杂 health + 跨 scope | 数组形式：`["realign --scope=health --apply", "realign --scope=<跨 scope> --apply"]`，按拓扑顺序（spec → layout → prd-mapping → health）排序 |
 | 0 违规 | `null` |
 
@@ -288,7 +277,7 @@ next_recommended:
 ## 与其他 scope 的边界
 
 - 维度 a 的 spec_version 差距 → 仅报告，**不补齐**；补齐走 `--scope=spec`（沿用现有 realign 主流程）。
-- 维度 c 中 `current-md-size` ≥ 1500 行 → 仅报告，**不拆分**；拆分走 `--scope=layout`。
+- 维度 c 中 `current-md-size` ≥ 1500 行 → 仅报告，**不拆分**；归档减量走 `/ms-sync --archive`。
 - 维度 b 的死链涉及 PRD ↔ DevDocs 编号映射 → 由 `--scope=prd-mapping` 处理。
 - 本 scope 自身只负责：可逆的小范围修复（state 修剪、引用替换、死链标注）。
 

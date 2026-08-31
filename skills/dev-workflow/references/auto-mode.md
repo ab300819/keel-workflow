@@ -1,7 +1,5 @@
 # 无人值守模式详解
 
-> ℹ️ 本文件提及的 `@satisfies` / `@verifies` 等标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
-
 ## 概述
 
 `--headless` 模式在批量模式的编排器-执行器架构之上，叠加无人值守决策策略。
@@ -121,7 +119,7 @@
 3. **不推送远程** — 仅创建本地 commit，push 始终需要人工
 4. **原子提交不变** — 每任务独立 commit，不跨任务合并
 5. **循环依赖终止** — 报错终止（不变）
-6. **标注删减检测**（layout.v1 legacy only）— 修复中若 legacy retained 的 `@verifies`/`@testcase` 被移除，视为 Blocker；layout.v2 项目追溯在 traceability.yml，此检测不适用
+6. **标注删减检测** — 修复中若 `@verifies`/`@testcase` 被移除，视为 Blocker
 7. **断言数量不减** — 修复后断言总数 ≥ 修复前
 8. **工作区洁净校验** — 每任务 Commit 2 后**每个代码根**的 `git status --porcelain` 均须为空，非空则 fail-fast
 9. **漂移防护** — 禁止自动猜测补齐缺失内容，统一 fail 并记录

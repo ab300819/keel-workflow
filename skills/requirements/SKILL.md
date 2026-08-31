@@ -6,14 +6,6 @@ metadata:
   patterns: [inversion, generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
-reads_layout: [layout.v1, layout.v2]
-writes_layout: layout.v1
-reads_id_scheme: [id.v1, id.v2]
-writes_id_scheme: id.v1
-reads_traceability: [trace.v0, trace.v1]
-writes_traceability: trace.v0
-on_incompatible: block
-migration: /ms-pipeline realign --scope=layout
 ---
 
 # 需求扩写
@@ -94,7 +86,7 @@ migration: /ms-pipeline realign --scope=layout
 |---|---|
 | 定位 index | 读取用户指定的 `<index路径>`；未指定时使用扁平默认路径 `docs/prd/requirements/index.md`（单需求脚手架）；未找到则提示先运行 `/ms-prd` 或手动指定 |
 | 记录来源 | 记录实际读取的 `source_index_path`，后续回写映射使用同一路径；读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产` |
-| 读取需求 | 通过 Glob 匹配 `requirements/FR-*` / `NFR-*`，提取澄清结论中的功能描述和验收意图；FR-XX → 生成功能需求（v1: F-XXX/US-XXX/AC-XXX；v2 [FUTURE]: FEAT-XXX/STORY-XXX/AC-XXX），NFR-XX → 写入非功能需求章节 |
+| 读取需求 | 通过 Glob 匹配 `requirements/FR-*` / `NFR-*`，提取澄清结论中的功能描述和验收意图；FR-XX → 生成功能需求（F-XXX/US-XXX/AC-XXX），NFR-XX → 写入非功能需求章节 |
 | 写入 DevDocs | 将 FR-XX/NFR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "ms-prd"）；按现有流程生成功能/故事/AC 编号，跳过方案确认但保留最终确认 |
 | 回写映射 | 回写到 `source_index_path`：已有 `## DevDocs 映射` 则**更新现有章节**（追加/修改行，不创建新章节），没有则在文末创建；重新导入时旧映射行保留（审计历史），追加新行并标记 `mapping_status: remapped` |
 | 返回 | 返回新增编号列表 |
@@ -128,7 +120,7 @@ migration: /ms-pipeline realign --scope=layout
 
 | 模式 | 输入 / 前置 | 步骤 | 输出 / 门控 |
 |---|---|---|---|
-| 初始模式 | 无 `01-requirements.md`；输入 `< 200` 字且无结构化标记时先建议 `/ms-prd`，并 AskUserQuestion 确认继续或切换 | 0.5 设计资产感知（按 prd/references/design-context.md 探测协议，询问设计稿和组件库并写入 `## 设计资产`）→ 收集原始需求（记录原话/关键表述、来源、日期）→ 理解需求 + 探索代码库（如适用）→ 呈现需求拆解方案 + 轻量假设挑战 → 用户确认 → 识别功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）→ 编写用户故事（v1: US-XXX / v2 [FUTURE]: STORY-XXX）→ 编写 AC-XXX（design_context 存在时，UI 相关 US 自动补充 hover/disabled/error/loading/empty 等交互状态 AC）→ 生成追溯矩阵 | 初始方案确认后才写入；轻量假设挑战仅初始模式 + 非 `--from-prd` + 非快速通过意图，问题为：去掉此功能用户最大损失、MVP 最小可用集、6 个月后是否仍重要；`--from-prd` 跳过（prd 层已做 4 题产品视角挑战），快速通过时跳过并提示风险 |
+| 初始模式 | 无 `01-requirements.md`；输入 `< 200` 字且无结构化标记时先建议 `/ms-prd`，并 AskUserQuestion 确认继续或切换 | 0.5 设计资产感知（按 prd/references/design-context.md 探测协议，询问设计稿和组件库并写入 `## 设计资产`）→ 收集原始需求（记录原话/关键表述、来源、日期）→ 理解需求 + 探索代码库（如适用）→ 呈现需求拆解方案 + 轻量假设挑战 → 用户确认 → 识别功能点（F-XXX）→ 编写用户故事（US-XXX）→ 编写 AC-XXX（design_context 存在时，UI 相关 US 自动补充 hover/disabled/error/loading/empty 等交互状态 AC）→ 生成追溯矩阵 | 初始方案确认后才写入；轻量假设挑战仅初始模式 + 非 `--from-prd` + 非快速通过意图，问题为：去掉此功能用户最大损失、MVP 最小可用集、6 个月后是否仍重要；`--from-prd` 跳过（prd 层已做 4 题产品视角挑战），快速通过时跳过并提示风险 |
 | 增量模式 | 已有 `01-requirements.md`；读取已有 design_context，无则按 design-context.md 探测协议询问 | 扫描现有 F/US/AC 最大编号 → 收集新增原始需求并追加到 `## 0. 原始需求`（历史文档缺章节则标注"缺失历史原始需求"后继续）→ 读取已有上下文 / codebase-insight（如存在）→ 理解新增需求 → 追加功能点/用户故事/验收标准，延续编号并标注增量版本和日期 → 更新追溯矩阵 → 用户确认 | 返回新增编号列表（供调用方使用）；不得删除或覆盖既有内容 |
 | 背景信息模式 | `--context` 或用户要补充背景；不涉及功能点生成，跳过设计资产探测 | **先定写入目标**：`docs/devdocs/00-baseline.md` 存在 → 写基线（定位标为 `未知` / `推导待确认` 的条目 → 收集信息 → 用户明确说了才升为 `用户确认` 并补依据，⛔ 沉默不升格 → 更新条目）；否则 → 写 `01-requirements.md §1`（读取现有文档并提取"背景与目标"章节 → 收集背景信息，含 AskUserQuestion、用户直接输入、Read 文件路径、WebFetch URL 摘要 → 合并到"背景与目标"章节，补充"技术约束"和"参考资料"子章节 → 更新文档 → 用户确认）。⛔ 基线存在时不得创建 `01-requirements.md` | 不写入 `## 0. 原始需求`，除非用户提供的是需求原话而非背景补充 |
 
@@ -145,7 +137,7 @@ migration: /ms-pipeline realign --scope=layout
 
 ## 上下文管理
 
-- **分批原则**：按功能点（v1: F-XXX / v2 [FUTURE]: FEAT-XXX）分批扩写，每批完成一个功能点的全部用户故事和验收标准
+- **分批原则**：按功能点（F-XXX）分批扩写，每批完成一个功能点的全部用户故事和验收标准
 - **质量锚点**：首个功能点的 US/AC 作为锚点；每新功能点开始前回顾首批详细程度（US 角色/期望/目的具体性、AC 可量化程度、GWT 完整性），低于锚点立即补充
 - **一致性自检**（每个功能点完成后）：US 三要素完整 / AC 可量化（非"系统应正常工作"）/ AC 覆盖该 US 的正常与异常路径
 
@@ -208,9 +200,7 @@ MVP 范围： / 非目标： / 删减理由：
 
 ## 编号规范
 
-> ℹ️ **编号前缀双轨**：layout.v1 用 `F`/`US`/`AC`（下表），layout.v2 [FUTURE] 用 `FEAT`/`STORY`/`AC`；切换由 AGENTS.md `devdocs.id_scheme` 触发。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
-> ℹ️ **输出路径双轨**：layout.v1 写单文件 `docs/devdocs/01-requirements.md`；layout.v2 [FUTURE] 写多文件 `docs/devdocs/requirements/{FEAT,STORY,AC}-NNN.md` + 自动维护 `index.md`。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 | 类型 | v1 前缀 | v2 前缀 [FUTURE] | 格式 | 示例 |
 |------|---------|------------------|------|------|
@@ -222,7 +212,6 @@ MVP 范围： / 非目标： / 删减理由：
 - 全局顺序编号，不嵌套
 - 通过追溯矩阵表达关联关系
 - 编号一旦分配不可复用
-- v1 编号在 v2 项目通过 `aliases.yml` 解析（详见 [aliases-yml-schema.md](../pipeline/references/layout/aliases-yml-schema.md)）
 
 ## 输出文件
 
@@ -241,10 +230,10 @@ MVP 范围： / 非目标： / 删减理由：
 
 ## 核心概念
 
-- **功能点**（v1: `F-XXX` / v2 [FUTURE]: `FEAT-XXX`）：用户可感知的独立功能单元，可独立交付和验证
-- **用户故事**（v1: `US-XXX` / v2 [FUTURE]: `STORY-XXX`）：格式 "作为 \<角色\>，我希望 \<功能\>，以便 \<价值\>"
-- **验收标准 (AC-XXX)**：v1/v2 一致；可量化、可验证的完成条件，每个 US 至少 2-3 条
-- **追溯矩阵**：展示 F→US→AC（v1）/ FEAT→STORY→AC（v2 [FUTURE]）的关联关系
+- **功能点**（`F-XXX`）：用户可感知的独立功能单元，可独立交付和验证
+- **用户故事**（`US-XXX`）：格式 "作为 \<角色\>，我希望 \<功能\>，以便 \<价值\>"
+- **验收标准 (AC-XXX)**：可量化、可验证的完成条件，每个 US 至少 2-3 条
+- **追溯矩阵**：展示 F→US→AC 的关联关系
 
 ## 增量模式 / 背景信息模式详解
 
@@ -258,7 +247,7 @@ MVP 范围： / 非目标： / 删减理由：
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/requirements-template.md](templates/requirements-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md) § 当前 spec_version）
 
 ### 功能点约束
-- [ ] 每个功能点必须有唯一编号（v1: `F-XXX` / v2 [FUTURE]: `FEAT-XXX`；按项目 `AGENTS.md devdocs.id_scheme` 选择）
+- [ ] 每个功能点必须有唯一编号（`F-XXX`）
 - [ ] 功能点必须标注优先级 (P0/P1/P2)
 
 ### 用户故事约束

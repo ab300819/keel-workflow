@@ -1,6 +1,6 @@
 ---
 name: workspace-topology
-description: 维护仓库的工作区拓扑声明——代码与文档同仓（inline）、代码作 git 子模块（shell）、还是代码根在本仓之外只持有引用（linked）。三个入口：inspect 返回稳定的拓扑上下文供其他流程消费，reconcile 交互式维护声明（幂等、可重入、支持增删代码根与新增子模块），migrate 把单仓改造成外壳布局（手动/自动双模式）。独立于 DevDocs，非 DevDocs 项目也可单跑。Triggers on "/workspace-topology", "工作区模式", "外壳仓", "shell 模式", "inline 模式", "linked 模式", "代码根", "代码根在仓外", "引用外部代码", "code_roots", "把项目转成子模块", "文档和代码分仓", "workspace mode", "submodule 布局". NOT for DevDocs 文档结构升级（用 /ms-pipeline realign --scope=layout）、记忆文件维护（用 agent-memory）、代码盘点（用 ms-codebase-insight）。
+description: 维护仓库的工作区拓扑声明——代码与文档同仓（inline）、代码作 git 子模块（shell）、还是代码根在本仓之外只持有引用（linked）。三个入口：inspect 返回稳定的拓扑上下文供其他流程消费，reconcile 交互式维护声明（幂等、可重入、支持增删代码根与新增子模块），migrate 把单仓改造成外壳布局（手动/自动双模式）。独立于 DevDocs，非 DevDocs 项目也可单跑。Triggers on "/workspace-topology", "工作区模式", "外壳仓", "shell 模式", "inline 模式", "linked 模式", "代码根", "代码根在仓外", "引用外部代码", "code_roots", "把项目转成子模块", "文档和代码分仓", "workspace mode", "submodule 布局". NOT for 记忆文件维护（用 agent-memory）、代码盘点（用 ms-codebase-insight）。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 metadata:
   spec_version: workspace-topology.v2
@@ -146,7 +146,6 @@ workspace:
   mode: shell
   code_roots: [web, api]      # mode=shell / mode=linked 时必填。shell 下元素为 .gitmodules 的 submodule name；linked 下须给 path，见下方 linked 示例
 devdocs:                      # DevDocs 项目才有；非 DevDocs 项目只有 workspace: 块
-  docs_layout_version: layout.v1
 ---
 ```
 

@@ -60,7 +60,7 @@ metadata:
 /ms-verify T-01 T-02          → 指定任务范围（自动 --impl）
 ```
 
-> 除 `--live` 外，二级控制（`--layer1/2/3`、`--ac`、`--design`、`--trace`、UI 阶段选择）不作为顶部用户面入口暴露；用户用自然语言表达聚焦意图，执行细则按 references 内部说明。`--schema-drift` 为只读合并入口，输出 schema drift 与 layout drift 两段：前者扫产物 spec_version，详见 [references/schema-drift.md](references/schema-drift.md)；后者扫治理层 layout/id/trace 兼容性，对齐 `/ms-pipeline realign --scope=layout`，详见 [skills/pipeline/references/layout/](../pipeline/references/layout/)。
+> 除 `--live` 外，二级控制（`--layer1/2/3`、`--ac`、`--design`、`--trace`、UI 阶段选择）不作为顶部用户面入口暴露；用户用自然语言表达聚焦意图，执行细则按 references 内部说明。`--schema-drift` 为只读入口，扫产物 `spec_version`，详见 [references/schema-drift.md](references/schema-drift.md)。
 
 ### 四维验证选择矩阵
 
@@ -154,8 +154,8 @@ metadata:
 
 逐条验证实现是否匹配验收标准。
 
-1. 读取 `01-requirements.md` 中所有 AC（layout.v1）/ `requirements/AC-NNN.md`（layout.v2 [FUTURE]）
-2. 通过 `@satisfies` 标注（layout.v1 legacy）或 `traceability.yml`（layout.v2 [FUTURE]）+ 代码搜索定位实现
+1. 读取 `01-requirements.md` 中所有 AC
+2. 通过 `@satisfies` 标注 + 代码搜索定位实现
 3. **语义判断**实现是否匹配 AC 描述（不仅检查标注存在性）
 4. 对每条 AC 给出判定：✅ 满足 / ⚠️ 部分满足 / ❌ 未满足
 5. **标注覆盖范围**：读 `docs/devdocs/00-baseline.md` 的 `adoption_commit`——
@@ -178,7 +178,7 @@ metadata:
 
 ### B3：追溯完整性审查
 
-检查 `@satisfies`/`@verifies` 覆盖率（layout.v1 legacy）或 `traceability.yml` 完整性（layout.v2 [FUTURE]）。**复用 ms-sync --check 的追溯扫描能力**（只读模式，不修改文档）。
+检查 `@satisfies`/`@verifies` 覆盖率。**复用 ms-sync --check 的追溯扫描能力**（只读模式，不修改文档）。
 
 ### B4：实际交互验证（--live，可选）
 

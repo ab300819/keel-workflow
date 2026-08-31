@@ -6,21 +6,11 @@ metadata:
   patterns: [generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
-reads_layout: [layout.v1, layout.v2]
-writes_layout: layout.v1
-reads_id_scheme: [id.v1, id.v2]
-writes_id_scheme: id.v1
-reads_traceability: [trace.v0, trace.v1]
-writes_traceability: trace.v0
-on_incompatible: warn
-migration: /ms-pipeline realign --scope=layout
 ---
 
 # 项目上下文
 
-> ℹ️ 编号双轨：onboard 输出引用项目实际编号（v1 用 `F`/`T`/`INS`，v2 [FUTURE] 用 `FEAT`/`TASK`/`ADR-PATTERN-NOTE`）。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
-> ℹ️ 输入路径双轨：v1 读 `docs/devdocs/01~05` 单文件；v2 [FUTURE] 读 `docs/devdocs/{requirements,design,tests,tasks,issues,patterns,notes}/index.md` 各类索引聚合。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 生成项目上下文摘要，帮助 AI 工具或团队成员快速了解项目并接手工作。
 

@@ -1,7 +1,5 @@
 # E2E 测试模板
 
-> ℹ️ E2E 编号 v1/v2 一致；引用的 AC / F-vs-FEAT 走双轨。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
-
 使用此模板生成 `docs/devdocs/03-test-e2e.md`
 
 ---

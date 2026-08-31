@@ -39,7 +39,7 @@ user-invocable: true
 ## 详细文档
 
 - 共享约束 SSOT：[../_shared/constraints.md](../_shared/constraints.md)
-- pipeline 治理 SSOT：[references/realign.md](references/realign.md)、[references/realign-scope-layout.md](references/realign-scope-layout.md)、[references/layout/](references/layout/)
+- pipeline 治理 SSOT：[references/realign.md](references/realign.md)
 
 > 本 skill 遵循共享约束 SSOT：门控标记、yaml-summary-v1、Task 委托、用户确认、Recovery 格式、只读 / dry-run、FUTURE 三态、realign / spec_version 见 [skills/_shared/constraints.md](../_shared/constraints.md)。本文件只描述 ms-pipeline 编排私有规则。
 
@@ -69,15 +69,13 @@ user-invocable: true
 | 参数 | 说明 |
 |------|------|
 | `--scope=spec` | 默认值；处理 spec_version 维度 |
-| `--scope=layout` | 文档体系版本升级（layout.v1→v2，含编号/目录/追溯重组），执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md) |
 | `--scope=prd-mapping` | 处理 PRD 映射维度 |
-| `--scope=health` | 文档健康度主动审查（5 维度 / health-lint rule，清单见 [references/health-lint-implementation.md](references/health-lint-implementation.md)，layout.v1+v2 通用），执行接口见 [references/realign-scope-health.md](references/realign-scope-health.md) |
+| `--scope=health` | 文档健康度主动审查（3 维度 / health-lint rule，清单见 [references/health-lint-implementation.md](references/health-lint-implementation.md)），执行接口见 [references/realign-scope-health.md](references/realign-scope-health.md) |
 | `--target=<path>` | 限定回扫目标路径 |
 | `--dry-run` | 只出差距报告，**业务产物零写入**；scope=health 允许写 `.health-report.md` 作报告载体 |
 | `--apply` | 执行已确认的迁移 / 补齐动作 |
 | `--fix=<rule_id>` | 仅 scope=health；仅修复指定 rule 的违规（须配 `--dry-run` 或 `--apply`，未配视为 `--dry-run`）|
 | `--no-realign` | 拒绝升级提示，写入 `.devdocs-realign-ack`（`--headless` 时必需） |
-| `--docs-layout` | deprecated alias，等价于 `--scope=layout`，下一版本移除 |
 
 ## 提问式调度（智能引导）
 
@@ -126,10 +124,9 @@ user-invocable: true
 
 **A. 升级类 drift（一次性版本决策，受 `.devdocs-realign-ack` 控制）**
 
-1. **schema drift**（产物模板）：检测各产物 `spec_version` 与各 skill 当前常量差距 → 提示 `/ms-pipeline realign`
-2. **layout drift**（治理层）：检测 AGENTS.md devdocs frontmatter 是否存在 + `docs_layout_version` 是否在各 skill `reads_layout` 范围 → 提示 `/ms-pipeline realign --scope=layout`
+**schema drift**（产物模板）：检测各产物 `spec_version` 与各 skill 当前常量差距 → 提示 `/ms-pipeline realign`
 
-检测到 drift 且无 `.devdocs-realign-ack` 标记时，打印**一次性**轻量提示（不阻塞原路由）。**layout drift 强阻塞场景**（skill `on_incompatible: block` 触发）会直接拒绝执行，不走"一次性提示"软路径。schema drift 规则见 [references/realign.md](references/realign.md) § 一次性升级提示；layout scope 执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md)，检测时机见 [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md)。
+检测到 drift 且无 `.devdocs-realign-ack` 标记时，打印**一次性**轻量提示（不阻塞原路由）。规则见 [references/realign.md](references/realign.md) § 一次性升级提示。
 
 **B. 健康类 drift（持续监控信号，baseline-aware，*不*受 `.devdocs-realign-ack` / `--no-realign` 控制）**
 
@@ -194,7 +191,7 @@ Q3（feature/bugfix 追加，可选）:
 | `close` | 开发周期结束收尾（上线后需求终结） | `ms-sync`（trace + audit）→ `ms-compound`（知识沉淀）→ `ms-onboard --update` → `ms-prd clear`（清理当前需求脚手架，末步执行确保 why 记忆已沉淀）；health 探针命中 blocker 级时，二级强化：建议顺带 `realign --scope=health` 全量扫描 | 同步结果、沉淀文件、更新后的上下文摘要、脚手架清理结果 |
 | `insights` | 外部洞察吸收 | `ms-insights`（收集 + 用户确认 + 追加 01）→ 有架构变更则 `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow` → `ms-verify` → `ms-sync`；简单改进则 `ms-dev-tasks` → `ms-dev-workflow` → `ms-verify` → `ms-sync` | 洞察确认结果、架构影响判定、变更链路 |
 | `design` | 用户主动推送设计资产；pipeline 只做阶段检测和收集 | no-prd → 收集并提示先 `/ms-prd` 或 `/ms-requirements`；prd-ready → `ms-requirements --update-design --target prd-index`；post-requirements/post-design → `ms-requirements --update-design`; in-dev → `ms-requirements --update-design` + 提示 `ms-verify --ui`; post-tasks → `ms-requirements --update-design` → `ms-dev-tasks --backfill-design` | `design_context`、目标阶段、委托目标、UI 验证提示 |
-| `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | spec_version：扫描 frontmatter → 比对各 skill 当前常量 → Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1；layout scope：扫描 AGENTS.md devdocs frontmatter → 比对 `writes_layout` → 三阶段迁移 | drift 数量、Phase 结果、确认项、layout/id/trace 差距 |
+| `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | 扫描 frontmatter → 比对各 skill 当前常量 → Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1 | drift 数量、Phase 结果、确认项 |
 
 ### 入口私有约束
 
@@ -206,8 +203,7 @@ Q3（feature/bugfix 追加，可选）:
 - **Sprint Contract 协调**：`ms-test-cases` 产出的可执行验收契约作为 `ms-dev-workflow` 输入；pipeline 只传摘要、文件路径、新增编号，不内联测试全文。
 - **design 主动推送**：详细协议见 [../prd/references/design-context.md](../prd/references/design-context.md)；pipeline 不写文档，no-prd 不阻塞，且不中断当前 dev-workflow。
 - **close 脚手架清理**：close 末步委托 `ms-prd clear` 清理 `docs/prd/` 一次性脚手架；先 dry-run 出范围 + 影响（孤儿 / 未同步项默认不删），⚠️ 必须确认后 `--apply` 删除；无 `docs/prd/` 时静默跳过。pipeline 只委托不自己删文件（见 ms-prd [清理脚手架](../prd/SKILL.md#清理脚手架close-收尾)）。
-- **realign 协调机制**：realign 非续做信号；restructuring / layout 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；`--headless` 必须显式 `--realign` 或 `--no-realign`；layout scope 升级需先跑 `--dry-run` + 独立 git branch 演练，执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md)。
-- **layout / id / trace 三层版本共性**：pipeline 是 SSOT 来源。三层版本号宪法见 [references/layout/layout-versioning-policy.md](references/layout/layout-versioning-policy.md)，元数据 schema 见 [references/layout/layout-metadata-schema.md](references/layout/layout-metadata-schema.md)，aliases 见 [references/layout/aliases-yml-schema.md](references/layout/aliases-yml-schema.md)，迁移矩阵和不可逆操作见 [references/layout/docs-layout-migration.md](references/layout/docs-layout-migration.md)。
+- **realign 协调机制**：realign 非续做信号；restructuring 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；`--headless` 必须显式 `--realign` 或 `--no-realign`。
 - **工作区拓扑（`init`）**：`ms-requirements` 完成后（首次产生 `docs/devdocs/`）执行 `Task: /workspace-topology reconcile`。该 skill 自己写 `AGENTS.md` 的 `workspace:` 块，**不经 `agent-memory` 代写**——`devdocs_frontmatter` 入参不再传 workspace 字段。无声明时它问一次 mode 与代码根并落声明，此后不再问。另在流程开头调一次 `/workspace-topology inspect`，把结果经握手的 `workspace_context` 下传给各原子 skill（见 [_shared/constraints.md §3](../_shared/constraints.md) `task/workspace-context`）。retrofit 场景的路径由 [retrofit/SKILL.md](../retrofit/SKILL.md) 自己承载。
 
 ### Sprint Contract 握手
@@ -223,22 +219,11 @@ pipeline 启动 `ms-test-cases` 和 `ms-dev-workflow` 时，保留跨 skill 协�
 
 ### realign / layout 协调细节
 
-`realign` 默认处理 spec_version 维度；`--scope=layout` 处理治理层 layout/id/trace 维度，执行接口见 [references/realign-scope-layout.md](references/realign-scope-layout.md)。两者都由 pipeline 汇总 yaml-summary-v1。
+`realign` 处理 spec_version 维度，由 pipeline 汇总 yaml-summary-v1。
 
 | 维度 | 扫描源 | 调度 / 迁移阶段 | 输出 |
 |------|--------|----------------|------|
 | spec_version | 各产物 frontmatter + 各 skill `references/realign.md` 当前常量 | Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 | drift 清单、逐 skill summary、remaining blockers |
-| docs_layout_version | AGENTS.md devdocs frontmatter + skill `writes_layout` / `reads_layout` | Phase 1 预扫描 → Phase 2 编号 + 文件迁移 → Phase 3 后置校验 | layout 差距、确认项、aliases、traceability 校验 |
-
-layout scope dry-run 必输出 5 项契约：
-
-1. `file_ops`：文件移动、复制、删除、重命名计划
-2. `aliases`：旧路径到新路径的兼容映射
-3. `unmappable`：无法自动定位或安全迁移的对象
-4. `broken_links`：迁移后可能断裂的引用
-5. `trace_drift`：编号、任务、代码追溯关系差距
-
-Phase 2 只执行 dry-run 批准项；Phase 3 必做 traceability 提取、SSOT lint、AGENTS.md `upgraded_at` 写入。详细迁移矩阵见 [references/layout/docs-layout-migration.md](references/layout/docs-layout-migration.md)。
 
 ## 阶段间衔接
 

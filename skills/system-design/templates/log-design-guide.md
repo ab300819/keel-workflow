@@ -4,7 +4,6 @@
 >
 > 🔑 **职责边界**：本文是**设计阶段**指南——在设计文档里规划"在哪些操作打日志点"。"怎么写好一条日志"的编码纪律（级别准入、最小上下文、异常纪律、安全红线、事实优先）权威在 [code-quality 日志规范](../../code-quality/SKILL.md#日志规范)，本文不重复，只在规划日志点时引用。
 >
-> ℹ️ 文中编号示例使用 v1 前缀；v2 项目 [FUTURE] 走双轨。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
 
 ## 安全红线（规划日志点时即须标注）
 

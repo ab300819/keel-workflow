@@ -1,7 +1,5 @@
 # 任务归档规则
 
-> ℹ️ 任务编号双轨：v1 用 `T-XX`，v2 [FUTURE] 用 `TASK-XX`。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
-
 任务归档功能已整合到 `/ms-sync --archive` 统一归档体系中。
 
 详见 [sync/references/archive.md](../../sync/references/archive.md)

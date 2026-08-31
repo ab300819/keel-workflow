@@ -1,10 +1,8 @@
 # 骨架代码示例
 
-> ⚠️ **layout.v1 legacy** — 本文件骨架示例中的 `@requirement` / `@satisfies` / `@verifies` / `@testcase` 标注属于 layout.v1 机制。**layout.v2 起追溯走 `traceability.yml` 外置载体**；legacy retained 注释允许保留直到 layout.v3。v2 接口落地状态见 [skills/pipeline/references/layout/docs-layout-migration.md § 执行接口落地状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)。
-
 自顶向下开发模式中的接口骨架和测试骨架示例。
 
-> 📝 注释风格遵循 [`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)：代码块只展示期望 Agent 模仿的最终风格，流程说明写在 prose、不进代码注释；layout.v2 起来源记录（UT/AC/契约）归 traceability.yml、不进代码注释（本文件 layout.v1 legacy 示例除外）。
+> 📝 注释风格遵循 [`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)：代码块只展示期望 Agent 模仿的最终风格，流程说明写在 prose、不进代码注释。
 
 ## 接口骨架示例（Step 1）
 
@@ -73,11 +71,9 @@ describe('UserService', () => {
 
 ## 骨架填充示意（Step 3-4 最小形式）
 
-> ⚠️ 仅展示骨架→实现的最小过渡。完整业务实现示例不再保留于本 skill；追溯标注请参考所在项目的 `traceability.yml`（layout.v2）或保留的 `@satisfies/@verifies` 注释（layout.v1 legacy，不新增）。
-
 ### 接口实现（最小骨架填充示意）
 
-layout.v2 不写 `@satisfies` 注释（追溯统一走 traceability.yml）。Impl Agent 在 S6 以最小实现让测试转绿——业务逻辑/边界/异常由测试断言驱动，不写入注释：
+Impl Agent 在 S6 以最小实现让测试转绿——业务逻辑/边界/异常由测试断言驱动，不写入注释：
 
 ```typescript
 export class CreateOrderService {
@@ -97,8 +93,6 @@ describe('CreateOrderService', () => {
   it.todo('should reject input with missing customer (AC-002)');
 });
 ```
-
-> 实战场景请参考 layout.v2 项目的 `traceability.yml` schema 与对应测试文件命名约定。
 
 ## 行为契约 → Test Agent 断言示例
 
@@ -166,8 +160,8 @@ describe('UserService.createUser', () => {
 ## 骨架生成约束
 
 - [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）
-- [ ] **接口骨架必须添加追溯标注**（layout.v1 legacy；layout.v2 改用 traceability.yml，骨架不写注释）
+- [ ] **接口骨架必须添加追溯标注**
 - [ ] **未实现方法必须抛出 Error 并注明任务编号**
 - [ ] **测试骨架必须使用 skip/todo 标记**
-- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**（layout.v1 legacy；layout.v2 改用 traceability.yml，骨架不写注释）
+- [ ] **测试骨架必须添加 @verifies 和 @testcase 标注**
 - [ ] **测试骨架 S3 可含纯 AAA 占位**（`// Arrange` / `// Act` / `// Assert`，不带来源）；**S4 后不得保留来源记录式注释**

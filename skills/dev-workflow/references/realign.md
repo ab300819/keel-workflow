@@ -2,7 +2,6 @@
 
 > 共享契约见 [../../pipeline/references/realign.md](../../pipeline/references/realign.md)。
 >
-> ℹ️ 本文件提及的 `@satisfies` / `@verifies` 等标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
 
 ## 当前 spec_version
 

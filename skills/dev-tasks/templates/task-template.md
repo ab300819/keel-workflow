@@ -1,8 +1,6 @@
 # 任务文档模板
 
-> ℹ️ 本模板提及的 `@satisfies` / `@verifies` / `@testcase` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
 >
-> ℹ️ 任务编号 v1 用 `T-XX`，v2 [FUTURE] 用 `TASK-XX`；关联的 F/US 走 FEAT/STORY 双轨。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
 
 完整的开发任务文档模板，用于 `docs/devdocs/04-dev-tasks.md`。
 

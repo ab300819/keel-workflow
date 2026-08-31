@@ -6,8 +6,6 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 # Testing Guide
 
-> ℹ️ 本文件提及的 `@verifies` / `@testcase` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。
-
 编写高质量测试的约束规范，确保测试真正验证行为而非仅仅覆盖代码。
 
 ## Language

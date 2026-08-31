@@ -1,7 +1,5 @@
 # 需求文档模板
 
-> ℹ️ 模板示例编号使用 v1 前缀（`F-001` / `US-001`）；v2 项目 [FUTURE] 应替换为 `FEAT-001` / `STORY-001`。详见 [id-scheme-implementation.md](../../pipeline/references/layout/id-scheme-implementation.md)。
-
 使用此模板生成 `docs/devdocs/01-requirements.md`
 
 ---

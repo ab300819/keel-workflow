@@ -6,21 +6,11 @@ metadata:
   patterns: [generator]
   interaction: multi-turn
   handoff: yaml-summary-v1
-reads_layout: [layout.v1, layout.v2]
-writes_layout: layout.v1
-reads_id_scheme: [id.v1, id.v2]
-writes_id_scheme: id.v1
-reads_traceability: [trace.v0, trace.v1]
-writes_traceability: trace.v0
-on_incompatible: block
-migration: /ms-pipeline realign --scope=layout
 ---
 
 # PRD 文档解析器
 
-> ℹ️ PRD 阶段编号（FR/NFR）**v1/v2 一致**（与 DevDocs id_scheme 解耦）。详见 [id-scheme-implementation.md](../pipeline/references/layout/id-scheme-implementation.md)。
 >
-> ℹ️ 输出路径：PRD 解析输出路径 `docs/prd/chunks/` **不随 layout.v1/v2 切换**（PRD 不属 DevDocs 内部）。详见 [folder-organization-implementation.md](../pipeline/references/layout/folder-organization-implementation.md)。
 
 将大型产品需求文档拆分为结构化的独立块文件，保留完整转换文本，为后续逐块澄清做预处理。
 

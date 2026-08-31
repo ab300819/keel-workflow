@@ -65,8 +65,6 @@ expected_output: yaml-summary-v1
 |---|---|
 | “这个 P3 先记下 / 暂时不做 / 放 backlog” | `ms-backlog` |
 | “列出 backlog / 重新激活 F-01 的暂缓项” | `ms-backlog` |
-| “项目要不要用 Sprint + Milestone + Backlog 命名” | `ms-iteration-policy` |
-| 只出现泛词 “backlog”，且上下文是研发命名治理 | `ms-iteration-policy` 优先 |
 
 ## backlog.md Schema
 

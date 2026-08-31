@@ -1,7 +1,5 @@
 # 任务执行流程详解
 
-> ℹ️ 本文件提及的 `@satisfies` / `@verifies` / `@requirement` / `@testcase` 标注属于 **layout.v1 legacy**（v2 起改读 traceability.yml，[FUTURE 状态](../../pipeline/references/layout/docs-layout-migration.md#-执行接口落地状态future)）。Test/Impl Agent 的注释纪律（禁止变更日志式/来源记录式注释）见 [task-orchestration.md 子 Agent 协议](task-orchestration.md#子-agent-协议双-agent-模型) 与 [`/code-quality` 注释规范](../../code-quality/SKILL.md#注释规范)。
-
 各层级任务的详细执行流程。**所有模式（含单任务）均通过双 Agent 模型执行：Test Agent 写骨架+测试 → 编排器红色验证 → Impl Agent 写实现+重构 → 编排器完成检查+提交**。文档同步（/ms-sync + Commit 2）由编排器调度。
 
 ## 步骤状态追踪
