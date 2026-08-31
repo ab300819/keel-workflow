@@ -61,11 +61,12 @@ migration: /ms-pipeline realign --scope=layout
 /ms-dev-tasks --realign[=scope] → 规范升级回扫（任务结构/字段差距补齐；不改任务状态）。详见 [references/realign.md](references/realign.md)；推荐 `/ms-pipeline realign`
 ```
 
-### 快速档
+### 快速档（`ceremony: fast`）
 
 - 使用合理默认值（不询问任务粒度偏好等）
 - 仅保留最终写入前的 1 次确认
-- 默认为标准档；快速档由用户意图触发（「直接生成」「别一步步问」），不默认启用
+- **档位由编排层下传的 `ceremony` 决定**（[`task/intent-normalization`](../_shared/constraints.md)）：`fast` → 本节；`standard`（缺省）/ `deep` → 标准模式。
+  ⛔ 不得自行解读用户原话来判档——归一化是编排层的职责，子 Agent 只读归一化字段。
 
 ## 工作流程
 

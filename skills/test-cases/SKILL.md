@@ -103,12 +103,13 @@ migration: /ms-pipeline realign --scope=layout
 - `/ms-test-cases` → 标准模式（逐步确认）
 - `/ms-test-cases --realign[=scope]` → 规范升级回扫（结构/字段差距补齐；缺失测试类型传递给 dev-workflow）。详见 [references/realign.md](references/realign.md)；推荐 `/ms-pipeline realign`
 
-### 快速档
+### 快速档（`ceremony: fast`）
 
 - 跳过测试类型选择的逐步确认
 - 自动根据 AC 性质选择最佳测试类型
 - 仅保留最终写入前的 1 次确认
-- 默认为标准档；快速档由用户意图触发，不默认启用
+- **档位由编排层下传的 `ceremony` 决定**（[`task/intent-normalization`](../_shared/constraints.md)）：`fast` → 本节；`standard`（缺省）/ `deep` → 标准模式。
+  ⛔ 不得自行解读用户原话来判档。
 
 ## 工作流程
 

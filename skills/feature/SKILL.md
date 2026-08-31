@@ -46,6 +46,10 @@ metadata:
 
 **最常见用法**: `/ms-feature "功能描述"`（自动选档位）。想强制某档或少确认，直接说。
 
+> **本 skill 是编排层，负责归一化。** 用户的自然语言（「别一步步问」「仔细点」）由它归一化为 `ceremony`（`fast` / `standard` / `deep`）写入委托握手，下传给 ms-requirements / ms-system-design / ms-test-cases / ms-dev-tasks；被委托方**只读该字段，不再自行解读用户原话**（[`task/intent-normalization`](../_shared/constraints.md)）。
+>
+> ⚠️ **`ceremony` 与「轻量 / 完整模式」是两件事**：模式由**影响面**自动检测（决定产出哪些文档），`ceremony` 由**用户意图**归一化（决定问几次）。两者独立，不得互相推导。
+
 **不适合?** 新项目→`/ms-pipeline init`，修 Bug→`/ms-bugfix`，已有代码无文档→`/ms-retrofit`
 
 ## 运行模式

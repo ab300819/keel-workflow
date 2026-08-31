@@ -1,6 +1,6 @@
 ---
 title: 共享约束 SSOT
-status: 现状提取，不引入新规则
+status: 协议层 SSOT —— 现状提取 + 标记为 [新增] 的跨切面规则
 scope: 跨 skill 协议层共性
 related:
   - AGENTS.md（yaml-summary-v1 原始定义）
@@ -9,15 +9,26 @@ related:
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
   - skills/_shared/runlog.md（运行日志：形状、纪律、判决点）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v6
+spec_version: shared-constraints.v7
 ---
 
 # 共享约束 SSOT
 
 本文是 T-106 识别的重复规则的共享 SSOT 提取，用于后续 skill 引用切换。
 
-- `doc/status-extraction`：本文只整理仓库已有重复规则，不引入新的 status、标记、流程类别或执行语义。
-  - ⚠️ **已知例外**：`§11 作用域匹配` 与 `§3 task/runlog-append` 是后续新增的跨切面规则，非现状提取。二者均按 `future/use-new` 标 `[新增]`。本条 charter 与实际已不一致——重写它属于治理面改动，归 `docs/superpowers/specs/2026-08-26-devdocs-rule-triage-and-runlog-design.md` §4.2 B1 一并处理，此处只作标注。
+- `doc/two-kinds`：本文有**两类**内容，必须始终可区分：
+  - **现状提取**（起源，T-106）：仓库已有重复规则的共享 SSOT，不改变任何 skill 的行为。**无标记**。
+  - **新增跨切面规则**：后续确立的、不属于任何单一 skill 的协议层规则。一律标 `[新增]`（见 `future/use-new`）。
+
+  > 本条取代原 `doc/status-extraction`（「只整理已有规则，不引入新执行语义」）。该表述在 `§11 作用域匹配`、`§3 task/runlog-append` 等 6 条规则落地后已与实际不符，且**它没有阻止任何一次新增，只是让每次新增都要附一段例外说明**——一条被绕过 6 次的规则不是规则。
+
+  新增的准入三条，**全部满足**才能进本文：
+
+  1. **真跨 skill** —— 至少 2 个消费方，且它们的实现必须一致（只有 1 个消费方 = 该 skill 的私有规则）
+  2. **不属于任何单一 skill** —— 归得进某个 skill 的按 `doc/private-rule-boundary` 退回该 skill；来自单个项目的按 `doc/project-rule-boundary` 退回项目侧
+  3. **bump `spec_version`** —— 本文是协议层，新增即协议变更
+
+  ⛔ **不得因为「不知道该放哪」而放进本文。** 那是协议层膨胀的唯一真实成因——它让本文从「消除重复」变成「制造依赖」。
 - `doc/no-immediate-impact`：现有 `skills/*/SKILL.md` 不会因本文创建而自动改变；引用切换是后续独立任务。
 - `doc/reference-over-copy`：已有详细 spec 优先保留在原位置，本文只声明协议层共性与指针。
 - `doc/private-rule-boundary`：skill 私有规则不得提升到共享层；例如 Sprint Contract、verify P 级评分、具体 layout 迁移算法仍归各自 skill 或 references 文件维护。
@@ -297,7 +308,7 @@ expected_output: yaml-summary-v1
 
 ## 9. 分层记忆原则（决策 / 执行 / 数据三层分离）
 
-> 本节是对**既有文件结构 + 现役规则**的归并命名，不新增运行时强制（与本文件头部 `status: 现状提取，不引入新规则` 一致）。"不应混写"是**原则目标**，强制力来自现役 symptom rules（仅覆盖**部分**症状）+ 人工 review（**主要**承载）。
+> 本节是对**既有文件结构 + 现役规则**的归并命名，不新增运行时强制（与本文件头部 `status: 协议层 SSOT —— 现状提取 + 标记为 [新增] 的跨切面规则` 一致）。"不应混写"是**原则目标**，强制力来自现役 symptom rules（仅覆盖**部分**症状）+ 人工 review（**主要**承载）。
 
 DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**：
 
@@ -321,9 +332,9 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 - `workspace/context-over-declaration`：需要代码根路径或 docs 根的 skill 从握手的 `workspace_context` 读（见 §3 `task/workspace-context`），**⛔ 不得自行读取声明文件或解析 `.gitmodules`**。
 - `workspace/pointer`：协议正文（校验全表、零污染、N+1 仓提交、gitlink 排除）见 [workspace-topology/references/protocol.md](../workspace-topology/references/protocol.md)；迁移与故障处置见 [references/migration.md](../workspace-topology/references/migration.md)。
 
-## 11. 作用域匹配（评审边界 ≥ 影响边界）
+## 11. 作用域匹配（评审边界 ≥ 影响边界）`[新增]`
 
-> 本节是**原则声明 + 人工 review lens**，零新增 status / 标记 / 流程类别 / 执行语义（守 `doc/status-extraction` 四项），强制力等级同 §9。但需诚实标注：本节是本文**第一个规范性（而非现状提取）小节**——它约束未来的门怎么设计，不只是给已有结构命名。
+> 本节是**原则声明 + 人工 review lens**，不建检测器，强制力等级同 §9。它是本文**第一个规范性（而非现状提取）小节**——约束未来的门怎么设计，不只是给已有结构命名；按 `doc/two-kinds` 属「新增跨切面规则」类，故标 `[新增]`。
 >
 > **适用范围**：DevDocs 流程 skill（`ms-*`）+ `dev-flow`。独立 skill（`e2e-test-flow` / `prior-art-scan` / `code-quality` / `adversarial-review` 等）不在强制范围内。
 
