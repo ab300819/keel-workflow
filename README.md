@@ -115,7 +115,7 @@ npx skills add ab300819/skills@code-quality     # 安装单个
 | 先例扫描 | `/prior-art-scan` | 开工前查 GitHub 同类项目 → 维护度评估 → 缺口分类 → 六路径决策（只读，产出单文件 md）|
 | UI 调度 / 自描述 / 记忆 / 报告 | `/ui-orchestrator` / `/code-self-describe` / `/agent-memory` / `/work-report` | 专项工具 |
 
-> `commit-convention`、`git-safety`、`iteration-policy` 由其他 skill 自动调用，不需用户直接运行。
+> `commit-convention`、`git-safety` 由其他 skill 自动调用，不需用户直接运行。
 
 ---
 

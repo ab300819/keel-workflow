@@ -285,6 +285,11 @@ links:
 
 ### 11.4 writing-plans 前必修(Plan B 动工前补死)
 
+> ⚠️ **本节已作废（2026-08-31）**：`trace.v1` / `traceability.yml` / layout.v2 整套已删除，本节引用的
+> `layout-versioning-policy.md` 与 `code-decoupling-implementation.md` 不再存在（链接故意保留原样——
+> 历史记录不改写）。追溯改为**反向依赖**：代码与 commit 零 DevDocs 编号，文档记 `<repository>@<sha>`。
+> 判决与达成路径见 [2026-08-31 达成方案](2026-08-31-layout-v2-goal-attainment-design.md)。
+
 实现计划拆任务前,以下落点必须确认(否则不动 trace schema / ADR 模板):
 
 1. **trace.v1 `evidence` 字段的版本影响 + schema 摘要更新**:[layout-versioning-policy.md](../../../skills/pipeline/references/layout/layout-versioning-policy.md) 明确"traceability.yml schema 字段变化触发 traceability_version 升级评估",故**必须走升级评估**(可选字段是否构成 breaking 由该评估裁定,不预设"不 bump");无论是否 bump,都须**同步更新 layout-versioning-policy 的 trace.v1 schema 摘要**(当前摘要不含 evidence)。
