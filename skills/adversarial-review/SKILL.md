@@ -128,8 +128,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
    - JSON 完整但**格式异常**（非截断，如字段类型错） → 才降级为文本解析；文本也不可解析 → 包装为单条 F-001 展示
    > 原实现是「JSON 失败 → 文本 → F-001」一条路，会把截断产物洗成一条普通 finding，**本节最重要的安全门就此失效**。
 
-**T1b codex CLI · 备用计费后端**（额度耗尽时的首选补救，**优先于 T2/T3**）：
-同一 CLI、同一模型档次，只换计费后端（`CODEX_HOME=<备用home> codex exec ...`，其余参数与 T1 一致）→ **审查质量不降级**，这是它排在 T2 前的唯一理由。探测、选取与已知坑见 [external-reviewer-integration.md § T1b](references/external-reviewer-integration.md)。
+**T1b codex CLI · 备用计费后端**（额度耗尽时的首选补救，**优先于 T2/T3**）：同一 CLI、同一模型档次，只换计费后端（`CODEX_HOME=<备用home> codex exec ...`）→ **质量不降级**，这是它排在 T2 前的唯一理由。探测、选取与已知坑见 [external-reviewer-integration.md § T1b](references/external-reviewer-integration.md)。
 
 **T2 codex-mcp**（次选）：
 1. 代码审查 → `mcp__codex-mcp__review-code`（传 prompt + uncommitted: true）
@@ -163,9 +162,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 | 有 | 按额度类走 T1b |
 | **无** | 原通道**重跑一次**；再次缺失 → 判**输出契约失败**，可换通道或报告用户，⛔ **不得伪装成额度类** |
 
-⛔ **不得把「无额度信号的二次缺标记」路由成额度类**——那只是模型两次漏输标记，却会触发切后端、T1b 不可用时还直接停下等用户，属无谓停摆。误判方向仍安全：把「漏标记」当截断只多跑一轮，⛔ 不产生假 PASS。
-
-> 尾标记须 `rstrip()` 后比对最后一行，⛔ 不得用字节级 `endswith`（模型输出通常带末尾换行，字节级会把正常完成判成截断）。完整判据表见 [external-reviewer-integration.md](references/external-reviewer-integration.md)。
+⛔ **不得把「无额度信号的二次缺标记」路由成额度类**——那只是模型漏输标记，却会触发切后端、T1b 不可用时直接停下等用户，属无谓停摆。误判方向仍安全：多跑一轮，⛔ 不产生假 PASS。尾标记须 `rstrip()` 后比对最后一行，⛔ 不得用字节级 `endswith`（输出通常带末尾换行，会把正常完成判成截断）。完整判据表见 [external-reviewer-integration.md](references/external-reviewer-integration.md)。
 
 > **为什么单列这条**：其余失败都表现为「没有结果」，一眼可辨。**截断表现为「有结果但没结论」**，最容易被当成「审查通过、没发现问题」。
 
@@ -330,6 +327,10 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 示例：1 个 recurring P1 + 1 个 new P2 = 8×1.5 + 3×2 = 18
 
 ### 收敛检测
+
+> ⛔ **手动直敲 `codex exec` 做多轮审查，同样计轮次、同样适用本节熔断。** 本节熔断只在走本 skill 时自动生效——本仓实证：一次改造手动跑了 **7 轮**，熔断一次都没触发（机制在，从旁边过去了），其中 4 轮打的是与用户原始诉求无关的既存问题，最终全量缩回。
+>
+> 故从第 2 轮起须自记 `round_history`（轮次 / 发现数 / 是否出现新形状问题），命中任一熔断条件即停下复盘，⛔ 不得因「这次是手动跑的」豁免。**手动模式专属判据**：连续 2 轮发现的问题形状都与前几轮不同 → 扫描判据一直在追上一轮的发现，覆盖面不收敛 → 🔴 熔断，回头问方向是否错了（见 [constraints.md](../_shared/constraints.md) `confirm/scope-inflation`）。
 
 收敛判定基于 `round_history` 中 health_score 的趋势：
 
