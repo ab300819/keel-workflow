@@ -115,14 +115,21 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 
 调用外部 LLM 执行审查。详见 `references/external-reviewer-integration.md`。
 
-**三级降级链**（首次探测确定首选通道，每轮允许临时降级）：
+**四级降级链**（首次探测确定首选通道，每轮允许临时降级）：
 
 **T1 codex CLI**（优先）：
-1. 两步检测：`which codex` + 冒烟调用
+1. 两步检测：`which codex` + 冒烟调用（**必须含一次真实工具调用**，见集成文档）
 2. 代码审查 → `codex exec --sandbox read-only --output-schema <schema> -o <tmpfile> "<adversarial prompt>"`（结构化 JSON 输出）
 3. 方案/设计/文档审查 → stdin 输入长 brief（here-doc 或临时文件，见集成文档）
 4. 代码审查：读取 tmpfile，解析 JSON，映射 severity，合成 F-XXX ID；方案审查：文本解析
-5. JSON 解析失败 → 降级为文本解析；文本也无法解析 → 包装为单条 F-001 展示
+5. **JSON 校验优先级（⛔ 不可颠倒）**：结构化调用**只有完整通过 schema 校验才算审查结果**。
+   - JSON 完整且通过校验 → 正常消费
+   - JSON **不完整 / 缺 `verdict`** → 判 **截断**（见 § 截断不是审查结果），⛔ **不得回落成文本解析或 F-001**
+   - JSON 完整但**格式异常**（非截断，如字段类型错） → 才降级为文本解析；文本也不可解析 → 包装为单条 F-001 展示
+   > 原实现是「JSON 失败 → 文本 → F-001」一条路，会把截断产物洗成一条普通 finding，**本节最重要的安全门就此失效**。
+
+**T1b codex CLI · 备用计费后端**（额度耗尽时的首选补救，**优先于 T2/T3**）：
+同一 CLI、同一模型档次，只换计费后端（`CODEX_HOME=<备用home> codex exec ...`，其余参数与 T1 一致）→ **审查质量不降级**，这是它排在 T2 前的唯一理由。探测、选取与已知坑见 [external-reviewer-integration.md § T1b](references/external-reviewer-integration.md)。
 
 **T2 codex-mcp**（次选）：
 1. 代码审查 → `mcp__codex-mcp__review-code`（传 prompt + uncommitted: true）
@@ -130,13 +137,49 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 3. 轮询 → `mcp__codex-mcp__check-task` 直到完成
 
 **T3 Task 子 Agent**（兜底）：
-- 触发条件：T1 和 T2 均失败
+- 触发条件：T1 / T1b / T2 均失败
 - 子 Agent 使用独立审查员角色 prompt（见 `references/external-reviewer-integration.md`）
+- ⚠️ **必须标注检出率折损**：T3 与被审对象同模型、同盲区。降到 T3 时结论里标明「本轮降级审查」，⛔ 不得让「审过了」掩盖「审得更浅了」
+
+### 失败分类（⛔ 不得一律按"失败"降级）
+
+六类失败走不同路由，**完整判据表见 [external-reviewer-integration.md § 失败分类](references/external-reviewer-integration.md)**。两条必须记住的：
+
+- **额度 / 限流耗尽** → **T1b**。⛔ **不降 T2**——T2 与 T1 共用同一订阅，必然同样失败，白跑一轮
+- **工具协议不兼容**（`incompatible payload`）→ 该后端标不可用并**跳过**，⛔ 不重试（实测重连 5 次全败）
+
+### ⛔ 截断不是审查结果
+
+额度可能在审查**进行中**耗尽——审查者已读完全部输入、正要输出结论时被切断。产物有分析、有文件引用、有行号，**唯独没有裁决**。
+
+判据：**代码审查**（结构化）JSON 缺 `verdict` 或不完整 —— `verdict` 已是 schema 必填项，缺失即截断；**方案/文档审查**（文本）输出不以约定尾标记 `=== END OF REVIEW ===` 结束（brief 中强制要求）。
+
+⛔ **不得把截断输出当发现列表消费**，不得据此判 PASS、不得写入 `findings`。标 `truncated: true`。
+
+**截断只证明「完整性未被证明」，⛔ 不证明「发生了额度耗尽」**——缺尾标记也可能是模型漏输出。所以：
+
+| 同时出现额度信号（`usage limit` 等） | 处置 |
+|---|---|
+| 有 | 按额度类走 T1b |
+| **无** | 原通道**重跑一次**；再次缺失 → 判**输出契约失败**，可换通道或报告用户，⛔ **不得伪装成额度类** |
+
+⛔ **不得把「无额度信号的二次缺标记」路由成额度类**——那只是模型两次漏输标记，却会触发切后端、T1b 不可用时还直接停下等用户，属无谓停摆。误判方向仍安全：把「漏标记」当截断只多跑一轮，⛔ 不产生假 PASS。
+
+> 尾标记须 `rstrip()` 后比对最后一行，⛔ 不得用字节级 `endswith`（模型输出通常带末尾换行，字节级会把正常完成判成截断）。完整判据表见 [external-reviewer-integration.md](references/external-reviewer-integration.md)。
+
+> **为什么单列这条**：其余失败都表现为「没有结果」，一眼可辨。**截断表现为「有结果但没结论」**，最容易被当成「审查通过、没发现问题」。
+
+### 额度耗尽的默认行为：报告并停下
+
+T1 额度耗尽且 T1b 不可用时，⛔ **不自动降级到 T3，不自行决定"就这样吧"**。必须报三项由用户决定：**已耗尽的通道** / **重置时间**（原文照抄，如 `try again at 7:48 PM`）/ 可选项（等待 · 降 T3 附折损说明 · 换后端）。
+
+理由：降 T3 是**真实的检出率损失**，不应静默发生。
 
 **降级规则**：
 - 首选通道（`primary_method`）在首次探测时确定，每轮优先使用
 - 单轮失败只是临时降级，下一轮仍先尝试首选通道
 - 连续 2 轮失败 → 永久降级，更新 `primary_method`
+- ⛔ **额度类失败例外，不计入「连续 2 轮」计数**：额度是时间窗口问题而非通道问题。一次限流若触发永久降级，会把后续全部审查钉死在更弱的通道上
 
 ### S4 展示审查结论
 
@@ -366,11 +409,15 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 - [ ] 审查对象必须明确（diff / 文件路径 / 方案文本）
 
 ### 审查调度约束
-- [ ] 按 T1→T2→T3 优先级探测首选通道；每轮允许临时降级到下一级
+- [ ] 首选探测按 **T1→T2→T3**；⛔ **T1b 不参与首选探测**（它只是 T1 的另一个计费出口，由「额度耗尽」这一类失败在运行期触发）
 - [ ] 首选通道探测仅做一次（首次调用时）；记录 primary_method 和 review_method
-- [ ] T1 通过 `which codex` + 冒烟调用检测；T2 连接失败时降级到 T3
+- [ ] **冒烟调用必须含一次真实工具调用**（纯问答通过不算可用——实测存在"纯问答通、工具调用全败"的后端）
 - [ ] T1 代码审查使用 `--output-schema` 获取结构化 JSON；JSON 解析失败时降级为文本解析
-- [ ] 连续 2 轮 primary_method 失败时永久降级
+- [ ] **失败必须先分类再决定路由**（见 § 失败分类）；⛔ 额度类不得降 T2（共用订阅）
+- [ ] **⛔ 有输出但无裁决 = 截断，不得当审查结果消费**；标 `truncated: true`
+- [ ] 额度耗尽且 T1b 不可用 → **报告并停下等用户决定**，⛔ 不自动降 T3
+- [ ] 降到 T3 时结论必须标注检出率折损
+- [ ] 连续 2 轮 primary_method 失败时永久降级；**额度类失败不计入该计数**
 
 ### 结论展示约束
 - [ ] ⛔ 必须先原样展示外部审查结论，再进行验证分析
@@ -425,9 +472,13 @@ summary:
   details:
     review_target: "工作区 diff / 文件路径 / 方案描述"
     review_type: "代码审查 / 方案评审 / 文档审查"
-    review_method: codex-cli | codex-mcp | task-subagent   # 最后一轮实际生效的通道
-    primary_method: codex-cli | codex-mcp | task-subagent  # 首次探测锁定的首选通道
-    fallback_events: []          # 降级事件列表，如 ["R2: codex-cli→codex-mcp (timeout)"]
+    review_method: codex-cli | codex-cli-alt | codex-mcp | task-subagent  # 最后一轮实际生效的通道
+    primary_method: codex-cli | codex-mcp | task-subagent  # 首次探测锁定；⛔ 不含 codex-cli-alt（T1b 不参与首选探测）
+    fallback_events: []          # 降级事件列表，如 ["R2: codex-cli→codex-cli-alt (quota)"]
+    truncated: false             # ⛔ true = 本轮有输出但无裁决，findings 不可信
+    quota_exhausted: false       # 本轮是否遇到额度/限流耗尽
+    reset_hint: null             # 额度重置时间（原文照抄，如 "7:48 PM"）；无则 null
+    degraded_detection: false    # true = 实际走了 T3，检出率低于外部审查
     rounds: 1
     health_scores: [22]          # 各轮健康分
     breaker_reason: null         # convergence | safety_limit | null
