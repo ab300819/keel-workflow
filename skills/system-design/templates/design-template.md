@@ -7,7 +7,7 @@ Use this template to generate `docs/devdocs/02-system-design.md`.
 ```yaml
 ---
 generated_by: ms-system-design
-spec_version: design.v2
+spec_version: design.v3
 generated_at: <ISO-8601 timestamp, e.g. 2026-04-23T10:30:00+08:00>
 ---
 ```
@@ -441,7 +441,8 @@ Order *──* Product
 - **关联**：`INS-001`
 ```
 
-> ADR 编号在项目内全局递增，不重复。状态可选：`已采纳` | `已废弃` | `已取代`。
+> ADR 编号在项目内全局递增，不重复（取最大值按 [`id/scan-word-boundary`](../../_shared/constraints.md)：整词匹配 + 数值序）。状态可选：`已采纳` | `已废弃` | `已取代`。
+> **推翻 / 取代既有决策的 ADR 必须额外填 `取代` + `已知受影响制品` 两字段**（三跳检索规则见 [references/incremental-design.md](../references/incremental-design.md#推翻--取代类-adr-的强制影响回扫)）；普通选型 ADR 不填。
 > 若某原则被显式违反（见 `references/solid-principles-guide.md` 原则校验表 ⚠️），必须在此节生成对应 ADR 说明"为何违反"。
 > `复查条件` 为可选字段（向后兼容，不改必填结构，不触发 design 模板 bump）：仅对"暂选 X 因当前 Y 限制"这类有时效假设的决策填写，便于未来按信号重审；普通选型决策留空。
 

@@ -9,7 +9,7 @@
 ```yaml
 ---
 generated_by: ms-test-cases
-spec_version: test.v1
+spec_version: test.v2
 generated_at: <ISO-8601 timestamp, e.g. 2026-04-23T10:30:00+08:00>
 ---
 ```

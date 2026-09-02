@@ -105,6 +105,20 @@ spec_version_notes: |
 
 步骤状态（S1~S11 + S1.5）用于断点恢复；详细矩阵、S12 后置同步和状态标记见 [execution-flow.md](references/execution-flow.md)。
 
+### 失效任务卡前置门（S1 内，⛔ 阻断）
+
+任务卡带 `superseded_by` 字段 → **⛔ 立即停止，不进入 S1.5**。
+
+```text
+⛔ T-01 已被 ADR-015 取代（superseded_by: ADR-015）
+   该任务卡的执行步骤属于旧决策，照它执行会复原已被删除的设计。
+   请先读指向的 ADR 确认当前决策，再决定：
+   (a) 做新决策下的等价工作 → 用 /ms-dev-tasks 立新任务
+   (b) 确实要复原旧行为 → 需先推翻该 ADR
+```
+
+**为什么阻断而非警告**：失效任务卡的危险在于它**看起来完全正常**——状态 ✅ 已完成、步骤具体、路径明确。执行者没有线索知道这些步骤已过期，警告会被当噪音划过去。⛔ 不提供 `--force` 跳过。
+
 ## 自顶向下开发模式
 
 > 先定义骨架，后填充细节。确保追溯链在代码生成时就建立。双 Agent 模型（Test Agent → 红色验证 → Impl Agent → 完成检查+提交）已在上方"工作流程"和 [execution-flow.md](references/execution-flow.md) 强制程度矩阵中完整展开。

@@ -2,7 +2,7 @@
 
 > 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
 >
-> 本文件 6 条 rule 专门解决 devdocs-state 膨胀 + 死链两类痛点。
+> 本文件 7 条 rule 专门解决 devdocs-state 膨胀 / 陈旧 + 死链两类痛点。
 
 ## 定位
 
@@ -12,7 +12,7 @@
 | **本文件**：[新增] rule 的检测算法、严重度、修复路径（清单见下方 Rule 集表）| health-lint-implementation.md |
 | 既有偏差评分 | `../../sync/references/health-scoring.md` |
 
-## Rule 集（[新增] 6 条）
+## Rule 集（[新增] 7 条）
 
 | rule_id | 严重度 | 维度 | 适用 | 自动修复 |
 |---------|--------|------|------|---------|
@@ -22,8 +22,9 @@
 | `health/dead-link` | ⛔ | b 索引/链接 | v1+v2 | ⚠️ 部分（删除引用可自动；补建定义需 manual）|
 | `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
 | `submodule/pointer-drift` | ⛔ / ⚠️ | a 结构正确性 | v1+v2（仅 shell）| ❌（manual_decision）|
+| `state/max-id-stale` | ⚠️ | c/state-hygiene（c 维度子项）| v1+v2 | ✅ 可自动（回填或删行，均需 manual_decision 选择）|
 
-> 6 条全部 [新增]，可执行。项目可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+> 7 条全部 [新增]，可执行。项目可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
 
 ---
 
@@ -229,23 +230,28 @@
 
 ```text
 Phase A：构建编号定义索引（definition index）
-  1. 遍历定义源文件（**注意：devdocs-state.md 不是定义源**）：
+  1. 遍历定义源文件（**注意：devdocs-state.md 既不是定义源，也不是编号上界源**）：
        - docs/devdocs/**/*.md（排除 _archived/、.realign-plan.md、.health-report.md）
-       - .claude/rules/devdocs-state.md 仅扫"## 编号状态"表的"当前最大"列，
-         视为"编号空间上限"约束，**不视为单点定义**（state 是占位引用源，权威定义在资源文件）
+       - ⛔ **不从 devdocs-state.md 取"当前最大"作为上界**——该文件自称"事实快照，不追踪
+         drift"，把它的手填值当上界会在它滞后时把合法新编号误报为 out-of-range
+         （实测：state 表停在 AC-062 而资源文件已到 AC-064）。上界改由资源文件推导。
   2. 在每个定义源文件中识别"定义位置"模式：
-       - heading：^(#{1,4})\s+(F|US|AC|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b
-       - 表格行（首列）：^\|\s*(F|US|AC|...)-\d+[a-z]?\s*\|
-       - 列表项 + 状态：^[-*]\s+\*?\*?(F|US|...)-\d+[a-z]?\b
+       - heading：^(#{1,4})\s+(F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b
+       - 表格行（首列）：^\|\s*(F|US|AC|CON|...)-\d+[a-z]?\s*\|
+       - 列表项 + 状态：^[-*]\s+\*?\*?(F|US|CON|...)-\d+[a-z]?\b
   3. 收集为 index：{ id: <编号>, defined_in: [<file>:<line>, ...] }
-  4. 从 state.md 的"当前最大"列收集 max_caps：{ F: F-028, AC: AC-210, ... }（仅用于 phase B 的 "out-of-range" 区分）
+  4. 从 **Phase A 已建的 definition index** 推导 max_caps（⛔ 不读 state.md）：
+       max_caps[<type>] = max(定义索引中该 type 的全部数值部分)
+       仅用于 phase B 的 "out-of-range" 区分
+  5. 另读 state.md "## 编号状态"表的"当前最大"列为 state_caps，**只用于 state/max-id-stale
+     比对**（见该 rule），⛔ 不参与 phase B 判定
 
 Phase B：扫描引用 + 范围编号展开
   1. 遍历同一批文件
   2. 提取所有引用 occurrence：
-       a. 单点 regex：`\b(F|US|AC|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b`
+       a. 单点 regex：`\b(F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b`
        b. 范围 regex（先 match 展开为单点列表）：
-          `\b(F|US|AC|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-(\d+)~(?:\1-)?(\d+)\b`
+          `\b(F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-(\d+)~(?:\1-)?(\d+)\b`
           示例：AC-148~152 → [AC-148, AC-149, AC-150, AC-151, AC-152]
                 AC-006~AC-008 → [AC-006, AC-007, AC-008]
                 AC-148~AC-152（带前缀重复）→ 同上展开
@@ -256,7 +262,7 @@ Phase B：扫描引用 + 范围编号展开
        - 命中 → 跳过
        - 未命中 → 查 max_caps：
            a. 若 ref_id 数值部分 > max_caps[<type>] → finding sub_type = "out-of-range"
-              hint: "超出 devdocs-state.md 声明的当前最大编号，可能是未来引用或拼写错误"
+              hint: "超出资源文件中该类型的最大已定义编号，可能是未来引用或拼写错误"
            b. 若 ref_id ≤ max_caps[<type>] 但定义索引未命中 → finding sub_type = "missing-definition"
               hint: "编号在声明范围内但找不到定义；可能拼写错误 / 未创建 / 已删除"
            c. finding {
@@ -376,6 +382,50 @@ Phase B：扫描引用 + 范围编号展开
 - 本 rule 检查"设计文档内部 ADR vs 正文"一致性。
 - 二者互补：层 2 跨文档；本 rule 文档内。
 - ms-verify --docs 调用本 rule 实现需在 verify/SKILL.md 维度 A 加引用（不重复实现算法）。
+
+---
+
+### `state/max-id-stale`
+
+**目的**：检测 `devdocs-state.md` 「## 编号状态」表的「当前最大」列与资源文件推导值不一致。
+
+**为什么只是 ⚠️ 而不阻断**：该表**不再是编号权威**（`id-reference-check` 的上界已改从资源文件推导，分配新编号也直接扫资源文件）。它滞后不会导致错误的编号分配，只是让「单页速读」读到旧数字。所以这条 rule 报的是**缓存过期**，不是数据损坏。
+
+> 改前该表被 `id-reference-check` 当作编号上界使用，而文件自称「事实快照，不追踪 drift」——**声明不可信却被当权威**。实测症状：state 表停在 `AC-062`，资源文件已到 `AC-064`，再新增就撞号。本 rule 与那次改动同批落地。
+
+**检测对象**：`<repo_root>/.claude/rules/devdocs-state.md` 的「## 编号状态」表（不存在 → skip，输出 `not_applicable`）。
+
+**算法**：
+
+```text
+1. 解析 state.md「## 编号状态」表，得 state_caps：{ F: 28, AC: 62, CON: 3, T: 23, ... }
+   （占位符行如 `F-XXX` 跳过——那是未实例化的模板）
+2. 复用 id-reference-check Phase A 的 definition index，按 type 取数值最大值
+   得 derived_caps：{ F: 28, AC: 64, CON: 3, T: 23, ... }
+3. 逐 type 比对：
+     - state_caps[t] == derived_caps[t]        → 通过
+     - state_caps[t] <  derived_caps[t]        → finding sub_type = "stale"（表滞后，最常见）
+     - state_caps[t] >  derived_caps[t]        → finding sub_type = "phantom"
+           hint: "表里的编号在资源文件中找不到定义——可能是编号被删除后未同步，
+                  或该编号从未真正创建"
+     - t 在 state 表有行但 derived 无该 type   → 同 "phantom"
+     - t 在 derived 有但 state 表无行          → finding sub_type = "missing-row"（⚠️ 低优先）
+4. 严重度统一 ⚠️
+```
+
+**修复动作**（`manual_decision` 二选一，⛔ 不默认自动改写）：
+
+| 选项 | 动作 |
+|---|---|
+| 回填 | 把「当前最大」列改为 `derived_caps` 值 |
+| 删行 | 删掉该类型的行——**若该项目从不看这张表，删掉比维护它更诚实** |
+
+> `phantom` 子类型额外提示先查是否有编号被误删（那可能是 `health/dead-link` 的同源问题）。
+
+**边界**：
+- `_archived/` 下的副本不扫。
+- 跨 worktree 多份 state.md 时只扫主 worktree（与 `state/total-size-cap` 一致）。
+- 模板占位（`F-XXX` / `AC-XXX` 这类字面）不参与比对，避免对未实例化模板误报。
 
 ---
 

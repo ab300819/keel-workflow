@@ -120,7 +120,7 @@ metadata:
 |------|------|------|------|
 | Bug 记录 | BUG | BUG-XXX | Bug 修复记录编号 |
 
-编号延续现有文档中的最大编号。
+编号延续现有文档中的最大编号。扫描方法按 [`id/scan-word-boundary`](../_shared/constraints.md)（`grep -owhE` 整词 + `sort -n` 数值序）。
 
 ## Step 1: 理解 Bug
 

@@ -4,11 +4,25 @@
 
 ## 当前 spec_version
 
-**`req.v1`**（MVP 起点，未发生首次 bump）
+**`req.v2`**（2026-09-01：§6 非功能性需求散文 → `CON-XXX` 编号约束表；`needs review` 补三必填字段）
 
 ## Migration Matrix（spec_version 演进）
 
-### v1 → v2（保留字段，未来启用）
+### v1 → v2
+
+| 分级 | 变更项 | 修复动作 | 判据（如何识别缺失）|
+|---|---|---|---|
+| restructuring | **§6 非功能性需求**：三张散文表 / bullet → 编号表 `编号/类别/约束/验证方式/档/状态` | AskUserQuestion 逐条呈现 before/after；每条散文项转一行 `CON-XXX`。**「验证方式」推不出时填 `—` 并标 `推导待确认`，⛔ 不自动编造**（沿用 `design.v2` §0 做法）| §6 标题为「非功能性需求」，或其下无 `CON-` 编号 |
+| additive | **§5.3 约束 → 任务**段（追溯矩阵新增，`CON → T`）| 由 §6 与 04 任务卡的关联反推；无关联的 CON 留空待补 | §5 无「约束 → 任务」小节 |
+| additive | §5.1 概览表新增「约束（CON）」行 | 计数填入 | 概览表无该行 |
+| additive | `needs review` 条目新增 `归属` / `关闭条件` / `提出` 三必填字段 | 逐条 AskUserQuestion 补；⛔ **不猜归属人，也不用文件 mtime 顶替 `提出` 日期**（那会让报龄失真）| 条目缺任一字段 |
+| — | 发布合规清单（`references/release-compliance.md`）两级触发 | **无**——按需加载，不产生存量结构差距 | 不适用 |
+
+> **legacy 子分支（本次 bump 的兼容基石）**：存量文档**无 `CON` 行**时，消费方**只跳过 CON 子检查**，原有 F/US/AC 检查完整继续。
+> ⛔ **不得整个维度 / 整个流程 skip**——那会把老项目的既有检查一并关掉，比不改更糟。
+> 逐消费方的 legacy 行为见各自文件：[verify D1/D4](../../verify/SKILL.md)、[verify impl B1](../../verify/SKILL.md)、[test-cases](../../test-cases/SKILL.md)、[sync trace/audit](../../sync/references/)。
+
+### v2 → v3（保留字段，未来启用）
 
 | 分级 | 变更项 | 修复动作 | 判据 |
 |---|---|---|---|
@@ -20,8 +34,11 @@
 
 ### 入口
 
-- 主入口：由 `/ms-pipeline realign` 编排层调度
-- 底层直用：`/ms-requirements --realign[=scope]`，scope ∈ {features / stories / ac / trace / nfr}
+- **用户面唯一入口**：`/ms-pipeline realign --scope=spec`（内部委托本 skill 的子动作）
+- 底层子动作（**编排实现细节，⛔ 不作为用户面命令暴露**，见 [constraints.md](../../_shared/constraints.md) `realign/no-direct-user-call`）：`--realign[=scope]`，scope ∈ {features / stories / ac / trace / **con** / needs-review}
+
+> `con` 子动作即 §6 散文 → `CON-XXX` 编号表的迁移（v1→v2 的 restructuring 行）。
+> 原枚举写的是 `nfr`，**此前无实体**；本次落地时随编号命名一并改为 `con`。
 
 ### 流程
 

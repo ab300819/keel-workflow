@@ -67,6 +67,17 @@ metadata:
 
 **LLM 自动判断**：默认入口先探测 `docs/devdocs/01-requirements.md`，不存在走初始模式，存在走增量模式；用户表达"快速通过 / 少确认 / 直接生成"等意图时，自动启用快速通过语义：跳过初始方案确认和轻量假设挑战，仅保留最终写入前的 1 次汇总确认，并提示风险。
 
+### 发布合规清单的两级触发
+
+平台强制约束（上架元数据 / 图标 / 本地化 / 商标红线 / 隐私披露 / 备案资质）没有用户故事，但缺一项就发布阻塞。清单在 [references/release-compliance.md](references/release-compliance.md)，**按需加载**：
+
+| 级别 | 条件 | 行为 |
+|---|---|---|
+| **加载清单** | 用户明说「发布 / 上架 / 提审 / 合规 / 平台配置 / 商店」，**或** 01 §6 已有该类别 `CON` | 加载 reference，展开命中的组 |
+| **一行提示** | 仅探测到平台制品文件（`Info.plist` / `AndroidManifest.xml` / `manifest.json` / `*.xcodeproj` / `pubspec.yaml` 等），用户没提发布 | ℹ️ 输出**一行**提示，⛔ **不展开任何问题、不追问、不重复提示** |
+
+⛔ **文件存在只是「要不要问」的开关，不是「必须有 CON」的门。** 任意 iOS 项目几乎必然有 `Info.plist`——据此强推问卷会让它变成仪式，违反「小项目零约束也必须能跑完全流程」。**零信号项目从头到尾看不见这套东西。**
+
 ### `--from-prd` 模式
 
 消费 `/ms-prd` 产出的结构化需求包，转化为正式 F/US/AC。
@@ -86,7 +97,7 @@ metadata:
 |---|---|
 | 定位 index | 读取用户指定的 `<index路径>`；未指定时使用扁平默认路径 `docs/prd/requirements/index.md`（单需求脚手架）；未找到则提示先运行 `/ms-prd` 或手动指定 |
 | 记录来源 | 记录实际读取的 `source_index_path`，后续回写映射使用同一路径；读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产` |
-| 读取需求 | 通过 Glob 匹配 `requirements/FR-*` / `NFR-*`，提取澄清结论中的功能描述和验收意图；FR-XX → 生成功能需求（F-XXX/US-XXX/AC-XXX），NFR-XX → 写入非功能需求章节 |
+| 读取需求 | 通过 Glob 匹配 `requirements/FR-*` / `NFR-*`，提取澄清结论中的功能描述和验收意图；`FR-XX` → 生成功能需求（`F-XXX`/`US-XXX`/`AC-XXX`），**`NFR-XX` → 生成约束编号 `CON-XXX`**（落 01 §6 约束表，⛔ 不再降级为无编号散文）|
 | 写入 DevDocs | 将 FR-XX/NFR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "ms-prd"）；按现有流程生成功能/故事/AC 编号，跳过方案确认但保留最终确认 |
 | 回写映射 | 回写到 `source_index_path`：已有 `## DevDocs 映射` 则**更新现有章节**（追加/修改行，不创建新章节），没有则在文末创建；重新导入时旧映射行保留（审计历史），追加新行并标记 `mapping_status: remapped` |
 | 返回 | 返回新增编号列表 |
@@ -98,6 +109,18 @@ metadata:
 | `active` | `/ms-requirements --from-prd` 首次成功生成 F/US/AC 并回写 DevDocs 映射 |
 | `outdated` | `/ms-prd` 修订或 PRD 更新导致既有 DevDocs 映射失效时写入；requirements 读取后原地更新对应 F/US/AC，不创建新编号 |
 | `remapped` | `/ms-requirements --from-prd` 重新导入 outdated 来源时追加新映射行，旧映射行保留作为审计历史 |
+
+### CON 编号与续编
+
+| 规则 | 内容 |
+|---|---|
+| 命名 | `CON-XXX`（Constraint 约束）。承载制品型需求：性能基线 / 日志规约 / 安全加固 / 可观测性 / 上架合规 / 平台备案。**合规是 `类别` 字段值，不是独立编号体系** |
+| 阶段映射 | `NFR-XX`（PRD）→ `CON-XXX`（DevDocs），与 `FR-XX` → `F-XXX` 同构 |
+| 续编 | ⛔ **不读 `.claude/rules/devdocs-state.md`**。直接扫资源文件取 max+1：<br>`grep -owhE 'CON-[0-9]+' docs/devdocs/01-requirements.md \| sed 's/CON-//' \| sort -n \| tail -1`<br>（整词匹配 + 数值序，理由见 [_shared/constraints.md](../_shared/constraints.md)）|
+| 边界 | ⛔ 有用户可观测行为的需求必须走 F/US/AC，**不得写成 CON 规避 AC**。判据：断言对象是「用户能观察到的行为」→ AC；是「制品 / 环境 / 流程的状态」→ CON |
+| 零约束 | 01 §6 可留空或删除，不阻塞任何下游流程 |
+
+**验证方式两档**：`可执行`（默认，优先——命令 / 脚本函数 / 基准 / 既有测试编号）与 `人工`（例外，须写明为何不可执行）。档位决定 `/ms-dev-workflow` 的执行路径，详见 [dev-workflow execution-flow.md](../dev-workflow/references/execution-flow.md)。
 
 **最小输入字段**（每个 FR-XX/NFR-XX 文件必须包含）：
 - title（功能名称）
@@ -266,7 +289,7 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 - [ ] 必须提供追溯矩阵
 
 ### 增量模式约束
-- [ ] **必须先扫描现有编号，延续编号**
+- [ ] **必须先扫描现有编号，延续编号**——扫描方法按 [`id/scan-word-boundary`](../_shared/constraints.md)（`grep -owhE` 整词 + `sort -n` 数值序）。⛔ 裸 `grep -o` + 字典序 `sort` 会产出幻影编号并判 `T-9 > T-106`
 - [ ] **追加内容必须标注增量版本和日期**
 - [ ] **不得删除或覆盖现有内容**
 - [ ] **完成后必须返回新增编号列表**
@@ -319,12 +342,37 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 | **基线增量补全** | `/ms-retrofit` | **后续**：基线建立后用 `--context` 补齐 `未知` / `推导待确认` 条目 |
 | 设计阶段 | `/ms-system-design` | 后续：需求确认后进入设计 |
 | 上下文生成 | `/ms-onboard` | 后续：背景信息会被提取到上下文摘要 |
+| 发布合规采集 | [references/release-compliance.md](references/release-compliance.md) | 按需加载（两级触发，见上）：六组清单 → `CON-XXX` |
 
 ## 下游 needs review 协作
 
-- F/US/AC 中不得把未确认假设写成确定事实；开放问题、范围争议、映射疑问必须进入需求文档的 needs review 块或等价待确认区。
-- needs review 项需标注关联 F/US/AC、问题、建议确认人和对下游 `/ms-system-design`、`/ms-test-cases` 的影响。
+- F/US/AC/CON 中不得把未确认假设写成确定事实；开放问题、范围争议、映射疑问、**待实测 / 待裁决项**必须进入需求文档的 needs review 块或等价待确认区。
 - 下游 skill 读取到 needs review 时不得静默忽略；必须在自身输出中延续或请求用户确认。
+
+### needs review 条目必填字段
+
+| 字段 | 规则 |
+|---|---|
+| `关联` | 关联的 `F-XXX`/`US-XXX`/`AC-XXX`/`CON-XXX` |
+| `问题` | 待确认 / 待实测的具体问题 |
+| `归属` | **谁 / 哪个任务在什么条件下必须关掉它**。⛔ 不得留空——没人负责的待定项等于永久待定 |
+| `关闭条件` | **可判定的关闭判据**。⛔ 不得写「再看看」「后续观察」这类无判据表述 |
+| `提出` | ISO 日期（`YYYY-MM-DD`）。报龄的唯一依据 |
+| `下游影响` | 对 `/ms-system-design`、`/ms-test-cases` 的影响 |
+
+**为什么必填**：待实测项若无归属与关闭条件，会一直躺着直到被**完全无关的动机**偶然撞开。
+`/ms-sync --audit` 按 `提出` 日期报龄，`/ms-verify --readiness` 在 ≥120 天时升 P1 阻塞。
+
+```markdown
+### needs review
+
+- **关联**：CON-004
+  **问题**：无授权选片架构下 NSPhotoLibraryUsageDescription 是否仍必需
+  **归属**：下一个触碰照片库链路的任务
+  **关闭条件**：实测删除该 key 后 PHPickerViewController 选片仍成功
+  **提出**：2026-05-12
+  **下游影响**：影响 02 权限模块章节与 CON-004 的验证方式
+```
 
 ## 子 Agent 摘要格式
 

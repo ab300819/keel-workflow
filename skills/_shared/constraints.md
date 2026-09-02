@@ -8,7 +8,7 @@ related:
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
   - skills/_shared/runlog.md（运行日志：形状、纪律、判决点）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v9
+spec_version: shared-constraints.v10
 ---
 
 # 共享约束 SSOT
@@ -348,6 +348,58 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 - `scope/review-lens`：强制力主要来自人工 / agent review lens 三问——(1) 这个门看得到它要判的东西的影响范围吗？(2) 这一轮的"加"，从零开始还会加吗？(3) 问题在上游时，这个门能判回去吗？
 - `scope/no-auto-detection`：**不做**"门 scope vs 影响域"的自动检测——不可 grep，硬做即以增生治增生。同 §9 `layered-memory/no-auto-detection` 结论。
 
+## 编号标识与扫描（跨 skill）
+
+### `CON` 标识登记 [新增]
+
+| 项 | 内容 |
+|---|---|
+| 标识 | `CON-XXX`（Constraint 约束）—— **非编码类需求**：改配置 / 加资源 / 调元数据 / 改文案 / 删权限声明，没有可写测试的业务逻辑。承载上架合规、日志规约、安全基线、构建守卫 |
+| 权威源 | `docs/devdocs/01-requirements.md` §6 约束表 |
+| owner | `ms-requirements`（生成）+ `ms-dev-tasks`（关联） |
+| 阶段映射 | `NFR-XX`（PRD）→ `CON-XXX`（DevDocs） |
+| 边界 | ⛔ `CON` **不进 `F → US → AC` 链**。有用户可观测行为的需求必须走 `F+AC`，⛔ 不得写成 CON 规避 AC |
+| 类别不是命名空间 | 合规 / 性能 / 日志规约 / 安全 **是 `类别` 字段的值**，⛔ 不各开编号体系 |
+
+### `CON` 的消费边界 [新增]
+
+> ⛔ **`CON` 是局部约定，不是全局一等公民。除上表两个 owner 外，其余 skill 不拥有 CON，因此不对它作判断。**
+
+| 消费方 | 对 `CON` 的行为 |
+|---|---|
+| `ms-dev-workflow` | 任务标 `TDD 模式 = ⚪ 不适用` 时按该档执行（**字段本已存在**），⛔ 不解析 CON 的类别与语义，只执行任务卡的「测试方法 / 验收标准」 |
+| `ms-verify` / `ms-sync` / `ms-test-run` / `ms-test-cases` / `ms-board` / `ms-system-design` / `health-lint` 计分 | ⛔ **既不拦也不报**。`CON` 不进它们的覆盖率、孤立判据、健康分、覆盖门 |
+| `health-lint` `id-reference-check` | **仅**把 `CON-` 纳入已知编号前缀（否则会把合法引用误报为未定义编号）。这是防误报，⛔ 不是治理 |
+
+**为什么划这条线**：把 `CON` 注入全部消费方需要改约 36 处，且同一执行事实分散在强制矩阵 / 主循环 / 子 Agent 协议 / 完成流程 / auto-mode / 模板 / CLAUDE.md，**没有单一执行 SSOT**；本仓又无 runner / CI 防止再次分歧。经 7 轮外部审查判定**不会稳定收敛**，故收回边界。
+
+**代价（明说）**：CON 没有自动治理——没写验证方式、验证方式与守卫脚本分叉、CON 无对应任务，这些**不会被任何门发现**。它保住的是「配置类任务不编造 AC 就能挂上追溯」这一件事。
+
+### `id/scan-word-boundary` [新增]### `id/scan-word-boundary` [新增]
+
+**扫描编号必须整词匹配 + 数值序比较。**
+
+```sh
+# ✅ 正确：-w 整词匹配（'-' 非词构成字符），-n 数值序
+grep -owhE 'T-[0-9]+' <files> | sed 's/T-//' | sort -n | tail -1
+
+# ⛔ 错误：裸 -o + 字典序
+grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
+```
+
+两类失效，**都已在本仓实测复现**：
+
+| 陷阱 | 症状 |
+|---|---|
+| **前缀字面包含** | `UT-001` / `IT-001` 内含 `T-001` → 裸 `grep -o 'T-[0-9]+'` 产出幻影 `T` 编号。同理 `AC-001` 内含 `C-001`（这也是制品型标识取 `CON` 而非 `C` 的原因之一）|
+| **字典序 ≠ 数值序** | `sort \| tail -1` 会判 `T-9 > T-106` |
+
+⛔ **前后单边界的写法同样不可用**：`(^\|[^[:alnum:]_])T-[0-9]+([^[:alnum:]_]\|$)` 会**消耗边界字符**，`T-01,T-02,T-03` 只匹配到 `T-01` 与 `T-03`（实测）。用 `-w`。
+
+> **为什么进本文而 `skip/numbering-unique` 仍成立**：那条跳过的是**续编策略**（各对象的来源与 SSOT 不同，确实不能统一）；本条是**扫描方法的机械陷阱**，对每种编号类型完全一致，且语言与领域中立。两者不冲突。
+>
+> 消费方：`ms-requirements` / `ms-dev-tasks` / `ms-bugfix` / `ms-test-cases`（编号续编）+ `agent-memory` devdocs-state 模板（推导命令）+ `health-lint` `id-reference-check` / `state/max-id-stale`（上界推导）。
+
 ## 差异点与跳过项
 
 ### 已标注语义差异点
@@ -357,7 +409,8 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 
 ### 本次跳过的规则
 
-- `skip/numbering-unique`：编号唯一/续编只保留指针，不提升为共享细则；理由是 PRD 编号、DevDocs 编号、测试编号和任务编号各有不同 SSOT 与链路。
+- `skip/numbering-unique`：编号唯一/续编**策略**只保留指针，不提升为共享细则；理由是 PRD 编号、DevDocs 编号、测试编号和任务编号各有不同 SSOT 与链路。
+  > ⚠️ 不要与 `id/scan-word-boundary`（§编号标识与扫描）混淆：那条管**怎么扫**（机械陷阱，各类型一致），本条跳过的是**扫到之后按什么策略续编**（各类型不同）。
 - `skip/sprint-contract`：Sprint Contract 不提升；理由是 `ms-dev-workflow` 私有执行契约。
 - `skip/verify-scoring`：verify P 级评分、health score 不提升；理由是 `ms-verify` 私有评估模型。
 
@@ -376,7 +429,11 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 1. 绿验 `skipped/todo=0`
 2. 测试写成红验通过即冻结(实现不得改测试,疑似缺陷须 AskUserQuestion)
 3. 声称 vs 实际 diff 一致
-4. 行为型 AC 至少 1 条独立行为证据(不能只靠实现代码自证;无则显式豁免)
+4. **每条被本任务满足的需求至少 1 条独立证据**(不能只靠实现代码自证;无则显式豁免)：
+   - 行为型 `AC` → 独立行为证据(测试 / `--ui --live` 截图 / 显式豁免记录)
+   - 制品型 `CON`（`档 = 可执行`）→ **验证命令红→绿两次实际输出**
+   - 制品型 `CON`（`档 = 人工`）→ **人工核对留证**：谁、何时、观察到什么。⛔ 不接受「已检查」三字
+   > 原文只写「行为型 AC」，`CON` 引入后会**落出证据要求之外**——制品型任务本来最容易只靠"我改了配置"自证。
 5. 受影响测试后置 `/ms-test-run --affected`
 
 ### review_pending(任务状态)

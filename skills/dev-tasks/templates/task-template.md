@@ -9,12 +9,12 @@
 ```yaml
 ---
 generated_by: ms-dev-tasks
-spec_version: tasks.v1
+spec_version: tasks.v2
 generated_at: <ISO-8601 timestamp, e.g. 2026-04-23T10:30:00+08:00>
 ---
 ```
 
-```markdown
+````markdown
 # 开发任务：<功能名称>
 
 ## 任务概览
@@ -248,4 +248,25 @@ T-02 ─┘           │
 - [ ] 文档已同步（`/ms-sync`）
 - [ ] 代码审查已完成（Review 要点已检查）
 - [ ] AGENTS.md 状态已更新（若有）
+````
+
+### 可选字段：`superseded_by`（任务卡失效标记）
+
+决策被推翻后，**已完成的任务卡会留在旧世界**——它的执行步骤仍在教人配置已被删除的东西。重做时照它执行会把缺陷原样复原。
+
+```markdown
+### T-01: 配置 entitlements 与 usage description  ⚠️ 已失效
+
+| 属性 | 值 |
+|------|------|
+| **状态** | ✅ 已完成 |
+| **superseded_by** | ADR-015（推翻 ADR-006，照片库读授权链路整条删除）|
 ```
+
+| 规则 | 内容 |
+|---|---|
+| 写入时机 | ADR 推翻既有决策时，由「已知受影响制品」表逐条回填（见 [system-design incremental-design.md](../../system-design/references/incremental-design.md)）|
+| 格式 | `ADR-XXX` 或 `T-XX`（被哪个决策 / 任务取代）+ 一句话理由 |
+| 标题 | 标题末尾追加 `⚠️ 已失效` |
+| ⛔ 历史不可变 | **不删、不改历史执行步骤与 commits**。失效标记是加法，不是改写——否则丢掉「当时为什么这么做」 |
+| 消费方 | `/ms-dev-workflow` S1 读到即 ⛔ 停（见其「失效任务卡前置门」）|
