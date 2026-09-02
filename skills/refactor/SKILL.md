@@ -308,7 +308,7 @@ npx stryker run --mutate '<target-path>'
 
 #### UI 代码重构
 
-UI 重构走 [`/ui-orchestrator`](../ui-orchestrator/SKILL.md) 路由到对应的 UI skill 执行。布局 / token / 交互状态 / 空状态等审查判据见 [dev-workflow 的 ui-quality-checklist](../dev-workflow/references/ui-quality-checklist.md)。
+UI 重构走 [`/ui-orchestrator`](../ui-orchestrator/SKILL.md) 路由到对应的 UI skill 执行。布局 / token / 交互状态 / 空状态等审查判据见 [dev-workflow 的 ui-quality-checklist](../ms-dev-workflow/references/ui-quality-checklist.md)。
 
 重构特有、上述两处都不覆盖的三条：
 

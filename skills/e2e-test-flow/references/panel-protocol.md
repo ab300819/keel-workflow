@@ -1,6 +1,6 @@
 # 报告面板协议(e2e-test-flow 私有)
 
-> 本文件是阶段⑥报告面板的协议权威:run-state-v1 schema / 生成与注入 / 感知安全纪律 / T2 降级传输 / 断点续跑。SKILL.md 只给「报告面板」一句流程概览,协议细节以本文件为准。机制复用已在 ms-board 验证过的做法(见 [board-protocol.md](../../board/references/board-protocol.md) §4/§5/§8),锚点从 DevDocs 编号(F/US/AC)替换为本 skill 的用例编号(如 `TC-J-001`),不复用其章节解析 / canonical 标题表 / 评审修订回写(那些是 DevDocs 专有机制)。
+> 本文件是阶段⑥报告面板的协议权威:run-state-v1 schema / 生成与注入 / 感知安全纪律 / T2 降级传输 / 断点续跑。SKILL.md 只给「报告面板」一句流程概览,协议细节以本文件为准。机制复用已在 ms-board 验证过的做法(见 [board-protocol.md](../../ms-board/references/board-protocol.md) §4/§5/§8),锚点从 DevDocs 编号(F/US/AC)替换为本 skill 的用例编号(如 `TC-J-001`),不复用其章节解析 / canonical 标题表 / 评审修订回写(那些是 DevDocs 专有机制)。
 
 ## 1. run-state-v1(页面状态 schema)
 

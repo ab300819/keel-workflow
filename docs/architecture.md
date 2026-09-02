@@ -80,11 +80,11 @@ health scope 治理「已有文档体系是否健康」，与 `spec` scope（产
 > 原维度 d「SSOT 遵从」与维度 e「三层分离自动检测」均已废弃：d 依赖已删除的 layout.v2 ssot-lint，无检测对象。三层分离作为**原则**已由编号文件结构 + `state/*` / `design/adr-only-revision` 症状规则承载，审查时作人工尺子用，不再做独立的关键词扫描维度。权威见 [constraints.md §9 分层记忆原则](../skills/_shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 
 **关键设计**：
-- health-lint rule 清单以 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md) Rule 集表为权威，7 条全部可执行
+- health-lint rule 清单以 [health-lint-implementation.md](../skills/ms-pipeline/references/health-lint-implementation.md) Rule 集表为权威，7 条全部可执行
 - `devdocs-state.md` 模板硬化（forbidden 6 类内嵌模式 + 200/500/40K 三档阈值）+ `agent-memory --update` 健康度自检（双重保险）
 - `design/adr-only-revision` 把 system-design 既有 ⛔ 硬约束（仅追加 ADR 不改正文）从人工自检升级为 git 历史自动扫描
 
-详见 [realign-scope-health.md](../skills/pipeline/references/realign-scope-health.md) + [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md)。
+详见 [realign-scope-health.md](../skills/ms-pipeline/references/realign-scope-health.md) + [health-lint-implementation.md](../skills/ms-pipeline/references/health-lint-implementation.md)。
 
 ### PRD 流程治理 Spec（轻量同类，已显性化）
 
@@ -92,8 +92,8 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 
 | spec | 内容 | 状态 |
 |------|------|------|
-| [prd-revision-policy.md](../skills/prd/references/governance/prd-revision-policy.md) | 3 类变更边界统一规则（单 FR / chunk / 模板）| [现状] |
-| [prd-devdocs-mapping.md](../skills/prd/references/governance/prd-devdocs-mapping.md) | mapping 状态机（active/outdated/remapped/removed）+ 回扫责任分界 | [现状] |
+| [prd-revision-policy.md](../skills/ms-prd/references/governance/prd-revision-policy.md) | 3 类变更边界统一规则（单 FR / chunk / 模板）| [现状] |
+| [prd-devdocs-mapping.md](../skills/ms-prd/references/governance/prd-devdocs-mapping.md) | mapping 状态机（active/outdated/remapped/removed）+ 回扫责任分界 | [现状] |
 
 > **与 DevDocs 6 阶段的差异**：PRD 治理大部分是收纳已有机制（chunk 指纹 / `--revise` / `--back-propagate-prd` / mapping_status），少量必要边界补齐，保持轻量定位。
 
@@ -111,7 +111,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 |-------|------|------|
 | `spec`（默认）| 产物 `spec_version` drift（schema 维度）| ✅ 部分可用 |
 | `prd-mapping` | PRD mapping_status 扫描 + 报告 | [FUTURE] |
-| `health` | 文档健康度主动审查（4 维度 / health-lint rule，清单见 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md) Rule 集表）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](../skills/pipeline/references/realign-scope-health.md)）|
+| `health` | 文档健康度主动审查（4 维度 / health-lint rule，清单见 [health-lint-implementation.md](../skills/ms-pipeline/references/health-lint-implementation.md) Rule 集表）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](../skills/ms-pipeline/references/realign-scope-health.md)）|
 
 **Apply 6 Phase**：checkpoint → file_ops → id_map → trace → frontmatter → post-validation；每 Phase 单独 commit；失败 ⛔ + `git reset --hard <checkpoint_commit>` 回滚；plan_hash 校验中断恢复一致性。
 
@@ -124,7 +124,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | `/ms-verify --ui` | UI 与设计稿对齐 | ✅ 可用 |
 | `/ms-verify --readiness` | 开发前就绪检查 | ✅ 可用 |
 | `/ms-verify --schema-drift` | drift 三态报告（schema + layout 两段呈现）| ✅ 可用 |
-| `/ms-pipeline realign --scope=health` | 健康度主动审查（rule 清单见 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md)，layout.v1+v2 通用）| ✅ 可用 |
+| `/ms-pipeline realign --scope=health` | 健康度主动审查（rule 清单见 [health-lint-implementation.md](../skills/ms-pipeline/references/health-lint-implementation.md)，layout.v1+v2 通用）| ✅ 可用 |
 
 #### 已收敛 / internal-only（不再用户面暴露）
 
@@ -142,7 +142,7 @@ PRD 流程（ms-prd / ms-prd-brainstorm / ms-prd-parser）承担**部分相同**
 | 2 | SKILL.md 移除 deprecated flag | ✅ |
 | 3 | 各 skill SKILL.md 收敛 ≤5 外露 flag | ✅ |
 | 4 | `shared-constraints.md § 8` 新增 single-entry 规则族 | ✅ |
-| 6 | `--scope=health` 健康度主动审查（health-lint rule（清单见 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md)）+ devdocs-state 模板硬化 + ADR↔正文同期修订检测）| ✅ |
+| 6 | `--scope=health` 健康度主动审查（health-lint rule（清单见 [health-lint-implementation.md](../skills/ms-pipeline/references/health-lint-implementation.md)）+ devdocs-state 模板硬化 + ADR↔正文同期修订检测）| ✅ |
 
 **用户面 flag 总收敛 49 → 20（-59%）**：
 
@@ -210,7 +210,7 @@ F-001 (功能点)
 | INS-XXX | 洞察建议 | `/ms-insights` |
 | BUG-XXX | Bug 记录 | `/ms-bugfix` |
 
-> ℹ️ **`ms-backlog` 复用现有编号，不新增 B-XXX**。暂缓条目在 `docs/devdocs/backlog.md` 中用 `source_id + entry_no` 作局部锚点（如 `F-01#1`），状态机仅 `parked → reactivated|closed|superseded`。详见 [ms-backlog SKILL.md](../skills/backlog/SKILL.md)。
+> ℹ️ **`ms-backlog` 复用现有编号，不新增 B-XXX**。暂缓条目在 `docs/devdocs/backlog.md` 中用 `source_id + entry_no` 作局部锚点（如 `F-01#1`），状态机仅 `parked → reactivated|closed|superseded`。详见 [ms-backlog SKILL.md](../skills/ms-backlog/SKILL.md)。
 
 ## 文件结构
 

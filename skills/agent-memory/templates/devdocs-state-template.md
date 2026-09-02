@@ -6,7 +6,7 @@
 >
 > ⛔ **本文件不是编号权威。** 分配新编号必须扫资源文件（见「编号最大值的推导」节）——把「当前最大」当分配依据会与本文件自称的「不追踪 drift」直接矛盾，且手工回填必然漂移导致撞号。
 >
-> 健康度审查由 `/ms-pipeline realign --scope=health` 主动检测（详见 [pipeline/references/health-lint-implementation.md](../../pipeline/references/health-lint-implementation.md)）。
+> 健康度审查由 `/ms-pipeline realign --scope=health` 主动检测（详见 [pipeline/references/health-lint-implementation.md](../../ms-pipeline/references/health-lint-implementation.md)）。
 
 ## 边界约束（硬性）
 

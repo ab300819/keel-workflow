@@ -15,7 +15,7 @@
    - **禁用** AskUserQuestion（避免子 Agent 阻塞），自动收敛循环（blocker!=[] 且 round < max_rounds → 自动构建下一轮 brief）
    - 状态名遵循 dev-workflow 的 canonical enum `EXT_REVIEWED / EXT_UNRESOLVED / EXT_BLOCKED`（非本 skill 的 verdict/rounds 结构）
    - 默认 max_rounds=3（dev-workflow 嵌入收紧值），可由 `--external-rounds N` 覆盖到 5
-   - 详见 `skills/dev-workflow/references/verification-flow.md` Phase 4 章节
+   - 详见 `skills/ms-dev-workflow/references/verification-flow.md` Phase 4 章节
 
 两种模式共享本文档的 T1/T2 调用契约和 yaml-summary-v1 字段语义（skill multi-turn 模式还另外使用 T3 作为兜底），**协调层互不依赖**：embedded-headless 模式不经过 skill S4/S5/S6 流程，直接消费外部审查的底层结果。
 
@@ -380,7 +380,7 @@ CODEX_HOME=<绝对路径> codex exec --sandbox read-only --output-schema <schema
 | 代码审查（**已提交**改动） | `mcp__codex-mcp__review-code` | 传入 prompt（审查 brief）+ **显式 diff 内容或 commit 范围**，⛔ 不得传 `uncommitted: true` |
 | 方案 / 设计 / 文档审查 | `mcp__codex-mcp__delegate-task` | 传入 goal（审查 brief）+ mode: "plan" |
 
-> **为什么区分两行**：`uncommitted: true` 在改动已落盘时会得到**空 diff**——审查照常返回"无问题"，但它什么都没看到。本 skill 独立调用时默认审工作区（未提交），故用第一行；`ms-dev-workflow` S9 Phase 4 的 **drain 侧**（Commit 1 已落盘后集中补审）必须用第二行。判定见 [verification-flow.md § diff 源](../../dev-workflow/references/verification-flow.md)。
+> **为什么区分两行**：`uncommitted: true` 在改动已落盘时会得到**空 diff**——审查照常返回"无问题"，但它什么都没看到。本 skill 独立调用时默认审工作区（未提交），故用第一行；`ms-dev-workflow` S9 Phase 4 的 **drain 侧**（Commit 1 已落盘后集中补审）必须用第二行。判定见 [verification-flow.md § diff 源](../../ms-dev-workflow/references/verification-flow.md)。
 
 ### allowedPaths 问题
 
