@@ -1,6 +1,6 @@
 ---
 name: code-quality
-description: Opinionated constraints for writing maintainable, testable code. Apply MTE principles, naming, comment, and logging standards, avoid over-engineering, guide refactoring, and provide code review checklists. Use when users write code, refactor, or need code review. Triggers on keywords like "code quality", "refactor", "review", "MTE", "naming", "logging", "代码质量", "重构", "审查", "命名", "注释", "日志". NOT for systematic refactoring workflow with scope analysis and test gates (use refactor).
+description: 编写或审查代码时提供 MTE、命名、注释、日志与可维护性指导。系统性重构执行用 refactor。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 

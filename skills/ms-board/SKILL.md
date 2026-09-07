@@ -1,6 +1,6 @@
 ---
 name: ms-board
-description: 从 docs/devdocs/01-requirements / 02-system-design 生成可视化交互评审页面(chrome-devtools MCP 双向桥),收集用户勾选/意见,经确认回流为文档修订并把处理结果写回页面。Triggers on "/ms-board", "可视化评审", "评审面板", "页面评审", "board 评审". NOT for 03/04 评审、代码审查(adversarial-review 职责)、PRD 评审、文档编辑器。
+description: 为 DevDocs 的 01 需求和 02 设计创建交互评审面板，并按用户意见回写文档。不用于代码或 PRD 评审。
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__evaluate_script
 metadata:
   patterns: [view-layer, workflow-bridge]

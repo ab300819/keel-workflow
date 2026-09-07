@@ -1,6 +1,6 @@
 ---
 name: ms-backlog
-description: 管理 DevDocs 暂缓任务池，将 dev-tasks / verify / insights / prd 产生的“不阻塞但需追踪”项写入、列出、重激活或关闭。Triggers on "/ms-backlog", "暂缓", "任务暂缓", "先记下", "暂时不做", "backlog 管理", "backlog entry", "park", "reactivate". NOT for PO grooming, Jira/Linear 看板、负责人/优先级/Sprint 容量管理, or redesigning F/US/AC/T/INS/BUG numbering.
+description: 管理 DevDocs 中暂缓但需追踪的事项：登记、查询、重新激活或关闭。不用于 Jira/Linear 或 Sprint 容量管理。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [registry, workflow-bridge]

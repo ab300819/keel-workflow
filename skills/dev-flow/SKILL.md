@@ -1,6 +1,6 @@
 ---
 name: dev-flow
-description: Execute general development tasks from a plan document, task prompt, or issue text — no DevDocs required. Five-stage flow with three hard gates (Contract / Red-Green / Verify with fresh-context contract review), quality floor, and atomic commit. Use for standalone or lightweight projects, superpowers/CE/BMAD style plans, or any dev task outside DevDocs. Triggers on "dev-flow", "通用开发流程", "按计划开发", "执行计划", "轻量开发", "独立开发", "standalone dev". NOT for DevDocs T-XX task execution with traceability (use ms-dev-workflow), task breakdown (use ms-dev-tasks), or bug fixes in DevDocs projects (use ms-bugfix).
+description: 在非 DevDocs 项目中，按任务、Issue 或已有计划实现功能与修复问题。DevDocs 任务执行用 ms-dev-workflow。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, Task, AskUserQuestion, TodoWrite
 ---
 

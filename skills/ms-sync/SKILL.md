@@ -1,6 +1,6 @@
 ---
 name: ms-sync
-description: Sync documentation with implementation progress. Update traceability matrices, task statuses, and detect doc-code drift. Use when users need to update docs after development, verify doc-code consistency, or track progress. Triggers on "sync docs", "update progress", "doc consistency", "同步文档", "更新进度", "trace", "audit", "文档对齐", "进度更新", "追溯矩阵". NOT for verification/review (use ms-verify) or requirements editing (use ms-requirements).
+description: 按实现进展更新 DevDocs 状态、追溯关系和归档，处理文档与代码漂移。实施正确性审查用 ms-verify。
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 metadata:
   patterns: [reviewer]

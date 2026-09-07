@@ -1,6 +1,6 @@
 ---
 name: ms-test-cases
-description: Design test cases (UT/IT/E2E) based on requirements, establishing traceability from acceptance criteria to test cases. Use when users need test case design, testing strategy, test coverage planning, or QA planning. Triggers on "test cases", "test design", "unit test", "integration test", "e2e test", "测试用例", "测试设计", "测试策略", "测试覆盖", "QA". NOT for running tests (use ms-test-run), development workflow (use ms-dev-workflow), or test code writing guidance (use testing-guide).
+description: 依据 DevDocs 需求设计可追溯的 UT/IT/E2E 用例文档。编写测试代码用 testing-guide；运行套件用 ms-test-run。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [generator]

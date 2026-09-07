@@ -1,6 +1,6 @@
 ---
 name: ms-dev-workflow
-description: Execute development tasks with skeleton-first approach and layered TDD. Supports single task, batch execution (by range, feature, user story), dependency resolution, and breakpoint resume. Includes optional adversarial verification and unattended mode (无人值守，由用户明示授权触发). Triggers on "execute task", "start T-XX", "batch", "resume", "开发任务", "执行任务", "批量开发", "继续开发", "开始写代码", "开始开发", "无人值守", "别问我". NOT for task breakdown (use ms-dev-tasks), bug fixes (use ms-bugfix), or non-DevDocs plan/prompt-driven development (use dev-flow).
+description: 执行或恢复 DevDocs 开发任务，支持单项、批量和明确授权的无人值守。任务拆分用 ms-dev-tasks；非 DevDocs 开发用 dev-flow。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite, Task
 metadata:
   patterns: [pipeline, reviewer]

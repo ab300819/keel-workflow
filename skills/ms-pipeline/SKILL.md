@@ -1,6 +1,6 @@
 ---
 name: ms-pipeline
-description: Top-level orchestrator for DevDocs workflow. Provides 8 entry points (init/feature/bugfix/verify/close/insights/design/realign) that route to appropriate skills automatically. Use when users are unsure which skill to use, want guided workflow, or ask "从哪开始", "where to start", "我该用哪个". Triggers on "pipeline", "devdocs", "开始项目", "新项目", "工作流", "workflow", "我该用哪个", "从哪开始", "where to start", "insights", "洞察", "调研", "借鉴", "竞品", "设计稿", "design ready", "设计到了", "UI稿", "realign", "规范升级", "查漏补缺", "对齐已有产物". NOT for non-DevDocs tasks or direct skill invocation when the user already knows which skill to use.
+description: 选择并编排 DevDocs 的初始化、功能、修复、验证、收尾、洞察、设计与规范升级流程。仅用于 DevDocs 工作；已指定原子 skill 时直接使用它。
 metadata:
   patterns: [pipeline]
   interaction: multi-turn

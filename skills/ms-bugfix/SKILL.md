@@ -1,6 +1,6 @@
 ---
 name: ms-bugfix
-description: Test-first bug fixing workflow. Guide users through reproducing bugs, writing failing tests, fixing code, and committing with regression protection. Use when users report bugs or issues. Triggers on "bug", "fix", "issue", "崩溃", "报错", "修复", "出错了", "不工作", "broken", "regression", "error", "异常". NOT for new features (use ms-feature), insight-driven improvements (use ms-insights), or issue fixes in non-DevDocs projects (use dev-flow).
+description: 修复 DevDocs 项目的缺陷并维护回归证据。非 DevDocs 项目修复用 dev-flow。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 metadata:
   patterns: [inversion, pipeline]

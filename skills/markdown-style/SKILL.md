@@ -1,6 +1,6 @@
 ---
 name: markdown-style
-description: 审查 Markdown 文档(尤其 LLM 输出)的标记与排版规范:markdownlint 标记检查 + 中文排版检查(GB/T 15834 与中文文案排版指北)+ LLM 排版毛病检查。只碰排版与标记,不改原文语意;全部只报告,修改经确认后走哈希校验事务。Triggers on "/markdown-style", "markdown 规范", "排版检查", "markdownlint", "中英文空格", "文档格式检查", "规范文档". NOT for 文档信息组织(流水账/编号无定义/引言过长/黑话,用 doc-organization)、文风与语言润色(长句/被动语态/的地得)、代码规范检查(用 code-quality)、提交信息规范(用 commit-convention)。
+description: 检查 Markdown 标记、中英文排版与标点，只报告问题；获准后修正排版。文档结构用 doc-organization，语言润色不属此 skill。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, TodoWrite
 metadata:
   patterns: [tool-wrapper, checklist]

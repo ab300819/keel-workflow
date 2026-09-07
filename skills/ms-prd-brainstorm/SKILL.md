@@ -1,6 +1,6 @@
 ---
 name: ms-prd-brainstorm
-description: Brainstorm and clarify product requirements through structured exploration. Two modes - full brainstorm (idea to requirements via 5W1H/journey/MoSCoW) and chunk-clarify (adaptive depth clarification of PRD segments). Outputs structured requirement files (FR-XX/NFR-XX). Triggers on "brainstorm", "头脑风暴", "需求探索", "澄清需求", "clarify requirements". NOT for PRD parsing (use ms-prd-parser) or pipeline orchestration (use ms-prd).
+description: 探索模糊产品想法或澄清 PRD 片段，形成结构化需求。拆分大型 PRD 用 ms-prd-parser。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [inversion, generator]

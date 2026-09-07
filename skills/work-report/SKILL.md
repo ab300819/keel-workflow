@@ -1,6 +1,6 @@
 ---
 name: work-report
-description: 生成周报、月报、季度报和年终总结。当用户提到"周报"、"月报"、"季报"、"季度报"、"年终总结"、"年度总结"、"weekly report"、"monthly report"、"quarterly report"、"annual summary"、"yearly review"，或者需要生成各类工作报告时使用此 Skill。
+description: 撰写或完善周报、月报、季报和年终总结，沿用已有报告模板与工作事实。
 allowed-tools: Read, Bash, Write, Glob, Grep, AskUserQuestion
 ---
 

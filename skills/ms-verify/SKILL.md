@@ -1,6 +1,6 @@
 ---
 name: ms-verify
-description: Unified verification skill combining document alignment, implementation correctness, UI design alignment, and development readiness checks. Supports --docs, --impl, --ui, --readiness, --schema-drift flags; auto-detects dimensions when called without flags. Triggers on "verify", "review", "alignment", "验证", "审查", "对齐检查", "需求验证", "设计一致性", "UI 对齐", "就绪检查", "质量关卡", "readiness". NOT for syncing docs with progress (use ms-sync).
+description: 验证 DevDocs 的文档一致性、实现正确性、UI 对齐或开发就绪状态。更新文档与任务进度用 ms-sync。
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 metadata:
   patterns: [reviewer]

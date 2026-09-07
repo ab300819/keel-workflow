@@ -1,6 +1,6 @@
 ---
 name: code-self-describe
-description: Generate and maintain self-describing code structure with module-level CLAUDE.md files and source file header comments (INPUT/OUTPUT/POS). Supports init, update, and audit modes. Use when users want to add AI-friendly code descriptions, improve code navigation, or maintain code documentation. Triggers on keywords like "self-describe", "code description", "CLAUDE.md", "自描述", "代码描述", "模块描述", "生成描述".
+description: 创建、更新或审计模块级 CLAUDE.md 与源文件 INPUT/OUTPUT/POS 描述，帮助导航代码。项目根记忆维护用 agent-memory。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 

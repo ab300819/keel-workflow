@@ -1,6 +1,6 @@
 ---
 name: ms-insights
-description: Collect improvement insights from UI/UX reviews, document research, or external references, convert confirmed items into development requirements. Use when users have optimization suggestions, research findings, competitor analysis, or want to improve based on external references. Triggers on "insights", "improvements", "optimize", "review findings", "research", "借鉴", "优化建议", "审查结果", "调研", "竞品", "可以借鉴". NOT for bug fixes (use ms-bugfix) or adding new features directly (use ms-feature).
+description: 将外部参考、调研或评审发现转为 DevDocs 项目的改进事项。普通资料研究不使用此流程。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 metadata:
   patterns: [inversion, generator]

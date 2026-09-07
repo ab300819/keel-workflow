@@ -1,6 +1,6 @@
 ---
 name: doc-organization
-description: 文档信息组织的指导原则——管信息落在文档的哪个位置，不管表达文笔。五条原则：正文只写当前状态（变更历史另置）、编号先定义再使用、引言是"要不要读下去"的判断依据、同一结论只在一处定义、写给缺少你现在上下文的人。用于撰写或审阅技术文档、需求/设计文档、README、AGENTS.md 等。Triggers on "文档组织", "信息组织", "文档写乱了", "流水账", "看不懂文档", "黑话", "文档审阅", "doc organization". NOT for markdown 标记与排版规范（用 markdown-style）、代码质量（用 code-quality）、提交信息（用 commit-convention）。
+description: 撰写或审阅技术文档时，处理结构、信息归属、重复结论和缺少上下文的问题。仅检查 Markdown 标记与排版用 markdown-style。
 allowed-tools: Read, Glob, Grep, AskUserQuestion
 ---
 

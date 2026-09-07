@@ -1,6 +1,6 @@
 ---
 name: ms-prd
-description: Product requirements orchestrator. Routes ideas and PRDs through brainstorm and parsing workflows, producing structured requirements for DevDocs consumption. Use for fuzzy ideas, large PRD documents, or when users say "产品需求", "PRD", "需求探索", "头脑风暴", "brainstorm", "产品流程". NOT for already-structured requirements (use ms-requirements) or direct skill invocation.
+description: 将模糊产品想法或大型 PRD 整理为可供 DevDocs 消费的需求，选择探索或解析路径。已明确需求编码用 ms-requirements。
 metadata:
   patterns: [pipeline]
   interaction: multi-turn

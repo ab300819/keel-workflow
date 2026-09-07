@@ -1,6 +1,6 @@
 ---
 name: ms-codebase-insight
-description: 只读分析现有代码库，输出系统边界、核心模块、公开接口、关键数据对象和技术约束。供 prd 和 dev/test 流程委托调用，了解已有系统现状。触发词：代码分析、系统现状、codebase analysis、existing system、代码盘点。NOT for 需求定义（use ms-requirements）、项目基线（use ms-retrofit）、项目上下文（use ms-onboard）。
+description: 分析已有代码库的系统边界、模块、接口与技术约束，生成盘点报告而不修改代码。建立 DevDocs 基线用 ms-retrofit。
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion, Write
 metadata:
   patterns: [generator]

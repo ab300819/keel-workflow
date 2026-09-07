@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Systematic refactoring skill with test coverage requirements. Supports scope analysis, test-first refactoring, and integration with DevDocs workflow. Use when users need to refactor code, improve code quality, or restructure existing implementations. Triggers on keywords like "refactor", "重构", "优化代码", "代码改造", "tech debt", "技术债". NOT for code quality principles and review checklists (use code-quality).
+description: 执行现有代码的结构性重构或技术债改造，并验证行为保持一致。一般代码规范审查用 code-quality。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 ---
 

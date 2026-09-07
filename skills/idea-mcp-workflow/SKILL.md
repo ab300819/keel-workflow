@@ -1,6 +1,6 @@
 ---
 name: idea-mcp-workflow
-description: Operating manual for driving JetBrains projects through the `idea` MCP server (the ~60 `mcp__idea__` tools — file/symbol search, inspections, build/run, XDebug, database). Covers the cross-cutting projectPath discipline (required when multiple projects are open), keeping build_project's huge compile output from blowing up context (scope with filesToRebuild instead of dumping it), telling dependency/classpath errors apart from real code bugs, the "Maven reload is UI-only" gotcha, plus debug / database / refactor recipes. Use whenever the user operates a project through the idea / JetBrains / IntelliJ MCP — mentions idea、jetbrains、IntelliJ、编译项目 / build_project、IDE 调试 / xdebug 断点、execute_sql_query、reload maven、or invokes any mcp__idea__ tool — even if they don't name the skill. NOT for the general code-writing flow (use dev-flow) or DevDocs task execution (use ms-dev-workflow); this is specifically the idea-MCP operating playbook for decisions, gotchas, and tool sequences.
+description: 通过 idea MCP 操作 JetBrains 项目时使用，涵盖搜索、编译、调试和数据库操作的工具约束与已知陷阱。
 ---
 
 # idea MCP 操作手册

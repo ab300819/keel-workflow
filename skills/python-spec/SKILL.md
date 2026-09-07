@@ -1,6 +1,6 @@
 ---
 name: python-spec
-description: Opinionated Python toolchain spec — mise owns runtime versions, uv owns virtualenvs, dependency resolution, lockfiles and execution. Covers project layout, script classification (PEP 723 vs project env), throwaway usage, and diagnosing pip/uv env guard failures. Use when bootstrapping a Python project, changing dependencies, writing standalone scripts, or when a pip/uv command fails unexpectedly. Triggers on keywords like "uv", "mise", "venv", "pyproject.toml", "uv.lock", "PEP 723", "pip install 失败", "虚拟环境", "Python 项目初始化", "依赖管理". NOT for migrating an existing repo's toolchain (keep its poetry/conda/requirements), and NOT for ordinary Python code changes that don't touch tooling.
+description: 初始化 Python 环境、管理依赖、编写独立脚本或排查 pip/uv 护栏失败时使用。本机采用 mise+uv；已有项目沿用其工具链。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash
 ---
 

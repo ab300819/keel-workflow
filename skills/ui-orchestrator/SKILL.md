@@ -1,6 +1,6 @@
 ---
 name: ui-orchestrator
-description: UI/UX skill dispatcher that routes to specialized external skills based on project needs. Use when working on UI development, design systems, or frontend tasks. Triggers on keywords like "UI", "界面", "前端", "组件", "animation", "动画", "layout", "布局", "SwiftUI".
+description: 进行 UI/UX 设计、界面开发或设计系统工作时，选择适用的专门 skill。
 allowed-tools: Read, Glob, Bash, AskUserQuestion
 ---
 

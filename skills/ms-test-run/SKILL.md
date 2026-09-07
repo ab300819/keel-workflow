@@ -1,6 +1,6 @@
 ---
 name: ms-test-run
-description: Execute test suites and generate test reports. Supports full test run, selective run by type (UT/IT/E2E), and traceability validation. Use when users need to run tests, verify test coverage, generate test reports, or validate before release. Triggers on "run tests", "test run", "execute tests", "执行测试", "跑测试", "全量测试", "回归测试", "test report", "测试报告", "覆盖率". NOT for designing test cases (use ms-test-cases) or fixing bugs (use ms-bugfix).
+description: 运行 DevDocs 项目的测试套件并生成报告，检查受影响测试与追溯覆盖。对运行中系统做黑盒实测用 e2e-test-flow。
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 metadata:
   patterns: [tool-wrapper]

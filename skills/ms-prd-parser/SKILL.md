@@ -1,6 +1,6 @@
 ---
 name: ms-prd-parser
-description: Parse and split large PRD documents (md/PDF/screenshots) into structured chunks with FR/NFR classification, fingerprint-based change tracking, and full text preservation. Use when users provide large product requirement documents that need segmentation before clarification. Triggers on "PRD", "产品需求文档", "大文档拆分", "解析PRD", "parse prd". NOT for requirement clarification (use ms-prd-brainstorm) or pipeline orchestration (use ms-prd).
+description: 拆分大型 PRD 文档、PDF 或截图，保留原文并建立 FR/NFR 分类。需求澄清用 ms-prd-brainstorm。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 metadata:
   patterns: [generator]

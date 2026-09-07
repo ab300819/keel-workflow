@@ -1,6 +1,6 @@
 ---
 name: ms-feature
-description: Add new features to existing DevDocs projects. Orchestrates requirements → design → test-cases → dev-tasks for incremental functionality. Use when users need to add, extend, or iterate on features. Triggers on "add feature", "new feature", "新功能", "迭代", "新增功能", "追加需求", "扩展功能", "feature request", "增量功能". NOT for pipeline init (use ms-pipeline) or bug fixes (use ms-bugfix).
+description: 为已有 DevDocs 项目追加或迭代功能，更新需求、设计、测试与任务。修复缺陷用 ms-bugfix。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 metadata:
   patterns: [pipeline, inversion]

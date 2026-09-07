@@ -1,6 +1,6 @@
 ---
 name: ms-dev-tasks
-description: Break down system design into executable, trackable development tasks with dependency resolution and layer classification (🔴🟡🟢⚪). Use when users need task breakdown, sprint planning, or implementation planning. Triggers on "dev tasks", "task breakdown", "sprint planning", "implementation tasks", "拆分任务", "任务列表", "implementation plan", "开发任务拆分". NOT for executing tasks (use ms-dev-workflow) or defining features (use ms-feature).
+description: 把 DevDocs 系统设计拆为有依赖、验收标准和追溯关系的开发任务。执行任务用 ms-dev-workflow。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 metadata:
   patterns: [generator]

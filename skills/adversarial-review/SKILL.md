@@ -1,10 +1,8 @@
 ---
 name: adversarial-review
 description: >
-  对抗性审查——调用外部 LLM（codex CLI / codex-mcp / 独立子 Agent）对计划、设计、代码变更进行独立审查并逐条验证结论。
-  支持审查循环和收敛检测熔断（加权健康分 + 可配置安全上限）。默认审查工作区全部修改（staged + unstaged diff）。
-  触发词："adversarial review"、"对抗审查"、"外部审查"、"independent review"、"second opinion"、"让 codex 审查"。
-  不用于内部自检（用 ms-verify）或代码规范检查（用 code-quality）。
+  用户要求对计划、设计或代码进行外部独立审查、对抗审查或 second opinion 时使用。
+  内部自检用 ms-verify；代码规范检查用 code-quality。
 allowed-tools:
   - Read
   - Glob

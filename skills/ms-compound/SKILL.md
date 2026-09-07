@@ -1,6 +1,6 @@
 ---
 name: ms-compound
-description: Extract patterns, lessons learned, and key decisions from completed development cycles. Writes structured pattern docs to docs/devdocs/patterns/ and recommends running /agent-memory to update AGENTS.md. Run after ms-sync to compound knowledge across sessions. Triggers on "compound", "沉淀", "经验提取", "模式提取", "lessons learned", "知识沉淀", "复盘", "总结经验", "what did we learn". NOT for syncing docs (use ms-sync) or onboarding (use ms-onboard).
+description: 从已完成的 DevDocs 开发周期提取可复用经验、模式和决策。同步实施进度用 ms-sync。
 allowed-tools: Read, Write, Glob, Grep, Edit, AskUserQuestion
 metadata:
   patterns: [generator]

@@ -1,6 +1,6 @@
 ---
 name: ms-requirements
-description: 将已明确需求编码为 F/US/AC 体系。Supports default auto initial/incremental, --from-prd, --update-design, and --context modes. 模糊需求请先用 /ms-prd 探索。Triggers on "requirements", "feature request", "user story", "需求", "功能点", "验收标准", "项目背景", "补充信息". NOT for fuzzy ideas (use ms-prd), system/technical design (use ms-system-design), or test case design (use ms-test-cases).
+description: 把已明确的需求和背景写入 DevDocs 需求文档，建立 F/US/AC 与约束记录。模糊产品想法用 ms-prd。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 metadata:
   patterns: [inversion, generator]

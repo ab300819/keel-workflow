@@ -1,6 +1,6 @@
 ---
 name: ms-retrofit
-description: Retrofit existing projects to DevDocs workflow, or migrate old DevDocs to new standards. For projects without docs, establish a project baseline recording what code cannot answer. Use when users want to adapt existing projects, take over legacy code, migrate documentation, standardize documents, or upgrade DevDocs version. Triggers on "retrofit", "改造", "适配", "迁移", "标准化", "基线", "摸底", "接手项目", "升级文档", "existing project", "已有项目". NOT for initializing new projects (use ms-pipeline), adding features to existing DevDocs (use ms-feature), or code inventory (use ms-codebase-insight).
+description: 为已有项目建立 DevDocs 基线，或迁移旧版 DevDocs 文档。只读代码盘点用 ms-codebase-insight；了解项目上下文用 ms-onboard。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, Task
 metadata:
   patterns: [inversion, generator]

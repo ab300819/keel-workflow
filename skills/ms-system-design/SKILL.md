@@ -1,6 +1,6 @@
 ---
 name: ms-system-design
-description: Create or update system design documents. Supports initial design and incremental design (impact analysis + compatibility assessment) modes. Use when users need technical architecture, API design, data models, module design, or design changes. Triggers on "system design", "architecture", "technical design", "API design", "design change", "impact analysis", "模块设计", "技术方案", "接口设计", "设计变更", "影响分析". NOT for UI/UX design (use ui-orchestrator) or requirements definition (use ms-requirements).
+description: 创建或更新 DevDocs 技术设计：架构、接口、数据模型与变更影响。需求定义用 ms-requirements；视觉设计用 ui-orchestrator。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [inversion, generator]

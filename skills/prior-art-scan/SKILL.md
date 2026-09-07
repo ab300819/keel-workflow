@@ -1,6 +1,6 @@
 ---
 name: prior-art-scan
-description: 新项目开工前的先例扫描：多角度检索 GitHub 与生态找出已有同类项目 → 用可核验的维护度信号（实质提交 / bus factor / 外部 PR 受纳度 / 许可证）评估 → 挖掘缺口并分类 → 在 use-as-is / 插件扩展 / 上游贡献 / vendor+patch / fork / 自建 六条路径间给出带反方理由的决策，产出单文件 md 报告。全程对 GitHub 只读。Triggers on "/prior-art-scan", "先例扫描", "有没有类似项目", "别人做过没有", "重复造轮子", "造轮子", "该 fork 还是贡献", "开源选型", "竞品调研", "prior art", "existing projects"。NOT for 本地代码盘点（用 ms-codebase-insight）、需求澄清与 PRD 编写（用 ms-prd / ms-prd-brainstorm）、已确定选用某库后的集成设计（用 ms-system-design）、给已有项目做技术债评估（用 refactor）。
+description: 新项目开工前检索同类开源项目，评估维护度和缺口，帮助选择复用、扩展、贡献、fork 或自建。用于先例扫描和开源选型。
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch, mcp__plugin_github_github__search_repositories, mcp__plugin_github_github__search_code, mcp__plugin_github_github__search_issues, mcp__plugin_github_github__search_pull_requests, mcp__plugin_github_github__list_commits, mcp__plugin_github_github__list_releases, mcp__plugin_github_github__get_latest_release, mcp__plugin_github_github__get_file_contents, mcp__plugin_github_github__list_issues, mcp__plugin_github_github__list_pull_requests, mcp__plugin_github_github__list_repository_collaborators, mcp__plugin_github_github__issue_read, mcp__plugin_github_github__pull_request_read
 metadata:
   patterns: [research, decision-support]
