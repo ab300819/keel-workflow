@@ -20,7 +20,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 - 筛选与精简内容：[best-practices.md](templates/best-practices.md)。
 - 首次创建或重组：[memory-template.md](templates/memory-template.md)。
-- DevDocs 编号状态更新时：[devdocs-state-template.md](templates/devdocs-state-template.md)。普通正文修订不加载该模板。
+- 写 `.claude/rules/devdocs-state.md` 时：[devdocs-state-template.md](templates/devdocs-state-template.md)。非 DevDocs 项目不加载该模板。
 
 ## 语言规则
 
@@ -82,7 +82,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ```text
 1. 扫描项目信息源
    ├── 通用提取（包管理器、README、git、代码结构）
-   └── DevDocs 增强提取（全量同步或本次涉及 DevDocs 状态时）
+   └── DevDocs 增强提取（若 `docs/devdocs/` 存在）
    │
    ▼
 1.5 检查 AGENTS.md 是否存在
@@ -114,13 +114,13 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 4. 确保 CLAUDE.md 存在（若缺失则创建导入文件；已存在则跳过，不覆盖补充区）
    │
    ▼
-5. 生成/更新 .claude/rules/devdocs-state.md（仅 DevDocs 项目的全量同步或状态更新；局部正文修订跳过）
+5. 生成/更新 .claude/rules/devdocs-state.md（判据只看 `docs/devdocs/` 是否存在；⛔ 不按「这次改得多不多」自行豁免——被 ms-pipeline / ms-retrofit 委托的 `--update` 拿不到范围信息，跳过等于漏发货）
    ├── 写入前按 [devdocs-state-template.md](templates/devdocs-state-template.md) § Forbidden 校验
    │   ├── 占位 prose ≤ 200 字符
    │   ├── 禁止内嵌 commit hash / LOC / 测试结果 / codex 分数 / 文件路径 / submodule 引用 / 工时
    │   └── 违反时改写为简洁占位 + 明细去对应资源文件
    ▼
-6. 健康度自检（仅步骤 5 涉及状态文件时；局部正文修订跳过）
+6. 健康度自检（步骤 5 写了状态文件时）
    ├── Bash: wc -c .claude/rules/devdocs-state.md
    ├── 读取 .claude/rules/.health-baseline.yml（若存在）→ 拿到 baseline 大小
    ├── 计算 delta = current_size - baseline_size
@@ -250,7 +250,7 @@ devdocs:
 
 - 位置：`.claude/rules/devdocs-state.md`
 - 模板：[templates/devdocs-state-template.md](templates/devdocs-state-template.md)
-- 条件：DevDocs 项目的全量同步或状态更新；局部正文修订不生成或改写此文件
+- 条件：首次创建或 `--update`（含被其他 skill 委托的）且 `docs/devdocs/` 存在即生成/更新；`--restructure` 与非 DevDocs 项目不生成
 
 ## 约束
 
@@ -285,7 +285,7 @@ devdocs:
 |------|-----------|------|
 | 首次创建 | `/agent-memory` 自行完成 | 从项目源扫描创建；若 `/init` 已创建则增量更新 |
 | 阶段性文档变更 | `/ms-onboard` | onboard 完成后建议运行 /agent-memory |
-| 任务完成轻量更新 | `/ms-dev-workflow` | dev-workflow 步骤 6.5 内联更新"当前状态" |
+| 任务完成轻量更新 | `/ms-dev-workflow` | dev-workflow 内联替换「当前状态」里的任务编号 / 进度；该节只有台账链接时它跳过，不重建快照 |
 | 上下文摘要 | `/ms-onboard` | onboard 生成 00-context.md，不涉及记忆文件 |
 
 ## 子 Agent 摘要格式（yaml-summary-v1）

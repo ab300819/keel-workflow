@@ -291,7 +291,7 @@ spec_version_notes: |
 - [ ] **禁止修改结构性章节**（Project Overview、Skill Architecture、Conventions 等由 /agent-memory 管理）
 - [ ] CLAUDE.md 通过 @AGENTS.md 自动导入，无需同步
 - [ ] 仅做文本替换，不调用 /agent-memory
-- [ ] 若 AGENTS.md 不存在则跳过
+- [ ] 若 AGENTS.md 不存在、或「当前状态」节只有台账/状态文档链接（无任务编号与进度字段）则跳过；⛔ 不新增进度快照
 
 ### 编排隔离约束
 
