@@ -198,7 +198,7 @@ spec_version_notes: |
 | 任务完成 | `/ms-sync` | 后续：更新追溯矩阵（追溯同步） |
 | 知识沉淀 | `/ms-compound` | 推荐：sync 后提取经验模式（批量模式默认执行） |
 | 全量测试 | `/ms-test-run` | 批量完成后 `--trace`（全量+追溯）；单任务完成后 `--affected`（受变更影响测试），affected 无匹配时回退 `--trace` |
-| 外部对抗审查（契约复用） | `/adversarial-review` | **dev-workflow S9 Phase 4 仅复用其 `references/external-reviewer-integration.md` 底层 T1/T2 双通道 + 熔断协议**（不使用 T3 Task 子 Agent 兜底），不直接调用整个 multi-turn skill（避免 AskUserQuestion 阻塞）。Phase 4 调度器以 embedded-headless 模式运行；`/adversarial-review` 仍可被用户独立调用做交互式审查 |
+| 外部对抗审查（契约复用） | `/adversarial-review` | **dev-workflow S9 Phase 4 仅复用其 [`references/external-reviewer-integration.md`](../adversarial-review/references/external-reviewer-integration.md) 底层 T1/T2 双通道 + 熔断协议**（不使用 T3 Task 子 Agent 兜底），不直接调用整个 multi-turn skill（避免 AskUserQuestion 阻塞）。Phase 4 调度器以 embedded-headless 模式运行；`/adversarial-review` 仍可被用户独立调用做交互式审查 |
 
 ## 约束
 

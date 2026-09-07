@@ -1,5 +1,20 @@
 # 对抗式验证流程详解
 
+## 目录
+
+- 理念
+- Phase 1: 代码质量审查
+- Phase 2: 测试完备性审查
+- Phase 2-UI（仅 🟢 UI 层任务）
+- Phase 3: 综合审查报告
+- AC 完备性（S8 权威定义）
+- Phase 1~3 与 S8 AC 完备性表的关系
+- Blocker 修复流程
+- 修复安全网
+- Blocker 判定标准
+- Phase 4: 外部对抗审查（embedded-headless 模式）
+- 延后审查与 review_pending(fast/guarded)
+
 ## 理念
 
 ### 为什么需要对抗式验证？

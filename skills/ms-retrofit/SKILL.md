@@ -24,7 +24,7 @@ metadata:
 
 **最常见用法**: `/ms-retrofit`（自动检测项目状态）
 
-`/ms-retrofit --realign`   → 规范升级回扫：00-baseline.md 按当前 baseline.v1 查漏补缺（⛔ 只补结构，不改带来源标注的正文）。推荐用户入口 /ms-pipeline realign
+`/ms-retrofit --realign`   → 规范升级回扫：00-baseline.md 按当前 baseline.v1 查漏补缺（⛔ 只补结构，不改带来源标注的正文）。详见 [references/realign.md](references/realign.md)；推荐用户入口 /ms-pipeline realign
 
 **不适合?** 新项目→`/ms-pipeline init`，加功能→`/ms-feature`
 

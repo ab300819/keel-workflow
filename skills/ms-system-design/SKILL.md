@@ -320,7 +320,7 @@ docs/devdocs/
 4. **模块设计** - 模块职责与依赖，**标注关联功能点**（F-XXX）
 5. **核心接口** - **面向接口 (签名 + 行为契约)**: 方法签名 + 前置条件/后置条件/错误契约（**严禁包含具体实现逻辑**），标注关联功能点（v1: F-XXX / v2: FEAT-XXX）
 6. **设计模式** - 应用的模式及理由
-7. **代码落位原则** - 模块落位/接口-实现分离/命名约束（非完整目录树；详见 `references/code-structure-conventions.md`）
+7. **代码落位原则** - 模块落位/接口-实现分离/命名约束（非完整目录树；详见 [`references/code-structure-conventions.md`](references/code-structure-conventions.md)）
 8. **数据模型** - 实体定义与关系
 9. **API 设计** - 接口端点及请求/响应示例，**标注关联功能点 (v1: F-XXX / v2: FEAT-XXX) + AC-XXX**；design_context 存在时页面数据需求驱动响应结构
 10. **状态流转** - 关键业务流程的状态机
@@ -349,7 +349,7 @@ docs/devdocs/
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /ms-dev-workflow 执行编码）
 - [ ] "核心接口"章节仅定义签名和行为契约，严禁包含实现逻辑（编码由 `/ms-dev-workflow` 负责）
-- [ ] **⛔ 禁止继续：接口契约内出现越界反例**（算法细化/内部状态/控制流/伪代码/字段注释性描述/时序重试策略/依赖耦合到实现，见 `references/design-boundary-guide.md`）（恢复方式：改写为行为契约表述）
+- [ ] **⛔ 禁止继续：接口契约内出现越界反例**（算法细化/内部状态/控制流/伪代码/字段注释性描述/时序重试策略/依赖耦合到实现，见 [`references/design-boundary-guide.md`](references/design-boundary-guide.md)）（恢复方式：改写为行为契约表述）
 - [ ] **⛔ 禁止继续：存在跨模块依赖时，§4 模块表"依赖接口引用"列出现具体实现类名或裸模块名**（恢复方式：改写为 `I*(§章节号)` 引用；接口未定义则回 L3 层补足；单模块或无跨模块依赖填"无"）
 - [ ] **⛔ 禁止继续（增量设计）：仅追加 ADR 而正文相关章节未更新**（恢复方式：按修订清单执行正文更新，或在清单内登记"仅追加 ADR 的理由"）
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/design-template.md](templates/design-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）

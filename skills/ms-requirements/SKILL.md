@@ -83,7 +83,7 @@ metadata:
 消费 `/ms-prd` 产出的结构化需求包，转化为正式 F/US/AC。
 
 **模式定位**：初始模式的变体。产品流程通常在 DevDocs 之前运行，此时 `01-requirements.md` 尚不存在。如果已存在：
-- 检查映射表中 `mapping_status: outdated` 的条目 → **原地更新**对应 F/US/AC（不创建新编号）（mapping_status 规范见 `skills/ms-prd/references/prd-mapping-status.md`）
+- 检查映射表中 `mapping_status: outdated` 的条目 → **原地更新**对应 F/US/AC（不创建新编号）（mapping_status 规范见 [`skills/ms-prd/references/prd-mapping-status.md`](../ms-prd/references/prd-mapping-status.md)）
 - 新增的 FR-XX（无映射记录）→ 按增量模式追加新 F/US/AC
 
 **与其他模式的关系**：
@@ -143,7 +143,7 @@ metadata:
 
 | 模式 | 输入 / 前置 | 步骤 | 输出 / 门控 |
 |---|---|---|---|
-| 初始模式 | 无 `01-requirements.md`；输入 `< 200` 字且无结构化标记时先建议 `/ms-prd`，并 AskUserQuestion 确认继续或切换 | 0.5 设计资产感知（按 prd/references/design-context.md 探测协议，询问设计稿和组件库并写入 `## 设计资产`）→ 收集原始需求（记录原话/关键表述、来源、日期）→ 理解需求 + 探索代码库（如适用）→ 呈现需求拆解方案 + 轻量假设挑战 → 用户确认 → 识别功能点（F-XXX）→ 编写用户故事（US-XXX）→ 编写 AC-XXX（design_context 存在时，UI 相关 US 自动补充 hover/disabled/error/loading/empty 等交互状态 AC）→ 生成追溯矩阵 | 初始方案确认后才写入；轻量假设挑战仅初始模式 + 非 `--from-prd` + 非快速通过意图，问题为：去掉此功能用户最大损失、MVP 最小可用集、6 个月后是否仍重要；`--from-prd` 跳过（prd 层已做 4 题产品视角挑战），快速通过时跳过并提示风险 |
+| 初始模式 | 无 `01-requirements.md`；输入 `< 200` 字且无结构化标记时先建议 `/ms-prd`，并 AskUserQuestion 确认继续或切换 | 0.5 设计资产感知（按 [prd/references/design-context.md](../ms-prd/references/design-context.md) 探测协议，询问设计稿和组件库并写入 `## 设计资产`）→ 收集原始需求（记录原话/关键表述、来源、日期）→ 理解需求 + 探索代码库（如适用）→ 呈现需求拆解方案 + 轻量假设挑战 → 用户确认 → 识别功能点（F-XXX）→ 编写用户故事（US-XXX）→ 编写 AC-XXX（design_context 存在时，UI 相关 US 自动补充 hover/disabled/error/loading/empty 等交互状态 AC）→ 生成追溯矩阵 | 初始方案确认后才写入；轻量假设挑战仅初始模式 + 非 `--from-prd` + 非快速通过意图，问题为：去掉此功能用户最大损失、MVP 最小可用集、6 个月后是否仍重要；`--from-prd` 跳过（prd 层已做 4 题产品视角挑战），快速通过时跳过并提示风险 |
 | 增量模式 | 已有 `01-requirements.md`；读取已有 design_context，无则按 design-context.md 探测协议询问 | 扫描现有 F/US/AC 最大编号 → 收集新增原始需求并追加到 `## 0. 原始需求`（历史文档缺章节则标注"缺失历史原始需求"后继续）→ 读取已有上下文 / codebase-insight（如存在）→ 理解新增需求 → 追加功能点/用户故事/验收标准，延续编号并标注增量版本和日期 → 更新追溯矩阵 → 用户确认 | 返回新增编号列表（供调用方使用）；不得删除或覆盖既有内容 |
 | 背景信息模式 | `--context` 或用户要补充背景；不涉及功能点生成，跳过设计资产探测 | **先定写入目标**：`docs/devdocs/00-baseline.md` 存在 → 写基线（定位标为 `未知` / `推导待确认` 的条目 → 收集信息 → 用户明确说了才升为 `用户确认` 并补依据，⛔ 沉默不升格 → 更新条目）；否则 → 写 `01-requirements.md §1`（读取现有文档并提取"背景与目标"章节 → 收集背景信息，含 AskUserQuestion、用户直接输入、Read 文件路径、WebFetch URL 摘要 → 合并到"背景与目标"章节，补充"技术约束"和"参考资料"子章节 → 更新文档 → 用户确认）。⛔ 基线存在时不得创建 `01-requirements.md` | 不写入 `## 0. 原始需求`，除非用户提供的是需求原话而非背景补充 |
 
@@ -404,5 +404,5 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 ## 编排器接口
 
 > 以下模式由编排器（ms-pipeline）内部调用，用户通常不需要直接使用。
-- `--realign[=scope]`：规范升级回扫，由 `/ms-pipeline realign` 调度；详见 references/realign.md
+- `--realign[=scope]`：规范升级回扫，由 `/ms-pipeline realign` 调度；详见 [references/realign.md](references/realign.md)
 - `--update-design + target=prd-index`：写入 PRD index（内部元数据，不作为用户面 flag）

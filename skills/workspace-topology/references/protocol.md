@@ -16,6 +16,16 @@ spec_version: workspace-topology.v2
 
 本文不覆盖：入口、声明 schema、校验的交互形态（见 [../SKILL.md](../SKILL.md)），也不覆盖探测步骤、迁移流程、故障修复手册（见 [migration.md](migration.md)）。
 
+## 目录
+
+- 1. 模式枚举与缺省
+- 2. `code_roots` 与真源
+- 3. 校验规则（fail-closed）
+- 4. 归属判定
+- 5. 零污染写入范围
+- 6. N+1 仓提交协议
+- 7. 工作区洁净检查（gitlink 排除）
+
 ## 1. 模式枚举与缺省
 
 外壳仓根下依然是 `docs/devdocs/`，仓内 310 处 `docs/devdocs` 硬编码引用原样成立。**文档根在三种模式下恒为 `<仓库根>/docs/`，是固定不变量，不设配置字段。** 真正改变的只有两件事：

@@ -40,7 +40,7 @@ user-invocable: true
 
 GitHub 关键词搜索语义匹配很差，最好的项目常常只出现在 awesome-list 或"X alternatives"文章里。只搜一轮 GitHub 就下结论 = 系统性漏掉最强候选。
 
-- 6 个检索角度（见 `references/discovery-matrix.md`）必须全部执行并在报告中留证。
+- 6 个检索角度（见 [`references/discovery-matrix.md`](references/discovery-matrix.md)）必须全部执行并在报告中留证。
 - 少跑任何一个，必须在报告的「检索矩阵」段写明**原因**（如"该领域无对应包管理生态"）。
 - ⛔ 不得因为"第一轮已经搜到几个不错的"就停止检索。
 
@@ -68,7 +68,7 @@ GitHub 关键词搜索语义匹配很差，最好的项目常常只出现在 awe
 
 ### 步骤 1：发现（6 角度检索矩阵）
 
-加载 `references/discovery-matrix.md`，逐角度执行，记录每个角度**跑了什么查询、出了几个结果**。
+加载 [`references/discovery-matrix.md`](references/discovery-matrix.md)，逐角度执行，记录每个角度**跑了什么查询、出了几个结果**。
 
 产出：候选长名单（含 repo URL + 首次发现来源）。宁滥勿缺，粗筛在下一步。
 
@@ -86,7 +86,7 @@ GitHub 关键词搜索语义匹配很差，最好的项目常常只出现在 awe
 
 ### 步骤 3：深评（5 维健康度）
 
-加载 `references/health-rubric.md`，对短名单做健康度评估。
+加载 [`references/health-rubric.md`](references/health-rubric.md)，对短名单做健康度评估。
 
 ⚠️ **star 数和"最近有 push"都是假信号**：star 是滞后的虚荣指标；`pushed:>DATE` 匹配任意分支，dependabot 能让死仓一直"活着"。真信号是**默认分支上的实质提交**。
 
@@ -123,7 +123,7 @@ GitHub 关键词搜索语义匹配很差，最好的项目常常只出现在 awe
 
 ### 步骤 5：决策
 
-加载 `references/decision-spectrum.md`。**不是三选一，是六条路径**：
+加载 [`references/decision-spectrum.md`](references/decision-spectrum.md)。**不是三选一，是六条路径**：
 
 ```
 use-as-is → 插件/扩展 → 上游贡献 → vendor+patch → 硬 fork → 自建
@@ -160,7 +160,7 @@ use-as-is → 插件/扩展 → 上游贡献 → vendor+patch → 硬 fork → �
 - 主用 github MCP（`mcp__plugin_github_github__*`，只读子集）。**该 MCP 没有 `get_repository` 工具**——单仓元数据靠 `search_repositories` + `repo:owner/name` + `minimal_output:false`。
 - MCP 不可用时降级到 `gh` CLI（`gh api` / `gh search repos`）；`gh` 也不可用则告知用户并停止——⛔ 不得凭记忆补数据（纪律 1）。
 - 搜索 API 有速率限制（认证态约 30 次/分钟）。批量查询时收敛 `perPage`、善用 `fields` 裁剪响应。
-- 具体查询配方与已知 API 坑：`references/discovery-matrix.md`。
+- 具体查询配方与已知 API 坑：[`references/discovery-matrix.md`](references/discovery-matrix.md)。
 
 ## 快速模式
 

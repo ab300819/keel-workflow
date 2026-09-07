@@ -221,7 +221,7 @@ summary:
 - 初始化模板：[templates/backlog-template.md](templates/backlog-template.md)
 - 结构演进：[references/realign.md](references/realign.md)
 
-`backlog.v1` 是当前 spec 起点。修改模板必填章节、字段、状态枚举或硬校验规则时，必须同步更新 `references/realign.md` 的当前版本与 Migration Matrix。
+`backlog.v1` 是当前 spec 起点。修改模板必填章节、字段、状态枚举或硬校验规则时，必须同步更新 [`references/realign.md`](references/realign.md) 的当前版本与 Migration Matrix。
 
 ## 子 Agent 摘要格式
 

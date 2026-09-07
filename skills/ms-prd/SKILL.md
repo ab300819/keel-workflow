@@ -117,7 +117,7 @@ user-invocable: true
 |---|---|---|
 | 代码检测 | 检查 `git ls-files` 是否有非文档文件，或检测常见代码文件模式 | 有代码 → 委托 ms-codebase-insight（由其缓存机制决定是否重扫），读取返回的 `docs/codebase-insight.md`；无代码 → 绿地模式，跳过 |
 | DevDocs 检测 | 检测 `docs/devdocs/01-requirements.md` | 存在 → 提取已有 F/US 列表作为补充上下文；不存在 → 跳过 |
-| 设计资产探测 | 按 `references/design-context.md` 探测协议执行 | 进入 Step 1+ 正常编排流程（brainstorm / prd-parse） |
+| 设计资产探测 | 按 [`references/design-context.md`](references/design-context.md) 探测协议执行 | 进入 Step 1+ 正常编排流程（brainstorm / prd-parse） |
 
 携带已有上下文后，brainstorm 探索时标注每个 FR-XX 与已有系统的关系：
 - FR-XX YAML 增加 `relation` 字段：`new`（全新功能）| `extend`（扩展已有）| `modify`（修改已有）
@@ -154,7 +154,7 @@ user-invocable: true
 
 ### mapping_status 规范
 
-> 详细规范见 `references/prd-mapping-status.md`（列定义、状态枚举、authoritative row 规则）
+> 详细规范见 [`references/prd-mapping-status.md`](references/prd-mapping-status.md)（列定义、状态枚举、authoritative row 规则）
 
 ## 清理脚手架（close 收尾）
 

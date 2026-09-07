@@ -3,6 +3,18 @@
 > 用户入口：`/ms-pipeline realign --scope=health [--target=<path>] [--dry-run|--apply] [--fix=<rule_id>]`
 > 默认 `--dry-run`（只输出健康度报告）。
 
+## 目录
+
+- 定位
+- 三大健康维度
+- CLI 兼容
+- Dry-run 阶段
+- AskUserQuestion 触发点
+- Apply 阶段
+- 输出契约
+- 与其他 scope 的边界
+- 幂等性
+
 ## 定位
 
 本文件定义 `--scope=health` 的执行接口，让 LLM 能按统一入口对 DevDocs 文档体系做**主动健康度审查**，覆盖三大维度并把分散在 ms-verify / ms-sync 的检查能力收敛为单一报告。

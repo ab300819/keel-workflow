@@ -2,6 +2,22 @@
 
 > 用户面向入口：`/ms-pipeline realign`（推荐）/ `/ms-feature <F-XX> realign` / `/ms-bugfix <BUG-XX> realign`。底层 `--realign` flag 是实现细节，**由编排层自动调度**。
 
+## 目录
+
+- 定位
+- 用户入口（只需记住 2 个命令）
+- 编排层职责（`ms-pipeline realign`）
+- A/B 类 skill 的 realign 子流程骨架
+- spec_version 规则
+- 向后兼容（无元数据的旧产物）
+- Dry-run 样例（首次调用 vs 二次调用）
+- realign-log 格式
+- 安全不变量（realign 必须遵守）
+- 一次性升级提示（阶段 3）
+- health drift 探针（阶段 3，与 schema drift 并列但语义不同）
+- 与 ms-retrofit 的边界
+- 与 ms-codebase-insight 的关系
+
 ## 定位
 
 **realign = policy re-evaluation**：DevDocs 规范升级后，让已完成的产物/任务按新规范"查漏补缺"。与 `ms-dev-workflow` 的"中断续做（execution resume）"**语义不同**，不可混用。

@@ -1,5 +1,13 @@
 # Workspace Shell 操作手册
 
+## 目录
+
+- 定位
+- 确认拓扑
+- detached HEAD 处置
+- 指针漂移修复
+- inline → shell 迁移
+
 ## 定位
 
 本文是 工作区拓扑的**操作手册**，回答"具体怎么操作"；协议正文（模式枚举、`code_roots` 真源、fail-closed 校验表、归属判定、零污染范围、N+1 仓提交协议、Recovery 格式等"规则是什么"）的唯一权威源是 [protocol.md](protocol.md)，本文不重复其规则表格，引用规则时以指针链接代替。
