@@ -105,7 +105,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 **输出要求**：
 对每条发现，提供：
 - id：F-001, F-002...
-- severity：P1（阻塞）/ P2（应修复）/ P3（建议）
+- severity：P1（阻塞）/ P2（应修复）/ P3（建议，可选）。⛔ 只报影响**正确性或已声明需求**的缺口，不凑数——门槛见 [references/finding-verification-rubric.md](references/finding-verification-rubric.md) § 发现门槛
 - description：问题描述
 - location：具体位置（文件:行号 或 文档段落）
 - suggestion：修复建议
@@ -113,7 +113,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 
 ### S3 外部审查调度
 
-调用外部 LLM 执行审查。详见 `references/external-reviewer-integration.md`。
+调用外部 LLM 执行审查。详见 [`references/external-reviewer-integration.md`](references/external-reviewer-integration.md)。
 
 **四级降级链**（首次探测确定首选通道，每轮允许临时降级）：
 
@@ -137,7 +137,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 
 **T3 Task 子 Agent**（兜底）：
 - 触发条件：T1 / T1b / T2 均失败
-- 子 Agent 使用独立审查员角色 prompt（见 `references/external-reviewer-integration.md`）
+- 子 Agent 使用独立审查员角色 prompt（见 [`references/external-reviewer-integration.md`](references/external-reviewer-integration.md)）
 - ⚠️ **必须标注检出率折损**：T3 与被审对象同模型、同盲区。降到 T3 时结论里标明「本轮降级审查」，⛔ 不得让「审过了」掩盖「审得更浅了」
 
 ### 失败分类（⛔ 不得一律按"失败"降级）
@@ -202,7 +202,7 @@ T1 额度耗尽且 T1b 不可用时，⛔ **不自动降级到 T3，不自行决
 
 ### S5 逐条验证
 
-对每条审查发现进行独立验证。详见 `references/finding-verification-rubric.md`。
+对每条审查发现进行独立验证。详见 [`references/finding-verification-rubric.md`](references/finding-verification-rubric.md)。
 
 **跨轮问题关联**（第 2 轮起执行）：
 
@@ -455,7 +455,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 |------|-----------|------|
 | 系统设计审查 | `/ms-system-design` | 设计完成后调用对抗审查验证方案可行性 |
 | 开发后代码审查 | `/ms-dev-workflow` | 开发完成后调用进行独立代码审查 |
-| dev-workflow 内嵌契约复用 | `/ms-dev-workflow` S9 Phase 4 | **底层 `references/external-reviewer-integration.md` 契约被 dev-workflow 编排器以 `embedded-headless` 模式复用**（仅调用 T1/T2 双通道 + 熔断协议；**不使用 T3 Task 子 Agent 兜底**——T3 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺；不走本 skill 的 multi-turn S4/S5/S6 协调流程，避免子 Agent 中 AskUserQuestion 阻塞）。两种模式并存：本 skill 仍可被用户独立调用做交互式审查 |
+| dev-workflow 内嵌契约复用 | `/ms-dev-workflow` S9 Phase 4 | **底层 [`references/external-reviewer-integration.md`](references/external-reviewer-integration.md) 契约被 dev-workflow 编排器以 `embedded-headless` 模式复用**（仅调用 T1/T2 双通道 + 熔断协议；**不使用 T3 Task 子 Agent 兜底**——T3 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺；不走本 skill 的 multi-turn S4/S5/S6 协调流程，避免子 Agent 中 AskUserQuestion 阻塞）。两种模式并存：本 skill 仍可被用户独立调用做交互式审查 |
 | 功能评审 | `/ms-feature` | 功能迭代中对设计方案进行外部挑战 |
 | 验证互补 | `/ms-verify` | ms-verify 检查对齐，adversarial-review 挑战正确性 |
 | 质量标准参考 | `/code-quality` | 代码审查时参考 MTE 原则 |

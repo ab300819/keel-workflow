@@ -1,5 +1,16 @@
 # 外部审查者集成与降级策略
 
+## 目录
+
+- 两种使用模式
+- 概述
+- 降级探测流程（skill multi-turn 模式专用）
+- T1：codex CLI
+- 失败分类（完整判据表）
+- T1b：codex CLI · 备用计费后端
+- T2：codex-mcp
+- T3：Task 子 Agent
+
 ## 两种使用模式
 
 本文档的三级降级链（codex CLI → codex-mcp → Task 子 Agent）、yaml-summary-v1 契约、熔断/收敛评分协议被以下**两种模式**复用：
