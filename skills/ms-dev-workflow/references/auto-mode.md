@@ -107,6 +107,7 @@
 | 9 | 全量测试失败 | 记录到交付报告，标记 ⚠️ 警告（不 fail-fast，任务已提交） |
 | 10 | Phase 4 外部对抗审查（全场景） | 见下方 Phase 4 状态机指针 |
 | 11 | batch 完成 / pending 超阈值 / 台账 `due` 到期 | **自动 `/ms-verify --review-drain`**（不"告警"等人）；drain 失败 → fail-fast 输出续做命令 |
+| 12 | **里程碑段末停点** | ⛔ 不等人、⛔ 不自行放行：01 §2.5 验收状态保持 `⏳ 待验证`，**停止后续段**，返回 `partial` + 待确认事项（见下方）|
 
 ### Phase 4 在 headless 下的状态机
 
@@ -124,6 +125,33 @@
 8. **工作区洁净校验** — 每任务 Commit 2 后**每个代码根**的 `git status --porcelain` 均须为空，非空则 fail-fast
 9. **漂移防护** — 禁止自动猜测补齐缺失内容，统一 fail 并记录
 10. **Phase 4 外部对抗审查**（audit profile inline；fast/guarded 延后 drain）— 状态机见上方指针；`--headless` 下任何非 `EXT_REVIEWED` → fail-fast
+11. **里程碑未经人工验证不进下一段** — 段末停点是人工验证，headless 无法代替；⛔ 编排器不得以「自己判断没问题」放行，⛔ 不得因重试逻辑跨段
+
+## 里程碑段末在 headless 下的处理
+
+段末停点要求人**实际使用一遍**，`--headless` 下无人可用——这不是失败，是「做完了可执行的部分，剩下需要人」。
+
+按 [constraints.md](../../_shared/constraints.md) `confirm/headless-fail-safe`：返回 `partial`（⛔ 不伪造 `failed`，也 ⛔ 不整体报 `success`），并满足 `confirm/headless-report` 四项：
+
+```yaml
+status: partial
+summary:
+  headline: "M-001 实现完成，等待人工验证；M-002 未开始"
+  details:
+    current_milestone: M-001
+    milestones_pending: [M-001]
+    milestone_goal: "用户能注册登录，并看到自己的清单"
+    verification_prompt: "请实际走一遍：<入口 / 命令>，然后回答能用还是有问题"
+blockers:
+  - "M-001 需要人工使用验证后才能进入 M-002（默认阻断）"
+next_recommended:
+  skill: ms-dev-workflow
+  args: "T-06~T-09"        # 下一段的续做命令，⛔ 不用 M-XXX
+```
+
+⛔ **这些事实必须随摘要传递，不能只落在检查点文件里**——pipeline 不读完整产出文档，只消费信封。
+
+**段末检出问题时同理**：输出编排器的判断与理由，**保留默认阻断**，返回 `partial`；⛔ 不得把自己的意见当成用户批准。
 
 ## 重试规范
 

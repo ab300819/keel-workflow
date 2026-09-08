@@ -62,7 +62,7 @@
    Phase 2（A 类 DevDocs 主链路）:
      ms-requirements → ms-system-design → ms-test-cases → ms-dev-tasks → ms-dev-workflow
    Phase 3（B 类旁路，若文件存在）:
-     ms-insights → ms-onboard → ms-retrofit（仅当 docs/devdocs/00-baseline.md 存在，见「与 ms-retrofit 的边界」）
+     ms-insights → ms-onboard → ms-backlog（仅当 docs/devdocs/backlog.md 存在）→ ms-retrofit（仅当 docs/devdocs/00-baseline.md 存在，见「与 ms-retrofit 的边界」）
    ```
    每阶段补齐作为下一阶段 context。B 类为可选（根据文件存在性判断是否调用）。
 4. **汇总**：yaml-summary-v1 信封汇总各子 skill 的 `summary.details`，向用户呈现"N 个产物、M 个任务、K 处差距补齐"。

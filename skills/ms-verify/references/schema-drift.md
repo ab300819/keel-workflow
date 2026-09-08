@@ -19,6 +19,7 @@
 | `docs/devdocs/00-context.md` | ms-onboard | `skills/ms-onboard/references/realign.md` |
 | `docs/prd/chunks/*.md` | ms-prd-parser | `skills/ms-prd-parser/references/realign.md` |
 | `docs/prd/requirements/*.md` | ms-prd-brainstorm | `skills/ms-prd-brainstorm/references/realign.md` |
+| `docs/devdocs/backlog.md` | ms-backlog | `skills/ms-backlog/references/realign.md` |
 
 ⛔ **`00-baseline.md` 只做结构性 drift 检测**（缺失章节 / frontmatter 字段），
 realign **不得改写**其带 `用户确认` / `已有文档` / `推导待确认` 标注的正文——

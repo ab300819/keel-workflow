@@ -1,6 +1,6 @@
 ---
 generated_by: ms-backlog
-spec_version: backlog.v1
+spec_version: backlog.v2
 generated_at: YYYY-MM-DDTHH:mm:ss+08:00
 updated_at: YYYY-MM-DDTHH:mm:ss+08:00
 ---

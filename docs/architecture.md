@@ -209,8 +209,11 @@ F-001 (功能点)
 | T-XX | 开发任务 | `/ms-dev-tasks` |
 | INS-XXX | 洞察建议 | `/ms-insights` |
 | BUG-XXX | Bug 记录 | `/ms-bugfix` |
+| M-XXX | 里程碑（可选） | `/ms-requirements` |
 
-> ℹ️ **`ms-backlog` 复用现有编号，不新增 B-XXX**。暂缓条目在 `docs/devdocs/backlog.md` 中用 `source_id + entry_no` 作局部锚点（如 `F-01#1`），状态机仅 `parked → reactivated|closed|superseded`。详见 [ms-backlog SKILL.md](../skills/ms-backlog/SKILL.md)。
+> ℹ️ **`M-XXX` 是逻辑组织概念，⛔ 不进上方追溯链示意**。它只把多个 F 分成可交付的段，用于「做完一段停下来让人实际用一遍」；不进追溯矩阵、不进覆盖率、不是执行单元。可选——按需求规模决定用不用。登记与消费边界见 [_shared/constraints.md](../skills/_shared/constraints.md) `M` 标识登记。
+
+> ℹ️ **`ms-backlog` 复用现有编号，不新增 B-XXX**。暂缓条目在 `docs/devdocs/backlog.md` 中用 `source_id + entry_no` 作局部锚点（如 `F-01#1`），状态机仅 `parked → reactivated|closed|superseded`。`M-XXX` 是唯一允许承接「尚无编号」新想法的 source_id。详见 [ms-backlog SKILL.md](../skills/ms-backlog/SKILL.md)。
 
 ## 文件结构
 

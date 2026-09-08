@@ -7,7 +7,7 @@ metadata:
   interaction: command-driven
   handoff: yaml-summary-v1
 user-invocable: true
-writes_backlog: backlog.v1
+writes_backlog: backlog.v2
 ---
 
 # Backlog 暂缓任务池
@@ -74,7 +74,7 @@ expected_output: yaml-summary-v1
 ```yaml
 ---
 generated_by: ms-backlog
-spec_version: backlog.v1
+spec_version: backlog.v2
 generated_at: 2026-05-19T10:30:00+08:00
 updated_at: 2026-05-19T10:30:00+08:00
 ---
@@ -104,7 +104,8 @@ related_ids: [AC-05, AC-07]
 
 | 字段 | 规则 |
 |---|---|
-| `source_id` | 复用已有编号：`F-XX` / `US-XX` / `AC-XX` / `T-XX` / `INS-XX` / `BUG-XX` / `FR-XX` / `NFR-XX`；禁止 `B-XXX` |
+| `source_id` | 复用已有编号：`F-XX` / `US-XX` / `AC-XX` / `T-XX` / `INS-XX` / `BUG-XX` / `FR-XX` / `NFR-XX` / `M-XXX`；禁止 `B-XXX` |
+| `source_id`（`M-XXX` 例外）| `M-XXX` 是**唯一允许承接「尚无任何编号」的来源**：开发过程中冒出的新需求挂到「它是在哪一段冒出来的」上。⛔ 仅此一个例外，不得推广到其他前缀 |
 | `entry_no` | 同一 `source_id` 下从 1 开始递增 |
 | `status` | `parked` / `reactivated` / `closed` / `superseded` |
 | `created_at` | ISO 日期，写入条目创建日 |
@@ -172,6 +173,7 @@ summary:
 | `ms-verify` | P3 问题自动入池；P1/P2 不应直接 parked，需按 verify 路由处理 |
 | `ms-insights` | 跨任务优化机会，已确认但暂不转为需求 |
 | `ms-prd` | FR/NFR 搁置，尚不导入 DevDocs 或等待业务确认 |
+| `ms-dev-workflow` | **里程碑段内 / 段末**冒出的新想法（`source_id` = 当前 `M-XXX`）：用户自然语言说出，由子代理摸查后写入。挂得上已有 `F`/`AC` 的按对应编号入池，⛔ 不挂到 M |
 
 ## 消费侧转化路径
 
@@ -184,6 +186,7 @@ summary:
 | `INS-XX` | `ms-insights` |
 | `BUG-XX` | `ms-bugfix` |
 | `FR-XX` / `NFR-XX` | `ms-prd` |
+| `M-XXX` | 按条目**形态**定，⛔ 无固定去向：新需求 → `ms-requirements`；缺陷 → `ms-bugfix`；已足够明确可直接排期 → `ms-dev-tasks` |
 
 `reactivate` 必须写回 `target_flow` 和 `target_id`。若目标流程尚未生成编号，保持 `parked` 并返回 `partial`，提示先运行目标 skill。
 
@@ -200,6 +203,7 @@ summary:
 
 ⚠️ 必须确认：同一 `source_id` 已有 active `parked` 条目时再次入池。
 恢复方式：用户确认是追加新 `entry_no`，还是更新既有条目；无确认时不写入。
+**`M-XXX` 来源例外**：默认**追加**新 `entry_no`，⛔ 不问。理由——一个里程碑段内冒出多个想法是常态，每条都问会把「记一笔」变成打断，而打断正是本机制要消除的东西。其余来源行为不变。
 
 ## 追溯能力
 
@@ -221,7 +225,7 @@ summary:
 - 初始化模板：[templates/backlog-template.md](templates/backlog-template.md)
 - 结构演进：[references/realign.md](references/realign.md)
 
-`backlog.v1` 是当前 spec 起点。修改模板必填章节、字段、状态枚举或硬校验规则时，必须同步更新 [`references/realign.md`](references/realign.md) 的当前版本与 Migration Matrix。
+`backlog.v2` 是当前 spec 版本。修改模板必填章节、字段、状态枚举或硬校验规则时，必须同步更新 [`references/realign.md`](references/realign.md) 的当前版本与 Migration Matrix。
 
 ## 子 Agent 摘要格式
 

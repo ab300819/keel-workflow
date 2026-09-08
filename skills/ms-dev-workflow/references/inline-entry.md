@@ -109,3 +109,4 @@ generated_at: <日期>
 | Test Agent(S2~S4) | **受限分支**:输入表 02/03 字段传 `—(inline)`,测试输入约束 = S1.5 Sprint Contract(AC + 当前代码) | [task-orchestration.md 子 Agent 协议](task-orchestration.md) |
 | `ms-sync --trace` | **受限**:无 03 且 AC 标 inline → 跳过 trace 写入并提示待回填 | [trace-mode.md](../../ms-sync/references/trace-mode.md) |
 | health-lint `dead-link` | **正常工作**:01 stub 的 AC heading 是规则已识别的定义位置模式(落地实测项) | — |
+| 里程碑分段 | **不参与**:inline AC 无 F 因而无 M,⛔ 不构成段边界、不触发段末停点;被某段依赖闭包捞进去则随该段执行。回填(见上方手动回填协议)随 F 归属自然获得 M | [task-orchestration.md §1.5](task-orchestration.md) |

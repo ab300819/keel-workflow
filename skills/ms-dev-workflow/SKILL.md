@@ -6,7 +6,7 @@ metadata:
   patterns: [pipeline, reviewer]
   interaction: multi-turn
   handoff: yaml-summary-v1
-spec_version: 3.3
+spec_version: 3.4
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
         本 skill 不做任务并行（S9 并行化）——前置依赖 worktree 隔离协议
@@ -21,6 +21,9 @@ spec_version_notes: |
   3.3 = commit 模板重定(Why + Tests 两项,词法级禁占位)+ 7 个流程 trailer 迁到
         任务台账(主体是任务不是 commit);drain 改读台账 commits 字段,不再 grep git log
         + 删与「分层 TDD 模式」档位表重复的「触发条件」表
+  3.4 = 里程碑分段执行(可选):队列按 01 §2 归属列切段 + 段末人工验证停点 +
+        01 §2.5 验收状态列(人验持久源)+ headless 段末返 partial(devflow.v5→v6);
+        未划里程碑的项目行为完全不变
 ---
 
 # 开发工作流
@@ -71,6 +74,10 @@ spec_version_notes: |
 | 功能点 | `F-001` | 通过 `关联需求` 字段反查所有关联任务 |
 | 用户故事 | `US-001` | 同上 |
 | 轻量入口 | 直接描述任务 + 验收标准 | 无 04 文档也可进入:按 [inline-entry.md](references/inline-entry.md) 物化 stub(01 AC 条目 + 04 任务条目)后转单任务路径;review_profile 下限 guarded |
+
+> ⛔ **没有 `M-XXX` 指定符**。里程碑不是执行单元——要跑某段就按它的 `F-XXX` 或 `T-XX` 范围指定。
+
+**跑到一半停下来是正常的。** `01-requirements.md` 划了里程碑时，队列按段执行，**一段做完会停下来请你实际用一遍**——不是卡住，是这套流程的目的：F 全做完、单测全过，连起来用却全是问题，这类事只有人去用才发现得了。你用完说「能用」就继续下一段，说「有问题」就先修。不划里程碑的项目不会有这个停点。分段规则见 [task-orchestration.md § 1.5](references/task-orchestration.md)。
 
 > **协议参数不在用户面。** 无人值守 / 自动提交 / 审查档位 / 外部审查轮次 / 上下文重置 / 单次提交 / 跳过追溯，都由编排层从你的自然语言归一化后下传（[`task/intent-normalization`](../_shared/constraints.md)），你不需要记参数名。
 >
@@ -401,6 +408,7 @@ Tests: <实际执行过的精确命令>
 | `blockers_resolved` / `suggestions_skipped` | 本任务处理结果 |
 | `ac_verified` | 已验证 AC 列表 |
 | `decision_log` | Contract 审核、重试、Blocker 修复等关键决策事件 |
+| `current_milestone` / `milestones_pending` | 仅分段执行：当前段、等待人工验证的段。**必须随信封上传**——编排层不读产出文档，只消费摘要；漏传会让上层把「等人验证」当成开发阶段完成而继续收尾 |
 
 `next_recommended` 常用 `/ms-sync`；若已完成 Commit 2，可推荐 `/ms-compound` 或为空。
 

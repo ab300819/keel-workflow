@@ -184,12 +184,12 @@ Q3（feature/bugfix 追加，可选）:
 
 | 入口 | 适用边界 | 调用顺序 / 路由 | 必传摘要字段 |
 |------|---------|----------------|-------------|
-| `init` | 全新项目，从需求到开发的完整流程 | **发布状态提问**（见下注）→ `ms-requirements` → `agent-memory --update`（治理委托，见下注）→ `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow`（批量）→ `ms-verify --docs --impl` → `ms-sync` | `output_files`、`new_ids.features`、`new_ids.acceptance`、各阶段 `status` |
-| `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep | `ms-feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness + Step 6 dev-workflow）→ `ms-verify --docs --impl` → `ms-sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
+| `init` | 全新项目，从需求到开发的完整流程<br>⚠️ dev-workflow 返回 `partial`（里程碑待验证）时停在该步 | **发布状态提问**（见下注）→ `ms-requirements` → `agent-memory --update`（治理委托，见下注）→ `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow`（批量）→ `ms-verify --docs --impl` → `ms-sync` | `output_files`、`new_ids.features`、`new_ids.acceptance`、各阶段 `status` |
+| `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep<br>⚠️ dev-workflow 返回 `partial` 时停在该步 | `ms-feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness + Step 6 dev-workflow）→ `ms-verify --docs --impl` → `ms-sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
 | `bugfix` | 修复 Bug；不改变 feature 入口语义 | 简单 Bug：`ms-bugfix` → `ms-verify --impl` → `ms-sync`；复杂 Bug：`ms-dev-tasks` → `ms-dev-workflow` → `ms-verify --impl` → `ms-sync` | Bug 范围、复杂度判定、修复文件、验证结果 |
 | `verify` | 任意阶段质量检查 | 有代码变更 → `ms-verify --impl`；有文档变更 → `ms-verify --docs`；有 UI 设计稿 → `ms-verify --ui`；不确定 → 询问用户；再路由到对应 skill 修复 | 检查维度、问题摘要、建议修复 skill |
 | `close` | 开发周期结束收尾（上线后需求终结） | `ms-sync`（trace + audit）→ `ms-compound`（知识沉淀）→ `ms-onboard --update` → `ms-prd clear`（清理当前需求脚手架，末步执行确保 why 记忆已沉淀）；health 探针命中 blocker 级时，二级强化：建议顺带 `realign --scope=health` 全量扫描 | 同步结果、沉淀文件、更新后的上下文摘要、脚手架清理结果 |
-| `insights` | 外部洞察吸收 | `ms-insights`（收集 + 用户确认 + 追加 01）→ 有架构变更则 `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow` → `ms-verify` → `ms-sync`；简单改进则 `ms-dev-tasks` → `ms-dev-workflow` → `ms-verify` → `ms-sync` | 洞察确认结果、架构影响判定、变更链路 |
+| `insights` | 外部洞察吸收<br>⚠️ dev-workflow 返回 `partial` 时停在该步 | `ms-insights`（收集 + 用户确认 + 追加 01）→ 有架构变更则 `ms-system-design` → `ms-test-cases` → `ms-dev-tasks` → `ms-verify --readiness` → `ms-dev-workflow` → `ms-verify` → `ms-sync`；简单改进则 `ms-dev-tasks` → `ms-dev-workflow` → `ms-verify` → `ms-sync` | 洞察确认结果、架构影响判定、变更链路 |
 | `design` | 用户主动推送设计资产；pipeline 只做阶段检测和收集 | no-prd → 收集并提示先 `/ms-prd` 或 `/ms-requirements`；prd-ready → `ms-requirements --update-design --target prd-index`；post-requirements/post-design → `ms-requirements --update-design`; in-dev → `ms-requirements --update-design` + 提示 `ms-verify --ui`; post-tasks → `ms-requirements --update-design` → `ms-dev-tasks --backfill-design` | `design_context`、目标阶段、委托目标、UI 验证提示 |
 | `backlog` | 暂缓任务池维护（park / close / supersede / list / init）| 委托 `ms-backlog`，传入 `source_id` 与动作 | 条目状态迁移结果、当前池内清单 |
 | `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | 扫描 frontmatter → 比对各 skill 当前常量 → Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1 | drift 数量、Phase 结果、确认项 |
@@ -203,7 +203,7 @@ Q3（feature/bugfix 追加，可选）:
 - **Deep 模式**：跨模块 / 架构 / 安全变更时，dev-workflow 所有任务强制 `--review`，feature 完成后额外执行 `ms-verify --docs`，并展示影响面摘要。
 - **Sprint Contract 协调**：`ms-test-cases` 产出的可执行验收契约作为 `ms-dev-workflow` 输入；pipeline 只传摘要、文件路径、新增编号，不内联测试全文。
 - **design 主动推送**：详细协议见 [../ms-prd/references/design-context.md](../ms-prd/references/design-context.md)；pipeline 不写文档，no-prd 不阻塞，且不中断当前 dev-workflow。
-- **发布状态提问（init 首步，源头治理）**：`init` 开始时 AskUserQuestion **问一次**「这个项目发布过吗」。未发布 → ⛔ 不套 semver，用 Sprint / 里程碑 / 待办池表达进度；已发布 → semver 是真契约，正常使用。结论由 `agent-memory --update` 写进 AGENTS.md「约定」节，后续 skill 据此决定怎么表达进度。
+- **发布状态提问（init 首步，源头治理）**：`init` 开始时 AskUserQuestion **问一次**「这个项目发布过吗」。未发布 → ⛔ 不套 semver，用 Sprint / 阶段代号 / 待办池表达进度（⛔ 这里不要写「里程碑」——`M-XXX` 是 01 §2.5 的需求分段概念，同名会误读）；已发布 → semver 是真契约，正常使用。结论由 `agent-memory --update` 写进 AGENTS.md「约定」节，后续 skill 据此决定怎么表达进度。
   - 只问这一个问题，⛔ 不追问具体用哪种约定——那可以后面按需定，开工时多打断一次不值。
   - 理由：版本号和进度是**自己造的现状**，代码里读不出来，天然需要有人定。没有真实发布节点可依时，版本号只能当占位符用，被大量引用后回潮难防；在源头问一次的成本远低于事后清理。
   - 接手既有项目走 `ms-retrofit`，同一个问题在 `00-baseline.md` §2.1 问，两条路径结论都落 AGENTS.md。
@@ -272,6 +272,15 @@ pipeline（编排层）
 1. 展示阻塞项给用户
 2. 询问用户处理方式（修复/跳过/终止）
 3. **不自行读取文档排障**
+
+子 Agent 返回 `status: partial` 时（⛔ 不得当成完成）：
+1. 展示 `blockers` 与 `summary.details` 里的待确认事项
+2. **⛔ 停在此处，不进入链路下一阶段**
+3. 给出续做入口（`next_recommended`），由用户决定何时继续
+
+> **`dev-workflow` 的里程碑段末**是这条分支最常见的来源：一段实现完成、等待用户实际使用验证。
+> 它不是失败，但也**绝不能**当作开发阶段完成继续跑 `verify → sync` ——那等于绕过了用户验证这道门，而它正是这套机制存在的理由。
+> 判据只看信封：`status: partial` + `details.milestones_pending` 非空。⛔ pipeline 不读产出文档、不读检查点文件。
 
 ### 上下文隔离
 

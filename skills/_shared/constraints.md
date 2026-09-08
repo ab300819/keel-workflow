@@ -8,7 +8,7 @@ related:
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
   - skills/_shared/runlog.md（运行日志：形状、纪律、判决点）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v11
+spec_version: shared-constraints.v12
 ---
 
 # 共享约束 SSOT
@@ -408,6 +408,31 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 
 **代价（明说）**：CON 没有自动治理——没写验证方式、验证方式与守卫脚本分叉、CON 无对应任务，这些**不会被任何门发现**。它保住的是「配置类任务不编造 AC 就能挂上追溯」这一件事。
 
+### `M` 标识登记 [新增]
+
+| 项 | 内容 |
+|---|---|
+| 标识 | `M-XXX`（Milestone 里程碑）—— **逻辑组织概念**：把多个 `F-XXX` 分成可交付的段，一段做完停下来由用户实际使用验证，通过才进下一段 |
+| 权威源 | `docs/devdocs/01-requirements.md` §2 功能点表的「归属里程碑」列（**唯一**）。§2.5 里程碑表只登记 `M-XXX` 与目标句，⛔ 不重复列成员 |
+| owner | `ms-requirements`（划分）+ `ms-dev-workflow`（分段执行与停点） |
+| 可选性 | ⛔ **不是强制概念**。按需求规模决定用不用；不划分时全流程行为与无 M 完全一致 |
+| 边界 | ⛔ `M` **不进 `F → US → AC` 链**，不进追溯矩阵、不进覆盖率、不是执行单元（⛔ 无 `M-XXX` 任务指定符） |
+| 解决的问题 | F 全做完、单测全过，但连起来用全是问题——「点没问题不代表线没问题」 |
+
+### `M` 的消费边界 [新增]
+
+> ⛔ **`M` 是组织标签，不是追溯对象。除上表两个 owner 外，其余 skill 不拥有 M，因此不对它作判断。**
+
+| 消费方 | 对 `M` 的行为 |
+|---|---|
+| `ms-verify --readiness` | **仅**检出「跨 M 反向依赖」（M1 的任务依赖 M2 的任务）并提示重划——那是划分错误，⛔ 不自动兜底。其余维度不看 M |
+| `ms-sync` | 归档时 **M 未验收通过的 F ⛔ 不归档**（否则唯一成员源先于验收消失）；⛔ 不维护 M 的状态，人验事实住在检查点 |
+| `ms-backlog` | 接受 `M-XXX` 作 `source_id`，承接该段冒出、尚无任何编号的新需求 |
+| `ms-test-run` / `ms-test-cases` / `ms-board` / `ms-system-design` / `health-lint` 计分 | ⛔ **既不拦也不报**。`M` 不进它们的覆盖率、孤立判据、健康分、覆盖门 |
+| `health-lint` 已知编号前缀 | ⛔ **不纳入**。已核实 `M-001` 不与任何现有前缀词边界匹配，既不误报也不漏报；纳入等于把 M 提成治理对象，与「逻辑组织概念」定位相悖。代价：`M-002` 打成 `M-020` 无人发现 |
+
+**为什么划这条线**：`M` 若进追溯链，`F → US → AC` 要变成 `M → F → US → AC`，全部下游消费方都要改——这正是 `CON` 那次收回边界的同一个坑。它只需在两个 owner 之间成立。
+
 ### `id/scan-word-boundary` [新增]### `id/scan-word-boundary` [新增]
 
 **扫描编号必须整词匹配 + 数值序比较。**
@@ -431,7 +456,7 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 > **为什么进本文而 `skip/numbering-unique` 仍成立**：那条跳过的是**续编策略**（各对象的来源与 SSOT 不同，确实不能统一）；本条是**扫描方法的机械陷阱**，对每种编号类型完全一致，且语言与领域中立。两者不冲突。
 >
-> 消费方：`ms-requirements` / `ms-dev-tasks` / `ms-bugfix` / `ms-test-cases`（编号续编）+ `agent-memory` devdocs-state 模板（推导命令）+ `health-lint` `id-reference-check` / `state/max-id-stale`（上界推导）。
+> 消费方：`ms-requirements`（编号续编，含 `M-XXX`）/ `ms-dev-tasks` / `ms-bugfix` / `ms-test-cases`（编号续编）+ `agent-memory` devdocs-state 模板（推导命令）+ `health-lint` `id-reference-check` / `state/max-id-stale`（上界推导）。
 
 ## 差异点与跳过项
 

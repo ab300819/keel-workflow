@@ -4,17 +4,18 @@
 
 ## 当前 spec_version
 
-**`backlog.v1`**（MVP 起点，集中索引 + source_id/entry_no 局部锚点）
+**`backlog.v2`**（2026-09-08：`source_id` 白名单增加 `M-XXX`，承接里程碑段内冒出、尚无编号的新需求）
 
 ## Migration Matrix（spec_version 演进）
 
-### v1 → v2（保留字段，未来启用）
+### v1 → v2
 
 | 分级 | 变更项 | 修复动作 | 判据 |
 |---|---|---|---|
-| additive | （示例）条目新增 `reactivation_criteria` 结构化字段 | 从正文 `#### Reactivation Criteria` 摘要为字段；无法判断则留空并标记待确认 | parked 条目缺 `reactivation_criteria` |
-| additive | （示例）Index 新增 `superseded` 统计列 | 在 Index 表补列并从 Entries 重建统计 | Index 表头缺目标列 |
-| restructuring | （示例）条目 frontmatter 从 fenced YAML 改为 HTML 注释块 | AskUserQuestion 展示 before/after，逐条确认后改写 | 条目块格式与当前模板不兼容 |
+| additive | `source_id` 白名单增加 `M-XXX`；`M-XXX` 来源同源第二条默认追加不再询问 | **无存量差距**——放宽值域不会让已有条目失效 | 不适用 |
+
+> **零迁移动作**：这是一次纯放宽。存量 `backlog.md` 无需改动，只需 frontmatter 的 `spec_version` 随下次写入自然更新。
+> 之所以仍要 bump：`source_id` 白名单是硬校验规则，改它命中 `realign/bump-required-structure`；不 bump 则消费方无从判断某个 `M-XXX` 条目是合法还是脏数据。
 
 ## Realign 子流程
 
