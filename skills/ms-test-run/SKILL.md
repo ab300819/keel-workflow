@@ -30,7 +30,7 @@ metadata:
 - 用户需要执行测试
 - 用户需要验证测试覆盖率
 - 用户需要追溯验证（AC 是否被通过的测试覆盖）
-- `/ms-dev-workflow` 批量完成后自动触发
+- `/ms-dev-workflow` 批量完成后**建议**调用（`--trace`）、单任务完成后**必须**调用（`--affected`）——以 [dev-workflow 全量测试验证约束](../ms-dev-workflow/SKILL.md) 为准
 - 关键词："执行测试"、"跑测试"、"全量测试"、"回归测试"、"run tests"
 
 ## 运行模式

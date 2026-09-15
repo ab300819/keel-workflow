@@ -155,11 +155,12 @@ expected_output: yaml-summary-v1
   - 持久化位置：随断点检查点一同保存（v1 为 `docs/devdocs/.batch-checkpoint.json`），续做时原样恢复，⛔ 不重新推断。
 - `task/workspace-context`：**编排层**在流程开头调一次 `/workspace-topology inspect`，把返回的 `workspace-context.v2` 经本字段下传（`mode`（`inline` | `shell` | `linked`）/ `workspace_root` / `docs_dir` / `code_roots` / `missing_code_roots`）。被委托 skill 从此字段读代码根与 docs 根，**不自行读取声明文件、不解析 `.gitmodules`**。三种 mode 下 `code_roots` 元素形状一致（`name` / `path` / `declared_path`，`path` 为解析后的绝对路径），**调用方不分支**。`missing_code_roots` 非空表示有声明了但解析不到的代码根，⚠️ 报告即可、不阻塞。字段缺失（用户单跑原子 skill、无编排层）时按 `inline` 缺省并 ℹ️ 提示。契约见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
 - `task/mode-honored`：子 Agent 不得越过传入 `mode`；`read` / `dry-run` 不得产生写入。
-- `task/intent-normalization` `[新增]`：**用户面不承认子指令**（`--fast` / `--deep` 一类偏好词不再作为用户必须打对的语法）。用户以自然语言表达意图，由**编排层**归一化为显式协议参数后下传：
+- `task/intent-normalization` `[新增]`：**档位与授权类偏好词不作为用户必须打对的语法**（`--fast` / `--deep` 一类）。用户以自然语言表达意图，由**编排层**归一化后下传：
+  - **适用范围 ≡ `task/normalized-intent-shape` 的字段集**（`ceremony` / `review_profile` / `unattended` / `granted_scope`）。⛔ 选阶段 / 选维度 / 选子集参数（`--impl` / `--docs` / `--readiness` / `--ui` / `--ut` / `--from-prd` 等）**不在本规则内**——它们是动词不是偏好词，归一化目标里没有对应字段，可在用户面文档作为可发现性入口列出。
   - 归一化结果写入本握手，**子 Agent 只读归一化字段，不得自行解读用户原话**；原话只进 runlog 的 `entry` 作审计线索
   - 歧义**只问一次**，答案落盘并随断点恢复一同持久化；反复追问等价于把记忆负担改成对话负担
   - ⛔ **授权不可由模型自行升格**。「跑快点」不等于授权无人值守提交；缺省取最保守档
-  - 协议参数（`--from-prd` / `--review-drain` / `--schema-drift` / `--force-code-docs` / `--review-profile` / `--no-realign` 等）**保留**，但只存在于编排层与子 Agent 之间，用户无需知道它们存在
+  - 本范围内的协议参数（`--review-profile` / `--no-realign` / `--force-code-docs` 等）**保留**，但用户面文档 ⛔ 不得把它们呈现为必须输入的语法
 - `task/consent-at-action` `[新增]`：**超出用户已授权范围**的不可逆 / 外发 / 降低验证强度 / 写入版本控制的持久决策，一律在**动作发生的那一刻**确认，不依赖入口 flag。
   - ⛔ 判据是**范围**不是动作类型：用户授权「无人值守跑完」时，提交代码就是被授权的工作本身，不重复确认（与 `confirm/no-need-explicit-request` 一致）；而「这次先别升级」被落成永久静默的 `.devdocs-realign-ack`，是**授权范围外**的持久决策，必须当场确认。
   - 入口处的一个词不能替代就地确认——它反映不了用户看到中间结果后的判断，也覆盖不了执行中途才暴露的不可逆性。- `task/blocker-propagation`：子 Agent 返回 `failed` 或含 `⛔` blocker 时，编排层必须停止对应分支并 surface recovery。

@@ -76,6 +76,6 @@
 - **端到端从未在真实项目上跑过。** 触发本次工作的项目不在本机，项目侧证据全部按用户现场报告采信
 - 部署未做：源在 `~/Projects/skills/skills/`，运行态在 `~/.agents/skills/`，**两份拷贝非符号链接**
 
-### 5.3 方案文档需要重写
+### 5.3 ~~方案文档需要重写~~ —— 已结清
 
-`specs/2026-09-01-artifact-requirement-traceability-design.md` 记录的是扩张版（19 项改动清单、12 处消费方、执行层复用红绿）。它**已被本文推翻**，但仍留在 specs/ 下。要么重写为缩回版，要么在顶部加推翻声明。
+`specs/2026-09-01-artifact-requirement-traceability-design.md` 顶部已加推翻声明（保留正文作为被否决路径的档案）。
