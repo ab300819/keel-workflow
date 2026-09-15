@@ -2,12 +2,12 @@
 
 > 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
 >
-> 本文件 7 条 rule 专门解决 devdocs-state 膨胀 / 陈旧 + 死链两类痛点。
+> 本文件 8 条 rule 专门解决 devdocs-state 膨胀 / 陈旧 + 死链 + 自造编号前缀三类痛点。
 
 ## 目录
 
 - 定位
-- Rule 集（[新增] 7 条）
+- Rule 集（[新增] 8 条）
 - Rule 详情
 - Baseline 与增量扫描
 - 退出码（CLI 集成）
@@ -25,7 +25,7 @@
 | **本文件**：[新增] rule 的检测算法、严重度、修复路径（清单见下方 Rule 集表）| health-lint-implementation.md |
 | 既有偏差评分 | `../../ms-sync/references/health-scoring.md` |
 
-## Rule 集（[新增] 7 条）
+## Rule 集（[新增] 8 条）
 
 | rule_id | 严重度 | 维度 | 适用 | 自动修复 |
 |---------|--------|------|------|---------|
@@ -36,8 +36,9 @@
 | `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
 | `submodule/pointer-drift` | ⛔ / ⚠️ | a 结构正确性 | v1+v2（仅 shell）| ❌（manual_decision）|
 | `state/max-id-stale` | ⚠️ | c/state-hygiene（c 维度子项）| v1+v2 | ✅ 可自动（回填或删行，均需 manual_decision 选择）|
+| `id/unknown-prefix` | ⚠️（永不升级 ⛔）| b 索引/链接 | v1+v2 | ❌（只报不判，manual_decision）|
 
-> 7 条全部 [新增]，可执行。项目可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+> 8 条全部 [新增]，可执行。项目可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
 
 ---
 
@@ -302,6 +303,79 @@ Phase B：扫描引用 + 范围编号展开
 
 ---
 
+### `id/unknown-prefix`
+
+**目的**：报出 `health/dead-link` 白名单外的编号前缀候选，供人工判断它的消费边界。⚠️ **非阻断提示，⛔ 不判违规、⛔ 不给归并建议**——前缀语义看名字猜不出来，工具无权替人分类。对应 `../../_shared/constraints.md` 的 `id/prefix-consumption-contract`。
+
+**它治理什么**：白名单外的编号 `health/dead-link` 不查、`state/max-id-stale` 不推上界 ⇒ 打错一个号、引用一个已删除的号，**没有任何门会发现**。本 rule 只负责让这些前缀在报告里可见，⛔ 不主张它们不该存在。
+
+**背景**：实战项目 `ai-code`（2026-09-10 按本节算法的文本原型抽样）有 **29 类**白名单外前缀候选、**3017 次** occurrence（口径：51 个 devdocs 文件，去代码块与 URL / 文件路径，**保留**行内代码；⛔ 非完整 Markdown 解析，是量级而非精确值）。其中 `D-`(853，决策) 与既有 `ADR-`(282) 并存且边界从未写下，是本 rule 想让人看见的那类；同一批里也有 `R-`(211，重定向安全判定规则) / `B-`(217，改动白名单放宽登记) 这类**合理的项目局部标识**，以及 `UTF`(11) 这类纯形态噪声。⇒ 三者工具分不开，**只报不判**。
+
+**检测对象**：与 `health/dead-link` 同一批文件（`docs/devdocs/**/*.md`，排除 `_archived/`、`.realign-plan.md`、`.health-report.md`）。
+
+**算法**（与 dead-link 共用一次文件遍历，⛔ 但词法独立，见下方"与 dead-link 的词法差异"）：
+
+```text
+1. 候选 regex（⛔ 不能用 \b 开头——`T-RF-001` 会被 \bRF-001\b 抓出幻影前缀 RF）：
+     (?<![\w-])([A-Z][A-Za-z0-9]{0,5})-\d{1,4}[a-z]?(?![\w-])
+   跳过：代码块 ``` ``` 内；_archived/ 内打 low-priority
+
+2. 逐条过滤（命中任一即跳过）：
+     a. prefix ∈ dead-link 白名单
+        （F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey）—— dead-link 已管
+     b. prefix ∈ 已登记但故意不入白名单的标识：
+          M         —— 里程碑（constraints.md 已登记）
+          FR / NFR  —— PRD 层官方编号，DevDocs 侧合法引用（阶段映射
+                       NFR-XX → CON-XXX）。⛔ 必须硬跳过，每个项目都会命中
+     c. prefix ∈ baseline 已抑制的前缀（见「Baseline 与增量扫描」）
+     d. occurrence 落在 URL 或文件路径内
+        ⛔ 不跳过行内代码 span —— 实测项目大量用反引号包裹真实编号
+          （`04-dev-tasks-api.md:34` 的 `MR-038`），跳过会漏掉主要用法
+
+3. 按 prefix 聚合，⛔ 不逐条报：
+     finding {
+       rule_id: id/unknown-prefix,
+       severity: warning,
+       file:   <样本首个文件>,      # 对齐统一 schema
+       line:   <样本首个行号>,
+       actual: <该前缀的 occurrence 数>,
+       message: "未知前缀 <P>：<N> 次 occurrence，不在 dead-link 白名单内",
+       context: "<最多 5 个 file:line 样本>",
+       fix_suggestion: "manual_decision",
+       auto_fixable: false
+     }
+
+4. check 计数单位 = **出现过的 prefix 数**（⛔ 不按 occurrence 计），
+   避免单个前缀的引用量把 b 维度分母冲垮
+```
+
+**与 dead-link 的词法差异（⛔ 两者计数不可互相引用）**：
+
+| 项 | `health/dead-link` | 本 rule |
+|---|---|---|
+| 数字段 | `\d+[a-z]?`（无上界）| `\d{1,4}[a-z]?`（限位数，避免吞掉 `SIDM-71103` 这类外部单号）|
+| 范围展开 | `AC-148~152` 展开成 5 个 | ⛔ 不展开——按 prefix 报警不需要成员粒度 |
+| 边界 | `\b` | `(?<![\w-])` / `(?![\w-])`——必须排除 `T-RF-001` 的幻影 |
+
+⇒ **本 rule 的 occurrence 数与 dead-link 的引用组数是两套口径**，⛔ 不得相加或互相校验。
+
+**人工处置**（`manual_decision`，⛔ 无自动改写，⛔ 工具不给建议）：按 `id/prefix-consumption-contract` 补一份消费契约（作用域 / 消费方 / 检查归属）。三种合法结局：登记进白名单、明确"人工核对、不进机器检查"、或确认无消费方后删除。⛔ 报告不预设哪一种。
+
+**豁免走 baseline，⛔ 不走 devdocs-state 表**：`.health-baseline.yml` 的 `baseline_findings['id/unknown-prefix'].prefixes` 记**本机已看过的**前缀。
+
+⛔ **baseline 不是语义审批**：该文件推荐 gitignore（见「Baseline 文件」），换机器 / 换人会重新报一遍；且一个前缀进 baseline 后，它未来新增的 `D-999` 也不再提示，本 rule ⛔ 不治理已有命名空间的后续增长。它只做**本机历史噪声抑制**。⇒ 想让一个局部前缀被团队持续接受，落点是产物内的消费契约声明（受版本控制），⛔ 不是 baseline。
+
+⛔ **不用 state 表「## 编号状态」的行做白名单**——该表自称「事实快照，不追踪 drift，允许滞后」（模板 84~87 行），把它当豁免权威会重蹈 `state/max-id-stale` 的坑。
+
+**误报与边界**：
+
+- 形态相同的非编号必然命中：`UTF-8`、`P1-01` 这类审查发现编号、外部单号。⛔ 不硬编码黑名单——落进 baseline 消化。
+- 存量项目首扫会一次性报出全部历史前缀 ⇒ 必须先 `--baseline-init`。这是本 rule 唯一可用的落地方式。
+- 严重度统一 ⚠️ 且**永不升级为 ⛔**：它报的是"这里工具看不见"，不是"这里错了"。已有引用仍指向真实内容。
+- 按 prefix 去重，同一前缀在 N 个文件出现只报一条。
+
+---
+
 ### `design/adr-only-revision`
 
 **目的**：检测系统设计文档（`02-system-design*.md`）的增量修订中，**ADR 章节有新增/修改但正文相关章节无同期更新**的反模式，对应 system-design/SKILL.md:336 的硬约束 `⛔ 禁止继续（增量设计）：仅追加 ADR 而正文相关章节未更新`。
@@ -492,6 +566,8 @@ baseline_findings:
   health/dead-link:
     count: 0
     refs: []
+  id/unknown-prefix:
+    prefixes: [D, MR, GAP, BLK]   # 本机已看过、暂不再提示的前缀；⛔ 非语义审批
 notes: |
   首次扫描快照；新增违规以此为基线计算 delta。
 ```
@@ -510,6 +586,7 @@ notes: |
 - `state/forbidden-content`：按 (file, line) 元组 hash；baseline 中存在的视为存量，新增的报告为 violation
 - `health/dead-link`：baseline 中已知死链不重复报；新增死链一律 ⛔
 - `design/adr-only-revision`：baseline 不适用（按 commit 时间窗判定，本身就是增量语义）
+- `id/unknown-prefix`：按 prefix 去重；baseline `prefixes` 列表内的不提示，新出现的前缀 ⚠️。⛔ 该列表只是本机噪声抑制，不代表这些前缀已被接受，也不追踪它们后续新增的编号
 - `submodule/pointer-drift`：按 (code_root name, 漂移类型) 元组去重；baseline 中已知漂移不重复报，新增漂移一律按第 4 步算法定性的严重度（warning 或 blocker）报告。仅 shell 拓扑生效
 
 ## 退出码（CLI 集成）
@@ -556,10 +633,10 @@ notes: |
 
 ## Finding 输出 schema
 
-所有 6 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
+所有 8 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
 
 ```yaml
-- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift
+- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix
   severity: blocker | warning
   file: <relative-path>
   line: <int 或 null>
@@ -575,7 +652,7 @@ notes: |
 
 | 命令 | 执行的 rule |
 |------|------------|
-| `/ms-pipeline realign --scope=health --dry-run` | 全部 6 条 |
+| `/ms-pipeline realign --scope=health --dry-run` | 全部 8 条 |
 | `/ms-pipeline realign --scope=health --fix=state/total-size-cap` | 仅该 rule |
 | `/ms-pipeline realign --scope=health --apply` | 修复 auto_fixable + 已 AskUserQuestion 的 manual_decision |
 
@@ -583,7 +660,7 @@ notes: |
 
 ## 历史项目兼容
 
-- 本 6 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
+- 本 8 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
 
 ## 变更日志
 
@@ -592,3 +669,4 @@ notes: |
 | 2026-05-22 | 初始版本（health scope 4 条 [新增] rule 落地：state/* + dead-link）|
 | 2026-05-25 | 新增 `design/adr-only-revision`（维度 a 结构正确性），落地 system-design 增量修订正文偏差检测 |
 | 2026-08-05 | 新增 `submodule/pointer-drift`（维度 a 结构正确性，仅 shell 拓扑生效），落地 devdocs 工作区模式外壳仓子模块指针漂移检测 |
+| 2026-09-10 | 新增 `id/unknown-prefix`（维度 b 索引/链接，⚠️ 非阻断提示），落地 `_shared/constraints.md` `id/prefix-consumption-contract` 的可见性支撑。与 dead-link 共用文件遍历但**词法独立**（负向边界排除 `T-RF-001` 幻影、限位数、不展开范围），两者计数口径 ⛔ 不可互引 |

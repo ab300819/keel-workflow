@@ -80,7 +80,7 @@ health scope 治理「已有文档体系是否健康」，与 `spec` scope（产
 > 原维度 d「SSOT 遵从」与维度 e「三层分离自动检测」均已废弃：d 依赖已删除的 layout.v2 ssot-lint，无检测对象。三层分离作为**原则**已由编号文件结构 + `state/*` / `design/adr-only-revision` 症状规则承载，审查时作人工尺子用，不再做独立的关键词扫描维度。权威见 [constraints.md §9 分层记忆原则](../skills/_shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 
 **关键设计**：
-- health-lint rule 清单以 [health-lint-implementation.md](../skills/ms-pipeline/references/health-lint-implementation.md) Rule 集表为权威，7 条全部可执行
+- health-lint rule 清单以 [health-lint-implementation.md](../skills/ms-pipeline/references/health-lint-implementation.md) Rule 集表为权威，8 条全部可执行
 - `devdocs-state.md` 模板硬化（forbidden 6 类内嵌模式 + 200/500/40K 三档阈值）+ `agent-memory --update` 健康度自检（双重保险）
 - `design/adr-only-revision` 把 system-design 既有 ⛔ 硬约束（仅追加 ADR 不改正文）从人工自检升级为 git 历史自动扫描
 

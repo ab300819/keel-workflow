@@ -96,6 +96,7 @@ docs/devdocs/.health-report.md
 4. 执行 health-lint [新增] rule（清单见 [health-lint-implementation.md](health-lint-implementation.md)）：
    - `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` → 维度 c
    - `health/dead-link` → 维度 b
+   - `id/unknown-prefix` → 维度 b（⚠️ 非阻断提示；check 计数单位为「出现过的 prefix 数」，⛔ 不按 occurrence 计，也 ⛔ 不与 dead-link 的引用组数相加）
    - `design/adr-only-revision` → 维度 a（基于 git 历史扫描最近 30 天 commit）
    - `submodule/pointer-drift` → 维度 a（仅 shell 拓扑；`inline` 报 not_applicable，判据见 health-lint-implementation.md 该 rule 的适用性门）
 5. 加权评分输出（见下方"评分契约"）。
@@ -127,6 +128,7 @@ dimensions:
     score: <0-100>
     dead_links: []
     orphan_ids: []
+    unknown_prefixes: []          # id/unknown-prefix 聚合 finding（⚠️ 提示，不计入阻断）
     trace_gaps: []
   c_oversize:
     score: <0-100>
