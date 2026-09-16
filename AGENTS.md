@@ -40,8 +40,8 @@ Claude Code / Codex CLI / OpenCode 三端。21 个流程 skill + 12 个被流程
 - **⛔ 不在此启动 keel 全流程**。修改这些规格 ≠ 在本仓开发 keel 产品。
 - **允许的外部 skill 用法**：把它们的**产物约定**当落点，不启动它们的门。
   设计稿写进 `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`（既成事实，本仓设计稿都在那）。
-- **例外（可以走完整设计流程）**：新建整个 skill、跨 skill 协议改动、推翻既有架构决策。
-  此时先出设计稿再动手；产物同样进 `docs/superpowers/specs/`。
+- **例外（走 superpowers 完整流程）**：新建整个 skill、跨 skill 协议改动、推翻既有架构决策。
+  依次 `brainstorming` → `writing-plans` → `executing-plans`；先出设计稿再动手，产物同样进 `docs/superpowers/specs/`。
 - **独立审查**：需要第二意见时用 codex（`/adversarial-review` 或直接 `codex exec`），
   ⛔ 不用外部 skill 的 review 流程门——本仓无代码可审，审的是规格推理。
 
