@@ -144,7 +144,7 @@ e2e-test-flow:34    不适合? 设计用例 → `/test-cases`;跑测试套件 �
 | 对象 | 名称 |
 |---|---|
 | 壳目录 | `/Users/mason/Projects/skills/`（无 `.git`）|
-| 插件仓 | `keel`（GitHub `ab300819/skills` 改名而来）|
+| 插件仓 | GitHub `ab300819/keel-workflow`（由 `ab300819/skills` 改名而来）；本地目录 `keel-workflow/`。⛔ 仓名带 `-workflow` 后缀，**插件名 / 命名空间仍是 `keel`** |
 | 零散仓 | `skills-local`（本地，⛔ 无远程——D2 已确认接受）|
 | 插件 / 命名空间 | `keel` |
 | marketplace | `ab300819-keel` |
@@ -226,7 +226,7 @@ Skill(ponytail-help)            ← ⛔ 不带 ponytail: 前缀
 | **4 hook 三端适配** | 公共检查逻辑一份 + 三个薄适配层 | 各端真实会话触发一次（⚠️ 现有两个 hook 自陈未跑过，本次是首次实测）|
 | ~~**4b 三端调度验收**~~ | ✅ 已通过（2026-09-16，见 §5.1）| —— |
 | **5 历史重写**（⛔ 不可逆）| 在 `--mirror` 副本上 `git filter-repo --mailmap`；**再用 `commit-map` 回填 13 份文档里的 21 个 SHA** | 身份唯一；366 节点不变；tree 与父子关系逐提交相同；21 个 SHA 全部解析成功 |
-| **6 远程切换**（⛔ 不可逆）| `gh api --method PATCH repos/ab300819/skills -f name=keel`；`git remote set-url`；`--force-with-lease` 按冻结时 oid 逐 ref 推 | 新 clone 的 refs 与发布清单一致；身份复查通过 |
+| **6 远程切换**（⛔ 不可逆）| `gh api --method PATCH repos/ab300819/skills -f name=keel-workflow`；`git remote set-url`；`--force-with-lease` 按冻结时 oid 逐 ref 推 | 新 clone 的 refs 与发布清单一致；身份复查通过 |
 | **7 本地换位** | 旧工作区移走并**禁用其 push**；建壳目录；放两个仓；**按迁移清单清理旧安装**（见下）；三端重装 | 壳内无 `.git`；零散仓 `git remote -v` 为空；**三端新会话里旧 `ms-*` 名全部消失**；三端各自能发现 33 个 skill；**42 个非本仓 skill 不受影响** |
 
 #### 5.2 实施结果（2026-09-16，阶段 1~7 全部完成）
@@ -239,7 +239,7 @@ Skill(ponytail-help)            ← ⛔ 不带 ponytail: 前缀
 | 4 | 三端 hook 适配层落地；三条检查路径构造 payload 实跑通过 |
 | 4b | 裸名在三端全部解析成功（见 §5.1）|
 | 5 | 371 commit、身份唯一 `Mason <ab300819@hotmail.com>`；370 提交 tree 逐条相同、父子结构一致；19 个 SHA 回填 |
-| 6 | `ab300819/skills` → `ab300819/keel`；`--force-with-lease` 按冻结 oid 推 main；新 clone 复验：371 commit / 身份唯一 / 工作邮箱 0 处 / 19 SHA 全解析 |
+| 6 | `ab300819/skills` → `ab300819/keel-workflow`；`--force-with-lease` 按冻结 oid 推 main；新 clone 复验：371 commit / 身份唯一 / 工作邮箱 0 处 / 19 SHA 全解析 |
 | 7 | 壳内无 `.git`；skills-local 无远程；三端旧 `ms-*` **残留 0**；Claude Code 33 skill + 1 hook、Codex `keel:*` 33 个、OpenCode 81 个含 keel 与 skills-local 全数；**清单外 39 项零误伤、软链零断裂** |
 
 ⚠️ **三处与本稿预期不符，已就地修正**：

@@ -5,7 +5,7 @@
   "author": {
     "name": "ab300819"
   },
-  "repository": "https://github.com/ab300819/keel",
+  "repository": "https://github.com/ab300819/keel-workflow",
   "license": "MIT",
   "keywords": ["devdocs", "workflow", "code-quality", "testing", "refactoring"],
   "skills": "./skills/"

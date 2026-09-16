@@ -15,14 +15,14 @@
 **Claude Code**
 
 ```
-/plugin marketplace add ab300819/keel
+/plugin marketplace add ab300819/keel-workflow
 /plugin install keel@ab300819-keel
 ```
 
 **Codex CLI**
 
 ```bash
-codex plugin marketplace add ab300819/keel
+codex plugin marketplace add ab300819/keel-workflow
 codex plugin add keel@ab300819-keel
 ```
 
