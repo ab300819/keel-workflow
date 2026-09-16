@@ -189,7 +189,7 @@
 
 **误报与边界**：
 
-- 表格行（以 `|` 开头）若内容确为单行数据（不含嵌套 task 明细）→ 仍判违规，但 hint 标记 `table-row: yes`，用户可选择忽略（输出 `<!-- health-lint-disable-next-line state/line-length-cap -->` 注释）。
+- 表格行（以 `|` 开头）若内容确为单行数据（不含嵌套 task 明细）→ 仍判违规，但 hint 标记 `table-row: yes`，用户可选择忽略（输出 `<!-- health-lint-disable-line state/line-length-cap -->` 注释）。
 - frontmatter yaml 单行不扫（yaml 不应超 500 字符；如超则属另一类问题）。
 
 ---

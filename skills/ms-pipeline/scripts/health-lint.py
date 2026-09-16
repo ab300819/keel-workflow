@@ -15,7 +15,7 @@ v1 不含：--apply / 自动修复。baseline 见 --baseline-init / --since-base
 
 退出码（规格「退出码（CLI 集成）」）：0 无违规 / 1 仅 warning / 2 有 blocker / 3 lint 自身错误
 """
-import argparse, os, re, subprocess, sys, unicodedata
+import argparse, json, os, re, subprocess, sys, unicodedata
 
 WHITELIST = ["T-RF", "Journey", "ADR", "BUG", "CON", "E2E", "INS", "AC", "US", "IT", "UT", "F", "T"]
 ID_RE = re.compile(r"(?<![\w-])(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)(?![\w-])")
@@ -23,9 +23,17 @@ RANGE_RE = re.compile(r"(?<![\w-])(" + "|".join(WHITELIST) + r")-(\d+)~(?:(?:" +
 PREFIX_RE = re.compile(r"(?<![\w-])([A-Z][A-Za-z0-9]{0,5})-\d{1,4}[a-z]?(?![\w-])")
 PREFIX_SKIP = set(WHITELIST) | {"M", "FR", "NFR"}
 
-DEF_HEADING = re.compile(r"^#{1,4}\s+(" + "|".join(WHITELIST) + r")-(\d+)[a-z]?\b")
-DEF_TABLE = re.compile(r"^\|\s*\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)[a-z]?\*{0,2}\s*\|")
-DEF_LIST = re.compile(r"^[-*]\s+\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)[a-z]?\b")
+DEF_HEADING = re.compile(r"^#{1,4}\s+(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
+DEF_TABLE = re.compile(r"^\|\s*\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\*{0,2}\s*\|")
+DEF_LIST = re.compile(r"^[-*]\s+\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
+KEY_RE = re.compile(r"^(.+)-(\d+)([a-z]?)$")
+
+
+def key_parts(k):
+    """归一化键 → (类型, 数字)。字母后缀参与身份、不参与数值上界。"""
+    m = KEY_RE.match(k)
+    return m.group(1), int(m.group(2))
+
 
 FORBIDDEN = {
     "commit-hash": re.compile(r"(?:^|[@\s(\[])[0-9a-f]{7,40}(?=[\s.,;:)\]'\"`]|$)"),
@@ -219,7 +227,7 @@ def emit(findings):
             if v is None:
                 print(f"  {k}: null")
             elif k in ("message", "context"):
-                print(f'  {k}: "{str(v)}"'.replace("\n", " "))
+                print(f"  {k}: " + json.dumps(str(v).replace("\n", " "), ensure_ascii=False))
             elif isinstance(v, bool):
                 print(f"  {k}: {str(v).lower()}")
             else:
@@ -246,7 +254,7 @@ def scan_skill_repo(skills_dir):
             fs.append(find("skill/name-mismatch", "blocker", d.name, None,
                            f"目录 {d.name}/ 没有 SKILL.md", fix="补 SKILL.md 或删除空目录"))
             continue
-        lines = open(sk, encoding="utf-8", errors="replace").read().split("\n")
+        lines = open(sk, encoding="utf-8", errors="replace").read().splitlines()
         n = len(lines)
         if n > SKILL_LINE_CAP:
             fs.append(find("skill/size-cap", "blocker", f"{d.name}/SKILL.md", None,
@@ -287,6 +295,8 @@ def scan_skill_repo(skills_dir):
     return fs
 
 
+ELEM_QUOTED = re.compile(r'^"[^"]*"$')
+ELEM_BARE = re.compile(r"^[A-Za-z0-9_-]+$")
 BASELINE_REL = os.path.join(".claude", "rules", ".health-baseline.yml")
 BASELINE_SCHEMA = "health-baseline.v1"
 SIZE_DELTA_IGNORE = 2048   # 规格：delta < 2 KiB 视为可忽略小增长
@@ -346,14 +356,30 @@ def read_baseline(root):
         txt = open(path, encoding="utf-8").read()
         if not re.match(r"^schema:\s*" + re.escape(BASELINE_SCHEMA) + r"\s*$", txt.split("\n")[0]):
             return None, "health/baseline-corrupt"
-        def lst(key):
+        def lst(key, quoted=True):
             m = re.search(r"^\s+" + re.escape(key) + r":\s*\[(.*?)\]\s*$", txt, re.M)
             if not m:
+                raise ValueError(f"缺字段或列表未闭合：{key}")
+            body = m.group(1).strip()
+            if not body:
                 return set()
-            return {x.strip().strip('"') for x in m.group(1).split(",") if x.strip()}
+            # ⛔ 逐元素比对写入器的形状：`["a", "b"]`（引号）/ `[D, X]`（裸词）。
+            # 只验方括号闭合不够——`["AC-001]` 也能过，strip('"') 会把它洗成合法值，
+            # 于是坏掉的 baseline 静默压制掉真实违规。
+            rx = ELEM_QUOTED if quoted else ELEM_BARE
+            parts = [x.strip() for x in body.split(",")]
+            for x in parts:
+                if not rx.match(x):
+                    raise ValueError(f"元素格式不符：{key} → {x}")
+            return {x.strip('"') for x in parts}
         m = re.search(r"^\s+devdocs_state_size_bytes:\s*(\d+)\s*$", txt, re.M)
-        return {"size": int(m.group(1)) if m else 0,
-                "forbidden": lst("lines"), "dead": lst("refs"), "prefixes": lst("prefixes")}, None
+        if not m:
+            raise ValueError("缺字段：devdocs_state_size_bytes")
+        # ⛔ 缺字段一律判 corrupt，不得回落默认值——size 回落 0 会静默解除
+        # total-size-cap 的压制，把「baseline 坏了」变成「体积没超」
+        return {"size": int(m.group(1)),
+                "forbidden": lst("lines"), "dead": lst("refs"),
+                "prefixes": lst("prefixes", quoted=False)}, None
     except Exception:
         return None, "health/baseline-corrupt"
 
@@ -381,8 +407,12 @@ def apply_baseline(findings, bl):
     return out
 
 
-def scan_project(root, files=None):
-    """project scope 的 6 条 rule。files=None 时自行遍历 docs/devdocs/。"""
+def scan_project(root, files=None, ref_only=None):
+    """project scope 的 6 条 rule。files=None 时自行遍历 docs/devdocs/。
+
+    ⛔ ref_only 只收窄「报告哪些文件的引用」，定义索引恒取 files 全量——
+    增量扫描若同时缩定义索引，引用未改动文件里的合法编号会误报 dead-link。
+    """
     devdocs = os.path.join(root, 'docs', 'devdocs')
     if not os.path.isdir(devdocs):
         return []
@@ -400,7 +430,7 @@ def scan_project(root, files=None):
         docs[f] = (lines, strip_code_blocks(lines))
 
     # ---- Phase A：定义索引（⛔ 不从 devdocs-state.md 取上界）----
-    defined, def_pos = set(), set()
+    defined, def_end = set(), {}
     for f, (lines, mask) in docs.items():
         for i, ln in enumerate(lines):
             if mask[i]:
@@ -408,35 +438,44 @@ def scan_project(root, files=None):
             for rx in (DEF_HEADING, DEF_TABLE, DEF_LIST):
                 m = rx.match(ln)
                 if m:
-                    defined.add(f"{m.group(1)}-{int(m.group(2))}")
-                    def_pos.add((f, i))
+                    defined.add(f"{m.group(1)}-{int(m.group(2))}{m.group(3)}")
+                    def_end[(f, i)] = m.end()
                     break
     derived_caps = {}
     for d in defined:
-        t, n = d.rsplit("-", 1)
-        derived_caps[t] = max(derived_caps.get(t, 0), int(n))
+        t, n = key_parts(d)
+        derived_caps[t] = max(derived_caps.get(t, 0), n)
 
     findings = []
 
     # ---- Phase B：引用扫描 ----
     dead = {}
     for f, (lines, mask) in docs.items():
+        if ref_only is not None and f not in ref_only:
+            continue
         for i, ln in enumerate(lines):
-            if mask[i] or (f, i) in def_pos:
+            if mask[i]:
                 continue
+            # ⛔ 只排除定义 occurrence 本身，不排整行——追溯矩阵
+            # `| F-001 | US-001 | AC-001 |` 的首列是定义，其余列是必须查的引用
+            dend = def_end.get((f, i), 0)
             refs = []  # (归一化 key, 文件里的原始拼写)
             for m in RANGE_RE.finditer(ln):
+                if m.start() < dend:
+                    continue
                 t, a, b = m.group(1), int(m.group(2)), int(m.group(3))
                 if b >= a and b - a <= 500:
                     w = len(m.group(2))
                     refs += [(f"{t}-{n}", f"{t}-{n:0{w}d}") for n in range(a, b + 1)]
             for m in ID_RE.finditer(ln):
-                refs.append((f"{m.group(1)}-{int(m.group(2))}", m.group(0)))
+                if m.start() < dend:
+                    continue
+                refs.append((f"{m.group(1)}-{int(m.group(2))}{m.group(3)}", m.group(0)))
             for r, raw in refs:
                 if r in defined:
                     continue
-                t, n = r.rsplit("-", 1)
-                sub = "out-of-range" if int(n) > derived_caps.get(t, 0) else "missing-definition"
+                t, n = key_parts(r)
+                sub = "out-of-range" if n > derived_caps.get(t, 0) else "missing-definition"
                 dead.setdefault((rel(f), raw, sub), []).append(i + 1)
     for (fp, r, sub), occ in sorted(dead.items()):
         hint = ("超出资源文件中该类型的最大已定义编号，可能是未来引用或拼写错误"
@@ -447,6 +486,8 @@ def scan_project(root, files=None):
     # ---- id/unknown-prefix：按 prefix 聚合，⛔ 只报不判 ----
     agg = {}
     for f, (lines, mask) in docs.items():
+        if ref_only is not None and f not in ref_only:
+            continue
         for i, ln in enumerate(lines):
             if mask[i]:
                 continue
@@ -477,7 +518,7 @@ def selftest():
 
     ⛔ 不是完整测试套件。它只保证"规格改了脚本没跟上"时会响。
     """
-    import tempfile, shutil
+    import io, tempfile, shutil
     t = tempfile.mkdtemp()
     try:
         # --- project scope 夹具 ---
@@ -486,6 +527,8 @@ def selftest():
         open(os.path.join(dd, "01.md"), "w").write(
             "## F-001 x\n- AC-001 a\n- AC-002 b\n"
             "引用 AC-003 与范围 AC-001~002。决策 D-014。外部单号 SIDM-71103。\n"
+            "## AC-004a 后缀定义\n引用 AC-004b\n"          # 后缀参与身份
+            "| F-001 | AC-009 | 追溯矩阵行 |\n"              # 首列定义，同行引用仍须查
             "```\nAC-777 代码块内不算\n```\n")
         open(os.path.join(dd, "_archived", "old.md"), "w").write("## AC-555 归档不进索引\n")
         open(os.path.join(t, ".claude", "rules", "devdocs-state.md"), "w").write(
@@ -496,11 +539,14 @@ def selftest():
         sk = os.path.join(t, "sk"); os.makedirs(os.path.join(sk, "good"))
         os.makedirs(os.path.join(sk, "bad")); os.makedirs(os.path.join(sk, "empty"))
         open(os.path.join(sk, "good", "SKILL.md"), "w").write("---\nname: good\n---\n引用 [x](../bad/SKILL.md)\n")
+        os.makedirs(os.path.join(sk, "edge"))
+        open(os.path.join(sk, "edge", "SKILL.md"), "w").write(
+            "---\nname: edge\n---\n" + "行\n" * 497)     # 恰好 500 行 == 上限，合规
         open(os.path.join(sk, "bad", "SKILL.md"), "w").write(
             "---\nname: WRONG\n---\n" + "行\n" * 501 + "死链 [y](../nope/SKILL.md)\n调 `/good --ghost`\n")
 
         want = {
-            "health/dead-link": 1,        # AC-003（AC-001~002 展开后命中定义，不报）
+            "health/dead-link": 3,        # AC-003 + AC-004b（后缀）+ AC-009（定义行同行）
             "id/unknown-prefix": 1,       # D（SIDM 限位数排除）
             "state/forbidden-content": 1,
             "state/line-length-cap": 1,
@@ -513,6 +559,29 @@ def selftest():
         got = {}
         for f in scan_project(t) + scan_skill_flags(sk) + scan_skill_repo(sk):
             got[f["rule_id"]] = got.get(f["rule_id"], 0) + 1
+        # --- 计数夹具覆盖不到的两条静默失效，直接断言 ---
+        import contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            emit([find("x/y", "warning", "f.md", 1, 'msg', ctx='含 "引号" 与 \\ 反斜杠')])
+        ctx_line = next(l for l in buf.getvalue().split("\n") if l.startswith("  context: "))
+        try:
+            json.loads(ctx_line[len("  context: "):])   # YAML 双引号标量 ≡ JSON 字符串
+        except ValueError:
+            print(f"FAIL emit: context 未转义，产出非法 YAML：{ctx_line}", file=sys.stderr)
+            return 1
+        bp = os.path.join(t, ".claude", "rules", os.path.basename(BASELINE_REL))
+        for bad_bl, why in (
+            (f"schema: {BASELINE_SCHEMA}\n  devdocs_state_size_bytes: 1\n  refs: [AC-001\n", "缺字段/列表未闭合"),
+            (f"schema: {BASELINE_SCHEMA}\n  devdocs_state_size_bytes: 1\n"
+             '  lines: []\n  refs: ["AC-001]\n  prefixes: []\n', "元素引号未闭合"),
+        ):
+            open(bp, "w").write(bad_bl)
+            if read_baseline(t)[1] != "health/baseline-corrupt":
+                print(f"FAIL read_baseline: 畸形 baseline({why}) 未判 corrupt", file=sys.stderr)
+                return 1
+        os.remove(bp)
+
         bad = [(k, want[k], got.get(k, 0)) for k in want if got.get(k, 0) != want[k]]
         extra = sorted(set(got) - set(want))
         for k, w, g in bad:
@@ -564,16 +633,20 @@ def main():
         return 0
 
     files = collect_files(devdocs)
+    ref_only = None
     if args.changed_only:
         try:
             out = subprocess.run(["git", "-C", root, "diff", "--name-only", "HEAD"],
                                  capture_output=True, text=True, timeout=10)
+            if out.returncode != 0:
+                # ⛔ 不得把 git 失败当成「没有变更」——那会静默全漏扫并 exit 0
+                raise RuntimeError(out.stderr.strip() or f"git exit {out.returncode}")
             changed = {os.path.join(root, x) for x in out.stdout.split()}
-            files = [f for f in files if f in changed]
+            ref_only = {f for f in files if f in changed}
         except Exception as e:
             print(f"health/git-unavailable: {e}", file=sys.stderr)
             return 3
-    findings = scan_project(root, files)
+    findings = scan_project(root, files, ref_only)
 
     if args.baseline_init:
         path = write_baseline(root, findings)
