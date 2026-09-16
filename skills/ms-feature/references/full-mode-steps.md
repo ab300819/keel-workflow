@@ -33,7 +33,7 @@
 
 ## Step 1: 需求追加
 
-> **委托执行**：本步骤必须委托给 `/ms-requirements --incremental`，由其负责增量需求。
+> **委托执行**：本步骤必须委托给 `/ms-requirements`（已有 01 时自动进增量模式），由其负责增量需求。
 
 ### 委托输入
 
@@ -173,7 +173,7 @@ docs/devdocs/
 
 | Step | 被调度技能 | 调度方式 |
 |------|-----------|----------|
-| Step 1 | `/ms-requirements --incremental` | Task tool 子 Agent |
+| Step 1 | `/ms-requirements`（自动增量） | Task tool 子 Agent |
 | Step 2 | `/ms-system-design` | Task tool 子 Agent |
 | Step 3 | `/ms-test-cases` | Task tool 子 Agent |
 | Step 4 | `/ms-dev-tasks` | Task tool 子 Agent |

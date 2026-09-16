@@ -159,9 +159,9 @@
 
 #### 恢复建议
 
-- 补齐缺失断言：`/ms-dev-workflow --task T-XXX-followup-1`
-- 或更新 spec 期望：`/ms-test-cases --update IT-XXX` 并附调整理由
-- 或拆分子任务：`/ms-dev-tasks --split T-XXX`
+- 补齐缺失断言：`/ms-dev-workflow T-XXX-followup-1`（单任务是位置参数）
+- 或更新 spec 期望：`/ms-test-cases`（自动检测增量）调整 IT-XXX，并附理由
+- 或拆分子任务：`/ms-dev-tasks`（标准模式）重拆 T-XXX
 
 > 项目专有的完成度检查章节（如某语言分层契约的字段透传）由该项目 `docs/devdocs/patterns/verify-blindspots.md` 定义并在报告中自行追加，不在本模板固化。
 
@@ -215,7 +215,7 @@
 
 | # | 维度 | 位置 | 问题 | 修复建议 | 转入 |
 |---|------|------|------|----------|------|
-| 1 | --docs 层 1 | 原始需求 #2 | 遗漏"导出 PDF" | `/ms-requirements --incremental` | → ms-dev-tasks |
+| 1 | --docs 层 1 | 原始需求 #2 | 遗漏"导出 PDF" | `/ms-requirements`（自动增量） | → ms-dev-tasks |
 | 2 | --impl AC | AC-003 | 无对应实现 | 在 src/x.ts 中实现 | → ms-dev-tasks |
 
 ### ⚠️ P2（应修复）
@@ -252,7 +252,7 @@
 
 | 问题类型 | 修复 Skill | 说明 |
 |----------|-----------|------|
-| 需求遗漏 | `/ms-requirements --incremental` | 追加 F/US/AC |
+| 需求遗漏 | `/ms-requirements`（自动增量） | 追加 F/US/AC |
 | 需求偏移 | 与用户对齐后 `/ms-requirements` | 修正理解 |
 | 设计缺失 | `/ms-system-design` | 补充设计模块 |
 | 测试缺失 | `/ms-test-cases` | 补充测试用例 |

@@ -467,7 +467,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 
 | 维度 | 结果 | 建议下一步 |
 |------|------|------------|
-| --docs 层 1 有遗漏 | P1 | `/ms-requirements --incremental` 补充 F/US/AC |
+| --docs 层 1 有遗漏 | P1 | `/ms-requirements`（自动增量）补充 F/US/AC |
 | --docs 层 1 有偏移 | P2 | 与用户确认需求理解是否正确 |
 | --docs 层 2 有缺失 | P1 | `/ms-system-design` 补充设计 |
 | --docs 层 3 有缺失 | P1 | `/ms-test-cases` 补充测试用例 |
