@@ -167,7 +167,7 @@ and types neighboring tasks use."*
 
 ⚠️ 但同样受限于 health-lint 无实现（[规格在此](../../skills/ms-pipeline/references/health-lint-implementation.md)）这个前提：672 行规格 + 0 行代码，本仓无任何可执行文件。⇒ 该规则**依赖 health-lint 先被实现**，否则只是多写一条没人跑的规格。
 
-### 4.3 架构分歧（记录，⛔ 不在本轮处理）
+### 4.3 ⏸️ 未决（⛔ 不是「判定不做」）：减少子指令 —— 靶子只有 `ms-verify`
 
 **superpowers 把维度拆成 skill 数量，DevDocs 把维度压进 flag。**
 
@@ -186,7 +186,42 @@ DevDocs 写法: /plan --brainstorm | --write | --execute | --subagent           
 
 ⇒ **flag 把四个锐利的触发面压成了一个钝的。** 与 [2026-08-28 软触发漏检](2026-08-28-skill-soft-trigger-miss-brief.md) 是同一问题的另一面：那份查的是「描述写不清」，这里是「描述天然装不下」。
 
-⛔ 这是真架构分歧，不是随手可改。若要动，最小可议的切入点是 `ms-verify` 一个 451 行装 4 维。
+#### 实测：这件事比「架构分歧」小得多（2026-09-16 复量）
+
+| skill | 行数 | 模式数 | 性质 |
+|---|---:|---:|---|
+| **`ms-verify`** | **483** | **6** | 🔴 六个**不同动作**（查文档 / 查实现 / 查 UI / 查就绪 / 清算延后审查 / drift）|
+| `ms-test-run` | 296 | 5 | ✅ 同一动作的**范围选择**（跑哪层测试），合理 |
+| `ms-requirements` | 421 | 3 | 数据源不同，合理 |
+| `ms-sync` / `ms-prd` | 322 / 360 | 2 | 轻 |
+| **`ms-dev-workflow`** | 422 | **0** | ✅ **本仓已有的无 flag 反例** —— 用位置参数 `T-03` / `F-001` |
+
+⇒ **靶子只有 `ms-verify` 一个**，不是全仓架构改造。`ms-dev-workflow` 证明无 flag 形态在本仓可行。
+
+#### 关键历史：它们本来就是独立 skill，是被合并进来的
+
+`a90382f`（2026-03-10）**同一提交**内：新建 `devdocs-pipeline`，同时
+`devdocs-verify (3-in-1)` 合并并删除 `devdocs-review` / `devdocs-requirements-alignment` /
+`devdocs-ui-alignment`。
+
+合并理由未写入 commit，但从 `ms-pipeline` 自陈定位可推：**降低用户面对 13 个原子 skill 的认知负担**。
+
+⚠️ **当初的合并理由已经弱化**：
+- 合并优化的是**用户的选择成本**；
+- 代价落在**模型的触发准确度**（description 把四件事 OR 在一起）；
+- 而 `ms-pipeline` **现在正是干「替用户选」这件事的** ⇒ 用户选择成本已由编排层承担。
+
+⇒ 这不是「superpowers 那样更好」，是**本仓自己的前提变了**。
+
+#### 状态：⏸️ 未决，⛔ 不是判定不做
+
+**未满足 ROI 门槛**：没有任何记录表明 `ms-verify` 真的误触发或漏触发过。
+
+**且有独立的推迟理由**：[role-contract 台账](2026-08-31-role-contract-backlog.md) 明写
+`ms-verify`「**它是验收方本身，改造它等于改验收标准，须最后动**」。
+
+**重新评估的触发条件**：集中验证中观察到 `ms-verify` 误触发 / 漏触发，或用户实际报告
+「想查 X 结果它查了 Y」。届时最小切入是拆 `ms-verify`，⛔ 不是全仓拆 flag。
 
 ### 4.4 顺带登记：`ms-pipeline` 治理委托在项目早期有空档
 
