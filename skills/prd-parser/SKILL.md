@@ -304,7 +304,7 @@ pending ──(PRD 更新，章节删除)──> removed
 
 - [ ] **禁止继续：不得解读、改写、删减原文内容**（恢复方式：原文完整保留到 chunk，需求解读由 prd-brainstorm 负责）
 - [ ] Write 工具仅用于写入 `docs/prd/chunks/` 和 `docs/prd/source/` 下的文件
-- [ ] 不分配 F/US/AC 编号（编号权属于 DevDocs 阶段）
+- [ ] 不分配 F/US/AC 编号（编号权属于 keel 阶段）
 
 ### 忠实性约束
 

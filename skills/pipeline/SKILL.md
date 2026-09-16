@@ -1,6 +1,6 @@
 ---
 name: pipeline
-description: 选择并编排 DevDocs 的初始化、功能、修复、验证、收尾、洞察、设计与规范升级流程。仅用于 DevDocs 工作；已指定原子 skill 时直接使用它。
+description: 选择并编排 keel 的初始化、功能、修复、验证、收尾、洞察、设计与规范升级流程。仅用于 keel 工作；已指定原子 skill 时直接使用它。
 metadata:
   patterns: [pipeline]
   interaction: multi-turn
@@ -9,7 +9,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Task
 user-invocable: true
 ---
 
-# DevDocs 工作流编排器
+# keel 工作流编排器
 
 顶层编排器，提供 8 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
 
@@ -101,7 +101,7 @@ user-invocable: true
 
 首先扫描 `docs/devdocs/` 实际文件（而非依赖 `00-context.md` 进度），按下表首个命中即路由。
 
-**无 DevDocs 文件时**：
+**无 keel 文件时**：
 
 | 检测项 | 判定 | 路由建议 |
 |------|------|---------|
@@ -113,7 +113,7 @@ user-invocable: true
 | 用户输入极短（<200 字、无结构） | 模糊想法 | 建议 `/prd` 探索需求 |
 | 文件/URL/长文 | 大文档引用 | 建议 `/prd prd` 解析文档 |
 
-**已有 DevDocs 文件时**：
+**已有 keel 文件时**：
 
 | 检测项 | 路由建议 |
 |------|---------|
@@ -131,7 +131,7 @@ user-invocable: true
 
 报告类文件（readiness-report、verify-report）应比其源文件更新，过期时建议重新验证。
 
-ℹ️ 建议:AGENTS.md 缺「工作流路由」节(存量 DevDocs 项目)→ 建议 `/agent-memory --update` 补齐;不阻塞路由。
+ℹ️ 建议:AGENTS.md 缺「工作流路由」节(存量 keel 项目)→ 建议 `/agent-memory --update` 补齐;不阻塞路由。
 ℹ️ 建议:检测到 01(或 01+02)已产出 → 可 `/board` 生成可视化评审页面(人审需求/设计;不阻塞、不强制)。
 
 ### 一次性升级提示（阶段检测后）
@@ -177,7 +177,7 @@ user-invocable: true
 阶段检测无法判断时，通过 2-3 个问题收敛：
 
 ```text
-Q1: "项目已有 DevDocs 文档吗？"
+Q1: "项目已有 keel 文档吗？"
     │
     ├── 没有 → Q1a: "已有代码还是全新项目？"
     │           ├── 全新项目 → init
@@ -304,7 +304,7 @@ pipeline（编排层）
 
 ## 约束
 
-### DevDocs 6 阶段治理
+### keel 6 阶段治理
 
 pipeline 视角的主链路阶段固定为：
 
@@ -319,7 +319,7 @@ insights、design、realign 属于入口或治理分支，不改变 6 阶段主�
 
 ### 阶段边界约束（全局规则）
 
-DevDocs 工作流严格区分**文档阶段**和**编码阶段**：
+keel 工作流严格区分**文档阶段**和**编码阶段**：
 
 | 阶段 | 技能 | 产出类型 | 允许编码 |
 |------|------|----------|----------|

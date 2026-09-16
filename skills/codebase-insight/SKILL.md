@@ -1,6 +1,6 @@
 ---
 name: codebase-insight
-description: 分析已有代码库的系统边界、模块、接口与技术约束，生成盘点报告而不修改代码。建立 DevDocs 基线用 retrofit。
+description: 分析已有代码库的系统边界、模块、接口与技术约束，生成盘点报告而不修改代码。建立 keel 基线用 retrofit。
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion, Write
 metadata:
   patterns: [generator]
@@ -30,7 +30,7 @@ user-invocable: true
 | retrofit | 建立项目基线（`00-baseline.md`：目的边界 / 外部硬约束 / 护栏 / 已知未知） | 问人、判断意图、给不确定性定安全默认动作 |
 | onboard | 项目上下文 + 进度 + 待办 | 进度追踪、待办汇总 |
 | code-self-describe | 模块级 CLAUDE.md + 依赖图 | 文件级描述、依赖图生成 |
-| verify `--schema-drift` | 扫描 A/B 类 DevDocs 产物的 `spec_version` 元数据 | 本 skill 的 `schema_version + commit_hash` 独立机制**被 `--schema-drift` 读取并在主报告独立章节呈现**（不并入 A/B 类主统计，不纳入 realign 编排；失效后由本 skill 自身 `--force` 处理，见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 codebase-insight 的关系） |
+| verify `--schema-drift` | 扫描 A/B 类 keel 产物的 `spec_version` 元数据 | 本 skill 的 `schema_version + commit_hash` 独立机制**被 `--schema-drift` 读取并在主报告独立章节呈现**（不并入 A/B 类主统计，不纳入 realign 编排；失效后由本 skill 自身 `--force` 处理，见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 codebase-insight 的关系） |
 
 ## 运行模式
 

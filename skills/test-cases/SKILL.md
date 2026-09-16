@@ -1,6 +1,6 @@
 ---
 name: test-cases
-description: 依据 DevDocs 需求设计可追溯的 UT/IT/E2E 用例文档。编写测试代码用 testing-guide；运行套件用 test-run。
+description: 依据 keel 需求设计可追溯的 UT/IT/E2E 用例文档。编写测试代码用 testing-guide；运行套件用 test-run。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [generator]
@@ -211,7 +211,7 @@ docs/devdocs/
 
 ### 完整格式（开发阶段，含变更来源）
 
-> 变更来源由 `/sync` 维护：⛔ **代码里不写任何 DevDocs 编号**，连接方向是**文档 → commit**（反向依赖）。
+> 变更来源由 `/sync` 维护：⛔ **代码里不写任何 keel 编号**，连接方向是**文档 → commit**（反向依赖）。
 
 ```markdown
 | AC 编号 | 验收标准 | 测试编号 | 变更来源 | 状态 |

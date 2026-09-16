@@ -8,7 +8,7 @@ set -u
 # ⛔ 本目录禁用 timeout(1)：macOS 默认没有，失败会静默吞掉输入。见 README.md
 
 ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
-[ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 DevDocs 项目，静默
+[ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 keel 项目，静默
 git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
 # 5 分钟冷却——PostToolUse 每次工具调用都触发，不冷却必然变噪声

@@ -1,6 +1,6 @@
 ---
 name: insights
-description: 将外部参考、调研或评审发现转为 DevDocs 项目的改进事项。普通资料研究不使用此流程。
+description: 将外部参考、调研或评审发现转为 keel 项目的改进事项。普通资料研究不使用此流程。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 metadata:
   patterns: [inversion, generator]

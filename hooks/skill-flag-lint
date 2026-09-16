@@ -1,7 +1,7 @@
 #!/bin/bash
 # skill-flag-lint — PostToolUse：编辑 skills/ 下的 .md 后跑 flag/dangling-reference。
 #
-# 只在 **skill 库自身**的仓库里生效（用户 DevDocs 项目走 devdocs-drift，那是另一件事）。
+# 只在 **skill 库自身**的仓库里生效（用户 keel 项目走 devdocs-drift，那是另一件事）。
 # 规则与已知盲区见 skills/pipeline/references/health-lint-implementation.md
 # 根因见 docs/audits/2026-09-11-devdocs-flow-backlog.md §4.1
 set -u

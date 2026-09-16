@@ -1,6 +1,6 @@
 ---
 name: bugfix
-description: 修复 DevDocs 项目的缺陷并维护回归证据。非 DevDocs 项目修复用 dev-flow。
+description: 修复 keel 项目的缺陷并维护回归证据。非 keel 项目修复用 dev-flow。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 metadata:
   patterns: [inversion, pipeline]
@@ -27,7 +27,7 @@ metadata:
 /bugfix BUG-XX realign     → 规范升级回扫：按 BUG-XX 过滤调度相关 skill --realign（仅补齐已完成 bug 流程的规范差距，不触发再修复）
 ```
 
-> **Realign 模式**：已完成的 bug 修复记录（BUG-XX 条目、测试、修复代码）在 DevDocs 规范升级后按新 spec_version 查漏补缺。共享契约见 [../pipeline/references/realign.md](../pipeline/references/realign.md)。调度策略：按 BUG-XX 的 `关联` 字段追溯对应 F-XX 与 T-XX，委托 `/dev-workflow <T-XX> --realign`。推荐用户入口 `/pipeline realign`。
+> **Realign 模式**：已完成的 bug 修复记录（BUG-XX 条目、测试、修复代码）在 keel 规范升级后按新 spec_version 查漏补缺。共享契约见 [../pipeline/references/realign.md](../pipeline/references/realign.md)。调度策略：按 BUG-XX 的 `关联` 字段追溯对应 F-XX 与 T-XX，委托 `/dev-workflow <T-XX> --realign`。推荐用户入口 `/pipeline realign`。
 
 ## 语言规则
 

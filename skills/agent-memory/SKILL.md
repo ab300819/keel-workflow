@@ -20,7 +20,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 - 筛选与精简内容：[best-practices.md](templates/best-practices.md)。
 - 首次创建或重组：[memory-template.md](templates/memory-template.md)。
-- 写 `.claude/rules/devdocs-state.md` 时：[devdocs-state-template.md](templates/devdocs-state-template.md)。非 DevDocs 项目不加载该模板。
+- 写 `.claude/rules/devdocs-state.md` 时：[devdocs-state-template.md](templates/devdocs-state-template.md)。非 keel 项目不加载该模板。
 
 ## 语言规则
 
@@ -38,7 +38,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 | 模式 | 读取项目 | 写入文件 | 适用场景 |
 |------|----------|----------|----------|
 | 智能检测 | 视情况 | 视情况 | 不确定时 |
-| `--update` | ✅ | AGENTS.md + CLAUDE.md（若缺失） + devdocs-state.md（仅 DevDocs） | 阶段性工作完成后同步 |
+| `--update` | ✅ | AGENTS.md + CLAUDE.md（若缺失） + devdocs-state.md（仅 keel） | 阶段性工作完成后同步 |
 | `--restructure` | ✅ | AGENTS.md + CLAUDE.md | 记忆文件结构混乱时重组 |
 
 ### 智能检测流程
@@ -64,7 +64,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 | git log | 提交约定 |
 | 代码结构 | 关键目录、入口文件 |
 
-### DevDocs 增强提取（有 docs/devdocs/ 时）
+### keel 增强提取（有 docs/devdocs/ 时）
 
 | 来源 | 提取内容 |
 |------|----------|
@@ -82,7 +82,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ```text
 1. 扫描项目信息源
    ├── 通用提取（包管理器、README、git、代码结构）
-   └── DevDocs 增强提取（若 `docs/devdocs/` 存在）
+   └── keel 增强提取（若 `docs/devdocs/` 存在）
    │
    ▼
 1.5 检查 AGENTS.md 是否存在
@@ -95,7 +95,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
    ├── ADR 摘要（若有；无 ADR 格式则从变更记录提取关键决策）
    ├── 领域术语
    ├── 活跃任务 + 进度
-   ├── 编号状态（仅 DevDocs 项目）
+   ├── 编号状态（仅 keel 项目）
    └── 运行命令
    │
    ▼
@@ -250,7 +250,7 @@ devdocs:
 
 - 位置：`.claude/rules/devdocs-state.md`
 - 模板：[templates/devdocs-state-template.md](templates/devdocs-state-template.md)
-- 条件：首次创建或 `--update`（含被其他 skill 委托的）且 `docs/devdocs/` 存在即生成/更新；`--restructure` 与非 DevDocs 项目不生成
+- 条件：首次创建或 `--update`（含被其他 skill 委托的）且 `docs/devdocs/` 存在即生成/更新；`--restructure` 与非 keel 项目不生成
 
 ## 约束
 

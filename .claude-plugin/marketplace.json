@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ab300819-keel",
-  "description": "keel —— DevDocs 文档驱动开发流程插件",
+  "description": "keel —— 文档驱动开发流程插件",
   "owner": {
     "name": "ab300819",
     "url": "https://github.com/ab300819"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "keel",
-      "description": "DevDocs 开发文档工作流 + 配套质量 Skill 集合",
+      "description": "keel 开发文档工作流 + 配套质量 Skill 集合",
       "source": "./",
       "category": "productivity"
     }

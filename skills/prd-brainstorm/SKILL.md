@@ -210,7 +210,7 @@ brainstorm 对每个需求项执行分类终判，复核 parser 的 FR/NFR 初�
 - 完整模式：brainstorm 过程中续编分配编号
 - 块澄清模式：沿用 chunk 编号（终判调整类型前缀时重新分配）
 
-> "继续当前需求"追加块时续编、不撞旧号；"新需求"（脚手架已清）自然从 01 重起 —— 产品阶段编号是映射进 DevDocs 后即作废的临时标识，无需跨需求全局唯一。`docs/prd/` 是单需求一次性脚手架，详见 [prd 单需求脚手架原则](../prd/SKILL.md#单需求脚手架原则)。
+> "继续当前需求"追加块时续编、不撞旧号；"新需求"（脚手架已清）自然从 01 重起 —— 产品阶段编号是映射进 keel 后即作废的临时标识，无需跨需求全局唯一。`docs/prd/` 是单需求一次性脚手架，详见 [prd 单需求脚手架原则](../prd/SKILL.md#单需求脚手架原则)。
 
 ## 输出文件
 
@@ -294,7 +294,7 @@ open_questions: 1
 ## 约束
 
 ### 阶段边界约束（最高优先级）
-- [ ] **禁止继续：不得产出实现代码、架构设计或技术方案**（恢复方式：使用对应 DevDocs skill 执行后续阶段）
+- [ ] **禁止继续：不得产出实现代码、架构设计或技术方案**（恢复方式：使用对应 keel skill 执行后续阶段）
 - [ ] Write 工具仅用于写入 `docs/prd/requirements/` 和 `docs/prd/chunks/` 下的 Markdown 文档
 - [ ] 对 chunks/ 文件：仅修改 YAML 头（添加 `reclassified_to` 字段），**不得改动原文内容**
 
@@ -332,7 +332,7 @@ open_questions: 1
 |------|-----------|------|
 | PRD 拆分后逐块澄清 | `prd-parser` | 上游：parser 拆分后由 pipeline 委派 |
 | 编排调度 | `prd` | 上游：pipeline 调用本 skill |
-| 需求进入 DevDocs | `requirements` | 下游：ready 后通过 `--from-prd` 消费 |
+| 需求进入 keel | `requirements` | 下游：ready 后通过 `--from-prd` 消费 |
 
 ## 子 Agent 摘要格式
 
@@ -373,4 +373,4 @@ next_recommended:
 |----------|------------|
 | 完整模式 | 返回 `prd` 生成 index.md |
 | 块澄清模式 | 返回 `prd` 继续下一块或生成 index.md |
-| 整体 ready | `requirements --from-prd` 进入 DevDocs |
+| 整体 ready | `requirements --from-prd` 进入 keel |

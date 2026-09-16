@@ -145,7 +145,7 @@ missing_code_roots:               # 声明了但解析不到实体
 workspace:
   mode: shell
   code_roots: [web, api]      # mode=shell / mode=linked 时必填。shell 下元素为 .gitmodules 的 submodule name；linked 下须给 path，见下方 linked 示例
-devdocs:                      # DevDocs 项目才有；非 DevDocs 项目只有 workspace: 块
+devdocs:                      # keel 项目才有；非 keel 项目只有 workspace: 块
 ---
 ```
 
@@ -165,7 +165,7 @@ workspace:
 
 `code_roots` 同时接受字符串项与对象项，字符串 `foo` 等价于 `{name: foo}`。`shell` 下 name 足够（路径真源是 `.gitmodules`），**现有声明零改动**；`linked` 下必须给 `path`。
 
-**为什么独立成块**：这是仓库级事实，不是 DevDocs 事实。挂在 `devdocs:` 下会让「声明一个仓库设定」必须经过 DevDocs 流程。
+**为什么独立成块**：这是仓库级事实，不是 keel 事实。挂在 `devdocs:` 下会让「声明一个仓库设定」必须经过 keel 流程。
 
 **路径真源是 `.gitmodules`**（仅 `shell`），`code_roots` 只记 submodule name，运行时经 `git config -f .gitmodules submodule.<name>.path` 解析。子模块换路径只改 `.gitmodules`，声明不用跟。`linked` 下声明本身即真源。
 

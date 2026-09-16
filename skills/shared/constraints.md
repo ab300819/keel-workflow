@@ -39,7 +39,7 @@ spec_version: shared-constraints.v13
 
 | rule_id | 标记 | 标准语义 | 典型触发条件 | 恢复方式要求 |
 |---|---|---|---|---|
-| `gate/marker-set` | `⛔ 禁止继续` / `⚠️ 必须确认` / `ℹ️ 建议` | 共享层只承认这三类门控标记 | 所有 DevDocs 流程 skill 的阶段边界、确认点、建议项 | 不得扩展新标记，除非另开 spec bump |
+| `gate/marker-set` | `⛔ 禁止继续` / `⚠️ 必须确认` / `ℹ️ 建议` | 共享层只承认这三类门控标记 | 所有 keel 流程 skill 的阶段边界、确认点、建议项 | 不得扩展新标记，除非另开 spec bump |
 | `gate/blocker-semantics` | `⛔ 禁止继续` | 硬阻塞；必须解除后才能继续 | 阶段边界、P1 阻塞、安全不变式、测试未通过不得提交等 | 必须写明可执行恢复方式 |
 | `gate/confirm-semantics` | `⚠️ 必须确认` | 继续前需要用户确认或选择 | Inversion 问询、方案确认、不可自动判断的归类/迁移 | 必须写明等待用户确认的内容 |
 | `gate/advice-semantics` | `ℹ️ 建议` | 推荐但可跳过，不阻塞当前流程 | P2/P3 建议、可选验证、后续优化 | 可给出恢复/后续动作，但不强制 |
@@ -77,7 +77,7 @@ spec_version: shared-constraints.v13
 
 ### envelope 字段
 
-所有 DevDocs 流程 skill 作为子 Agent 运行时，返回统一信封格式：
+所有 keel 流程 skill 作为子 Agent 运行时，返回统一信封格式：
 
 ```yaml
 skill: <skill-name>
@@ -119,7 +119,7 @@ next_recommended:
 ### 委托边界
 
 - `task/delegation-scope`：编排层可通过 Task tool 委托原子 skill；被委托 skill 只处理明确输入，不扩展任务边界。
-- `task/yaml-summary-required`：被委托的 DevDocs 流程 skill 必须以 yaml-summary-v1 返回结果。
+- `task/yaml-summary-required`：被委托的 keel 流程 skill 必须以 yaml-summary-v1 返回结果。
 - `task/no-implicit-apply`：子 Agent 的 `next_recommended` 只表示建议，不代表编排层可自动执行下一步。
 - `task/private-fields-in-details`：子 Agent 私有输出必须放入 `summary.details`，避免污染编排层通用字段。
 - `task/runlog-append` `[新增]`：编排层收到子 Agent 的 yaml-summary 后，**原样**追加一条到 `<docs_dir>/devdocs/.runlog.yaml`。**不设门禁**——写失败静默跳过，不得因此阻断流程；**子 Agent 不自行写入**。信封不改、字段不增，形状与判决点见 [runlog.md](runlog.md)。**本规则自带死期（2026-11-30），到期未读即作废。**
@@ -244,7 +244,7 @@ expected_output: yaml-summary-v1
 
 ### 只读边界
 
-- `readonly/no-source-mutation`：标称只读的 skill 不得修改业务源代码、DevDocs 主链路产物或用户未授权文件。
+- `readonly/no-source-mutation`：标称只读的 skill 不得修改业务源代码、keel 主链路产物或用户未授权文件。
 - `readonly/codebase-insight`：`codebase-insight` 的核心职责是只读分析代码库；其生成 `docs/codebase-insight.md` 属于该 skill 自身输出，不等同于修改被分析代码。
 - `readonly/onboard-read-mode`：`onboard --read` 必须只读取现有上下文，不扫描、不写入。
 - `readonly/onboard-update-mode`：`onboard --update` 是更新模式，会生成或覆盖 `docs/devdocs/00-context.md`；不得被描述为只读模式。
@@ -338,7 +338,7 @@ expected_output: yaml-summary-v1
 
 > 本节是对**既有文件结构 + 现役规则**的归并命名，不新增运行时强制（与本文件头部 `status: 协议层 SSOT —— 现状提取 + 标记为 [新增] 的跨切面规则` 一致）。"不应混写"是**原则目标**，强制力来自现役 symptom rules（仅覆盖**部分**症状）+ 人工 review（**主要**承载）。
 
-DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**：
+keel 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**：
 
 | 层 | 内容 | v1 落点（权威位置） |
 |----|------|--------------------|
@@ -353,7 +353,7 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 
 ## 10. 工作区拓扑（inline / shell / linked）
 
-> 本节**仅声明跨 skill 共性与指针**。完整协议正文、入口与迁移手册归 [workspace-topology](../workspace-topology/SKILL.md) —— 该维度是**仓库级事实**，不是 DevDocs 事实，故不住在本文。
+> 本节**仅声明跨 skill 共性与指针**。完整协议正文、入口与迁移手册归 [workspace-topology](../workspace-topology/SKILL.md) —— 该维度是**仓库级事实**，不是 keel 事实，故不住在本文。
 
 - `workspace/single-entry`：工作区拓扑的唯一入口是 `/workspace-topology`（`inspect` / `reconcile` / `migrate`）。
 - `workspace/default-inline`（id 沿用历史命名，语义已反转）：**`inline` 不是兜底默认，它需要正面证据。** 无声明时**问用户**定出 `mode` 与代码根（见 [workspace-topology/SKILL.md § 无声明时：问，不猜](../workspace-topology/SKILL.md#无声明时问不猜)），答案落声明后不再问。⛔ 不做自动判定——仓库形状是产品决策。已落声明的项目行为完全不变。
@@ -364,7 +364,7 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 
 > 本节是**原则声明 + 人工 review lens**，不建检测器，强制力等级同 §9。它是本文**第一个规范性（而非现状提取）小节**——约束未来的门怎么设计，不只是给已有结构命名；按 `doc/two-kinds` 属「新增跨切面规则」类，故标 `[新增]`。
 >
-> **适用范围**：DevDocs 流程 skill + `dev-flow`。独立 skill（`e2e-test-flow` / `prior-art-scan` / `code-quality` / `adversarial-review` 等）不在强制范围内。
+> **适用范围**：keel 流程 skill + `dev-flow`。独立 skill（`e2e-test-flow` / `prior-art-scan` / `code-quality` / `adversarial-review` 等）不在强制范围内。
 
 与本文件的 SSOT 前提**对偶**：SSOT 约束「事实边界 ≡ 文件边界」（防同一事实散落多处）；本节约束「评审边界 ≥ 影响边界」（防决策被小于其影响的视野判定）。两者合起来是**边界对齐**。
 
@@ -391,7 +391,7 @@ DevDocs 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**
 | 标识 | `CON-XXX`（Constraint 约束）—— **非编码类需求**：改配置 / 加资源 / 调元数据 / 改文案 / 删权限声明，没有可写测试的业务逻辑。承载上架合规、日志规约、安全基线、构建守卫 |
 | 权威源 | `docs/devdocs/01-requirements.md` §6 约束表 |
 | owner | `requirements`（生成）+ `dev-tasks`（关联） |
-| 阶段映射 | `NFR-XX`（PRD）→ `CON-XXX`（DevDocs） |
+| 阶段映射 | `NFR-XX`（PRD）→ `CON-XXX`（keel） |
 | 边界 | ⛔ `CON` **不进 `F → US → AC` 链**。有用户可观测行为的需求必须走 `F+AC`，⛔ 不得写成 CON 规避 AC |
 | 类别不是命名空间 | 合规 / 性能 / 日志规约 / 安全 **是 `类别` 字段的值**，⛔ 不各开编号体系 |
 
@@ -496,7 +496,7 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 ### 本次跳过的规则
 
-- `skip/numbering-unique`：编号唯一/续编**策略**只保留指针，不提升为共享细则；理由是 PRD 编号、DevDocs 编号、测试编号和任务编号各有不同 SSOT 与链路。
+- `skip/numbering-unique`：编号唯一/续编**策略**只保留指针，不提升为共享细则；理由是 PRD 编号、keel 编号、测试编号和任务编号各有不同 SSOT 与链路。
   > ⚠️ 不要与 `id/scan-word-boundary`（§编号标识与扫描）混淆：那条管**怎么扫**（机械陷阱，各类型一致），本条跳过的是**扫到之后按什么策略续编**（各类型不同）。
 - `skip/sprint-contract`：Sprint Contract 不提升；理由是 `dev-workflow` 私有执行契约。
 - `skip/verify-scoring`：verify P 级评分、health score 不提升；理由是 `verify` 私有评估模型。
@@ -543,7 +543,7 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 ### 任务台账协议（流程状态的唯一载体；跨 skill 字段语义）
 
-⛔ **流程状态不写 commit 尾注。** commit 只承载「一个不知道 DevDocs 存在的维护者能读懂并用上」的信息；批次 ID、降档理由、豁免登记对他是纯噪音，且这些字段的语义主体是**任务**不是 commit。
+⛔ **流程状态不写 commit 尾注。** commit 只承载「一个不知道 keel 存在的维护者能读懂并用上」的信息；批次 ID、降档理由、豁免登记对他是纯噪音，且这些字段的语义主体是**任务**不是 commit。
 
 | 字段 | 适用 | 语义 |
 |---------|------|------|

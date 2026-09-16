@@ -22,7 +22,7 @@ ln -s <keel>/hooks/opencode-plugin.js ~/.config/opencode/plugins/keel.js
 
 | hook | 作用域 | 触发 | 干什么 |
 |---|---|---|---|
-| `devdocs-drift` | **用户 DevDocs 项目** | PostToolUse `Edit\|Write\|NotebookEdit` | 改了代码但 `docs/devdocs/` 没动 → 一行提示。5 分钟冷却 |
+| `devdocs-drift` | **用户 keel 项目** | PostToolUse `Edit\|Write\|NotebookEdit` | 改了代码但 `docs/devdocs/` 没动 → 一行提示。5 分钟冷却 |
 | `skill-flag-lint` | **skill 库自身** | 同上，且编辑的是 `skills/**/*.md` | 跑 `health-lint.py --skills-dir` 的 `flag/dangling-reference`。2 分钟冷却 |
 
 两者都在不适用时**静默 exit 0**，互不干扰。

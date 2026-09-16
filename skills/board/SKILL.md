@@ -1,6 +1,6 @@
 ---
 name: board
-description: 为 DevDocs 的 01 需求和 02 设计创建交互评审面板，并按用户意见回写文档。不用于代码或 PRD 评审。
+description: 为 keel 的 01 需求和 02 设计创建交互评审面板，并按用户意见回写文档。不用于代码或 PRD 评审。
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__evaluate_script
 metadata:
   patterns: [view-layer, workflow-bridge]
@@ -19,7 +19,7 @@ user-invocable: true
 
 ## 定位
 
-DevDocs 定位是**代码=SSOT、文档=决策记忆层+追溯索引**,文档为 AI 消费优化,人裸读评审吃力。board 补上**视图层**:从 01/02 生成自包含 HTML 评审页面,作为用户与 Agent 的沟通桥——用户在页面勾选(通过/不通过/搁置)+ 输入意见,Agent 感知、逐条转化为文档修订、把处理结果写回页面闭环。
+keel 定位是**代码=SSOT、文档=决策记忆层+追溯索引**,文档为 AI 消费优化,人裸读评审吃力。board 补上**视图层**:从 01/02 生成自包含 HTML 评审页面,作为用户与 Agent 的沟通桥——用户在页面勾选(通过/不通过/搁置)+ 输入意见,Agent 感知、逐条转化为文档修订、把处理结果写回页面闭环。
 
 **定位红线**(违反任意一条即偏离设计,详见设计定稿 §2):
 

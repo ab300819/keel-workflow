@@ -1,12 +1,12 @@
 ---
 name: dev-flow
-description: 在非 DevDocs 项目中，按任务、Issue 或已有计划实现功能与修复问题。DevDocs 任务执行用 dev-workflow。
+description: 在非 keel 项目中，按任务、Issue 或已有计划实现功能与修复问题。keel 任务执行用 dev-workflow。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, Task, AskUserQuestion, TodoWrite
 ---
 
 # Dev Flow
 
-不依赖 DevDocs 的通用开发执行器：**契约先行 + 测试红绿 + 质量地板 + 证据交付**。输入一个计划文档、任务描述或 issue 文本即可启动。复杂治理（编号体系、追溯矩阵、文档同步、review_profile 分档）留给 DevDocs 流程。
+不依赖 keel 的通用开发执行器：**契约先行 + 测试红绿 + 质量地板 + 证据交付**。输入一个计划文档、任务描述或 issue 文本即可启动。复杂治理（编号体系、追溯矩阵、文档同步、review_profile 分档）留给 keel 流程。
 
 ## Language
 
@@ -16,7 +16,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, Task, AskUserQuestion, TodoW
 ## 触发条件
 
 - 用户给出计划文档（如 superpowers writing-plans 产出的 Markdown checklist）要求逐项实施
-- 用户给出任务描述 / issue 文本要求直接开发，且项目无 DevDocs 文档体系
+- 用户给出任务描述 / issue 文本要求直接开发，且项目无 keel 文档体系
 - 用户要求"轻量/通用/独立的开发流程"
 
 **路由判定**：项目存在 `docs/devdocs/` 且任务有 T-XX 编号 → 用 `/dev-workflow`；否则用本 skill。
@@ -172,10 +172,10 @@ execution_contract:
 
 | 场景 | 用谁 |
 |------|------|
-| DevDocs 项目 T-XX 任务执行 / 追溯 / 04-dev-tasks 状态推进 / review-drain | `/dev-workflow` |
+| keel 项目 T-XX 任务执行 / 追溯 / 04-dev-tasks 状态推进 / review-drain | `/dev-workflow` |
 | 计划文档 / 普通 issue / CE·superpowers·BMAD 松散计划驱动的开发 | **本 skill** |
-| 任务拆分 | superpowers writing-plans 或 `/dev-tasks`（DevDocs） |
-| 项目转文档驱动 | `/retrofit` 反向生成 DevDocs（本 skill 交付报告可作辅助输入，非追溯矩阵） |
+| 任务拆分 | superpowers writing-plans 或 `/dev-tasks`（keel） |
+| 项目转文档驱动 | `/retrofit` 反向生成 keel（本 skill 交付报告可作辅助输入，非追溯矩阵） |
 
 **superpowers 衔接**：writing-plans 产出可直接作输入；executing-plans 可作上层计划执行器，单项开发由本 skill 接管门控。
 

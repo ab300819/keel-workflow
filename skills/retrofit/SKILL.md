@@ -1,6 +1,6 @@
 ---
 name: retrofit
-description: 为已有项目建立 DevDocs 基线，或迁移旧版 DevDocs 文档。只读代码盘点用 codebase-insight；了解项目上下文用 onboard。
+description: 为已有项目建立 keel 基线，或迁移旧版 keel 文档。只读代码盘点用 codebase-insight；了解项目上下文用 onboard。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, Task
 metadata:
   patterns: [inversion, generator]
@@ -10,7 +10,7 @@ metadata:
 
 # 项目改造
 
-将已有工程改造为 DevDocs 流程，或将旧版 DevDocs 迁移到新规范。
+将已有工程改造为 keel 流程，或将旧版 keel 迁移到新规范。
 
 ## 语言规则
 
@@ -20,7 +20,7 @@ metadata:
 
 ## 快速开始
 
-**一句话**: 将已有项目适配 DevDocs 工作流，或将旧版 DevDocs 迁移到新规范。
+**一句话**: 将已有项目适配 keel 工作流，或将旧版 keel 迁移到新规范。
 
 **最常见用法**: `/retrofit`（自动检测项目状态）
 
@@ -30,14 +30,14 @@ metadata:
 
 ## 触发条件
 
-- 用户希望将现有项目适配 DevDocs 流程
+- 用户希望将现有项目适配 keel 流程
 - 用户需要标准化项目文档
-- 用户要迁移或升级已有 DevDocs 文档
+- 用户要迁移或升级已有 keel 文档
 - 项目缺少文档，需要建立可维护的基线
 
 ## 与 realign 的边界
 
-retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmatter + `spec_version` 字段为主判据**：文档顶部 YAML frontmatter 存在且含有效 `spec_version` → 信任元数据，归 **realign**（`/pipeline realign`），无论正文是否缺 F-XXX 编号（编号补齐由 realign 内 additive 差距处理）；反之（无 frontmatter / 无 `spec_version` / 无 DevDocs）归 **retrofit**。详见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 retrofit 的边界。
+retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmatter + `spec_version` 字段为主判据**：文档顶部 YAML frontmatter 存在且含有效 `spec_version` → 信任元数据，归 **realign**（`/pipeline realign`），无论正文是否缺 F-XXX 编号（编号补齐由 realign 内 additive 差距处理）；反之（无 frontmatter / 无 `spec_version` / 无 keel）归 **retrofit**。详见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 retrofit 的边界。
 
 ## 工作流程
 
@@ -51,9 +51,9 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
    │
    ├── 有 00-baseline.md 且无 01~04 ────► 基线已建，终态，无需改造
    │
-   ├── 有 DevDocs（符合规范）────────────► 无需改造
+   ├── 有 keel（符合规范）────────────► 无需改造
    │
-   └── 有 DevDocs（旧版）────────────────► 版本迁移
+   └── 有 keel（旧版）────────────────► 版本迁移
    │
    ▼
 3. 呈现方案 + AskUserQuestion 确认
@@ -81,7 +81,7 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 展示规范检查结果和迁移动作清单后，让用户选择：
 
-> 检测到旧版 DevDocs，建议迁移策略：
+> 检测到旧版 keel，建议迁移策略：
 > 1. **完整迁移**（推荐）- 自动完成所有文档迁移
 > 2. **选择性迁移** - 选择要迁移的文档项（选择后需指定具体迁移范围）
 > 3. **仅生成差异报告** - 不迁移文档，仅输出差异报告
@@ -160,9 +160,9 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 ---
 
-## 版本迁移流程（已有 DevDocs 但不符合规范）
+## 版本迁移流程（已有 keel 但不符合规范）
 
-当检测到已有 DevDocs 文档但不符合当前规范时执行。完整 Step M1-M4 详细规范（规范检查报告 / 差异清单格式 / 用户确认话术 / 编号迁移示例 / 文件重命名 / 追溯矩阵生成）见 [references/version-migration.md](references/version-migration.md)。
+当检测到已有 keel 文档但不符合当前规范时执行。完整 Step M1-M4 详细规范（规范检查报告 / 差异清单格式 / 用户确认话术 / 编号迁移示例 / 文件重命名 / 追溯矩阵生成）见 [references/version-migration.md](references/version-migration.md)。
 
 要点：
 - M1 规范检查：生成"检测结果"表（文件 / 状态 / 问题）
@@ -172,9 +172,9 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 ---
 
-## 建立项目基线（无 DevDocs）
+## 建立项目基线（无 keel）
 
-当项目没有 DevDocs 文档时执行。完整流程（调查范围 / 校验规则 / 来源标注 / 提问纪律 / 落盘）见 [references/new-project-retrofit.md](references/new-project-retrofit.md)，产物形状见 [templates/baseline-template.md](templates/baseline-template.md)。
+当项目没有 keel 文档时执行。完整流程（调查范围 / 校验规则 / 来源标注 / 提问纪律 / 落盘）见 [references/new-project-retrofit.md](references/new-project-retrofit.md)，产物形状见 [templates/baseline-template.md](templates/baseline-template.md)。
 
 **基线只记录重扫代码无法重建的信息。** 模块 / 接口 / 数据对象 / 技术栈归 `docs/codebase-insight.md`；当前进度 / 待办归 `docs/devdocs/00-context.md`。
 
@@ -201,7 +201,7 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 **工作区拓扑（`retrofit` 路径）**：改造成功、`docs/devdocs/` 生成后，执行 `Task: /workspace-topology reconcile`。该 skill 自己写 `AGENTS.md` 的 `workspace:` 块，无声明时问一次 mode 与代码根并落声明。见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
 
-**记忆同步(成功路径必做)**:改造成功、`docs/devdocs/` 生成后,执行 `Task: /agent-memory --update` 同步 AGENTS.md(DevDocs 项目会包含工作流路由节)。写 AGENTS.md 走 agent-memory 的窄例外(见下方约束「Write 工具仅用于写入 docs/devdocs/」),本 Skill 不直接 Write 该文件。失败语义:ℹ️ 不阻塞改造交付,blockers 记入报告。
+**记忆同步(成功路径必做)**:改造成功、`docs/devdocs/` 生成后,执行 `Task: /agent-memory --update` 同步 AGENTS.md(keel 项目会包含工作流路由节)。写 AGENTS.md 走 agent-memory 的窄例外(见下方约束「Write 工具仅用于写入 docs/devdocs/」),本 Skill 不直接 Write 该文件。失败语义:ℹ️ 不阻塞改造交付,blockers 记入报告。
 
 ---
 
@@ -234,7 +234,7 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 ### 检测约束
 
-- [ ] **必须先检测项目状态（无 DevDocs / 基线已建 / 旧版 / 符合规范）**
+- [ ] **必须先检测项目状态（无 keel / 基线已建 / 旧版 / 符合规范）**
 - [ ] 必须扫描常见文档目录
 
 ### 迁移约束

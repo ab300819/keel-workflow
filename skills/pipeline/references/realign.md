@@ -20,7 +20,7 @@
 
 ## 定位
 
-**realign = policy re-evaluation**：DevDocs 规范升级后，让已完成的产物/任务按新规范"查漏补缺"。与 `dev-workflow` 的"中断续做（execution resume）"**语义不同**，不可混用。
+**realign = policy re-evaluation**：keel 规范升级后，让已完成的产物/任务按新规范"查漏补缺"。与 `dev-workflow` 的"中断续做（execution resume）"**语义不同**，不可混用。
 
 | 维度 | 续做（resume）| realign |
 |---|---|---|
@@ -48,18 +48,18 @@
 | scope | 入口 | 执行接口文件 | 定位 |
 |-------|------|-------------|------|
 | `spec` | `/pipeline realign --scope=spec` | 沿用本文 § "编排层职责" + 各 skill `references/realign.md` | spec_version 差距补齐 |
-| `prd-mapping` | `/pipeline realign --scope=prd-mapping` | 沿用 `skills/prd/references/governance/prd-devdocs-mapping.md` | PRD ↔ DevDocs 映射对齐 |
+| `prd-mapping` | `/pipeline realign --scope=prd-mapping` | 沿用 `skills/prd/references/governance/prd-devdocs-mapping.md` | PRD ↔ keel 映射对齐 |
 | `health` | `/pipeline realign --scope=health` | [realign-scope-health.md](realign-scope-health.md) | 文档健康度主动审查（结构 / 索引 / 过大 / SSOT）|
 
 ## 编排层职责（`pipeline realign`）
 
 1. **扫描**：读取 `docs/devdocs/` 所有产物 frontmatter 的 `spec_version`（阶段 2 后生效）；阶段 1 无元数据时视为"用户显式触发即视为需对齐"。
-2. **分组**：按 A 类（DevDocs 主链路产物）与 B 类（PRD 流程 / insights / onboard）分别分组差距项，总览报告两段呈现。
+2. **分组**：按 A 类（keel 主链路产物）与 B 类（PRD 流程 / insights / onboard）分别分组差距项，总览报告两段呈现。
 3. **调度**：按三段式顺序依次调用底层 `--realign`（上游 → 主链路 → 旁路）：
    ```
    Phase 1（B 类上游，若文件存在）:
      prd-parser → prd-brainstorm
-   Phase 2（A 类 DevDocs 主链路）:
+   Phase 2（A 类 keel 主链路）:
      requirements → system-design → test-cases → dev-tasks → dev-workflow
    Phase 3（B 类旁路，若文件存在）:
      insights → onboard → backlog（仅当 docs/devdocs/backlog.md 存在）→ retrofit（仅当 docs/devdocs/00-baseline.md 存在，见「与 retrofit 的边界」）
@@ -275,11 +275,11 @@ dev-workflow 的 realign 在任务正文追加一行：`Realigned-From: <old_spe
 
 | 场景 | 归属 |
 |---|---|
-| 无 DevDocs → DevDocs 首次化 | **retrofit**（现状不变） |
+| 无 keel → keel 首次化 | **retrofit**（现状不变） |
 | 阶段 2 起：产物无 frontmatter 或无 F/US/AC 体系（**基线项目除外**：有 `00-baseline.md` 且无 `01`~`04` 时属终态，retrofit 会驳回） | **retrofit**（M1 流程） |
 | 阶段 1：产物无 frontmatter（尚未引入元数据） | **realign**（用户显式 --realign 时按 legacy 全量扫描） |
-| 已合规 DevDocs + 单个 skill 的 spec_version 升级 | **realign**（本契约） |
-| 已合规 DevDocs + 跨多 spec 大版本升级 | `pipeline realign` 依次调度各 skill realign |
+| 已合规 keel + 单个 skill 的 spec_version 升级 | **realign**（本契约） |
+| 已合规 keel + 跨多 spec 大版本升级 | `pipeline realign` 依次调度各 skill realign |
 | 产物 frontmatter 标 `legacy` | 归 retrofit 处理 |
 
 ## 与 codebase-insight 的关系

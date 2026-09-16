@@ -33,14 +33,14 @@ spec_version: workspace-topology.v2
 1. **代码根 ≠ 仓库根** —— 碰代码的 skill 现在假设代码在 cwd 根
 2. **多个 git 仓** —— 文档提交进本仓，代码提交进各代码根自身的仓。`shell` 下本仓额外跟子模块指针；`linked` 下无 gitlink、无指针（见 §6.5）
 
-声明在项目根 `AGENTS.md` frontmatter 的**独立 `workspace:` 块**——这是仓库级事实，不是 DevDocs 事实：
+声明在项目根 `AGENTS.md` frontmatter 的**独立 `workspace:` 块**——这是仓库级事实，不是 keel 事实：
 
 ```yaml
 ---
 workspace:
   mode: shell                  # 枚举 inline|shell|linked；无此块时问用户，不缺省
   code_roots: [web, api]       # shell / linked 时必填，≥1 项；shell 元素为 submodule name，linked 须给 path
-devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有 workspace: 块
+devdocs:                       # keel 项目才有；非 keel 项目只有 workspace: 块
   initialized_at: "2026-08-05"
 ---
 ```
@@ -117,7 +117,7 @@ devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有
 | 子模块内 `AGENTS.md` / `CLAUDE.md` | 子模块 | **不主动创建、不主动改**；已存在则读取并尊重其编码纪律 |
 | `code-self-describe` 的模块级 `CLAUDE.md` + 文件头注释 | — | shell 下**默认跳过**，仅 `--force-code-docs` 显式启用 |
 | dev-workflow 流程内的「自描述更新」步骤 | — | 同上，跳过时在 yaml 摘要里 ℹ️ 记录跳过原因 |
-| `@satisfies` / `@verifies` 代码注释 | — | shell 下**禁用**——子模块是开源上游，DevDocs 元信息不得进入 |
+| `@satisfies` / `@verifies` 代码注释 | — | shell 下**禁用**——子模块是开源上游，keel 元信息不得进入 |
 | `.claude/settings.local.json`、`.remember/` | 外壳仓 | 参考仓既有实践 |
 
 **违约检测**：dev-workflow / bugfix 提交前，对每个变更子模块跑 `git status --porcelain`，**列出全部变更路径清单**交用户判断（⚠️ AskUserQuestion：提交 / 排除 / 终止）。**不预先判定哪条是「非源码」** —— 上游仓目录约定各异，静态白名单会误伤。裁法与 §4 `workspace/root-residue` 一致。
@@ -151,10 +151,10 @@ devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有
 
 | 仓 | 风格 | 编号 |
 |----|------|------|
-| 子模块 | 沿用**该仓自身**的提交历史风格（`/commit-convention` 的「优先沿用已有风格」正好适用） | **不带** T-XX / F-XX —— DevDocs 编号对上游是噪声，也是零污染的一部分 |
+| 子模块 | 沿用**该仓自身**的提交历史风格（`/commit-convention` 的「优先沿用已有风格」正好适用） | **不带** T-XX / F-XX —— keel 编号对上游是噪声，也是零污染的一部分 |
 | 外壳仓 | 本仓 Conventional Commits | 带 T-XX，body 列 `web@a1b2c3d` / `api@e4f5g6h` |
 
-**追溯枢纽 = 外壳仓 commit。** 正向：T-XX → 外壳仓 commit → 各子模块 SHA。反向：子模块 SHA → 外壳仓 `git log -S<sha>` → T-XX。子模块自身干净得像没有 DevDocs 存在过。
+**追溯枢纽 = 外壳仓 commit。** 正向：T-XX → 外壳仓 commit → 各子模块 SHA。反向：子模块 SHA → 外壳仓 `git log -S<sha>` → T-XX。子模块自身干净得像没有 keel 存在过。
 
 **`--single-commit` 在 `mode` 不是 `inline` 时不可用** —— 跨仓无法合并为单 commit，⚠️ 忽略该 flag 并提示。
 

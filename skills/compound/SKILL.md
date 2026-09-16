@@ -1,6 +1,6 @@
 ---
 name: compound
-description: 从已完成的 DevDocs 开发周期提取可复用经验、模式和决策。同步实施进度用 sync。
+description: 从已完成的 keel 开发周期提取可复用经验、模式和决策。同步实施进度用 sync。
 allowed-tools: Read, Write, Glob, Grep, Edit, AskUserQuestion
 metadata:
   patterns: [generator]
@@ -216,7 +216,7 @@ compound：提取经验、沉淀模式          → 知识层面的复利
 ### 安全约束
 
 - [ ] **不修改代码文件**
-- [ ] **不修改现有 DevDocs 文档**（仅新建/更新 patterns/）
+- [ ] **不修改现有 keel 文档**（仅新建/更新 patterns/）
 - [ ] 不直接修改 AGENTS.md，需更新时建议用户运行 `/agent-memory`
 
 ## Skill 协作

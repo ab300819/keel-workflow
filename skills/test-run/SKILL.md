@@ -1,6 +1,6 @@
 ---
 name: test-run
-description: 运行 DevDocs 项目的测试套件并生成报告，检查受影响测试与追溯覆盖。对运行中系统做黑盒实测用 e2e-test-flow。
+description: 运行 keel 项目的测试套件并生成报告，检查受影响测试与追溯覆盖。对运行中系统做黑盒实测用 e2e-test-flow。
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 metadata:
   patterns: [tool-wrapper]

@@ -75,7 +75,7 @@
 
    `AGENTS.md` 已有 frontmatter → 在其中新增/更新 `workspace:` 块，其余 key 原样保留（含键序）。无 frontmatter（首行是 HTML 注释等正文）→ 在**文件最前面**插入，原有内容整体下移，不改写原内容一个字符。`AGENTS.md` 不存在 → 只创建含该块的 frontmatter，不生成正文（正文归 `agent-memory`）。
 
-   **非 DevDocs 项目只有 `workspace:` 块，没有 `devdocs:` 块**——这是合法的正常状态，消费方不得当异常处理。
+   **非 keel 项目只有 `workspace:` 块，没有 `devdocs:` 块**——这是合法的正常状态，消费方不得当异常处理。
 
 4. 写入后立即跑一次校验（`workspace/fail-closed` 全表，见 [protocol.md](protocol.md#3-校验规则fail-closed)），任一 ⛔ 则**回滚本次写入**并报告。
 
@@ -130,7 +130,7 @@ git -C <path> symbolic-ref -q HEAD
 | 建根目录、把代码仓 `mv` 进去 | **用户** | **skill** |
 | `git init` 外壳仓 + 首次 commit | skill | skill |
 | `submodule add` 登记 | skill | skill |
-| 复制 DevDocs 产物到外壳仓 | skill | skill |
+| 复制 keel 产物到外壳仓 | skill | skill |
 | **校验复制到位** | skill | skill |
 | 删代码仓里的原件 | skill | skill |
 | 写 `workspace:` 声明 | skill | skill |
@@ -156,10 +156,10 @@ git -C <path> symbolic-ref -q HEAD
 
 ### 状态盘点取代前置门
 
-旧版本有一道前置门：工作区不干净 ⛔、有未推送提交 ⛔。**这道门会把唯一真实场景挡在门外**——clone 开源项目并用 DevDocs 开发过，状态必然是二者之一。
+旧版本有一道前置门：工作区不干净 ⛔、有未推送提交 ⛔。**这道门会把唯一真实场景挡在门外**——clone 开源项目并用 keel 开发过，状态必然是二者之一。
 
 ```bash
-git -C <R> status --porcelain              # DevDocs 产物在工作区？
+git -C <R> status --porcelain              # keel 产物在工作区？
 git -C <R> log --oneline @{u}..HEAD        # 有未推送提交？
 git -C <R> remote -v                       # remote 是上游还是自己的 fork？
 ```
@@ -188,9 +188,9 @@ git add .gitmodules myproj && git commit -m "chore: 挂载代码仓为子模块"
 
 目录已是有效 git 仓时，`submodule add` 直接登记其当前 `HEAD`，`.gitmodules` 记的就是传入的远程 URL。实测（2026-08-24）：未推送提交、staged 文件、untracked 文件全部保留，子模块工作区状态原样。
 
-### 迁移范围：只搬 DevDocs 产物，不搬整个 docs/
+### 迁移范围：只搬 keel 产物，不搬整个 docs/
 
-`docs/` 里未必只有 DevDocs 产物 —— 用户面文档、API 文档、架构图属于代码仓，搬走反而是错的。
+`docs/` 里未必只有 keel 产物 —— 用户面文档、API 文档、架构图属于代码仓，搬走反而是错的。
 
 - **无条件迁移**：`docs/devdocs/`、`docs/prd/`、`docs/codebase-insight.md`
 - **留在代码仓**：`docs/` 下其余内容

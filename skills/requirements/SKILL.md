@@ -1,6 +1,6 @@
 ---
 name: requirements
-description: 把已明确的需求和背景写入 DevDocs 需求文档，建立 F/US/AC 与约束记录。模糊产品想法用 prd。
+description: 把已明确的需求和背景写入 keel 需求文档，建立 F/US/AC 与约束记录。模糊产品想法用 prd。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 metadata:
   patterns: [inversion, generator]
@@ -82,7 +82,7 @@ metadata:
 
 消费 `/prd` 产出的结构化需求包，转化为正式 F/US/AC。
 
-**模式定位**：初始模式的变体。产品流程通常在 DevDocs 之前运行，此时 `01-requirements.md` 尚不存在。如果已存在：
+**模式定位**：初始模式的变体。产品流程通常在 keel 之前运行，此时 `01-requirements.md` 尚不存在。如果已存在：
 - 检查映射表中 `mapping_status: outdated` 的条目 → **原地更新**对应 F/US/AC（不创建新编号）（mapping_status 规范见 [`skills/prd/references/prd-mapping-status.md`](../prd/references/prd-mapping-status.md)）
 - 新增的 FR-XX（无映射记录）→ 按增量模式追加新 F/US/AC
 
@@ -98,16 +98,16 @@ metadata:
 | 定位 index | 读取用户指定的 `<index路径>`；未指定时使用扁平默认路径 `docs/prd/requirements/index.md`（单需求脚手架）；未找到则提示先运行 `/prd` 或手动指定 |
 | 记录来源 | 记录实际读取的 `source_index_path`，后续回写映射使用同一路径；读取 index.md 中 `## 设计资产` 的 design_context → 写入 01-requirements.md `## 设计资产` |
 | 读取需求 | 通过 Glob 匹配 `requirements/FR-*` / `NFR-*`，提取澄清结论中的功能描述和验收意图；`FR-XX` → 生成功能需求（`F-XXX`/`US-XXX`/`AC-XXX`），**`NFR-XX` → 生成约束编号 `CON-XXX`**（落 01 §6 约束表，⛔ 不再降级为无编号散文）|
-| 写入 DevDocs | 将 FR-XX/NFR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "prd"）；按现有流程生成功能/故事/AC 编号，跳过方案确认但保留最终确认 |
-| 回写映射 | 回写到 `source_index_path`：已有 `## DevDocs 映射` 则**更新现有章节**（追加/修改行，不创建新章节），没有则在文末创建；重新导入时旧映射行保留（审计历史），追加新行并标记 `mapping_status: remapped` |
+| 写入 keel | 将 FR-XX/NFR-XX 内容写入 `01-requirements.md` 的 `## 0. 原始需求` 表（来源标注为 "prd"）；按现有流程生成功能/故事/AC 编号，跳过方案确认但保留最终确认 |
+| 回写映射 | 回写到 `source_index_path`：已有 `## keel 映射` 则**更新现有章节**（追加/修改行，不创建新章节），没有则在文末创建；重新导入时旧映射行保留（审计历史），追加新行并标记 `mapping_status: remapped` |
 | 返回 | 返回新增编号列表 |
 
 ### `mapping_status` 责任分界
 
 | 状态 | 写入方 / 时机 |
 |---|---|
-| `active` | `/requirements --from-prd` 首次成功生成 F/US/AC 并回写 DevDocs 映射 |
-| `outdated` | `/prd` 修订或 PRD 更新导致既有 DevDocs 映射失效时写入；requirements 读取后原地更新对应 F/US/AC，不创建新编号 |
+| `active` | `/requirements --from-prd` 首次成功生成 F/US/AC 并回写 keel 映射 |
+| `outdated` | `/prd` 修订或 PRD 更新导致既有 keel 映射失效时写入；requirements 读取后原地更新对应 F/US/AC，不创建新编号 |
 | `remapped` | `/requirements --from-prd` 重新导入 outdated 来源时追加新映射行，旧映射行保留作为审计历史 |
 
 ### CON 编号与续编
@@ -115,7 +115,7 @@ metadata:
 | 规则 | 内容 |
 |---|---|
 | 命名 | `CON-XXX`（Constraint 约束）。承载制品型需求：性能基线 / 日志规约 / 安全加固 / 可观测性 / 上架合规 / 平台备案。**合规是 `类别` 字段值，不是独立编号体系** |
-| 阶段映射 | `NFR-XX`（PRD）→ `CON-XXX`（DevDocs），与 `FR-XX` → `F-XXX` 同构 |
+| 阶段映射 | `NFR-XX`（PRD）→ `CON-XXX`（keel），与 `FR-XX` → `F-XXX` 同构 |
 | 续编 | ⛔ **不读 `.claude/rules/devdocs-state.md`**。直接扫资源文件取 max+1：<br>`grep -owhE 'CON-[0-9]+' docs/devdocs/01-requirements.md \| sed 's/CON-//' \| sort -n \| tail -1`<br>（整词匹配 + 数值序，理由见 [shared/constraints.md](../shared/constraints.md)）|
 | 边界 | ⛔ 有用户可观测行为的需求必须走 F/US/AC，**不得写成 CON 规避 AC**。判据：断言对象是「用户能观察到的行为」→ AC；是「制品 / 环境 / 流程的状态」→ CON |
 | 零约束 | 01 §6 可留空或删除，不阻塞任何下游流程 |
@@ -136,7 +136,7 @@ metadata:
 |---|---|---|
 | 输入 `< 200` 字且无结构化标记 | ⚠️ 必须确认 | 建议先运行 `/prd` 探索；用户选择继续或切换后进入对应流程 |
 | 初始模式理解需求 + 探索代码后、编号分配前 | ⚠️ 必须确认 | 用户确认功能点划分、范围边界、优先级后，才开始编号分配和文档写入 |
-| 文档阶段试图产出实现代码（源代码、脚本、配置变更） | ⛔ 禁止继续 | 转交 `/dev-workflow` 执行编码；本 skill 只写 DevDocs Markdown |
+| 文档阶段试图产出实现代码（源代码、脚本、配置变更） | ⛔ 禁止继续 | 转交 `/dev-workflow` 执行编码；本 skill 只写 keel Markdown |
 | 生成/更新文档缺少 `generated_by / spec_version / generated_at` frontmatter | ⛔ 禁止继续 | 按 [templates/requirements-template.md](templates/requirements-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md) |
 
 ## 工作流程

@@ -17,9 +17,9 @@
 
 ## 定位
 
-本文件定义 `--scope=health` 的执行接口，让 LLM 能按统一入口对 DevDocs 文档体系做**主动健康度审查**，覆盖三大维度并把分散在 verify / sync 的检查能力收敛为单一报告。
+本文件定义 `--scope=health` 的执行接口，让 LLM 能按统一入口对 keel 文档体系做**主动健康度审查**，覆盖三大维度并把分散在 verify / sync 的检查能力收敛为单一报告。
 
-与 `--scope=spec`（spec_version 差距补齐）/ `--scope=prd-mapping`（PRD ↔ DevDocs 映射）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
+与 `--scope=spec`（spec_version 差距补齐）/ `--scope=prd-mapping`（PRD ↔ keel 映射）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
 
 > **推/拉两个触发点**（解决"规则实装但没人跑"的断层）：
 > - **拉（全量）**：用户显式 `/pipeline realign --scope=health` —— 本文件定义的完整 4 维扫描。
@@ -89,7 +89,7 @@ docs/devdocs/.health-report.md
 |------|------|
 | `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路） |
 | `.claude/rules/devdocs-state.md` | 维度 c 中 `state-size` / `state-forbidden-content` 专属扫描 |
-| `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔DevDocs 编号引用） |
+| `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔keel 编号引用） |
 
 ### 执行步骤
 
@@ -174,7 +174,7 @@ manual_decisions:
 |----|----|----|
 | health-lint 全部 rule（清单见 [health-lint-implementation.md](health-lint-implementation.md) Rule 集表；`submodule/pointer-drift` 仅 shell 拓扑适用）| `health` | health scope `--apply` 直接处理（`health/dead-link` 手动修复；`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
 | `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
-| PRD↔DevDocs 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |
+| PRD↔keel 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |
 
 ### 评分契约
 
@@ -292,7 +292,7 @@ next_recommended:
 
 - 维度 a 的 spec_version 差距 → 仅报告，**不补齐**；补齐走 `--scope=spec`（沿用现有 realign 主流程）。
 - 维度 c 中单文件 ≥ 1500 行 → 仅报告，**不拆分**；归档减量走 `/sync --archive`。
-- 维度 b 的死链涉及 PRD ↔ DevDocs 编号映射 → 由 `--scope=prd-mapping` 处理。
+- 维度 b 的死链涉及 PRD ↔ keel 编号映射 → 由 `--scope=prd-mapping` 处理。
 - 本 scope 自身只负责：可逆的小范围修复（state 修剪、引用替换、死链标注）。
 
 ## 幂等性

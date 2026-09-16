@@ -4,7 +4,7 @@
 
 ## 职责
 
-只读扫描所有 DevDocs 产物的 `spec_version` frontmatter 字段，对照各 skill `references/realign.md` 顶部"当前 spec_version"常量，输出结构化报告。**不触发 realign**，不修改任何文件。
+只读扫描所有 keel 产物的 `spec_version` frontmatter 字段，对照各 skill `references/realign.md` 顶部"当前 spec_version"常量，输出结构化报告。**不触发 realign**，不修改任何文件。
 
 ## 扫描范围
 

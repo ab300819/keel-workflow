@@ -2,12 +2,13 @@
 
 # keel
 
-DevDocs 文档驱动开发流程的 skill 规格库（Markdown + YAML），以**插件**形式分发到
+keel 文档驱动开发流程的 skill 规格库（Markdown + YAML），以**插件**形式分发到
 Claude Code / Codex CLI / OpenCode 三端。21 个流程 skill + 12 个被流程依赖的通用 skill。
 与本仓零依赖的独立 skill 在 `skills-local` 仓，⛔ 不在此维护。
 
 ## 架构决策
 
+- **`keel` 是工作流的名字，`devdocs` 是它产出的文档目录名**——两者不一致是有意的。`docs/devdocs/`、`.claude/rules/devdocs-state.md`、`devdocs_id` 等路径与字段一律保留 `devdocs`，⛔ 不要「顺手」统一成 keel：那是协议改动，不是改名。
 - 每个 skill 位于 `skills/<name>/SKILL.md`，目录名必须等于 frontmatter 的 `name`；安装按该名称复制整个目录，跨 skill 链接依赖此约定。
 - `templates/` 子目录存输出模板，`references/` 子目录存评估标准 / rubric / 规则
 - `skills/shared/` 是共享资源目录（constraints.md / runlog.md），**不是 skill**（无 SKILL.md）；整包分发后不再需要 skill 身份这层包装。
@@ -25,18 +26,18 @@ Claude Code / Codex CLI / OpenCode 三端。21 个流程 skill + 12 个被流程
 - 正文保留目标、边界、验收条件和非显而易见的操作约束；模式细节按需引用。跨文件协议改动同时核对生产方与消费方。
 - 用户明确的任务范围和已有授权优先于 skill 默认流程；可恢复的范围内编辑与检查持续做到完成。需要新的业务选择或范围外操作时，先准备可审阅结果，再说明具体待决项。
 - 暂停若由 skill 引起，指出实际读取的文件及规则，区分明确要求与自己的推断。
-- 本仓是流程规格的维护仓；修改这些规格不等于在此启动 DevDocs 产品开发全流程。
+- 本仓是流程规格的维护仓；修改这些规格不等于在此启动 keel 产品开发全流程。
 - 规格改动先算 ROI：单个项目的摩擦优先给绕法（[docs/workflows.md](docs/workflows.md)），改规格等**第二个项目撞同一堵墙**。每轮审查都冒出新耦合是过拟合信号，不是继续加固的理由——封存案例见 [模式 B 调研](docs/superpowers/specs/2026-09-14-mode-b-chg-design.md)。
 
 ## 工作流路由
 
-> 本仓是 **skill 规格维护仓**，不是 DevDocs 产品项目。依「用户指令优先于 skill 默认行为」，
+> 本仓是 **skill 规格维护仓**，不是 keel 产品项目。依「用户指令优先于 skill 默认行为」，
 > 以下路由**覆盖**任何外部通用流程 skill 的默认触发。
 
 - **本仓元开发没有 process owner skill，本文件就是流程**：ROI 判据（见「修改 skill」末条）、
   外科式改动、验证要求。⛔ 不要为了「先跑个流程」去触发头脑风暴 / 计划编写 / 计划执行 / 分支收尾类 skill——
   多数改动是规格文本的定点修改，套端到端流程是过度形式化。
-- **⛔ 不在此启动 DevDocs 全流程**。修改这些规格 ≠ 在本仓开发 DevDocs 产品。
+- **⛔ 不在此启动 keel 全流程**。修改这些规格 ≠ 在本仓开发 keel 产品。
 - **允许的外部 skill 用法**：把它们的**产物约定**当落点，不启动它们的门。
   设计稿写进 `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`（既成事实，本仓设计稿都在那）。
 - **例外（可以走完整设计流程）**：新建整个 skill、跨 skill 协议改动、推翻既有架构决策。
@@ -61,4 +62,4 @@ Claude Code / Codex CLI / OpenCode 三端。21 个流程 skill + 12 个被流程
 - 调整流程衔接时：[docs/workflows.md](docs/workflows.md)。
 - 查询架构决策、编号与文件结构时：[docs/architecture.md](docs/architecture.md)。
 - 修改门控、子代理摘要、Recovery 或 spec_version 时：[skills/shared/constraints.md](skills/shared/constraints.md)。
-- 修改 DevDocs 路由或升级入口时：[skills/pipeline/SKILL.md](skills/pipeline/SKILL.md)。
+- 修改 keel 路由或升级入口时：[skills/pipeline/SKILL.md](skills/pipeline/SKILL.md)。

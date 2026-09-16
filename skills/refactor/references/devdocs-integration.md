@@ -1,9 +1,9 @@
-# DevDocs 集成
+# keel 集成
 
-## 在 DevDocs 流程中的位置
+## 在 keel 流程中的位置
 
 ```
-DevDocs 工作流（含重构）:
+keel 工作流（含重构）:
 
 新项目:
 /requirements → /system-design → /test-cases → /dev-tasks

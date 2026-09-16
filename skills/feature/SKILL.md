@@ -1,6 +1,6 @@
 ---
 name: feature
-description: 为已有 DevDocs 项目追加或迭代功能，更新需求、设计、测试与任务。修复缺陷用 bugfix。
+description: 为已有 keel 项目追加或迭代功能，更新需求、设计、测试与任务。修复缺陷用 bugfix。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, Task
 metadata:
   patterns: [pipeline, inversion]
@@ -10,7 +10,7 @@ metadata:
 
 # 新功能
 
-在已有 DevDocs 项目中追加新功能，确保编号延续、文档一致。
+在已有 keel 项目中追加新功能，确保编号延续、文档一致。
 
 ## 语言规则
 
@@ -25,7 +25,7 @@ metadata:
 
 ## 前置条件
 
-- 已存在 DevDocs 文档目录：`docs/devdocs/`
+- 已存在 keel 文档目录：`docs/devdocs/`
 - 存在 `01-requirements.md` **或** `00-baseline.md`
 
 **有 `00-baseline.md` 且无 `01-requirements.md`（基线项目）时**：本 skill 创建 `01-requirements.md`，`F-001` 从这个新需求起。
@@ -42,7 +42,7 @@ metadata:
 
 ## 快速开始
 
-**一句话**: 在已有 DevDocs 项目中追加新功能，自动编排需求/设计/测试/任务。
+**一句话**: 在已有 keel 项目中追加新功能，自动编排需求/设计/测试/任务。
 
 **最常见用法**: `/feature "功能描述"`（自动选档位）。想强制某档或少确认，直接说。
 
