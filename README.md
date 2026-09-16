@@ -11,13 +11,22 @@
 ## 安装
 
 ```bash
-# Claude Plugin Marketplace（推荐）
-/plugin marketplace add ab300819/skills
-
-# npx（跨工具通用）
+# npx（跨工具通用，推荐）
 npx skills add ab300819/skills --list          # 列出所有 skill
 npx skills add ab300819/skills@code-quality     # 安装单个
+npx skills add ab300819/skills --all            # 全装
+
+# Claude Plugin Marketplace（整包安装，两步）
+/plugin marketplace add ab300819/skills
+/plugin install devdocs-skills@ab300819-skills
 ```
+
+> **两条路的调用方式不同。** npx 装的是裸名 `/ms-pipeline`；plugin 装的带命名空间，
+> 是 `/devdocs-skills:ms-pipeline`。**本文其余部分一律用裸名书写**，走 plugin 的请自行加
+> `devdocs-skills:` 前缀。
+>
+> 其他差异：npx 支持单 skill 选装、覆盖 60+ 种客户端目录；plugin 是整包安装、可自动更新，
+> 且是 `hooks/` 生效的唯一通道（npx 只复制 skill 目录，不带根级 hooks）。
 
 ---
 

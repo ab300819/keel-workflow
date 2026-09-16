@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ab300819-skills",
+  "description": "DevDocs 文档驱动流程 + 代码质量 / 测试 / 重构等独立工具 skill 集合",
+  "owner": {
+    "name": "ab300819",
+    "url": "https://github.com/ab300819"
+  },
+  "plugins": [
+    {
+      "name": "devdocs-skills",
+      "description": "DevDocs 开发文档工作流 + 代码质量 Skill 集合",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
