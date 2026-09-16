@@ -159,11 +159,11 @@ and types neighboring tasks use."*
 | `/ms-test-cases --update` | `ms-verify/templates/verify-report.md:163` | 🔴 同上 |
 | `/ms-dev-tasks --split` | `ms-verify/templates/verify-report.md:164` | 🔴 同上 |
 
-**根因已定位**：`--incremental` 在 `a925ab0`（**「用户面 flag 收敛 49→20」**）中随生产方删除，改为 `ms-requirements/SKILL.md:54` 的「自动检测初始/增量模式」，但 **3 个消费方未同步**。
+**根因已定位**：`--incremental` 在 `a8f109a`（**「用户面 flag 收敛 49→20」**）中随生产方删除，改为 `ms-requirements/SKILL.md:54` 的「自动检测初始/增量模式」，但 **3 个消费方未同步**。
 
 ⇒ **那次收敛自己制造了死引用。** 这正是本仓吃过多次的「双删失效模式」：删了生产方漏了消费方，而无解析器 / 无 linter，静默通过。
 
-**已修**：`270b2c0` 改掉全部 6 处 occurrence（上表 4 个 flag 名 / 3 个文件）。
+**已修**：`b541314` 改掉全部 6 处 occurrence（上表 4 个 flag 名 / 3 个文件）。
 守卫已落地，见 §4.2 —— 现在 `health-lint --skills-dir skills` 对本仓报 0 条。
 
 > 误报 1 处（已排除）：`ms-requirements/references/context-mode.md:29` 的 `/ms-retrofit --baseline-update`，原文是「**不**为基线补全新建…一类的入口」，是反例不是引用。
@@ -175,12 +175,12 @@ and types neighboring tasks use."*
 与既有 `id/prefix-consumption-contract`（2026-09-15 落地）**完全同构** —— 那条管编号前缀的消费契约，这条管 flag 的。两者的失效模式也同一个：生产方改了，消费方不知道。
 
 **已落地**（2026-09-16）：登记时的阻塞前提「672 行规格 + 0 行代码」已不成立 ——
-`skills/ms-pipeline/scripts/health-lint.py`（`72ff2ea` 起，纯 stdlib）实现了规格 12 条 rule 中的 10 条
+`skills/ms-pipeline/scripts/health-lint.py`（`6b863c3` 起，纯 stdlib）实现了规格 12 条 rule 中的 10 条
 （未实现：`design/adr-only-revision` · `submodule/pointer-drift`），
-`flag/dangling-reference` 是其中之一（`2e83e38`）。它**只扫 skill 库不扫用户项目**，
+`flag/dangling-reference` 是其中之一（`3c5c7d4`）。它**只扫 skill 库不扫用户项目**，
 入口 `--skills-dir`。
 
-⚠️ 该实现随后被 codex 独立审查查出 8 处缺陷（`6d85be2` 已修），其中一条让
+⚠️ 该实现随后被 codex 独立审查查出 8 处缺陷（`a9d208b` 已修），其中一条让
 `health/dead-link` 在追溯矩阵行上完全失效 —— **「有 linter」不等于「linter 是对的」**，
 本条的守卫价值以那次修复为准。
 
@@ -217,7 +217,7 @@ DevDocs 写法: /plan --brainstorm | --write | --execute | --subagent           
 
 #### 关键历史：它们本来就是独立 skill，是被合并进来的
 
-`a90382f`（2026-03-10）**同一提交**内：新建 `devdocs-pipeline`，同时
+`b010c5a`（2026-03-10）**同一提交**内：新建 `devdocs-pipeline`，同时
 `devdocs-verify (3-in-1)` 合并并删除 `devdocs-review` / `devdocs-requirements-alignment` /
 `devdocs-ui-alignment`。
 

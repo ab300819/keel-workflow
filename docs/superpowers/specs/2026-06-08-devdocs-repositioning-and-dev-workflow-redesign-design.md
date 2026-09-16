@@ -131,7 +131,7 @@ codex_review: [T-131, T-132, T-133]
 
 - **2026-05-25 速度优化 spec**:降为"局部优化材料"。其 P1(S9 并行化)、P2(批量 Batch-Id trailer)仍可作为 audit 档内部提速手段复用,但不再是顶层方向。
 - **WIP-dev-workflow-speed-optimization.md**:本 spec 落地后,该 handoff 文件的 Phase 2 范围被本设计取代,按其自带清理协议处理(删除 + cleanup commit)。
-- **adr-only-revision rule**(e1a6f13):ADR Decision Log 与 system-design 正文的同步规则需对齐此 rule,避免"只追加 ADR 不更新当前设计"。
+- **adr-only-revision rule**(a9f1466):ADR Decision Log 与 system-design 正文的同步规则需对齐此 rule,避免"只追加 ADR 不更新当前设计"。
 
 ## 7. 非目标
 
@@ -152,7 +152,7 @@ codex_review: [T-131, T-132, T-133]
 4. **`Review-Due` 年龄参数**:默认值 + 超期动作(超期 → 升 inline audit 还是强制 drain)。
 5. **风险分类器可执行判据**:`dev-workflow` 如何廉价扫出"被广泛 import 的模块""diff 面积/导入面明显放大"等信号。
 6. **Evidence Ledger 最小可复核格式**:每条 AC 证据指针的最简形态(§5.1 规则 #3 的落地)。
-7. **ADR Decision Log 与 system-design 正文同步规则**:对齐 adr-only-revision(e1a6f13),避免"只追加 ADR 不更新当前设计"。
+7. **ADR Decision Log 与 system-design 正文同步规则**:对齐 adr-only-revision(a9f1466),避免"只追加 ADR 不更新当前设计"。
 
 ## 9. Codex 复核轨迹
 
@@ -272,7 +272,7 @@ links:
 
 ### 11.2 ADR Decision Log 同步规则(§8.7 闭合)→ 透镜 + adr-only-revision
 
-**决议**:ADR Decision Log 是既有 system-design ADR 章节(`02-system-design` §16 / layout.v2 `design/decisions/`)的**透镜投影**,不新建文件。同步规则**直接复用已实装的 health-lint `design/adr-only-revision`**(e1a6f13 → 现 [health-lint-implementation.md](../../../skills/pipeline/references/health-lint-implementation.md)),不另造规则:
+**决议**:ADR Decision Log 是既有 system-design ADR 章节(`02-system-design` §16 / layout.v2 `design/decisions/`)的**透镜投影**,不新建文件。同步规则**直接复用已实装的 health-lint `design/adr-only-revision`**(a9f1466 → 现 [health-lint-implementation.md](../../../skills/pipeline/references/health-lint-implementation.md)),不另造规则:
 
 - **同步保障**:ADR 章节有增量(新增/改 ADR)但正文相关章节无同期更新 → `adr-only-revision` 告警(⚠️),对应 system-design SKILL.md:336 硬约束。Plan B 不新增检测逻辑,仅声明 ADR Decision Log 的"同步"语义 = 该 rule。
 - **§5 "带过期·复查条件"落地**:现有 ADR 模板(状态/背景/决策/替代方案/下游影响/关联)**新增可选字段 `复查条件`**——仅对"有时效假设的决策"(如"暂选 X 因当前 Y 限制")填写,记"何种信号下该 ADR 需重审"。无时效假设的决策(如选型)不填,避免 §5.1#4 仪式化。

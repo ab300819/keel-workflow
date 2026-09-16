@@ -1,7 +1,7 @@
 # code-quality 结构优化 + 命名规范方案
 
 > 2026-06-12 · 状态：已对齐（Claude 评估 ⇄ Codex 独立调研 2 轮收敛；命名规则对齐 A 3/3 + B 5/5 AGREE）
-> 前序：[2026-06-12-dev-workflow-comment-quality.md](2026-06-12-dev-workflow-comment-quality.md)（注释规范已落地 `a4dc354`）
+> 前序：[2026-06-12-dev-workflow-comment-quality.md](2026-06-12-dev-workflow-comment-quality.md)（注释规范已落地 `a4dc354` —— ⚠️ 该提交是 pre-push amend 遗留的游离对象，任何 clone 都解析不到）
 
 ## 1. 动因（双方独立调研收敛）
 

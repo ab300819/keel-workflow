@@ -2,7 +2,7 @@
 
 > **与 DevDocs 治理是两条轴。** 这里是发布、发现、跨客户端能力、工具漂移——不涉及 skill 内容规则。
 >
-> 来源：2026-08-10 Codex 对本仓的独立盘点（`SKILL-OPTIMIZATION-HANDOFF.md`，794 行）。该文件已删除——它携带 3 处已被证伪的结论，留着的风险大于残值。原文在历史里：`git show 0e10bbd:SKILL-OPTIMIZATION-HANDOFF.md`。
+> 来源：2026-08-10 Codex 对本仓的独立盘点（`SKILL-OPTIMIZATION-HANDOFF.md`，794 行）。该文件已删除——它携带 3 处已被证伪的结论，留着的风险大于残值。原文在历史里：`git show 7b77287:SKILL-OPTIMIZATION-HANDOFF.md`。
 >
 > 本文是 2026-08-31 逐条复查后的**存活项**。
 
@@ -55,7 +55,7 @@
 | §3.1 安装漂移：6 个落后、3 个缺失 | **40/40 内容一致**，全部按 frontmatter `name` 安装（`npx skills` 所为，副本非符号链接） |
 | §3.2 短名残留 `bugfix` vs `ms-bugfix` | **零残留** |
 | §3.3 README 安装命令路径错 | **该判断本身是错的**：`git clone …/skills.git` 会建出 `skills/`，故 `bash skills/scripts/deploy-skills.sh` 路径正确 |
-| §3.4 部署脚本用 basename 命名 | 已由 `01816e8` **删除脚本**解决——它没人跑（实际安装走 `npx skills`），跑一次反而会在 22 个正确副本旁造出 22 个错名链接 |
+| §3.4 部署脚本用 basename 命名 | 已由 `2ba7d43` **删除脚本**解决——它没人跑（实际安装走 `npx skills`），跑一次反而会在 22 个正确副本旁造出 22 个错名链接 |
 | 1.4 `ms-iteration-policy` 仍在默认发现集 | **已解决**：2026-08-31 随 layout.v2 删除——它 `user-invocable: false`，唯一调用者是 layout.v2 的 `realign --scope=layout`，依赖坍塌成孤儿。反模式诊断救成 `00-baseline.md` §2.1 的一条纪律 |
 | §8 六大入口瘦身 | 本轮规则收敛顺带做了一部分（dev-workflow 422→386、system-design 465→441、verify 446→436），但交接要的**结构性重排**未做 |
 | §7.2 单一 process owner | 部分覆盖：本轮建的 `task/intent-normalization` 是 **skill 内部**的意图→参数归一化，不是 **skill 之间**的 owner 仲裁。§7.3 那层仍空（见 1.3）|

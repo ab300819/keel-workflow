@@ -649,7 +649,7 @@ Run: `echo "Phase 1 落地后,用户应手动跑: /ms-pipeline realign --scope=s
 
 ## 边界与回滚
 
-- Phase 1 任一 commit 失败 → 立即 `git reset --hard HEAD~N` 回滚到 Phase 1 开始前(9dd04fa 后的 main HEAD)
+- Phase 1 任一 commit 失败 → 立即 `git reset --hard HEAD~N` 回滚到 Phase 1 开始前(8dd7a80 后的 main HEAD)
 - 不允许 `--amend`(spec 已写明)— 失败必须新 commit 修复
 - Phase 1 落地后,**至少观察 1 个实际代码项目任务无回归**,才进 Phase 2 plan 撰写
 

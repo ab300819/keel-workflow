@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown + YAML frontmatter（本仓为规格库，无构建/测试框架）；外部工具 `markdownlint-cli2`（Node）；验证靠实测告警计数与文本一致性检查。
 
-**Spec:** [2026-07-31-markdown-style-skill-design.md](../specs/2026-07-31-markdown-style-skill-design.md)（已提交，commit `293a4ad`）。**本计划所有文档内容以该 spec 为唯一来源**，每个任务标注对应 spec 章节，实施时逐条搬运，不得自行发明规则或出处。
+**Spec:** [2026-07-31-markdown-style-skill-design.md](../specs/2026-07-31-markdown-style-skill-design.md)（已提交，commit `dada2bf`）。**本计划所有文档内容以该 spec 为唯一来源**，每个任务标注对应 spec 章节，实施时逐条搬运，不得自行发明规则或出处。
 
 ## Global Constraints
 

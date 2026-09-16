@@ -53,7 +53,7 @@
 - **现状**：真值表与 canonical state 定义在 `dev-workflow/references/verification-flow.md:463`（一个 skill 的 reference），但被 7 个 dev-workflow 文件 + **跨 skill 的 ms-verify、adversarial-review、ms-dev-tasks** 消费
 - **建议**（分层，而非整体上提）：**状态枚举 + 质量地板归 `_shared/constraints.md`**；执行细节留 dev-workflow references
 - **落地偏差（批次 3）**：原拟新建 `review-profile-protocol.md`，实施时发现 _shared 已承载三档/质量地板/review_pending/基础 trailers——新建文件会制造第三个权威。实际落地：_shared 补「独立审查状态机枚举」+「Commit trailers 协议」两节（协议层），verification-flow 真值表标注为"判定规则执行细节权威"、execution-flow 提交格式标注为"模板呈现"（执行层），不新建文件
-- **理由**：跨 skill 协议放在单 skill reference 里违反 _shared 架构定位；e89caae（EXT_PENDING 语义对齐）类漂移已发生过一次
+- **理由**：跨 skill 协议放在单 skill reference 里违反 _shared 架构定位；e89caae（EXT_PENDING 语义对齐；⚠️ 游离对象，不可解析）类漂移已发生过一次
 
 ### S3. AC 类型分类 + AC 类型×证据类型分级矩阵｜优先级 P1
 

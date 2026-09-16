@@ -72,7 +72,7 @@
 
 - `~/.claude/skills/` 下 **71 个条目，全部是符号链接** → `~/.agents/skills/`
 - `~/.agents/skills/` 是**部署副本**（inode 与本仓不同，非链接），源在本仓
-  `skills/`（**41 个**，2026-09-16 实测）。⚠️ 原文引用的 `scripts/deploy-skills.sh` **已于 `01816e8` 删除**，
+  `skills/`（**41 个**，2026-09-16 实测）。⚠️ 原文引用的 `scripts/deploy-skills.sh` **已于 `2ba7d43` 删除**，
   实际安装走 `npx skills` / Plugin Marketplace
 - 差额来自本仓之外（`lark-*` 等）。**"收敛 skill 数量"这条路，本仓只管得了其中一部分**
 - `~/.claude/settings.json` **目前没有 `hooks` 段**（顶层仅 `alwaysThinkingEnabled` /
