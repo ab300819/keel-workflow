@@ -8,6 +8,9 @@ v1 实现：state/total-size-cap · state/line-length-cap · state/forbidden-con
 v1 未实现（如实报 not_implemented，⛔ 不要当成 pass）：
          design/adr-only-revision（需 git diff 行范围 × heading map）
          submodule/pointer-drift（仅 shell 拓扑）
+另有 flag/dangling-reference —— 扫描对象是 **skill 库本身**（非用户项目），
+故走独立的 --skills-dir 模式，⛔ 不与上述 project-scope 的 rule 混用同一 target。
+
 v1 不含：baseline / --apply / 自动修复。首扫噪声大属预期（尤见 id/unknown-prefix）。
 
 退出码（规格「退出码（CLI 集成）」）：0 无违规 / 1 仅 warning / 2 有 blocker / 3 lint 自身错误
@@ -153,12 +156,96 @@ def scan_state(state_path, rel, derived_caps):
     return fs, False
 
 
+DISABLE = "health-lint-disable-line flag/dangling-reference"
+FLAGREF_RE = re.compile(r"/([a-z][a-z0-9-]{2,})\s+(--[a-z][a-z-]*)")
+
+
+def scan_skill_flags(skills_dir):
+    """flag/dangling-reference：skill 互相引用的 `--flag` 在目标 skill 目录里是否存在。
+
+    根因参见 audits/2026-09-11-devdocs-flow-backlog.md §4.1：子指令没有解析器，
+    生产方删了 flag、消费方不知道，静默通过。
+
+    ⚠️ 已知盲区：判据是「flag 在目标 skill 目录内能否搜到」，所以**skill 引用自己的
+    flag 必然自证通过** —— `ms-verify/SKILL.md` 里写 `/ms-verify --foo` 抓不到。
+    实测出的 6 处漂移全是跨 skill 的（消费方与生产方不同目录），故 v1 接受该盲区。
+    """
+    names = {d.name for d in os.scandir(skills_dir) if d.is_dir()}
+    owned = {}  # skill -> 该目录下全部文本（用于判 flag 是否存在）
+    fs = []
+    for root, dirs, files in os.walk(skills_dir):
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for fn in sorted(files):
+            if not fn.endswith(".md"):
+                continue
+            path = os.path.join(root, fn)
+            try:
+                lines = open(path, encoding="utf-8", errors="replace").read().split("\n")
+            except OSError:
+                continue
+            mask = strip_code_blocks(lines)
+            for i, ln in enumerate(lines):
+                if mask[i] or DISABLE in ln:
+                    continue
+                for m in FLAGREF_RE.finditer(ln):
+                    target, flag = m.group(1), m.group(2)
+                    if target not in names:
+                        continue
+                    if target not in owned:
+                        buf = []
+                        for r2, _d2, f2 in os.walk(os.path.join(skills_dir, target)):
+                            for n2 in f2:
+                                if n2.endswith(".md"):
+                                    try:
+                                        buf.append(open(os.path.join(r2, n2), encoding="utf-8", errors="replace").read())
+                                    except OSError:
+                                        pass
+                        owned[target] = "\n".join(buf)
+                    if flag not in owned[target]:
+                        fs.append(find("flag/dangling-reference", "warning",
+                                       os.path.relpath(path, skills_dir), i + 1,
+                                       f"/{target} {flag} —— 目标 skill 目录内搜不到该 flag",
+                                       ctx=ln.strip()[:120],
+                                       fix=f"改为 /{target} 的真实入口；若为反例请加 <!-- {DISABLE} -->"))
+    return fs
+
+
+def emit(findings):
+    """Finding 输出 schema。"""
+    for f in findings:
+        print(f"- rule_id: {f['rule_id']}")
+        for k in ("severity", "file", "line", "actual", "threshold", "message", "context", "fix_suggestion", "auto_fixable"):
+            v = f[k]
+            if v is None:
+                print(f"  {k}: null")
+            elif k in ("message", "context"):
+                print(f'  {k}: "{str(v)}"'.replace("\n", " "))
+            elif isinstance(v, bool):
+                print(f"  {k}: {str(v).lower()}")
+            else:
+                print(f"  {k}: {v}")
+
+
 def main():
     ap = argparse.ArgumentParser(description="health-lint v1 (6/8 rules)")
     ap.add_argument("--target", default=".", help="项目根（含 docs/devdocs/）")
     ap.add_argument("--changed-only", action="store_true", help="仅扫 git diff HEAD 变更的文件")
     ap.add_argument("--fix", metavar="RULE_ID", help="仅运行指定 rule")
+    ap.add_argument("--skills-dir", metavar="DIR",
+                    help="改扫 skill 库，只跑 flag/dangling-reference（⛔ 与 --target 的 project-scope rule 互斥）")
     args = ap.parse_args()
+
+    if args.skills_dir:
+        sd = os.path.abspath(args.skills_dir)
+        if not os.path.isdir(sd):
+            print(f"lint error: {sd} 不存在", file=sys.stderr)
+            return 3
+        fs = scan_skill_flags(sd)
+        if args.fix:
+            fs = [f for f in fs if f["rule_id"] == args.fix]
+        emit(fs)
+        print(f"\n# skills-dir scan | warning={len(fs)}", file=sys.stderr)
+        return 1 if fs else 0
 
     root = os.path.abspath(args.target)
     devdocs = os.path.join(root, "docs", "devdocs")
@@ -261,19 +348,7 @@ def main():
     if args.fix:
         findings = [f for f in findings if f["rule_id"] == args.fix]
 
-    # ---- 输出（Finding 输出 schema）----
-    for f in findings:
-        print(f"- rule_id: {f['rule_id']}")
-        for k in ("severity", "file", "line", "actual", "threshold", "message", "context", "fix_suggestion", "auto_fixable"):
-            v = f[k]
-            if v is None:
-                print(f"  {k}: null")
-            elif k in ("message", "context"):
-                print(f'  {k}: "{str(v)}"'.replace("\n", " "))
-            elif isinstance(v, bool):
-                print(f"  {k}: {str(v).lower()}")
-            else:
-                print(f"  {k}: {v}")
+    emit(findings)
 
     sys.stdout.flush()
     blockers = sum(1 for f in findings if f["severity"] == "blocker")

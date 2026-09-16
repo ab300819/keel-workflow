@@ -2,12 +2,13 @@
 
 > 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
 >
-> 本文件 8 条 rule 专门解决 devdocs-state 膨胀 / 陈旧 + 死链 + 自造编号前缀三类痛点。
+> 本文件 9 条 rule：8 条 **project scope**（解决 devdocs-state 膨胀 / 陈旧 + 死链 + 自造编号前缀），
+> 1 条 **skill-library scope**（`flag/dangling-reference`，⛔ 扫描对象不同，见该节）。
 
 ## 目录
 
 - 定位
-- Rule 集（[新增] 8 条）
+- Rule 集（[新增] 9 条）
 - Rule 详情
 - Baseline 与增量扫描
 - 退出码（CLI 集成）
@@ -25,7 +26,7 @@
 | **本文件**：[新增] rule 的检测算法、严重度、修复路径（清单见下方 Rule 集表）| health-lint-implementation.md |
 | 既有偏差评分 | `../../ms-sync/references/health-scoring.md` |
 
-## Rule 集（[新增] 8 条）
+## Rule 集（[新增] 9 条）
 
 | rule_id | 严重度 | 维度 | 适用 | 自动修复 |
 |---------|--------|------|------|---------|
@@ -37,8 +38,45 @@
 | `submodule/pointer-drift` | ⛔ / ⚠️ | a 结构正确性 | v1+v2（仅 shell）| ❌（manual_decision）|
 | `state/max-id-stale` | ⚠️ | c/state-hygiene（c 维度子项）| v1+v2 | ✅ 可自动（回填或删行，均需 manual_decision 选择）|
 | `id/unknown-prefix` | ⚠️（永不升级 ⛔）| b 索引/链接 | v1+v2 | ❌（只报不判，manual_decision）|
+| `flag/dangling-reference` | ⚠️ | b 索引/链接 | **skill 库**（非项目）| ❌（manual_decision）|
 
-> 8 条全部 [新增]，可执行。项目可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+> 9 条全部 [新增]，可执行。⚠️ `flag/dangling-reference` 扫 skill 库不扫项目，走 `--skills-dir`，**不在** `--scope=health` 的 8 条之内。项目可直接调 `/ms-pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+
+---
+
+### `flag/dangling-reference`
+
+**目的**：检测 skill 之间互相引用的 `--flag` 在目标 skill 目录内是否存在。
+
+**⛔ 扫描对象与其余 8 条不同**：其余扫用户项目的 `docs/devdocs/` 与 `devdocs-state.md`；
+本条扫 **skill 库自身**，故走独立入口 `health-lint.py --skills-dir <skills/>`，
+⛔ 不并入 `--target` 的 project-scope 扫描。
+
+**为什么需要**：子指令**没有解析器**——skill 是 markdown，harness 把 flag 当 `args`
+原样传给模型，模型读 SKILL.md 的表对着认。⇒ flag 打错 / 改名 / 删除，**没有任何东西会报错**。
+
+实证（2026-09-16）：`--incremental` 在 `a925ab0`「用户面 flag 收敛 49→20」随生产方删除，
+**3 个消费方未同步**，其一写「必须委托给」；另有 3 处在 `verify-report` 模板里，
+会随模板复制进用户项目。共 6 处，全部静默通过。
+
+**算法**：
+
+```text
+1. names = skills/ 下全部目录名
+2. 遍历 skills/**/*.md（跳过 ``` 代码块内的行）
+3. 匹配 /([a-z][a-z0-9-]{2,})\s+(--[a-z][a-z-]*)
+4. target ∈ names 时，读 skills/<target>/**/*.md 全文
+5. flag 不在该全文中 → finding（severity = warning）
+```
+
+**严重度为何是 ⚠️ 而非 ⛔**：死 flag **降级是柔性的**——子 Agent 收到不认识的参数，
+会按上下文自行解释，不像 `health/dead-link` 那样断掉用户产物里的追溯链。⛔ 但它仍是真漂移。
+
+**豁免**：行内加 `<!-- health-lint-disable-line flag/dangling-reference: <理由> -->`。
+用于反例（如「⛔ 不为 X 新建 `/skill --flag` 一类的入口」这种否定句）。
+
+**已知盲区**：判据是「flag 在目标目录内能否搜到」⇒ **skill 引用自己的 flag 必然自证通过**。
+实测的 6 处漂移全为跨 skill，v1 接受该盲区。
 
 ---
 
@@ -572,7 +610,7 @@ notes: |
   首次扫描快照；新增违规以此为基线计算 delta。
 ```
 
-### 可执行实现（v1，6/8 条）
+### 可执行实现（v1）
 
 **⛔ 先跑脚本，不要逐条人肉扫。** [`../scripts/health-lint.py`](../scripts/health-lint.py) —— 零依赖 stdlib。
 
@@ -652,7 +690,7 @@ v1 **不含 baseline / `--apply` / 自动修复** —— 存量项目首扫噪�
 
 ## Finding 输出 schema
 
-所有 8 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
+所有 9 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
 
 ```yaml
 - rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix
@@ -671,7 +709,7 @@ v1 **不含 baseline / `--apply` / 自动修复** —— 存量项目首扫噪�
 
 | 命令 | 执行的 rule |
 |------|------------|
-| `/ms-pipeline realign --scope=health --dry-run` | 全部 8 条 |
+| `/ms-pipeline realign --scope=health --dry-run` | project scope 的 8 条（⛔ 不含 `flag/dangling-reference`）|
 | `/ms-pipeline realign --scope=health --fix=state/total-size-cap` | 仅该 rule |
 | `/ms-pipeline realign --scope=health --apply` | 修复 auto_fixable + 已 AskUserQuestion 的 manual_decision |
 
@@ -679,7 +717,7 @@ v1 **不含 baseline / `--apply` / 自动修复** —— 存量项目首扫噪�
 
 ## 历史项目兼容
 
-- 本 8 条 rule 全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
+- project scope 的 8 条全部可用，直接通过 `/ms-pipeline realign --scope=health --dry-run` 调用。
 
 ## 变更日志
 

@@ -26,7 +26,7 @@
 - ⛔ **用户没提到的条目不得因此升格**——沉默不是确认
 - ⛔ 不得往基线写模块表 / 接口表 / 技术栈清单等清单类内容（→ `docs/codebase-insight.md`）
 
-不为基线补全新建 `/ms-retrofit --baseline-update` 一类的入口：补全基线是「补背景」，不是「改造项目」。
+不为基线补全新建 `/ms-retrofit --baseline-update` 一类的入口：补全基线是「补背景」，不是「改造项目」。 <!-- health-lint-disable-line flag/dangling-reference: 反例，非引用 -->
 
 ### 写入基线怎么做
 
