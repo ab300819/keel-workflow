@@ -180,7 +180,7 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 要点：
 
-- Step 1 调查：委托 `codebase-insight` 摸排 + README / CHANGELOG / git 提交信息 / issue·PR / 实跑构建测试
+- Step 1 调查：委托 `codebase-insight` 摸排 + README / CHANGELOG / git 提交信息 / issue·PR / 实跑构建测试；环境若提供跨会话历史检索（如 `/mem-search`），一并取「当初为什么这么定」，⛔ 其结论同样走 Step 2 校验与来源标注，不因来自记忆库而免检
 - Step 2 校验：拿代码检验文档里每条可验证陈述 → `已佐证` / `未可验` / `与代码矛盾`
 - Step 3 推导：起草带依据标注的草案，每条写清「据什么」
 - Step 4 提问：只问推不出、依据薄弱、或校验出矛盾的项；⛔ 每题必须有「我也不清楚」出口

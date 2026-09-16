@@ -398,6 +398,21 @@ keel 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory` 幂等�
 
 逐项映射后:9 项 superpowers 能力 keel 已有等价或更强;唯一内化项 = bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
 
+## 与 claude-mem / ponytail 共存
+
+> 原则同 superpowers:**单向兼容**(外部插件零改动)+ **可选增强、单一路径归一化**(keel 阶段永远执行并产出权威结果)。⛔ **不写能力检测代码**——skill 正文一律写成「环境若提供 X 则…,否则走现有路径」,工具不在场时自然跳过,这本身就是 fallback。
+
+| 外部能力 | 接在哪 | keel 这边不变的 |
+|---|---|---|
+| 专查过度工程的审查(`/ponytail-review` 审 diff · `/ponytail-audit` 审全仓) | `code-quality` § 避免过度设计 | 最小审查清单照跑;外部结论按 keel 反馈分级归一化,⛔ 不另立级别 |
+| 跨会话历史检索(`/mem-search`) | `bugfix` § 根因诊断门假设清单、`retrofit` § 建立基线 Step 1 | 根因仍须经步骤 4 证伪确认;基线仍须经 Step 2 校验与来源标注 |
+| 会话观测(claude-mem 自身 hook) | **无需接入**,它单向观测 keel 的工作 | 无 |
+| 风格约束(ponytail 模式) | **无需接入**,SessionStart 已在同一会话生效 | 见下方优先级 |
+
+**⛔ 不接的两类**:① 外部记忆库不作为第二 SSOT——`docs/devdocs/` 记「现在的约定」,外部记忆只当**待验证线索**输入,否则两个来源争同一件事的解释权(与 2026-07-22「委托+fallback」被否决同因:语义漂移伤追溯);② 全量读码(`/learn-codebase`)与 `codebase-insight` 职责重叠且产物无固定 schema,不接。
+
+**优先级(会真冲突,必须写死)**:ponytail 的 YAGNI 管的是**实现里少写代码**,⛔ **不得用来裁 AC**。验收项是与用户的契约,删减只能由用户决定;「lazy」不是漏做验收项的理由。
+
 ## 文档与代码分仓（shell 拓扑）
 
 **什么时候用**：维护 fork 的开源项目，或自有项目计划公开——keel 的需求 / 设计 / 任务 / 洞察都是私有产物，不该进代码仓。
