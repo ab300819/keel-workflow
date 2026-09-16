@@ -1,6 +1,6 @@
 ---
 title: DevDocs 拆分为 keel 独立插件仓 + 零散 skill 仓
-status: ✅ 可实施 —— Codex 三轮审查 PASS（6→6→0）；V1 已验；D1~D3 全部结清
+status: ✅ 已实施（2026-09-16）—— 阶段 1~7 全部完成并验收；V1 / V2b / D1~D3 全部结清
 date: 2026-09-16
 scope: 仓库拓扑、三端分发、命名空间、历史重写
 supersedes: 架构决策「目录名 ≡ frontmatter name，单仓 npx 分发」（AGENTS.md）
@@ -229,6 +229,34 @@ Skill(ponytail-help)            ← ⛔ 不带 ponytail: 前缀
 | **6 远程切换**（⛔ 不可逆）| `gh api --method PATCH repos/ab300819/skills -f name=keel`；`git remote set-url`；`--force-with-lease` 按冻结时 oid 逐 ref 推 | 新 clone 的 refs 与发布清单一致；身份复查通过 |
 | **7 本地换位** | 旧工作区移走并**禁用其 push**；建壳目录；放两个仓；**按迁移清单清理旧安装**（见下）；三端重装 | 壳内无 `.git`；零散仓 `git remote -v` 为空；**三端新会话里旧 `ms-*` 名全部消失**；三端各自能发现 33 个 skill；**42 个非本仓 skill 不受影响** |
 
+#### 5.2 实施结果（2026-09-16，阶段 1~7 全部完成）
+
+| 阶段 | 验收实测 |
+|---|---|
+| 1 | bundle 370 commit，`git clone` 还原实测通过；三端配置 + 两棵 skill 树已备份 |
+| 2 | keel 33 skill + `shared/`，skills-local 6 skill；`health-lint --skills-dir` 两侧 **blocker=0 warning=0** |
+| 3 | 跨仓相对链接 **5 处**（本稿 §4 只算到 1 处）全部降级；两侧零跨仓可解析链接 |
+| 4 | 三端 hook 适配层落地；三条检查路径构造 payload 实跑通过 |
+| 4b | 裸名在三端全部解析成功（见 §5.1）|
+| 5 | 371 commit、身份唯一 `Mason <ab300819@hotmail.com>`；370 提交 tree 逐条相同、父子结构一致；19 个 SHA 回填 |
+| 6 | `ab300819/skills` → `ab300819/keel`；`--force-with-lease` 按冻结 oid 推 main；新 clone 复验：371 commit / 身份唯一 / 工作邮箱 0 处 / 19 SHA 全解析 |
+| 7 | 壳内无 `.git`；skills-local 无远程；三端旧 `ms-*` **残留 0**；Claude Code 33 skill + 1 hook、Codex `keel:*` 33 个、OpenCode 81 个含 keel 与 skills-local 全数；**清单外 39 项零误伤、软链零断裂** |
+
+⚠️ **三处与本稿预期不符，已就地修正**：
+
+1. **跨仓相对链接是 5 处不是 1 处**（§4）。多出的 4 处：`e2e-test-flow/references/panel-protocol.md`
+   硬链 `../../ms-board/references/board-protocol.md`，以及 3 处指向 `docs/superpowers/specs/` 的设计稿链接
+   —— `docs/` 随 keel 走，零散仓侧全成死链。**漏因同 §2.3：只数了 slash 调用，没数相对链接。**
+2. **21 个 SHA 里 2 个是游离对象**（`a4dc354` / `e89caae`）。它们不在任何分支上，重写前从
+   GitHub clone 就解析不到 —— 是 pre-push amend 的遗留。只能回填 19 个，另 2 处就地标注不可解析。
+   顺带纠正本稿：`git filter-repo` **默认就会改提交信息里的 SHA 引用**（实测 2 处），
+   要手动回填的只有受控文件。
+3. **manifest 三处照抄错了**（见 §1.3 脚注）：`.codex-plugin/` 是兼容回退不是主格式；
+   `.claude-plugin/marketplace.json` 在 Codex 侧是 legacy。已改走三端各自的主路径。
+
+⚠️ **另清理了清单外的 `ms-iteration-policy`** —— 本仓 2026-08-31 已删除该 skill，但安装侧残留成孤儿。
+它是本仓产物，按迁移清单精神一并清掉（清单从 40 项补到 41 项）。
+
 #### 5.1 阶段 4b 实测结论（2026-09-16）
 
 **裸名在三端都能解析**，但三端的机制各不相同：
@@ -279,7 +307,9 @@ Skill(ponytail-help)            ← ⛔ 不带 ponytail: 前缀
 4. **纯 skill 不等于零依赖。** `dev-flow` / `refactor` 的质量门规则来自插件侧；
    §4 选择内联那 2 处、其余降级说明，代价是它们在未装 keel 时功能略弱（明确提示，不静默降级）。
 5. **OpenCode 端拿不到命名空间**，调用与另两端不同字符串（§3）。
-6. **零散仓无远程 ⇒ 无异地备份**（D2 待你确认接受）。
+6. **零散仓无远程 ⇒ 无异地备份**（D2 已确认接受）。
+7. ⚠️ **代价 2 的实际暴露面比预想小**：`ab300819/skills` 是**私有仓、0 fork、0 star**，
+   ⇒「工作邮箱已扩散到互联网」这条基本不成立。但结论不变：能验收的只是新发布 refs 身份干净。
 
 ## 7. 待验 / 待决
 
