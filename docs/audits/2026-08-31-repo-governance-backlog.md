@@ -33,13 +33,20 @@
 
 ⚠️ 零依赖实现。交接实测外部 `quick_validate.py` 因缺 PyYAML 直接跑不起来。
 
-### 1.3 根 `AGENTS.md` 缺元开发路由
+### 1.3 ~~根 `AGENTS.md` 缺元开发路由~~ —— 已结清（2026-09-16）
 
 `docs/workflows.md` 说明**消费方** DevDocs 项目会由 `agent-memory` 写入「工作流路由」节压制外部 process skill 误触发。但本仓根 `AGENTS.md` 只有决策记录（第 45 行），没有实际生效的路由块。
 
 **本次会话即实证**：做 skill 元开发时，superpowers 的 `brainstorming` / `writing-plans` / `subagent-driven-development` 三个 process skill 全被自动加载。
 
 需要定的：skill 元设计 / 协议调整 / DevDocs skill 开发时，哪个是唯一 process owner；何时允许 superpowers 产物作为输入；明确禁止双重门控。
+
+**已落地**（`AGENTS.md` 新增「工作流路由」节）。结论：**本仓元开发没有 process owner skill，
+`AGENTS.md` 本身就是流程**——ROI 判据 + 外科式改动 + 验证要求。依据是实际做法：本轮全程
+（读台账 → 取证 → 判定 → 定点改 → 验证 → 提交）没有任何 process skill 被需要。
+
+允许外部 skill 的**产物约定**（`docs/superpowers/specs/`，既成事实），⛔ 不启动它们的门。
+例外：新建整个 skill / 跨 skill 协议改动 / 推翻既有架构决策 → 先出设计稿。
 
 ## 2. 已解决 / 已证伪（勿再照原文去修）
 

@@ -20,6 +20,22 @@ Markdown + YAML skill 规格库，兼容多个 AI 工具。`ms-` 为 DevDocs 流
 - 本仓是流程规格的维护仓；修改这些规格不等于在此启动 DevDocs 产品开发全流程。
 - 规格改动先算 ROI：单个项目的摩擦优先给绕法（[docs/workflows.md](docs/workflows.md)），改规格等**第二个项目撞同一堵墙**。每轮审查都冒出新耦合是过拟合信号，不是继续加固的理由——封存案例见 [模式 B 调研](docs/superpowers/specs/2026-09-14-mode-b-chg-design.md)。
 
+## 工作流路由
+
+> 本仓是 **skill 规格维护仓**，不是 DevDocs 产品项目。依「用户指令优先于 skill 默认行为」，
+> 以下路由**覆盖**任何外部通用流程 skill 的默认触发。
+
+- **本仓元开发没有 process owner skill，本文件就是流程**：ROI 判据（见「修改 skill」末条）、
+  外科式改动、验证要求。⛔ 不要为了「先跑个流程」去触发头脑风暴 / 计划编写 / 计划执行 / 分支收尾类 skill——
+  多数改动是规格文本的定点修改，套端到端流程是过度形式化。
+- **⛔ 不在此启动 DevDocs 全流程**（`ms-*`）。修改这些规格 ≠ 在本仓开发 DevDocs 产品。
+- **允许的外部 skill 用法**：把它们的**产物约定**当落点，不启动它们的门。
+  设计稿写进 `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`（既成事实，本仓设计稿都在那）。
+- **例外（可以走完整设计流程）**：新建整个 skill、跨 skill 协议改动、推翻既有架构决策。
+  此时先出设计稿再动手；产物同样进 `docs/superpowers/specs/`。
+- **独立审查**：需要第二意见时用 codex（`/adversarial-review` 或直接 `codex exec`），
+  ⛔ 不用外部 skill 的 review 流程门——本仓无代码可审，审的是规格推理。
+
 ## 验证
 
 - 无统一 build/test/lint 命令。文案修改检查 `git diff --check`；名称、路径或协议变更另核对受影响的 frontmatter、引用与消费方。
