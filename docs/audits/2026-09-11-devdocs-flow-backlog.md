@@ -219,3 +219,20 @@ npx 装的 `ms-pipeline` 是裸名）。
 `agent-memory/memory-template.md`(7) · `prior-art-scan/report-template.md`(6) ·
 `ms-verify/readiness-report.md`(5) · `ms-retrofit/retrofit-report-template.md`(5) ·
 `agent-memory/best-practices.md`(5) · 其余 13 个文件各 1~4 处。
+
+### 4.6 未验：`_shared` 的 skill 名不符合部分客户端的命名规则（2026-09-16）
+
+`skills/_shared/SKILL.md` 的 `name: _shared` 以下划线开头。Codex 本轮调研指出
+它**不符合 OpenCode 官方文档的名称正则**（[opencode.ai/docs/skills/#validate-names](https://opencode.ai/docs/skills/#validate-names)）。
+
+⛔ **未验证**是被拒、被跳过，还是仍可作为普通引用文件使用。
+
+- 它本就声明「不是一个可调用的流程」，只是被其他 skill 以 `../_shared/constraints.md`
+  相对路径引用的**约束 SSOT 载体**。若客户端只是不把它注册为 skill，引用路径仍然成立 ⇒ 无影响。
+- 若客户端**拒绝整个 skill 目录**，则 `constraints.md` 不会被复制，所有引用它的 skill 全部断链 ⇒ 严重。
+
+⛔ **不要未经验证就为此全仓改名** —— 目录名 ≡ frontmatter `name` 是本仓的安装约定
+（见 [AGENTS.md](../../AGENTS.md)），改名会波及全部跨 skill 引用。
+
+⇒ 用户已决定改用 Plugin Marketplace（Claude Code），该路径下未观察到问题；
+本条仅在**扩展到 OpenCode 等客户端**时才需要结论。
