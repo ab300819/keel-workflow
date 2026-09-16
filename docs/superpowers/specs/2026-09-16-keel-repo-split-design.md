@@ -73,10 +73,16 @@ OpenCode              →  扫 ~/.agents/skills · ~/.claude/skills · ~/.config
 | 客户端 | skill 来源 | hook |
 |---|---|---|
 | Claude Code | `.claude-plugin/plugin.json` + `skills/` | 插件 `hooks/hooks.json`，`PostToolUse` |
-| Codex | `.codex-plugin/plugin.json` + `skills/`（`"skills": "./skills/"`）| Codex hooks，**需信任确认** |
+| Codex | 根 `plugin.json`（可移植格式 + `extensions.com.openai`）+ `skills/` 自动发现 | `hooks/hooks.json` 自动发现，与 Claude Code **同形** |
 | OpenCode | 软链进 `~/.config/opencode/skills/` 或 `~/.agents/skills/` | `plugins/*.js`，`tool.execute.after` |
 
-依据：`~/.codex/skills/.system/plugin-creator/scripts/create_basic_plugin.py:316,323`。
+依据（官方文档，2026-09-16 核）：[Claude Code plugins-reference](https://code.claude.com/docs/en/plugins-reference)
+· [Codex build plugins](https://developers.openai.com/plugins/build/plugins) · [Codex hooks](https://learn.chatgpt.com/docs/hooks)
+· [OpenCode plugins](https://opencode.ai/docs/plugins) · [OpenCode skills](https://opencode.ai/docs/skills)
+
+⚠️ **实测纠了两处照抄**：① `.codex-plugin/plugin.json` 是**兼容回退**，主格式是根 `plugin.json`；
+② `.claude-plugin/marketplace.json` 在 Codex 侧是 **legacy**，主路径 `.agents/plugins/marketplace.json`
+优先级更高且**带 schema 校验**（`policy.authentication` 只接受 `ON_INSTALL` / `ON_USE`，写 `NONE` 直接报错）。
 
 ⇒ **Claude Code 与 Codex 的插件布局同形**。三端共用**同一份 `skills/`**，
 ⛔ **不需要 `dist/` 构建产物**（Codex 方案提了生成器，因其假设需按端改名；目录名统一后不必）。

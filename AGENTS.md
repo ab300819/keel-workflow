@@ -11,7 +11,10 @@ Claude Code / Codex CLI / OpenCode 三端。21 个流程 skill + 12 个被流程
 - 每个 skill 位于 `skills/<name>/SKILL.md`，目录名必须等于 frontmatter 的 `name`；安装按该名称复制整个目录，跨 skill 链接依赖此约定。
 - `templates/` 子目录存输出模板，`references/` 子目录存评估标准 / rubric / 规则
 - `skills/shared/` 是共享资源目录（constraints.md / runlog.md），**不是 skill**（无 SKILL.md）；整包分发后不再需要 skill 身份这层包装。
-- **三端共用同一份 `skills/`**，⛔ 不建 `dist/` 构建产物。skill 名不带前缀；调用形式按端不同：Claude Code / Codex 可用 `/keel:<name>`，**OpenCode 无命名空间只能裸名**。
+- **三端共用同一份 `skills/`**，⛔ 不建 `dist/` 构建产物。manifest 各走各端的**主路径**，⛔ 不靠 legacy 别名：
+  Claude Code = `.claude-plugin/{plugin,marketplace}.json`；Codex = 根 `plugin.json`（Agent Plugins 可移植格式 + `extensions.com.openai`）
+  与 `.agents/plugins/marketplace.json`；OpenCode 无 plugin 发 skill 的机制，只按目录扫描。
+  ⛔ 不再有 `.codex-plugin/`——官方标为兼容回退，根 `plugin.json` 带 `extensions.com.openai` 时整个失效。skill 名不带前缀；调用形式按端不同：Claude Code / Codex 可用 `/keel:<name>`，**OpenCode 无命名空间只能裸名**。
   ⇒ **写进执行路径的委托一律用裸名**（`Task: /agent-memory`），带 `keel:` 的只出现在给人看的文档里。
 - 编排层通过子代理调度原子 skill；规范中的 `Task` 是委托接口，实际执行前核对当前工具能力，不把文件中的工具名当作已安装能力。
 

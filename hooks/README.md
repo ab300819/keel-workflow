@@ -11,7 +11,7 @@
 | 端 | 适配层 | 依据 |
 |---|---|---|
 | Claude Code | `hooks/hooks.json` | 插件根下的默认发现路径，⛔ 不需要在 `plugin.json` 里声明 |
-| Codex CLI | **同一个 `hooks/hooks.json`** | Codex 插件默认也读插件根的 `hooks/hooks.json`，事件名 / handler 字段 / 输出契约与 Claude Code 同形；`${CLAUDE_PLUGIN_ROOT}` 作为 `PLUGIN_ROOT` 的 legacy 别名仍受支持（[docs](https://learn.chatgpt.com/docs/hooks)）|
+| Codex CLI | **同一个 `hooks/hooks.json`** | Codex 默认发现插件根的 `hooks/hooks.json`（根 `plugin.json` 的 `extensions.com.openai.hooks` 显式声明了同一路径）；事件名 / handler 字段 / 输出契约与 Claude Code 同形，`${CLAUDE_PLUGIN_ROOT}` 作为 `PLUGIN_ROOT` 的 legacy 别名仍受支持（[docs](https://learn.chatgpt.com/docs/hooks)）|
 | OpenCode | `hooks/opencode-plugin.js` | 该端**不读 hooks.json**，只加载 `plugins/*.js`；且**没有 additionalContext 通道**，只能在 `tool.execute.after` 里把消息追加进 `output.output`（[docs](https://opencode.ai/docs/plugins)）|
 
 OpenCode 安装：

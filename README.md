@@ -19,10 +19,11 @@
 /plugin install keel@ab300819-keel
 ```
 
-**Codex CLI** —— 在 `~/.agents/plugins/marketplace.json` 注册，插件目录放 `~/.agents/plugins/keel/`：
+**Codex CLI**
 
 ```bash
-git clone git@github.com:ab300819/keel.git ~/.agents/plugins/keel
+codex plugin marketplace add ab300819/keel
+codex plugin add keel@ab300819-keel
 ```
 
 **OpenCode** —— 直接扫描 skill 目录，软链进去即可：
