@@ -1,0 +1,29 @@
+#!/bin/bash
+# devdocs-drift — PostToolUse 提示：改了代码但 docs/devdocs/ 没动。
+#
+# 试验件（2026-09-16）。验两件事：① hook 在本仓安装路径下到底能不能生效
+# ② 这类提示是烦人还是真拦住过。验不过就删，⛔ 不要在它之上加功能。
+# 判据与背景见 docs/audits/2026-08-28-skill-soft-trigger-miss-brief.md
+set -u
+# ⛔ 本目录禁用 timeout(1)：macOS 默认没有，失败会静默吞掉输入。见 README.md
+
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+[ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 DevDocs 项目，静默
+git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || exit 0
+
+# 5 分钟冷却——PostToolUse 每次工具调用都触发，不冷却必然变噪声
+STAMP="$ROOT/.git/devdocs-drift.stamp"
+now=$(date +%s)
+last=$(stat -f %m "$STAMP" 2>/dev/null || stat -c %Y "$STAMP" 2>/dev/null || echo 0)
+[ $((now - last)) -lt 300 ] && exit 0
+
+CHANGED=$(git -C "$ROOT" status --porcelain 2>/dev/null | awk '{print $NF}')
+[ -n "$CHANGED" ] || exit 0
+printf '%s\n' "$CHANGED" | grep -q '^docs/devdocs/' && exit 0   # 文档已跟上，不提示
+
+CODE=$(printf '%s\n' "$CHANGED" | grep -vE '^docs/|\.md$' | head -3 | tr -d '"\\' | tr '\n' ' ')
+[ -n "$CODE" ] || exit 0                                    # 只改了文档，不提示
+
+touch "$STAMP"
+printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"ℹ️ devdocs-drift: 已改代码（%s）但 docs/devdocs/ 未变动。若这些改动对应任务卡，收尾跑 /ms-sync。"}}\n' "${CODE% }"
+exit 0
