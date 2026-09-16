@@ -8,7 +8,7 @@
 
 #### 怎么用
 
-`/ms-prd`。输入是短想法还是大文档由它自动判断。
+`/prd`。输入是短想法还是大文档由它自动判断。
 
 想改某一条需求，说「改 FR-03」；需求上线后想清掉脚手架，说「清理 PRD」——它会先给 dry-run 再动手。**不需要记参数。**
 
@@ -17,7 +17,7 @@
 **路径 A：从想法开始**（输入 < 200 字）
 
 ```
-"我想做一个 XX 系统" → /ms-prd
+"我想做一个 XX 系统" → /prd
     │
     ├── 5W1H 探索（系统引导你回答核心问题）
     ├── 识别用户角色 + 用户旅程
@@ -29,7 +29,7 @@
 **路径 B：从已有 PRD 文档开始**（输入 > 2000 字）
 
 ```
-提供 PRD 文档（md/PDF/截图）→ /ms-prd
+提供 PRD 文档（md/PDF/截图）→ /prd
     │
     ├── 自动按主题分片，保留原文
     ├── 为每个分片生成指纹（用于后续变更追踪）
@@ -42,7 +42,7 @@
 
 #### PRD 文档更新
 
-当原始需求文档有变更时，直接用更新后的文档重新运行 `/ms-prd`，系统**自动增量处理**：
+当原始需求文档有变更时，直接用更新后的文档重新运行 `/prd`，系统**自动增量处理**：
 
 | 检测结果 | 处理方式 |
 |----------|----------|
@@ -57,8 +57,8 @@
 #### 产出与衔接
 
 - 产出文件：`docs/prd/requirements/FR-XX-*.md` + `index.md`（扁平、单需求脚手架）
-- 成熟度达到 `ready` 后，说「把 PRD 导进 DevDocs」——编排层会带着 PRD 产物路径调用 `/ms-requirements`
-- 需求 close（上线）后，`docs/prd/` 脚手架可由 `/ms-prd clear`（或 `/ms-pipeline close` 末步）清理 —— 代码 + DevDocs 才是事实源
+- 成熟度达到 `ready` 后，说「把 PRD 导进 DevDocs」——编排层会带着 PRD 产物路径调用 `/requirements`
+- 需求 close（上线）后，`docs/prd/` 脚手架可由 `/prd clear`（或 `/pipeline close` 末步）清理 —— 代码 + DevDocs 才是事实源
 
 ---
 
@@ -68,9 +68,9 @@
 
 #### 怎么用
 
-**任务拆分**：`/ms-dev-tasks`。想少确认几步就直说。
+**任务拆分**：`/dev-tasks`。想少确认几步就直说。
 
-**开发执行**：`/ms-dev-workflow` 后面跟你要做的范围——
+**开发执行**：`/dev-workflow` 后面跟你要做的范围——
 
 - 单个任务：`T-03`
 - 一段范围：`T-01~T-05`
@@ -83,7 +83,7 @@
 #### 任务拆分：你会经历的流程
 
 ```
-需求 + 设计 + 测试用例（前置文档准备好）→ /ms-dev-tasks
+需求 + 设计 + 测试用例（前置文档准备好）→ /dev-tasks
     │
     ├── 从设计模块映射为可执行任务
     ├── 按层分类：🔴 核心逻辑 / 🟡 API / 🟢 UI / ⚪ 基础设施
@@ -97,7 +97,7 @@
 每个任务的执行过程（自动处理，你可以观察或在关键点干预）：
 
 ```
-/ms-dev-workflow T-03
+/dev-workflow T-03
     │
     ├── 1. 检查依赖任务是否已完成（缺失自动前置）
     ├── 2. 生成接口骨架 + 测试骨架
@@ -135,7 +135,7 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 - 「登录后跳转白屏」→ 会先判断这个问题阻不阻断本段目标，**给出判断和理由让你拍板**；阻断就修完回来重验，不阻断就入池后续处理
 - 「顺便说，还缺个导出功能」→ 起一个子代理去摸一下背景，记进 backlog，**主线不打断**。你不需要敲任何命令
 
-**不划里程碑就没有这个停点**，流程与以前完全一样。要不要划、划几段，`/ms-requirements` 列完功能点时会问一次；规模小的需求直接说不分就行。
+**不划里程碑就没有这个停点**，流程与以前完全一样。要不要划、划几段，`/requirements` 列完功能点时会问一次；规模小的需求直接说不分就行。
 
 #### 产出
 
@@ -151,14 +151,14 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 #### 怎么用
 
-**测试设计**：`/ms-test-cases`。
+**测试设计**：`/test-cases`。
 
-**测试执行**：`/ms-test-run`，默认按 UT → IT → E2E 全跑。想缩范围直接说——「只跑单测」「只跑 E2E」「只跑 F-001 相关的」「只跑这次改动影响到的」；想同时验追溯链，说「顺便查一下追溯」。
+**测试执行**：`/test-run`，默认按 UT → IT → E2E 全跑。想缩范围直接说——「只跑单测」「只跑 E2E」「只跑 F-001 相关的」「只跑这次改动影响到的」；想同时验追溯链，说「顺便查一下追溯」。
 
 #### 测试设计：你会经历的流程
 
 ```
-需求 + 设计文档准备好 → /ms-test-cases
+需求 + 设计文档准备好 → /test-cases
     │
     ├── 解析所有 AC（验收标准）
     ├── 按 AC 性质自动选择测试类型：
@@ -174,7 +174,7 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 #### 测试执行：你会经历的流程
 
 ```
-/ms-test-run  （并说「顺便查追溯」）
+/test-run  （并说「顺便查追溯」）
     │
     ├── 1. 检测测试框架（Jest/Vitest/pytest 等，不确定会问你）
     ├── 2. 分层执行：UT → IT → E2E
@@ -202,8 +202,8 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 系统会在两个节点**主动询问**你：
 
-1. **`/ms-prd`（Step 0）** — 需求探索阶段
-2. **`/ms-requirements`（Step 0.5）** — 需求编码阶段
+1. **`/prd`（Step 0）** — 需求探索阶段
+2. **`/requirements`（Step 0.5）** — 需求编码阶段
 
 询问内容：
 
@@ -237,11 +237,11 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 | 阶段 | 影响 |
 |------|------|
-| **需求编码** `/ms-requirements` | UI 相关用户故事自动补充交互状态 AC（hover/disabled/error/loading/empty） |
-| **系统设计** `/ms-system-design` | 设计稿页面字段 → API 响应结构；用户操作 → API 端点；交互状态 → 错误码 |
-| **任务拆分** `/ms-dev-tasks` | 🟢 UI 任务标注 `design_ref`（如 `D-01:登录页`）+ 组件库映射 |
-| **开发执行** `/ms-dev-workflow` | 🟢 UI 任务根据设计源自动读取设计信息，实现时优先复用组件库已有组件 |
-| **验证** `/ms-verify`（说明要比设计稿）| 对比设计稿与实际实现截图，检查布局/样式/交互一致性 |
+| **需求编码** `/requirements` | UI 相关用户故事自动补充交互状态 AC（hover/disabled/error/loading/empty） |
+| **系统设计** `/system-design` | 设计稿页面字段 → API 响应结构；用户操作 → API 端点；交互状态 → 错误码 |
+| **任务拆分** `/dev-tasks` | 🟢 UI 任务标注 `design_ref`（如 `D-01:登录页`）+ 组件库映射 |
+| **开发执行** `/dev-workflow` | 🟢 UI 任务根据设计源自动读取设计信息，实现时优先复用组件库已有组件 |
+| **验证** `/verify`（说明要比设计稿）| 对比设计稿与实际实现截图，检查布局/样式/交互一致性 |
 
 #### 设计稿晚到怎么办
 
@@ -249,10 +249,10 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 | 当前阶段 | 你要做的 | 系统自动处理 |
 |----------|----------|-------------|
-| 需求编码之前 | 下次运行 `/ms-requirements` 时回答询问 | 写入设计资产章节 |
+| 需求编码之前 | 下次运行 `/requirements` 时回答询问 | 写入设计资产章节 |
 | 系统设计之前 | 手动补充到 `01-requirements.md` | 设计驱动 API 结构调整 |
 | 任务已拆分 | 手动补充到 `01-requirements.md` | 🟢 UI 任务补充 `design_ref` 和组件映射 |
-| 开发进行中 | 手动补充到 `01-requirements.md` | 运行 `/ms-verify` 并说明要比设计稿，生成差异报告 |
+| 开发进行中 | 手动补充到 `01-requirements.md` | 运行 `/verify` 并说明要比设计稿，生成差异报告 |
 
 > 设计稿**更新**时需你主动声明（系统不做自动检测），声明后按当前阶段执行对应回填。
 
@@ -261,48 +261,48 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 ### 完整路径：从想法到上线
 
 ```
-/ms-prd                 想法/文档 → FR-XX/NFR-XX（成熟度 ready）
+/prd                 想法/文档 → FR-XX/NFR-XX（成熟度 ready）
     ↓
-/ms-requirements        导入 PRD 产物 → F/US/AC 编码
+/requirements        导入 PRD 产物 → F/US/AC 编码
     ↓
-/ms-system-design       技术架构设计
+/system-design       技术架构设计
     ↓
-/ms-test-cases          AC → UT/IT/E2E 测试用例
+/test-cases          AC → UT/IT/E2E 测试用例
     ↓
-/ms-dev-tasks           设计 → T-XX 任务（可独立验收，依赖图）
+/dev-tasks           设计 → T-XX 任务（可独立验收，依赖图）
     ↓
-/ms-verify             就绪检查（⛔ P1 必须修复）
+/verify             就绪检查（⛔ P1 必须修复）
     ↓
-/ms-dev-workflow        骨架优先 + 分层 TDD → 代码提交
-    ↓                   批量模式自动调用 /ms-test-run  （并说「顺便查追溯」）
-/ms-verify             实现验证
+/dev-workflow        骨架优先 + 分层 TDD → 代码提交
+    ↓                   批量模式自动调用 /test-run  （并说「顺便查追溯」）
+/verify             实现验证
     ↓
-/ms-sync                文档同步（trace + audit）
+/sync                文档同步（trace + audit）
     ↓
-/ms-compound            知识沉淀（提取经验模式）
+/compound            知识沉淀（提取经验模式）
 ```
 
 ---
 
 ## 大型需求最佳实践
 
-基于 [Harness Design for Long-Running Apps](https://www.anthropic.com/engineering/harness-design-long-running-apps) 的 Generator-Evaluator 分离、Sprint Contract、最小可行 Harness 等设计模式，结合 ms- 流程的推荐使用方式：
+基于 [Harness Design for Long-Running Apps](https://www.anthropic.com/engineering/harness-design-long-running-apps) 的 Generator-Evaluator 分离、Sprint Contract、最小可行 Harness 等设计模式，结合 DevDocs 流程的推荐使用方式：
 
 ### 1. 需求阶段拉长，开发阶段提速
 
-用 `/ms-prd` 充分探索需求（对应文章的 Planner Agent 角色），需求清晰后一次性走完 requirements → system-design → test-cases → dev-tasks，开发阶段可以授权无人值守批量跑（明说一次即可）。
+用 `/prd` 充分探索需求（对应文章的 Planner Agent 角色），需求清晰后一次性走完 requirements → system-design → test-cases → dev-tasks，开发阶段可以授权无人值守批量跑（明说一次即可）。
 
 ### 2. 善用开发前的就绪门控
 
-不要跳过开发前的就绪检查（`/ms-verify`），它相当于文章中的 Sprint Contract 验证——在编码前确认交付规格可测试、依赖无环、路径具体。P1 问题一定修复后再开工，返工成本远大于修复成本。
+不要跳过开发前的就绪检查（`/verify`），它相当于文章中的 Sprint Contract 验证——在编码前确认交付规格可测试、依赖无环、路径具体。P1 问题一定修复后再开工，返工成本远大于修复成本。
 
 ### 3. 批量执行 + 断点续做
 
-大需求拆成 10-20 个任务后，按依赖顺序用 `F-001` 或范围（`T-01~T-10`）批量执行。中断后直接续做，检查点机制会精确恢复到中断的 Agent 和步骤。每完成一个 Feature 的所有任务后运行 `/ms-sync` + `/ms-verify`。
+大需求拆成 10-20 个任务后，按依赖顺序用 `F-001` 或范围（`T-01~T-10`）批量执行。中断后直接续做，检查点机制会精确恢复到中断的 Agent 和步骤。每完成一个 Feature 的所有任务后运行 `/sync` + `/verify`。
 
 ### 4. 迭代而非一步到位
 
-文章核心经验：**多轮 QA 比一次完美实现更有效**。第一轮 dev-workflow 完成后，运行 `/ms-verify` 找差距，将差距转为 bugfix 或 insight 再次进入开发循环，最后运行 `/ms-compound` 沉淀经验。
+文章核心经验：**多轮 QA 比一次完美实现更有效**。第一轮 dev-workflow 完成后，运行 `/verify` 找差距，将差距转为 bugfix 或 insight 再次进入开发循环，最后运行 `/compound` 沉淀经验。
 
 ### 5. 对抗式验证不要跳过
 
@@ -316,7 +316,7 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 ### 先取基线
 
-`/ms-codebase-insight` —— 只读盘点，⛔ 不做需求推导、⛔ 不分配编号。没有基线就无法判断"保持不变"。
+`/codebase-insight` —— 只读盘点，⛔ 不做需求推导、⛔ 不分配编号。没有基线就无法判断"保持不变"。
 
 ### 需求怎么写
 
@@ -337,7 +337,7 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 ### 🔴 硬卡点：红绿协议会判保持性测试无效
 
-`ms-dev-workflow` 的执行协议（`references/task-orchestration.md`）：
+`dev-workflow` 的执行协议（`references/task-orchestration.md`）：
 
 ```
 3. 验证 Test Agent 新产出的测试全部失败
@@ -348,7 +348,7 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 **绕法**：任务卡标 `TDD 模式 = ⚪ 不适用` ⇒ `S4/S5 退化`（不先写断言与红验），实现后由验证手段确认。⛔ `S2/S3` 与 `S6/S7` 不退化，质量地板全部保留。
 
-⚠️ 这一档原本是给「非编码类任务（只关联 `CON`）」的（`ms-dev-tasks` 需求追溯约束）。有真代码的重构任务用它，**必须在卡里写明理由**，否则读卡的人会以为这任务不用测：
+⚠️ 这一档原本是给「非编码类任务（只关联 `CON`）」的（`dev-tasks` 需求追溯约束）。有真代码的重构任务用它，**必须在卡里写明理由**，否则读卡的人会以为这任务不用测：
 
 ```markdown
 | 关联需求 | `CON-008` ｜ ⚠️ 无 AC 是合规的（无用户可观测行为），
@@ -363,9 +363,9 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 | 卡点 | 绕法 |
 |---|---|
-| **AC 无测试编号 = P1 阻塞**（`ms-verify --readiness`）| 静态核对（`git diff` 白名单）· 部署就绪 · 迁移对账这三类，给**正常的 `IT`/`E2E` 编号并标手工执行**。`ms-dev-tasks/references/tar-rubric.md` 的可测试判据原文即「可通过自动化**或手动**测试验证」 |
-| **「测试用例从需求推导，⛔ 不是从代码推导」**（`ms-test-cases`）| 与 `refactor/references/rewrite-flow.md`「重写前先补 characterization test」明文冲突。在 `03` 里写一句说明**为什么期望值取自基线**，照常出用例 |
-| **`/ms-pipeline` 兜底问答无升级/重构选项** | 直接 `/ms-feature`（其档位表本就把架构变更路由进 Deep 档），或单独调 `/ms-system-design` → `/ms-test-cases` → `/ms-dev-tasks` |
+| **AC 无测试编号 = P1 阻塞**（`verify --readiness`）| 静态核对（`git diff` 白名单）· 部署就绪 · 迁移对账这三类，给**正常的 `IT`/`E2E` 编号并标手工执行**。`dev-tasks/references/tar-rubric.md` 的可测试判据原文即「可通过自动化**或手动**测试验证」 |
+| **「测试用例从需求推导，⛔ 不是从代码推导」**（`test-cases`）| 与 `refactor/references/rewrite-flow.md`「重写前先补 characterization test」明文冲突。在 `03` 里写一句说明**为什么期望值取自基线**，照常出用例 |
+| **`/pipeline` 兜底问答无升级/重构选项** | 直接 `/feature`（其档位表本就把架构变更路由进 Deep 档），或单独调 `/system-design` → `/test-cases` → `/dev-tasks` |
 
 ### ⛔ 不要做的一件事
 
@@ -375,28 +375,28 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 代价：38 条对全体治理工具不可见（`health/dead-link` 不查、追溯矩阵不收录）。现在 `health-lint` 的 `id/unknown-prefix` 会把这类前缀报出来。
 
-需要新前缀时，先走 `_shared/constraints.md` 的 `id/prefix-consumption-contract`：**声明作用域、消费方、检查归属**三件事。
+需要新前缀时，先走 `shared/constraints.md` 的 `id/prefix-consumption-contract`：**声明作用域、消费方、检查归属**三件事。
 
 ## 与 superpowers 共存
 
-> 设计与审查记录:[specs/2026-07-22-superpowers-coexistence-design.md](superpowers/specs/2026-07-22-superpowers-coexistence-design.md)(codex 3 轮)。原则:**单向兼容**(superpowers 插件零改动)+ **可选增强、单一路径归一化**(ms- 阶段永远执行并产出权威结果)。
+> 设计与审查记录:[specs/2026-07-22-superpowers-coexistence-design.md](superpowers/specs/2026-07-22-superpowers-coexistence-design.md)(codex 3 轮)。原则:**单向兼容**(superpowers 插件零改动)+ **可选增强、单一路径归一化**(DevDocs 阶段永远执行并产出权威结果)。
 
 ### 路由声明(压制误触发)
 
-DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory` 幂等维护;init/retrofit 自动发货,存量项目由 pipeline 阶段检测 ℹ️ 提示补齐)。依"用户指令 > skill 默认行为"的通用优先级,该节使 superpowers 的 process skill(brainstorming / systematic-debugging / writing-plans / executing-plans / subagent-driven-development / finishing-a-development-branch 等)在 DevDocs 管理的工作上让位于 `ms-*` 入口;它们仍可用于体系外杂项(一次性脚本、非交付实验、文档体系元改造)。
+DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory` 幂等维护;init/retrofit 自动发货,存量项目由 pipeline 阶段检测 ℹ️ 提示补齐)。依"用户指令 > skill 默认行为"的通用优先级,该节使 superpowers 的 process skill(brainstorming / systematic-debugging / writing-plans / executing-plans / subagent-driven-development / finishing-a-development-branch 等)在 DevDocs 管理的工作上让位于 keel 入口;它们仍可用于体系外杂项(一次性脚本、非交付实验、文档体系元改造)。
 
 ### 两座产物桥
 
 | 场景 | 通道 | 追溯 |
 |------|------|------|
 | superpowers writing-plans 产出的计划(**非 DevDocs 项目**) | `/dev-flow` 执行(契约先行+红绿+质量地板) | 零追溯 |
-| 一句话任务+验收标准(DevDocs 项目内轻量) | `/ms-dev-workflow`（直接描述任务和验收标准） | 有追溯(AC 落 01,guarded 下限) |
+| 一句话任务+验收标准(DevDocs 项目内轻量) | `/dev-workflow`（直接描述任务和验收标准） | 有追溯(AC 落 01,guarded 下限) |
 
 注意:DevDocs 项目内不使用 dev-flow(其自身路由判定亦如此);finishing-a-development-branch 的 merge/push 选项与 DevDocs"绝不推送远程"不变量冲突,任何情况下不接入。
 
 ### 能力吸收结论(2026-07-22 三方对齐)
 
-逐项映射后:9 项 superpowers 能力 DevDocs 已有等价或更强;唯一内化项 = ms-bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
+逐项映射后:9 项 superpowers 能力 DevDocs 已有等价或更强;唯一内化项 = bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
 
 ## 文档与代码分仓（shell 拓扑）
 
@@ -405,7 +405,7 @@ DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory` 幂�
 **怎么开**：
 
 - **任何时候**：`/workspace-topology`。独立 skill，**不拉起 DevDocs**，非 DevDocs 项目也能用。没有声明就问你一次：仓库是 `inline` / `shell` / `linked` 哪种，代码根在哪，答案记进 `AGENTS.md`，此后不再问
-- **新项目 / 改造已有项目**：`/ms-pipeline init` 与 `/ms-retrofit` 会在生成 `docs/devdocs/` 后自动委托上面那个 skill，不用你单独跑
+- **新项目 / 改造已有项目**：`/pipeline init` 与 `/retrofit` 会在生成 `docs/devdocs/` 后自动委托上面那个 skill，不用你单独跑
 - **现有单仓要拆开**：`/workspace-topology`（说明要拆成外壳布局），先选手动还是自动模式（分界在谁把代码仓挪进根目录），执行前给完整 dry-run 计划
 - **后期要改**：再跑一次 `/workspace-topology` 就行——幂等，状态一致时零改动。增删代码根、新增子模块都在这里
 

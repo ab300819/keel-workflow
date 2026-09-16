@@ -51,7 +51,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 
 | 场景 | 协作 Skill | 说明 |
 |------|------------|------|
-| 代码无法测试 | `/ms-retrofit` | 建立基线记录现状与外部约束，再与用户确认目标行为后重写 |
+| 代码无法测试 | `/retrofit` | 建立基线记录现状与外部约束，再与用户确认目标行为后重写 |
 | UI 重构 | `/ui-orchestrator` | 应用 UI 约束规范 |
 | 代码质量检查 | `/code-quality` | 应用 MTE 原则 |
 | 需要文档化 | DevDocs 流程 | 生成规范文档 |
@@ -90,7 +90,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
    ▼
 5. 重写流程（如需要）
    │
-   └── /ms-retrofit 建基线 → 与用户确认目标行为 → 正常 DevDocs 流程 → 重新实现
+   └── /retrofit 建基线 → 与用户确认目标行为 → 正常 DevDocs 流程 → 重新实现
    │
    ▼
 6. 验证与报告
@@ -308,7 +308,7 @@ npx stryker run --mutate '<target-path>'
 
 #### UI 代码重构
 
-UI 重构走 [`/ui-orchestrator`](../ui-orchestrator/SKILL.md) 路由到对应的 UI skill 执行。布局 / token / 交互状态 / 空状态等审查判据见 [dev-workflow 的 ui-quality-checklist](../ms-dev-workflow/references/ui-quality-checklist.md)。
+UI 重构走 [`/ui-orchestrator`](../ui-orchestrator/SKILL.md) 路由到对应的 UI skill 执行。布局 / token / 交互状态 / 空状态等审查判据见 [dev-workflow 的 ui-quality-checklist](../dev-workflow/references/ui-quality-checklist.md)。
 
 重构特有、上述两处都不覆盖的三条：
 
@@ -401,7 +401,7 @@ docs/devdocs/
 
 - [ ] UI 重构必须应用 `/ui-orchestrator` 约束
 - [ ] 代码重构必须应用 `/code-quality` MTE 原则
-- [ ] 重写前必须用 `/ms-retrofit` 建立基线，并与用户确认目标行为后才能定需求
+- [ ] 重写前必须用 `/retrofit` 建立基线，并与用户确认目标行为后才能定需求
 
 ### 文档约束
 

@@ -135,7 +135,7 @@ done
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 开发阶段 | `/ms-dev-workflow` | 被调用：UI 任务开发时 |
+| 开发阶段 | `/dev-workflow` | 被调用：UI 任务开发时 |
 | 代码审查 | `/code-quality` | 协作：UI 代码质量检查 |
 | 测试阶段 | `/testing-guide` | 协作：UI 组件测试 |
 

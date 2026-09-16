@@ -25,5 +25,5 @@ CODE=$(printf '%s\n' "$CHANGED" | grep -vE '^docs/|\.md$' | head -3 | tr -d '"\\
 [ -n "$CODE" ] || exit 0                                    # 只改了文档，不提示
 
 touch "$STAMP"
-printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"ℹ️ devdocs-drift: 已改代码（%s）但 docs/devdocs/ 未变动。若这些改动对应任务卡，收尾跑 /ms-sync。"}}\n' "${CODE% }"
+printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"ℹ️ devdocs-drift: 已改代码（%s）但 docs/devdocs/ 未变动。若这些改动对应任务卡，收尾跑 /sync。"}}\n' "${CODE% }"
 exit 0

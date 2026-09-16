@@ -6,7 +6,7 @@
 DevDocs 工作流（含重构）:
 
 新项目:
-/ms-requirements → /ms-system-design → /ms-test-cases → /ms-dev-tasks
+/requirements → /system-design → /test-cases → /dev-tasks
                                                                               │
                                                                               ▼
                                                                            开发实现
@@ -15,7 +15,7 @@ DevDocs 工作流（含重构）:
                                                               /code-quality /ui-orchestrator /refactor
                                                                                         │
 已有项目:                                                                               │
-/ms-retrofit ←─────────────────────────────────────────────────────────────────────┘
+/retrofit ←─────────────────────────────────────────────────────────────────────┘
        │                                                              (不可测试时)
        ▼
   标准化文档 → 重新实现
@@ -30,13 +30,13 @@ DevDocs 工作流（含重构）:
     │
     ├── UI 重构 → /ui-orchestrator (UI 约束)
     │
-    ├── 不可测试 → /ms-retrofit (建基线) → 确认目标行为
+    ├── 不可测试 → /retrofit (建基线) → 确认目标行为
     │                    │
-    │                    ├── /ms-requirements
-    │                    ├── /ms-system-design
-    │                    └── /ms-test-cases
+    │                    ├── /requirements
+    │                    ├── /system-design
+    │                    └── /test-cases
     │
-    ├── 测试编写 → /ms-test-cases (测试策略参考)
+    ├── 测试编写 → /test-cases (测试策略参考)
     │
     └── 重构完成 → /code-self-describe --update (更新模块自描述)
 ```

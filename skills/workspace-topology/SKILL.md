@@ -93,9 +93,9 @@ missing_code_roots:               # 声明了但解析不到实体
 
 ⛔ **不要求消费方自己调本 skill**。多数原子 skill 的 `allowed-tools` 没有 `Task`，无法派发子 Agent；让它们自己读声明文件又会把实现细节泄漏出去。
 
-走 [constraints.md §3](../_shared/constraints.md) 的最小握手协议：
+走 [constraints.md §3](../shared/constraints.md) 的最小握手协议：
 
-- **编排层**（`ms-pipeline` / `ms-feature` / `ms-bugfix` / `ms-dev-workflow`）在流程开头调一次 `inspect`，把 `workspace_context` 随握手的 `inputs` 下传
+- **编排层**（`pipeline` / `feature` / `bugfix` / `dev-workflow`）在流程开头调一次 `inspect`，把 `workspace_context` 随握手的 `inputs` 下传
 - **原子 skill** 从 `inputs.workspace_context` 读，不需要 `Task`
 - **单跑**（用户直接调某个原子 skill，无编排层）：无 `workspace_context` → 按 `inline` 缺省 + ℹ️ 提示「`shell` / `linked` 项目请经编排层调用」
 

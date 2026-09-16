@@ -3,7 +3,7 @@ title: 工作区拓扑协议（inline / shell / linked）
 status: 三种拓扑，跨 skill 强制
 scope: 文档仓与代码仓的拓扑关系
 related:
-  - skills/_shared/constraints.md（§10 指针）
+  - skills/shared/constraints.md（§10 指针）
   - skills/workspace-topology/SKILL.md（入口与声明 schema）
   - skills/workspace-topology/references/migration.md（操作手册）
 generated_at: 2026-08-05
@@ -88,7 +88,7 @@ devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有
 | 解析后路径逃逸出已授权工作范围 | ⛔ | ⛔ | ⛔ |
 | `inline` 却出现 `code_roots` | ⚠️ 警告并忽略 | — | — |
 
-「声明的代码根解析不到实体」在 health 只读扫描中对应 `submodule/pointer-drift` rule，见 [health-lint-implementation.md § submodule/pointer-drift](../../ms-pipeline/references/health-lint-implementation.md#submodulepointer-drift)（该 rule 仅 `shell` 适用；`linked` 无 gitlink，无等价 rule）。
+「声明的代码根解析不到实体」在 health 只读扫描中对应 `submodule/pointer-drift` rule，见 [health-lint-implementation.md § submodule/pointer-drift](../../pipeline/references/health-lint-implementation.md#submodulepointer-drift)（该 rule 仅 `shell` 适用；`linked` 无 gitlink，无等价 rule）。
 
 - `workspace/fail-closed`：见上表，校验按 mode 分家。两处相对 v1 的实质变化：（1）「声明的代码根解析不到」从 ⛔ 降为 ⚠️ 另列——流程不碰的代码根没 init 不该挡死整条流程，且那是一条命令可恢复的状态，不是损坏；（2）`path` 含 `..` 或为绝对路径在 `linked` 下合法。`linked` 下不检查 path 互为前缀 —— spec 明确「多个引用指向同一目标可能是有意的，只认不评判」；该检查在 `shell` 下成立是因为嵌套子模块属依赖项、不该进 `code_roots`。
 - `workspace/bare-gitlink`：跟踪了 mode 160000 的条目但 `.gitmodules` 无对应 submodule 条目 → ⛔ 全 mode 阻塞。这是客观损坏：clone 下来是空目录且无法 `git submodule update` 恢复，git 自身只输出 hint 不拦截。
@@ -189,7 +189,7 @@ devdocs:                       # DevDocs 项目才有；非 DevDocs 项目只有
 >
 > ⚠️ 但**仓内**的 `linked` 代码根若未被 `.gitignore` 忽略，会以 `??` 出现在洁净扫描里。此时 §7.3 的 `workspace/no-stash-gitlink` **同样适用**——那是个嵌套 git 仓，`git stash` 对它没有「暂存掉这个条目」的语义。⛔ 不得对它提供 stash 选项，只能引导用户进该目录自行处理。
 
-`ms-dev-workflow` 的 N+1 工作区遍历（外壳仓 + 各 `code_roots` 各跑一次 `git status --porcelain`，检出「不相关变更」后 AskUserQuestion：stash / 忽略 / 终止，见 [task-orchestration.md § 断点续做状态机](../../ms-dev-workflow/references/task-orchestration.md)）在外壳仓这一层必须排除 gitlink 条目，否则同一件事会被双重报告，且 gitlink 条目不适用 stash。
+`dev-workflow` 的 N+1 工作区遍历（外壳仓 + 各 `code_roots` 各跑一次 `git status --porcelain`，检出「不相关变更」后 AskUserQuestion：stash / 忽略 / 终止，见 [task-orchestration.md § 断点续做状态机](../../dev-workflow/references/task-orchestration.md)）在外壳仓这一层必须排除 gitlink 条目，否则同一件事会被双重报告，且 gitlink 条目不适用 stash。
 
 ### 7.1 现象：gitlink 条目与普通文件条目在 porcelain v1 里同形
 

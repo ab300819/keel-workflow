@@ -114,7 +114,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 4. 确保 CLAUDE.md 存在（若缺失则创建导入文件；已存在则跳过，不覆盖补充区）
    │
    ▼
-5. 生成/更新 .claude/rules/devdocs-state.md（判据只看 `docs/devdocs/` 是否存在；⛔ 不按「这次改得多不多」自行豁免——被 ms-pipeline / ms-retrofit 委托的 `--update` 拿不到范围信息，跳过等于漏发货）
+5. 生成/更新 .claude/rules/devdocs-state.md（判据只看 `docs/devdocs/` 是否存在；⛔ 不按「这次改得多不多」自行豁免——被 pipeline / retrofit 委托的 `--update` 拿不到范围信息，跳过等于漏发货）
    ├── 写入前按 [devdocs-state-template.md](templates/devdocs-state-template.md) § Forbidden 校验
    │   ├── 占位 prose ≤ 200 字符
    │   ├── 禁止内嵌 commit hash / LOC / 测试结果 / codex 分数 / 文件路径 / submodule 引用 / 工时
@@ -126,9 +126,9 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
    ├── 计算 delta = current_size - baseline_size
    ├── delta < 0（缩小）→ 不阻断，更新 baseline
    ├── 0 ≤ delta < 2 KiB（小幅增长）→ 不阻断，更新 baseline
-   ├── delta ≥ 2 KiB 且 size > 10 KiB → ⚠️ 提示 `/ms-pipeline realign --scope=health --dry-run`
+   ├── delta ≥ 2 KiB 且 size > 10 KiB → ⚠️ 提示 `/pipeline realign --scope=health --dry-run`
    ├── size > 40 KiB AND 无 baseline → ⛔ 阻断；用户两种恢复方式：
-   │     a. /ms-pipeline realign --scope=health --apply 修复后重跑 update
+   │     a. /pipeline realign --scope=health --apply 修复后重跑 update
    │     b. /agent-memory --update --bypass-state-check="<原因>" 一次性豁免（≥10 字符）+ 自动 init baseline
    └── size > 40 KiB AND 已有 baseline AND delta < 2 KiB → ⚠️ 提示但不阻断（存量项目逐步收敛）
 ```
@@ -147,7 +147,7 @@ bypass_reason: <用户提供的原因>
 
 ### devdocs frontmatter 写入(可选)
 
-**触发条件**:调用方随 `Task: /agent-memory --update` 传入 `devdocs_frontmatter`,嵌在 [constraints.md](../_shared/constraints.md) §3 最小握手协议的 `inputs` 里:
+**触发条件**:调用方随 `Task: /agent-memory --update` 传入 `devdocs_frontmatter`,嵌在 [constraints.md](../shared/constraints.md) §3 最小握手协议的 `inputs` 里:
 
 ```yaml
 skill: agent-memory
@@ -284,13 +284,13 @@ devdocs:
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
 | 首次创建 | `/agent-memory` 自行完成 | 从项目源扫描创建；若 `/init` 已创建则增量更新 |
-| 阶段性文档变更 | `/ms-onboard` | onboard 完成后建议运行 /agent-memory |
-| 任务完成轻量更新 | `/ms-dev-workflow` | dev-workflow 内联替换「当前状态」里的任务编号 / 进度；该节只有台账链接时它跳过，不重建快照 |
-| 上下文摘要 | `/ms-onboard` | onboard 生成 00-context.md，不涉及记忆文件 |
+| 阶段性文档变更 | `/onboard` | onboard 完成后建议运行 /agent-memory |
+| 任务完成轻量更新 | `/dev-workflow` | dev-workflow 内联替换「当前状态」里的任务编号 / 进度；该节只有台账链接时它跳过，不重建快照 |
+| 上下文摘要 | `/onboard` | onboard 生成 00-context.md，不涉及记忆文件 |
 
 ## 子 Agent 摘要格式（yaml-summary-v1）
 
-被编排层(如 `/ms-pipeline` init / `/ms-retrofit`)以 Task 委托时,返回统一信封;字段语义以 [constraints.md §2](../_shared/constraints.md) 为权威,不扩展 status、不私有化保留字段,私有统计入 `summary.details`:
+被编排层(如 `/pipeline` init / `/retrofit`)以 Task 委托时,返回统一信封;字段语义以 [constraints.md §2](../shared/constraints.md) 为权威,不扩展 status、不私有化保留字段,私有统计入 `summary.details`:
 
 ```yaml
 skill: agent-memory

@@ -2,7 +2,7 @@
 name: adversarial-review
 description: >
   用户要求对计划、设计或代码进行外部独立审查、对抗审查或 second opinion 时使用。
-  内部自检用 ms-verify；代码规范检查用 code-quality。
+  内部自检用 verify；代码规范检查用 code-quality。
 allowed-tools:
   - Read
   - Glob
@@ -328,7 +328,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 
 > ⛔ **手动直敲 `codex exec` 做多轮审查，同样计轮次、同样适用本节熔断。** 本节熔断只在走本 skill 时自动生效——本仓实证：一次改造手动跑了 **7 轮**，熔断一次都没触发（机制在，从旁边过去了），其中 4 轮打的是与用户原始诉求无关的既存问题，最终全量缩回。
 >
-> 故从第 2 轮起须自记 `round_history`（轮次 / 发现数 / 是否出现新形状问题），命中任一熔断条件即停下复盘，⛔ 不得因「这次是手动跑的」豁免。**手动模式专属判据**：连续 2 轮发现的问题形状都与前几轮不同 → 扫描判据一直在追上一轮的发现，覆盖面不收敛 → 🔴 熔断，回头问方向是否错了（见 [constraints.md](../_shared/constraints.md) `confirm/scope-inflation`）。
+> 故从第 2 轮起须自记 `round_history`（轮次 / 发现数 / 是否出现新形状问题），命中任一熔断条件即停下复盘，⛔ 不得因「这次是手动跑的」豁免。**手动模式专属判据**：连续 2 轮发现的问题形状都与前几轮不同 → 扫描判据一直在追上一轮的发现，覆盖面不收敛 → 🔴 熔断，回头问方向是否错了（见 [constraints.md](../shared/constraints.md) `confirm/scope-inflation`）。
 
 收敛判定基于 `round_history` 中 health_score 的趋势：
 
@@ -451,13 +451,13 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 系统设计审查 | `/ms-system-design` | 设计完成后调用对抗审查验证方案可行性 |
-| 开发后代码审查 | `/ms-dev-workflow` | 开发完成后调用进行独立代码审查 |
-| dev-workflow 内嵌契约复用 | `/ms-dev-workflow` S9 Phase 4 | **底层 [`references/external-reviewer-integration.md`](references/external-reviewer-integration.md) 契约被 dev-workflow 编排器以 `embedded-headless` 模式复用**（仅调用 T1/T2 双通道 + 熔断协议；**不使用 T3 Task 子 Agent 兜底**——T3 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺；不走本 skill 的 multi-turn S4/S5/S6 协调流程，避免子 Agent 中 AskUserQuestion 阻塞）。两种模式并存：本 skill 仍可被用户独立调用做交互式审查 |
-| 功能评审 | `/ms-feature` | 功能迭代中对设计方案进行外部挑战 |
-| 验证互补 | `/ms-verify` | ms-verify 检查对齐，adversarial-review 挑战正确性 |
+| 系统设计审查 | `/system-design` | 设计完成后调用对抗审查验证方案可行性 |
+| 开发后代码审查 | `/dev-workflow` | 开发完成后调用进行独立代码审查 |
+| dev-workflow 内嵌契约复用 | `/dev-workflow` S9 Phase 4 | **底层 [`references/external-reviewer-integration.md`](references/external-reviewer-integration.md) 契约被 dev-workflow 编排器以 `embedded-headless` 模式复用**（仅调用 T1/T2 双通道 + 熔断协议；**不使用 T3 Task 子 Agent 兜底**——T3 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺；不走本 skill 的 multi-turn S4/S5/S6 协调流程，避免子 Agent 中 AskUserQuestion 阻塞）。两种模式并存：本 skill 仍可被用户独立调用做交互式审查 |
+| 功能评审 | `/feature` | 功能迭代中对设计方案进行外部挑战 |
+| 验证互补 | `/verify` | verify 检查对齐，adversarial-review 挑战正确性 |
 | 质量标准参考 | `/code-quality` | 代码审查时参考 MTE 原则 |
-| 经验沉淀 | `/ms-compound` | 反复出现的审查发现沉淀为模式 |
+| 经验沉淀 | `/compound` | 反复出现的审查发现沉淀为模式 |
 
 ---
 

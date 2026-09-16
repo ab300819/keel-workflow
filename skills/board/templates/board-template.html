@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<!--
+  board 评审页面骨架。生成时由 Agent 替换两处占位:
+  1. __BOARD_ID__ (html data-board-id 与 <title>)
+  2. board-data 内的 __BOARD_DATA_JSON__ —— HTML-safe JSON(< → <、> → >、U+2028/29 转义)
+
+  board-data shape:
+  {
+    "board_id": "…", "scope": "all|01|02", "project": "<需求名>", "generated_at": "<ISO>",
+    "source": [ { "path": "…", "sha256": "…" } ],
+    "coverage": { "covered": ["章节名…"], "excluded": [ { "title": "…", "reason": "…" } ] },
+    "groups": [ { "title": "01 · 验收标准", "items": [
+      { "anchor": "AC-001", "title": "AC-001 …", "body": "…",       // body 纯文本渲染
+        "highlight": false,                                          // 缺验证方式/追溯缺口高亮
+        "img": null,                                                 // data:image/svg+xml;base64,… (mermaid 渲染产物)
+        "code": null }                                               // mermaid 源码 fallback
+    ] } ],
+    "trace": { "tree": [ { "id": "F-001", "title": "…", "children": [
+                 { "id": "US-001", "title": "…", "children": [ { "id": "AC-001", "title": "…" } ] } ] } ],
+               "gaps": ["…"] } | null
+  }
+
+  安全约定:渲染一律 textContent(禁 innerHTML 承载文档内容);Agent 只读 window.__review、只写 id^="agent-" 节点。
+-->
+<html lang="zh" data-board-id="__BOARD_ID__">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;">
+<title>评审面板 __BOARD_ID__</title>
+<style>
+  :root { --ok:#16a34a; --no:#dc2626; --hold:#d97706; --line:#e2e8f0; --muted:#64748b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; color:#0f172a; background:#f8fafc; }
+  header { position:sticky; top:0; background:#fff; border-bottom:1px solid var(--line); padding:10px 20px; z-index:10; }
+  h1 { font-size:16px; margin:0 0 4px; }
+  .meta { color:var(--muted); font-size:12px; }
+  .bar { height:6px; background:var(--line); border-radius:3px; margin:8px 0 4px; overflow:hidden; }
+  .bar>div { height:100%; width:0; background:var(--ok); transition:width .2s; }
+  .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+  button { cursor:pointer; border:1px solid var(--line); background:#fff; border-radius:6px; padding:4px 12px; font-size:13px; }
+  button.primary { background:#0f172a; color:#fff; border-color:#0f172a; }
+  main { max-width:920px; margin:0 auto; padding:16px 20px 80px; }
+  section.group>h2 { font-size:15px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin:10px 0; }
+  .card.highlight { border-color:var(--hold); box-shadow:0 0 0 2px #fef3c7; }
+  .card.reviewed { opacity:.92; }
+  .card h3 { margin:0 0 6px; font-size:14px; }
+  .card pre.body { white-space:pre-wrap; word-break:break-word; margin:0 0 8px; font:13px/1.6 inherit; color:#334155; background:#f8fafc; border-radius:6px; padding:8px 10px; max-height:340px; overflow:auto; }
+  .card img { max-width:100%; max-height:480px; width:auto; height:auto; display:block; border:1px solid var(--line); border-radius:6px; margin-bottom:8px; }
+  .card pre.code { white-space:pre; overflow-x:auto; background:#0f172a; color:#e2e8f0; border-radius:6px; padding:10px; font:12px/1.5 ui-monospace,monospace; }
+  .verdict { display:flex; gap:8px; margin:6px 0; }
+  .verdict button.on-pass { background:var(--ok); color:#fff; border-color:var(--ok); }
+  .verdict button.on-reject { background:var(--no); color:#fff; border-color:var(--no); }
+  .verdict button.on-hold { background:var(--hold); color:#fff; border-color:var(--hold); }
+  textarea { width:100%; min-height:44px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font:13px/1.5 inherit; resize:vertical; }
+  .agent { margin-top:6px; font-size:13px; color:#1d4ed8; background:#eff6ff; border-radius:6px; padding:6px 8px; min-height:1em; }
+  .agent:empty { display:none; }
+  .cover { font-size:12px; color:var(--muted); }
+  .cover b { color:#0f172a; }
+  ul.tree, ul.tree ul { list-style:none; padding-left:18px; margin:4px 0; }
+  ul.tree a { color:#1d4ed8; text-decoration:none; cursor:pointer; }
+  .gap { color:var(--no); font-weight:600; }
+  .hidden { display:none; }
+  #export-fallback { width:100%; }
+  #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; border-radius:8px; padding:8px 16px; font-size:13px; opacity:0; transition:opacity .3s; pointer-events:none; }
+</style>
+</head>
+<body>
+<script type="application/json" id="board-data">__BOARD_DATA_JSON__</script>
+<header>
+  <h1 id="hd-title"></h1>
+  <div class="meta" id="hd-meta"></div>
+  <div class="bar"><div id="progress"></div></div>
+  <div class="meta" id="progress-text"></div>
+  <div class="toolbar">
+    <label><input type="checkbox" id="filter-unreviewed"> 只看未评审</label>
+    <button id="btn-submit" class="primary">提交评审</button>
+    <button id="btn-export">导出评审结果</button>
+    <span class="meta" id="submit-state"></span>
+  </div>
+  <textarea id="export-fallback" class="hidden" readonly></textarea>
+</header>
+<main>
+  <section class="card" id="coverage-card"><h3>评审覆盖映射</h3><div class="cover" id="coverage"></div></section>
+  <section class="card hidden" id="trace-card"><h3>追溯链 F→US→AC</h3><div id="trace"></div>
+    <textarea id="comment-trace" placeholder="对追溯链整体的意见(可空)"></textarea></section>
+  <div id="groups"></div>
+  <section class="card"><h3>全局意见</h3>
+    <textarea id="global-comment" placeholder="整体评审意见(可空)"></textarea>
+    <div class="agent" id="agent-global" data-anchor="global"></div></section>
+</main>
+<div id="toast"></div>
+<script>
+(() => {
+  'use strict';
+  const DATA = JSON.parse(document.getElementById('board-data').textContent);
+  const LIMIT = 2000;
+  const KEY = 'msboard:' + DATA.board_id;
+  const slug = a => a.replace(/[^A-Za-z0-9_-]/g, '-');
+
+  // —— 状态(review-state-v1) ——
+  window.__review = {
+    version: 1, board_id: DATA.board_id, scope: DATA.scope,
+    source: DATA.source, submitted: false, items: {}, global_comment: ''
+  };
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+    if (saved && saved.board_id === DATA.board_id) {
+      window.__review.items = saved.items || {};
+      window.__review.global_comment = saved.global_comment || '';
+      window.__review.submitted = !!saved.submitted;
+    }
+  } catch (e) { /* 损坏的存档直接忽略 */ }
+  const persist = () => { try { sessionStorage.setItem(KEY, JSON.stringify(window.__review)); } catch (e) {} };
+
+  // —— 头部 ——
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  document.getElementById('hd-title').textContent = '评审面板 · ' + (DATA.project || '') + '(scope=' + DATA.scope + ')';
+  document.getElementById('hd-meta').textContent = 'board_id=' + DATA.board_id + ' · 生成于 ' + DATA.generated_at + ' · 源:' + DATA.source.map(s => s.path).join(' , ');
+
+  const cov = document.getElementById('coverage');
+  cov.append(el('div', null, '已覆盖:' + (DATA.coverage.covered.join('、') || '—')));
+  (DATA.coverage.excluded || []).forEach(x => cov.append(el('div', null, '有意排除:' + x.title + '(' + x.reason + ')')));
+
+  // —— 评审卡 ——
+  const allAnchors = [];
+  const groupsRoot = document.getElementById('groups');
+  const verdicts = [['pass', '通过'], ['reject', '不通过'], ['hold', '搁置']];
+
+  function makeCard(item) {
+    allAnchors.push(item.anchor);
+    const card = el('section', 'card' + (item.highlight ? ' highlight' : ''));
+    card.id = 'card-' + slug(item.anchor);
+    card.append(el('h3', null, item.title));
+    if (item.img) { const im = el('img'); im.src = item.img; im.alt = item.anchor; card.append(im); }
+    if (item.code) card.append(el('pre', 'code', item.code));
+    if (item.body) card.append(el('pre', 'body', item.body));
+    const vd = el('div', 'verdict');
+    const btns = {};
+    verdicts.forEach(([v, label]) => {
+      const b = el('button', null, label);
+      b.addEventListener('click', () => setVerdict(item.anchor, v === current(item.anchor) ? null : v));
+      btns[v] = b; vd.append(b);
+    });
+    card.append(vd);
+    const ta = el('textarea'); ta.placeholder = '意见(不通过时建议填写)'; ta.maxLength = LIMIT;
+    ta.value = (window.__review.items[item.anchor] || {}).comment || '';
+    ta.addEventListener('input', () => { touch(item.anchor).comment = ta.value; sync(); });
+    card.append(ta);
+    const agent = el('div', 'agent'); agent.id = 'agent-' + slug(item.anchor); agent.dataset.anchor = item.anchor;
+    card.append(agent);
+    card._btns = btns; card._anchor = item.anchor;
+    return card;
+  }
+  const current = a => (window.__review.items[a] || {}).verdict || null;
+  const touch = a => (window.__review.items[a] = window.__review.items[a] || { verdict: 'hold', comment: '' });
+  function setVerdict(anchor, v) {
+    if (v === null) { delete window.__review.items[anchor]; }
+    else { touch(anchor).verdict = v; }
+    sync();
+  }
+
+  (DATA.groups || []).forEach(g => {
+    const sec = el('section', 'group');
+    sec.append(el('h2', null, g.title));
+    g.items.forEach(it => sec.append(makeCard(it)));
+    groupsRoot.append(sec);
+  });
+
+  // —— 追溯树 ——
+  if (DATA.trace) {
+    document.getElementById('trace-card').classList.remove('hidden');
+    allAnchors.push('trace:01');
+    const gaps = new Set(DATA.trace.gaps || []);
+    const mk = nodes => {
+      const ul = el('ul', 'tree');
+      nodes.forEach(n => {
+        const li = el('li');
+        const a = el('a', gaps.has(n.id) ? 'gap' : null, n.id + ' ' + (n.title || ''));
+        a.addEventListener('click', () => { const c = document.getElementById('card-' + slug(n.id)); if (c) c.scrollIntoView({ behavior: 'smooth' }); });
+        li.append(a);
+        if (n.children && n.children.length) li.append(mk(n.children));
+        ul.append(li);
+      });
+      return ul;
+    };
+    document.getElementById('trace').append(mk(DATA.trace.tree));
+    if (gaps.size) document.getElementById('trace').append(el('div', 'gap', '追溯缺口:' + [...gaps].join('、')));
+    const tta = document.getElementById('comment-trace');
+    tta.maxLength = LIMIT;
+    tta.value = (window.__review.items['trace:01'] || {}).comment || '';
+    tta.addEventListener('input', () => { touch('trace:01').comment = tta.value; sync(); });
+  }
+
+  // —— 全局意见 ——
+  const gc = document.getElementById('global-comment');
+  gc.maxLength = LIMIT;
+  gc.value = window.__review.global_comment;
+  gc.addEventListener('input', () => { window.__review.global_comment = gc.value; sync(); });
+
+  // —— 进度 / 过滤 / 视觉同步 ——
+  const filter = document.getElementById('filter-unreviewed');
+  filter.addEventListener('change', sync);
+  function sync() {
+    const total = allAnchors.length;
+    const done = allAnchors.filter(a => window.__review.items[a]).length;
+    document.getElementById('progress').style.width = total ? (done / total * 100) + '%' : '0';
+    document.getElementById('progress-text').textContent = '已评审 ' + done + ' / ' + total;
+    document.querySelectorAll('.card').forEach(c => {
+      if (!c._anchor) return;
+      const v = current(c._anchor);
+      c.classList.toggle('reviewed', !!v);
+      verdicts.forEach(([k]) => c._btns[k].classList.toggle('on-' + k, v === k));
+      c.classList.toggle('hidden', filter.checked && !!v);
+    });
+    document.getElementById('submit-state').textContent = window.__review.submitted ? '✔ 已提交(回到对话告知 Agent)' : '';
+    persist();
+  }
+
+  // —— 提交 / 导出 ——
+  const toast = msg => { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = 1; setTimeout(() => t.style.opacity = 0, 2200); };
+  document.getElementById('btn-submit').addEventListener('click', () => {
+    window.__review.submitted = true; sync(); toast('已标记提交。请回到对话告诉 Agent「评完了」。');
+  });
+  document.getElementById('btn-export').addEventListener('click', async () => {
+    const json = JSON.stringify(window.__review);
+    try { await navigator.clipboard.writeText(json); toast('评审结果 JSON 已复制,粘贴回对话即可。'); }
+    catch (e) {
+      const fb = document.getElementById('export-fallback');
+      fb.classList.remove('hidden'); fb.value = json; fb.focus(); fb.select();
+      toast('剪贴板不可用,请手动复制文本框内容。');
+    }
+  });
+
+  window.addEventListener('beforeunload', e => {
+    if (Object.keys(window.__review.items).length && !window.__review.submitted) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  sync();
+})();
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@
 >
 > ⛔ **本文件不是编号权威。** 分配新编号必须扫资源文件（见「编号最大值的推导」节）——把「当前最大」当分配依据会与本文件自称的「不追踪 drift」直接矛盾，且手工回填必然漂移导致撞号。
 >
-> 健康度审查由 `/ms-pipeline realign --scope=health` 主动检测（详见 [pipeline/references/health-lint-implementation.md](../../ms-pipeline/references/health-lint-implementation.md)）。
+> 健康度审查由 `/pipeline realign --scope=health` 主动检测（详见 [pipeline/references/health-lint-implementation.md](../../pipeline/references/health-lint-implementation.md)）。
 
 ## 边界约束（硬性）
 
@@ -34,7 +34,7 @@
 
 ## 编号最大值的推导
 
-**推导命令**（`-w` 整词匹配 + `-n` 数值序，理由见 [_shared/constraints.md](../../_shared/constraints.md)）：
+**推导命令**（`-w` 整词匹配 + `-n` 数值序，理由见 [shared/constraints.md](../../shared/constraints.md)）：
 
 ```sh
 # F / US / AC / CON —— 源：01-requirements.md + requirements/
@@ -163,8 +163,8 @@ ls docs/devdocs/adr/ADR-*.md 2>/dev/null | sed 's/.*ADR-\([0-9]*\).*/\1/' | sort
 
 ```bash
 # dry-run：扫描违规，输出 .health-report.md
-/ms-pipeline realign --scope=health --dry-run
+/pipeline realign --scope=health --dry-run
 
 # apply：经 AskUserQuestion 确认归档目标后，搬迁明细 + 简化占位
-/ms-pipeline realign --scope=health --apply
+/pipeline realign --scope=health --apply
 ```

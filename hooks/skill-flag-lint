@@ -2,12 +2,12 @@
 # skill-flag-lint — PostToolUse：编辑 skills/ 下的 .md 后跑 flag/dangling-reference。
 #
 # 只在 **skill 库自身**的仓库里生效（用户 DevDocs 项目走 devdocs-drift，那是另一件事）。
-# 规则与已知盲区见 skills/ms-pipeline/references/health-lint-implementation.md
+# 规则与已知盲区见 skills/pipeline/references/health-lint-implementation.md
 # 根因见 docs/audits/2026-09-11-devdocs-flow-backlog.md §4.1
 set -u
 
 ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
-LINT="$ROOT/skills/ms-pipeline/scripts/health-lint.py"
+LINT="$ROOT/skills/pipeline/scripts/health-lint.py"
 [ -f "$LINT" ] || exit 0                                    # 不是本仓，静默
 
 # stdin 限时读——⛔ 不用 timeout(1)，macOS 默认没有，失败会静默吞掉 payload

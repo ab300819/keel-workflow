@@ -1,12 +1,12 @@
 ---
 name: dev-flow
-description: 在非 DevDocs 项目中，按任务、Issue 或已有计划实现功能与修复问题。DevDocs 任务执行用 ms-dev-workflow。
+description: 在非 DevDocs 项目中，按任务、Issue 或已有计划实现功能与修复问题。DevDocs 任务执行用 dev-workflow。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, Task, AskUserQuestion, TodoWrite
 ---
 
 # Dev Flow
 
-不依赖 DevDocs 的通用开发执行器：**契约先行 + 测试红绿 + 质量地板 + 证据交付**。输入一个计划文档、任务描述或 issue 文本即可启动。复杂治理（编号体系、追溯矩阵、文档同步、review_profile 分档）留给 `ms-*` 流程。
+不依赖 DevDocs 的通用开发执行器：**契约先行 + 测试红绿 + 质量地板 + 证据交付**。输入一个计划文档、任务描述或 issue 文本即可启动。复杂治理（编号体系、追溯矩阵、文档同步、review_profile 分档）留给 DevDocs 流程。
 
 ## Language
 
@@ -19,7 +19,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, Task, AskUserQuestion, TodoW
 - 用户给出任务描述 / issue 文本要求直接开发，且项目无 DevDocs 文档体系
 - 用户要求"轻量/通用/独立的开发流程"
 
-**路由判定**：项目存在 `docs/devdocs/` 且任务有 T-XX 编号 → 用 `/ms-dev-workflow`；否则用本 skill。
+**路由判定**：项目存在 `docs/devdocs/` 且任务有 T-XX 编号 → 用 `/dev-workflow`；否则用本 skill。
 
 ## 输入形态
 
@@ -58,7 +58,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, Task, AskUserQuestion, TodoW
 
 ### Gate 3: Verify Gate（一个门、两个独立 verdict，均必过）
 
-**3a. Evidence Check（质量地板，不可降；通用化自 [_shared/constraints.md 质量地板 5 条](../_shared/constraints.md)，"契约行为"对应原"行为型 AC"）**：
+**3a. Evidence Check（质量地板，不可降；通用化自 [shared/constraints.md 质量地板 5 条](../shared/constraints.md)，"契约行为"对应原"行为型 AC"）**：
 
 - [ ] 绿验通过且 `skipped/todo = 0`
 - [ ] 测试冻结 diff 校验通过
@@ -106,7 +106,7 @@ execution_contract:
 1. **Test Pass**：基于契约写接口骨架 + 测试断言（断言值来自契约 `expected_behavior`，不参考实现细节）→ 红验
 2. **Impl Pass**：只实现契约内行为 → 绿验 → 重构（保持绿）
 
-`--strict-tdd` 或 `risk_flags` 含 `auth/data-loss/schema/public-api` 时，升级为**物理双子 Agent**（Task tool）：Test Agent 不读已有实现，Impl Agent 不读契约推导过程、不可改测试——同 ms-dev-workflow 信息屏障语义。
+`--strict-tdd` 或 `risk_flags` 含 `auth/data-loss/schema/public-api` 时，升级为**物理双子 Agent**（Task tool）：Test Agent 不读已有实现，Impl Agent 不读契约推导过程、不可改测试——同 dev-workflow 信息屏障语义。
 
 **编码纪律**（两种模式恒定）：遵循 [`/code-quality`](../code-quality/SKILL.md) 核心阈值表 / [命名规范](../code-quality/SKILL.md#命名规范) / [注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式、来源记录式、对审查者说话的注释，含修复循环）/ [日志规范](../code-quality/SKILL.md#日志规范)（级别纪律 + 最小上下文 + 安全红线 + 禁 log-and-throw）；测试断言质量遵循 `/testing-guide`。
 
@@ -130,7 +130,7 @@ execution_contract:
 
 ## 提交规范
 
-> `workspace_context.mode` 不是 `inline` 时（即代码不在本仓），「一项一 commit」展开为 N+1 仓，协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根路径取自 握手 `workspace_context`（[_shared/constraints.md](../_shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
+> `workspace_context.mode` 不是 `inline` 时（即代码不在本仓），「一项一 commit」展开为 N+1 仓，协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根路径取自 握手 `workspace_context`（[shared/constraints.md](../shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
 
 - 用户要求提交或批量模式逐项提交时：**原子提交**，一项一 commit，遵循 `/commit-convention`
 - 文件移动/删除遵循 `/git-safety`（git mv/rm）
@@ -172,10 +172,10 @@ execution_contract:
 
 | 场景 | 用谁 |
 |------|------|
-| DevDocs 项目 T-XX 任务执行 / 追溯 / 04-dev-tasks 状态推进 / review-drain | `/ms-dev-workflow` |
+| DevDocs 项目 T-XX 任务执行 / 追溯 / 04-dev-tasks 状态推进 / review-drain | `/dev-workflow` |
 | 计划文档 / 普通 issue / CE·superpowers·BMAD 松散计划驱动的开发 | **本 skill** |
-| 任务拆分 | superpowers writing-plans 或 `/ms-dev-tasks`（DevDocs） |
-| 项目转文档驱动 | `/ms-retrofit` 反向生成 DevDocs（本 skill 交付报告可作辅助输入，非追溯矩阵） |
+| 任务拆分 | superpowers writing-plans 或 `/dev-tasks`（DevDocs） |
+| 项目转文档驱动 | `/retrofit` 反向生成 DevDocs（本 skill 交付报告可作辅助输入，非追溯矩阵） |
 
 **superpowers 衔接**：writing-plans 产出可直接作输入；executing-plans 可作上层计划执行器，单项开发由本 skill 接管门控。
 

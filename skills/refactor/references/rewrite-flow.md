@@ -14,7 +14,7 @@
 ## 重写流程
 
 ```
-1. /ms-retrofit 建立项目基线
+1. /retrofit 建立项目基线
    │
    ├── 输出：docs/devdocs/00-baseline.md
    ├── 关键是这两节 ——
@@ -36,9 +36,9 @@
    │   ⚠️ 这一步之后会遇到 4 处摩擦（红绿协议判保持性测试无效、静态核对无处挂编号等），
    │      绕法见 docs/workflows.md § 技术升级 / 重构 / 治理
    │
-   ├── /ms-requirements   定新需求（F-001 起，存量代码不编号）
-   ├── /ms-system-design  可测试的新设计
-   └── /ms-test-cases     测试方案
+   ├── /requirements   定新需求（F-001 起，存量代码不编号）
+   ├── /system-design  可测试的新设计
+   └── /test-cases     测试方案
    │
    ▼
 4. 测试先行 + 实现

@@ -131,7 +131,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## 日志规范
 
-日志唯一目标是**让线上失败被快速排查 / 审计 / 观测**——价值在"对的级别 + 对的上下文 + 不泄密"，不在量；烂日志是烂注释的运行时版本（见上节），同样按本次 diff 新增/修改命中分级。设计阶段"在哪打日志点"见 [system-design log-design-guide.md](../ms-system-design/templates/log-design-guide.md)，本节是**编码纪律 SSOT**。
+日志唯一目标是**让线上失败被快速排查 / 审计 / 观测**——价值在"对的级别 + 对的上下文 + 不泄密"，不在量；烂日志是烂注释的运行时版本（见上节），同样按本次 diff 新增/修改命中分级。设计阶段"在哪打日志点"见 [system-design log-design-guide.md](../system-design/templates/log-design-guide.md)，本节是**编码纪律 SSOT**。
 
 ### 六条硬规则
 
@@ -164,7 +164,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## 错误处理（编码级）
 
-只定义编码期红线；错误码体系 / 对外错误契约等**设计级**归 [system-design](../ms-system-design/SKILL.md)。与日志「异常纪律」同源、互补。
+只定义编码期红线；错误码体系 / 对外错误契约等**设计级**归 [system-design](../system-design/SKILL.md)。与日志「异常纪律」同源、互补。
 
 - **不吞异常**：捕获后必须处理、转换或重抛带上下文；空 catch / 仅 log 后照常继续（状态已漂移）→ [Blocker]
 - **保留 cause**：包装异常时挂上原始 cause/堆栈，不丢根因；异常转换只在**处理边界**做一次
@@ -205,7 +205,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 ## 设计原则（代码级）
 
-SOLID + 迪米特六大原则的**代码级/diff 级可机械判定特征**。设计级判定（启发式阈值/三态结论表/ADR 联动）权威归 [system-design solid-principles-guide.md](../ms-system-design/references/solid-principles-guide.md)，本节不替代。
+SOLID + 迪米特六大原则的**代码级/diff 级可机械判定特征**。设计级判定（启发式阈值/三态结论表/ADR 联动）权威归 [system-design solid-principles-guide.md](../system-design/references/solid-principles-guide.md)，本节不替代。
 
 | 原则 | 代码级判定特征 |
 |------|---------------|
@@ -241,7 +241,7 @@ SOLID + 迪米特六大原则的**代码级/diff 级可机械判定特征**。�
 - **说明理由**：为什么选择这个模式
 - **保持一致**：相同问题用相同模式
 
-> 模式选择是设计时决策，场景→模式映射表权威见 [system-design design-patterns.md](../ms-system-design/references/design-patterns.md)（由 02-system-design §6 设计模式章节消费），本文件不镜像。
+> 模式选择是设计时决策，场景→模式映射表权威见 [system-design design-patterns.md](../system-design/references/design-patterns.md)（由 02-system-design §6 设计模式章节消费），本文件不镜像。
 
 ## 重构指导
 

@@ -91,7 +91,7 @@ AI 搜索到第五层文件时，已自动加载前四层 CLAUDE.md，对整个�
 
 - **默认跳过**，输出 ℹ️ 说明原因，不报错
 - 仅 `--force-code-docs` 显式启用。启用前 AskUserQuestion 确认「这些文件会进入 <各 code_root>，若该仓将公开请确认可接受」
-- 代码根取自握手 `workspace_context.code_roots`，契约见 [_shared/constraints.md](../_shared/constraints.md) §3
+- 代码根取自握手 `workspace_context.code_roots`，契约见 [shared/constraints.md](../shared/constraints.md) §3
 
 ### 智能检测流程
 
@@ -281,10 +281,10 @@ AI 搜索到第五层文件时，已自动加载前四层 CLAUDE.md，对整个�
 
 | 阶段 | 协作 Skill | 说明 |
 |------|-----------|------|
-| 开发完成后 | `/ms-dev-workflow` | 被调用：完成检查步骤中触发 --update |
+| 开发完成后 | `/dev-workflow` | 被调用：完成检查步骤中触发 --update |
 | 重构后 | `/refactor` | 被调用：重构完成后更新描述 |
-| 项目上下文 | `/ms-onboard` | 互补：CLAUDE.md 提供模块级上下文 |
-| 代码追溯 | `/ms-sync` | 互补：不同维度的代码标注 |
+| 项目上下文 | `/onboard` | 互补：CLAUDE.md 提供模块级上下文 |
+| 代码追溯 | `/sync` | 互补：不同维度的代码标注 |
 | 文件操作 | `/git-safety` | 配合：模块移动/重命名时同步更新 CLAUDE.md |
 
 ## 参考资料

@@ -1,6 +1,6 @@
 ---
 name: testing-guide
-description: 编写或审查测试代码时，指导断言、Mock、分支覆盖和测试有效性。设计 DevDocs 用例文档用 ms-test-cases。
+description: 编写或审查测试代码时，指导断言、Mock、分支覆盖和测试有效性。设计 DevDocs 用例文档用 test-cases。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 
@@ -49,7 +49,7 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 ### 核心阈值表
 
-**全仓唯一权威测试质量阈值源**。谓词语义与 [`/code-quality` 核心阈值表](../code-quality/SKILL.md#核心阈值表) 同构：**≥ 达标值 = 合规；≥ 最低值且 < 达标值 = [Suggestion]；< 最低值 = [Blocker]**。**镜像边界**：agent 侧 references / SKILL 一律**改指针不镜像**（已迁移：dev-workflow verification-flow Phase 2、ms-test-cases SKILL.md 覆盖率要求）；仅**用户侧产物模板**（如 ms-test-cases 的 test-cases / unit-test 模板，会复制进用户项目，届时本 skill 不在场）允许内联数字，且须标注"摘录自本表，变更需同 commit 同步"。
+**全仓唯一权威测试质量阈值源**。谓词语义与 [`/code-quality` 核心阈值表](../code-quality/SKILL.md#核心阈值表) 同构：**≥ 达标值 = 合规；≥ 最低值且 < 达标值 = [Suggestion]；< 最低值 = [Blocker]**。**镜像边界**：agent 侧 references / SKILL 一律**改指针不镜像**（已迁移：dev-workflow verification-flow Phase 2、test-cases SKILL.md 覆盖率要求）；仅**用户侧产物模板**（如 test-cases 的 test-cases / unit-test 模板，会复制进用户项目，届时本 skill 不在场）允许内联数字，且须标注"摘录自本表，变更需同 commit 同步"。
 >
 > 待迁移（本表的已知 agent 侧镜像，未清）：`refactor/SKILL.md:216-220,250-252,271-272,281,359`（测试状态分类以 ≥80% 定义"充分/不足"，需连带重写状态机口径）、`onboard/SKILL.md:247`。
 
@@ -110,7 +110,7 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 ### 测试自说明规范
 
-⛔ **测试代码不写 DevDocs 编号标注。** 追溯由 `ms-dev-workflow` 的 Commit 2 写入文档侧的追溯矩阵（`<repository>@<sha>`），代码保持干净——一个没有 DevDocs 上下文的维护者读到 `@verifies AC-001` 只会困惑。
+⛔ **测试代码不写 DevDocs 编号标注。** 追溯由 `dev-workflow` 的 Commit 2 写入文档侧的追溯矩阵（`<repository>@<sha>`），代码保持干净——一个没有 DevDocs 上下文的维护者读到 `@verifies AC-001` 只会困惑。
 
 测试要自说明的是**行为**，不是编号——测试名就是它的文档：
 
@@ -177,10 +177,10 @@ describe('UserService', () => {
 
 | 阶段 | Skill | 输入 | 输出 |
 |------|-------|------|------|
-| 测试设计 | `/ms-test-cases` | 需求文档 | 测试用例矩阵 |
-| 骨架生成 | `/ms-dev-tasks` | 测试用例 | 测试骨架代码 |
+| 测试设计 | `/test-cases` | 需求文档 | 测试用例矩阵 |
+| 骨架生成 | `/dev-tasks` | 测试用例 | 测试骨架代码 |
 | 测试实现 | `/testing-guide` | 骨架代码 | 完整测试 |
-| 追溯同步 | `/ms-sync` | 代码标注 | 更新矩阵 |
+| 追溯同步 | `/sync` | 代码标注 | 更新矩阵 |
 
 ---
 
@@ -343,7 +343,7 @@ mvn pitest:mutationCoverage    # Java
 
 | 场景 | Skill |
 |------|-------|
-| 测试用例设计 | `/ms-test-cases` |
+| 测试用例设计 | `/test-cases` |
 | 代码可测试性 | `/code-quality` |
 | 重构前测试 | `/refactor` |
-| 分支覆盖分析 | `/ms-dev-workflow` — 完成检查阶段可选调用 |
+| 分支覆盖分析 | `/dev-workflow` — 完成检查阶段可选调用 |

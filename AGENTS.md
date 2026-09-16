@@ -1,13 +1,18 @@
 <!-- 由 /agent-memory 生成，请通过该命令更新 -->
 
-# AI Agent Skills
+# keel
 
-Markdown + YAML skill 规格库，兼容多个 AI 工具。`ms-` 为 DevDocs 流程，其余为独立工具。
+DevDocs 文档驱动开发流程的 skill 规格库（Markdown + YAML），以**插件**形式分发到
+Claude Code / Codex CLI / OpenCode 三端。21 个流程 skill + 12 个被流程依赖的通用 skill。
+与本仓零依赖的独立 skill 在 `skills-local` 仓，⛔ 不在此维护。
 
 ## 架构决策
 
 - 每个 skill 位于 `skills/<name>/SKILL.md`，目录名必须等于 frontmatter 的 `name`；安装按该名称复制整个目录，跨 skill 链接依赖此约定。
 - `templates/` 子目录存输出模板，`references/` 子目录存评估标准 / rubric / 规则
+- `skills/shared/` 是共享资源目录（constraints.md / runlog.md），**不是 skill**（无 SKILL.md）；整包分发后不再需要 skill 身份这层包装。
+- **三端共用同一份 `skills/`**，⛔ 不建 `dist/` 构建产物。skill 名不带前缀；调用形式按端不同：Claude Code / Codex 可用 `/keel:<name>`，**OpenCode 无命名空间只能裸名**。
+  ⇒ **写进执行路径的委托一律用裸名**（`Task: /agent-memory`），带 `keel:` 的只出现在给人看的文档里。
 - 编排层通过子代理调度原子 skill；规范中的 `Task` 是委托接口，实际执行前核对当前工具能力，不把文件中的工具名当作已安装能力。
 
 ## 修改 skill
@@ -28,7 +33,7 @@ Markdown + YAML skill 规格库，兼容多个 AI 工具。`ms-` 为 DevDocs 流
 - **本仓元开发没有 process owner skill，本文件就是流程**：ROI 判据（见「修改 skill」末条）、
   外科式改动、验证要求。⛔ 不要为了「先跑个流程」去触发头脑风暴 / 计划编写 / 计划执行 / 分支收尾类 skill——
   多数改动是规格文本的定点修改，套端到端流程是过度形式化。
-- **⛔ 不在此启动 DevDocs 全流程**（`ms-*`）。修改这些规格 ≠ 在本仓开发 DevDocs 产品。
+- **⛔ 不在此启动 DevDocs 全流程**。修改这些规格 ≠ 在本仓开发 DevDocs 产品。
 - **允许的外部 skill 用法**：把它们的**产物约定**当落点，不启动它们的门。
   设计稿写进 `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`（既成事实，本仓设计稿都在那）。
 - **例外（可以走完整设计流程）**：新建整个 skill、跨 skill 协议改动、推翻既有架构决策。
@@ -52,5 +57,5 @@ Markdown + YAML skill 规格库，兼容多个 AI 工具。`ms-` 为 DevDocs 流
 - 用户上手 + skill 索引：[README.md](README.md)
 - 调整流程衔接时：[docs/workflows.md](docs/workflows.md)。
 - 查询架构决策、编号与文件结构时：[docs/architecture.md](docs/architecture.md)。
-- 修改门控、子代理摘要、Recovery 或 spec_version 时：[skills/_shared/constraints.md](skills/_shared/constraints.md)。
-- 修改 DevDocs 路由或升级入口时：[skills/ms-pipeline/SKILL.md](skills/ms-pipeline/SKILL.md)。
+- 修改门控、子代理摘要、Recovery 或 spec_version 时：[skills/shared/constraints.md](skills/shared/constraints.md)。
+- 修改 DevDocs 路由或升级入口时：[skills/pipeline/SKILL.md](skills/pipeline/SKILL.md)。
