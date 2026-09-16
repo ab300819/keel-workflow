@@ -1,6 +1,8 @@
 # DevDocs 流程待办
 
-> 2026-09-11 登记，2026-09-16 **两条均已判定并结清**。原取证保留备查。
+> 2026-09-11 登记，2026-09-16 §1 / §2 **已判定并结清**（结论见 §3）。原取证保留备查。
+>
+> ⚠️ **§4 是 2026-09-16 新登记的未决项**，不在上述结清范围内。
 >
 > 与 [对象模型收敛设计](../superpowers/specs/2026-09-11-devdocs-object-model-convergence-design.md) 是**两条轴**：那份管编号对象与文档结构，本文管流程本身的暴露面与外部复用。
 
@@ -130,3 +132,66 @@ and types neighboring tasks use."*
 
 原 §2 隐含的"DevDocs 触发不可靠"已单独立项调研并判定暂不做，
 见 [2026-08-28 skill 软触发漏检](2026-08-28-skill-soft-trigger-miss-brief.md) §调研结论。
+
+
+---
+
+## 4. 新登记：flag 的消费契约缺口（2026-09-16，未决）
+
+> 起因：`--impl` 这类子指令**没有解析器** —— skill 是 markdown，harness 把 flag 当 `args` 原样传给模型，模型读 SKILL.md 的表**对着认**。纯文本匹配。
+>
+> 推论：flag 打错、改名、删除，**没有任何东西会报错**。以下是实测出的后果。
+
+### 4.1 已实证 4 处死引用（⛔ 未修）
+
+15 行 shell 扫 `skills/` 下所有 `/<skill> --<flag>` 引用，回查目标 skill 目录是否存在该 flag：
+
+| 死引用 | 发出方 | 严重度 |
+|---|---|---|
+| `/ms-requirements --incremental` | `ms-feature/references/full-mode-steps.md:36`（写「**必须委托给**」）· 同文件 `:176` · `ms-verify/SKILL.md:470` | 🔴 委托链断点。子 Agent 收到不存在的 flag 会自行编造解释 |
+| `/ms-dev-workflow --task` | `ms-verify/templates/verify-report.md:162` | 🔴 **模板复制进用户项目**，教用户敲不存在的命令 |
+| `/ms-test-cases --update` | `ms-verify/templates/verify-report.md:163` | 🔴 同上 |
+| `/ms-dev-tasks --split` | `ms-verify/templates/verify-report.md:164` | 🔴 同上 |
+
+**根因已定位**：`--incremental` 在 `a925ab0`（**「用户面 flag 收敛 49→20」**）中随生产方删除，改为 `ms-requirements/SKILL.md:54` 的「自动检测初始/增量模式」，但 **3 个消费方未同步**。
+
+⇒ **那次收敛自己制造了死引用。** 这正是本仓吃过多次的「双删失效模式」：删了生产方漏了消费方，而无解析器 / 无 linter，静默通过。
+
+> 误报 1 处（已排除）：`ms-requirements/references/context-mode.md:29` 的 `/ms-retrofit --baseline-update`，原文是「**不**为基线补全新建…一类的入口」，是反例不是引用。
+
+### 4.2 提案：`flag/dangling-reference` 作为 health-lint 第 9 条规则
+
+检测**机械可判**（本次用 15 行 shell 完成），与 `id/unknown-prefix` 同属「b 索引/链接」维度。
+
+与既有 `id/prefix-consumption-contract`（2026-09-15 落地）**完全同构** —— 那条管编号前缀的消费契约，这条管 flag 的。两者的失效模式也同一个：生产方改了，消费方不知道。
+
+⚠️ 但同样受限于 health-lint 无实现（[规格在此](../../skills/ms-pipeline/references/health-lint-implementation.md)）这个前提：672 行规格 + 0 行代码，本仓无任何可执行文件。⇒ 该规则**依赖 health-lint 先被实现**，否则只是多写一条没人跑的规格。
+
+### 4.3 架构分歧（记录，⛔ 不在本轮处理）
+
+**superpowers 把维度拆成 skill 数量，DevDocs 把维度压进 flag。**
+
+```
+superpowers:  brainstorming / writing-plans / executing-plans / subagent-driven-development   ← 4 个 skill
+DevDocs 写法: /plan --brainstorm | --write | --execute | --subagent                            ← 1 个 skill 4 个 flag
+```
+
+| | superpowers | DevDocs |
+|---|---:|---:|
+| skill 数 | 14 | 21 |
+| SKILL.md 均行 | 241 | 355 |
+| 典型 | 每个 skill 一件事 | `ms-verify` **451 行**装 4 个维度 |
+
+**这直接影响触发准确度**：`ms-verify` 的 description 是「文档一致性、实现正确性、UI 对齐**或**开发就绪状态」—— 四件事 OR 在一起，天然模糊；superpowers 每个 description 只说一件事。
+
+⇒ **flag 把四个锐利的触发面压成了一个钝的。** 与 [2026-08-28 软触发漏检](2026-08-28-skill-soft-trigger-miss-brief.md) 是同一问题的另一面：那份查的是「描述写不清」，这里是「描述天然装不下」。
+
+⛔ 这是真架构分歧，不是随手可改。若要动，最小可议的切入点是 `ms-verify` 一个 451 行装 4 维。
+
+### 4.4 顺带登记：`ms-pipeline` 治理委托在项目早期有空档
+
+`ms-pipeline/SKILL.md:233`：`init` 链在 **`ms-requirements` 完成后**才委托 `agent-memory --update` 落盘工作流路由节，且该步 `failed` / `partial` 时**显示 ℹ️ 后继续主链**。
+
+⇒ 项目早期（requirements 未完成，或该治理步失败时）**AGENTS.md 的工作流路由节不存在** —— 而那恰是最容易走错流程的阶段。
+
+来源：2026-09-16 Codex 独立调研。⚠️ **未评估影响面**，也无真实失败证据。
