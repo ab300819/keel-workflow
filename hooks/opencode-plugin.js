@@ -19,8 +19,11 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const HOOK_DIR = dirname(fileURLToPath(import.meta.url))
-const CHECKS = ["devdocs-drift", "skill-flag-lint"]
 const EDIT_TOOLS = new Set(["edit", "write", "patch"])
+// devdocs-drift 看 git status,与改动用的是哪个工具无关 → bash 改文件也要跑。
+// skill-flag-lint 依赖 tool_input.file_path,bash 调用没有该字段,跑了也是空转。
+const CHECKS_EDIT = ["devdocs-drift", "skill-flag-lint"]
+const CHECKS_BASH = ["devdocs-drift"]
 
 function runCheck(name, cwd, payload) {
   return new Promise((resolve) => {
@@ -48,14 +51,19 @@ export const KeelPlugin = async ({ directory, worktree }) => {
   const cwd = worktree || directory || process.cwd()
   return {
     "tool.execute.after": async (input, output) => {
-      if (!EDIT_TOOLS.has(input.tool)) return
+      const checks = EDIT_TOOLS.has(input.tool)
+        ? CHECKS_EDIT
+        : input.tool === "bash"
+          ? CHECKS_BASH
+          : null
+      if (!checks) return
       const payload = JSON.stringify({
         hook_event_name: "PostToolUse",
         tool_name: input.tool,
         tool_input: input.args || {},
         cwd,
       })
-      const msgs = (await Promise.all(CHECKS.map((c) => runCheck(c, cwd, payload))))
+      const msgs = (await Promise.all(checks.map((c) => runCheck(c, cwd, payload))))
         .map(extractContext)
         .filter(Boolean)
       // OpenCode 无 additionalContext 通道：追加进工具结果，这是模型唯一会读到的位置

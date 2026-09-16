@@ -22,8 +22,10 @@ ln -s <keel>/hooks/opencode-plugin.js ~/.config/opencode/plugins/keel.js
 
 | hook | 作用域 | 触发 | 干什么 |
 |---|---|---|---|
-| `devdocs-drift` | **用户 keel 项目** | PostToolUse `Edit\|Write\|NotebookEdit` | 改了代码但 `docs/devdocs/` 没动 → 一行提示。5 分钟冷却 |
-| `skill-flag-lint` | **skill 库自身** | 同上，且编辑的是 `skills/**/*.md` | 跑 `health-lint.py --skills-dir` 的 `flag/dangling-reference`。2 分钟冷却 |
+| `devdocs-drift` | **用户 keel 项目** | PostToolUse `Edit\|Write\|NotebookEdit\|Bash` | 改了代码但 `docs/devdocs/` 没动 → 一行提示。5 分钟冷却 |
+| `skill-flag-lint` | **skill 库自身** | PostToolUse `Edit\|Write\|NotebookEdit`，且编辑的是 `skills/**/*.md` | 跑 `health-lint.py --skills-dir` 的 `flag/dangling-reference`。2 分钟冷却 |
+
+⚠️ **两者 matcher 不同，是有意的。** `devdocs-drift` 看 `git status`，与用哪个工具改的无关，所以必须覆盖 `Bash`——否则 shell 改文件（auto 模式、脚本化编辑、CI）全程不触发。`skill-flag-lint` 依赖 `tool_input.file_path`，`Bash` 调用没有该字段，加进去也只是空转，故不加。
 
 两者都在不适用时**静默 exit 0**，互不干扰。
 
@@ -32,12 +34,44 @@ ln -s <keel>/hooks/opencode-plugin.js ~/.config/opencode/plugins/keel.js
 - ⛔ **不要用 `timeout(1)`** —— macOS 默认没有。`timeout 1 cat || true` 会静默吞掉
   整个 stdin payload，hook 变成永远不触发且没有任何错误。用 bash 内建读。
 - PostToolUse **每次工具调用都触发**，不加冷却必然变噪声。
+- ⛔ **matcher 别只写 `Edit|Write|NotebookEdit`** —— 用 shell 改文件不属于这三者，hook 全程不触发。按「这个检查依不依赖 `file_path`」决定要不要覆盖 `Bash`。
+- `skill-flag-lint` 的检出能力受 `health-lint.py` 限制：`REL_LINK_RE` 只认 `./` / `../` 开头的链接，**裸相对链接（`references/x.md`）不在检查范围**——实测本仓 253 条裸链接 vs 226 条被检查。别把「hook 没报」当成「没断链」。
 - 输出契约：`{"hookSpecificOutput":{"hookEventName":"...","additionalContext":"..."}}`
   Claude Code 与 Codex 共用这一份；OpenCode 由 `opencode-plugin.js` 解析出 `additionalContext`
   再追加进工具结果（该端无等价通道）。
 
+## ⛔ 改完当场测不到（2026-09-16 实测）
+
+`hooks/` 与 `skills/` **只从插件安装路径加载**，工作树的改动不即时生效。链路三级都会卡：
+
+```text
+工作树 HEAD
+   │  ① 未推送的 commit 进不了下一级
+   ▼
+marketplaces/<mp>/          ← git clone，会自动重新 clone，本地手改会被冲掉
+   │  ② /plugin install 取快照
+   ▼
+cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份
+   │  ③ 会话启动时读入
+   ▼
+本会话的 skill 正文 / hooks.json
+```
+
+**实测**：把新文件直接同步进 `cache/` 与 `marketplaces/` 之后，同一会话里新起的子代理拿到的仍是旧正文（4 次独立复现）。②③ 哪一级才是注入源没分出来——判别实验被 marketplace 的自动重新 clone 冲掉了——但不影响操作结论：
+
+> **改了 skill 或 hook，必须 `git push` → `/plugin update` → 开新会话，才测得到。**
+
+同理，下面记的「已验证」一律指**被安装的那一版**，不是工作树。
+
 ## 状态
 
-⚠️ **两个都是试验件。** 脚本本身已用构造 payload 逐条实测（见下），但**三端真实会话触发尚未各跑一次**。
-验不过就删，⛔ 不要在它们之上加功能。背景见
+⚠️ **两个都是试验件。** 验不过就删，⛔ 不要在它们之上加功能。背景见
 [docs/audits/2026-08-28-skill-soft-trigger-miss-brief.md](../docs/audits/2026-08-28-skill-soft-trigger-miss-brief.md)。
+
+| 验证项 | 状态 |
+|---|---|
+| 脚本逻辑（构造 payload，9 个场景：该响 / 文档跟上 / 只改文档 / 冷却 / 非 keel 项目 / 非 skills 路径 / lint 干净 / lint 有 finding / Bash 形状 payload） | ✅ 2026-09-16 全过 |
+| **Claude Code 真实会话触发** | ✅ 2026-09-16，`Edit` 埋断链探针，`additionalContext` 正确送达 |
+| Codex CLI 真实会话触发 | ⬜ 未跑 |
+| OpenCode 真实会话触发 | ⬜ 未跑 |
+| `Bash` matcher 真实会话触发 | ⬜ 未跑（改动本身受上节链路限制，需 push + update + 新会话） |
