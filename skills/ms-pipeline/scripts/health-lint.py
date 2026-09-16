@@ -11,7 +11,7 @@ v1 未实现（如实报 not_implemented，⛔ 不要当成 pass）：
 另有 flag/dangling-reference —— 扫描对象是 **skill 库本身**（非用户项目），
 故走独立的 --skills-dir 模式，⛔ 不与上述 project-scope 的 rule 混用同一 target。
 
-v1 不含：baseline / --apply / 自动修复。首扫噪声大属预期（尤见 id/unknown-prefix）。
+v1 不含：--apply / 自动修复。baseline 见 --baseline-init / --since-baseline。
 
 退出码（规格「退出码（CLI 集成）」）：0 无违规 / 1 仅 warning / 2 有 blocker / 3 lint 自身错误
 """
@@ -287,6 +287,100 @@ def scan_skill_repo(skills_dir):
     return fs
 
 
+BASELINE_REL = os.path.join(".claude", "rules", ".health-baseline.yml")
+BASELINE_SCHEMA = "health-baseline.v1"
+SIZE_DELTA_IGNORE = 2048   # 规格：delta < 2 KiB 视为可忽略小增长
+
+
+def _git(root, *a):
+    try:
+        r = subprocess.run(["git", "-C", root, *a], capture_output=True, text=True, timeout=10)
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def write_baseline(root, findings):
+    """按规格「Baseline 文件」的结构写盘。⛔ 只记 delta 规则用得到的字段。"""
+    fc = sorted({(f["file"], f["line"]) for f in findings if f["rule_id"] == "state/forbidden-content"})
+    dl = sorted({f["message"].split(" ")[0] for f in findings if f["rule_id"] == "health/dead-link"})
+    px = sorted({f["message"].split("：")[0].replace("未知前缀 ", "")
+                 for f in findings if f["rule_id"] == "id/unknown-prefix"})
+    size = next((f["actual"] for f in findings if f["rule_id"] == "state/total-size-cap"), 0)
+    sp = os.path.join(root, ".claude", "rules", "devdocs-state.md")
+    if not size and os.path.isfile(sp):
+        size = os.path.getsize(sp)
+    path = os.path.join(root, BASELINE_REL)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    import datetime
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(f"schema: {BASELINE_SCHEMA}\n")
+        fh.write(f"generated_at: {datetime.datetime.now().astimezone().isoformat()}\n")
+        fh.write(f"source_git_commit: {_git(root, 'rev-parse', 'HEAD') or 'unknown'}\n")
+        fh.write("baseline_findings:\n")
+        fh.write("  state/total-size-cap:\n")
+        fh.write(f"    devdocs_state_size_bytes: {size}\n")
+        fh.write("  state/forbidden-content:\n")
+        fh.write(f"    count: {len(fc)}\n")
+        fh.write("    lines: [" + ", ".join(f'"{a}:{b}"' for a, b in fc) + "]\n")
+        fh.write("  health/dead-link:\n")
+        fh.write(f"    count: {len(dl)}\n")
+        fh.write("    refs: [" + ", ".join(f'"{x}"' for x in dl) + "]\n")
+        fh.write("  id/unknown-prefix:\n")
+        fh.write("    prefixes: [" + ", ".join(px) + "]\n")
+        fh.write("notes: |\n  首次扫描快照；新增违规以此为基线计算 delta。\n"
+                 "  ⛔ 本文件只是本机噪声抑制，不是语义审批；推荐 gitignore。\n")
+    return path
+
+
+def read_baseline(root):
+    """⛔ 不是通用 YAML 解析器——只读本脚本自己写的固定结构。
+
+    手改后格式不符会报 health/baseline-corrupt，这是有意的：baseline 是机器快照，
+    不是给人编辑的配置。
+    """
+    path = os.path.join(root, BASELINE_REL)
+    if not os.path.isfile(path):
+        return None, "health/baseline-missing"
+    try:
+        txt = open(path, encoding="utf-8").read()
+        if not re.match(r"^schema:\s*" + re.escape(BASELINE_SCHEMA) + r"\s*$", txt.split("\n")[0]):
+            return None, "health/baseline-corrupt"
+        def lst(key):
+            m = re.search(r"^\s+" + re.escape(key) + r":\s*\[(.*?)\]\s*$", txt, re.M)
+            if not m:
+                return set()
+            return {x.strip().strip('"') for x in m.group(1).split(",") if x.strip()}
+        m = re.search(r"^\s+devdocs_state_size_bytes:\s*(\d+)\s*$", txt, re.M)
+        return {"size": int(m.group(1)) if m else 0,
+                "forbidden": lst("lines"), "dead": lst("refs"), "prefixes": lst("prefixes")}, None
+    except Exception:
+        return None, "health/baseline-corrupt"
+
+
+def apply_baseline(findings, bl):
+    """按规格「Delta 计算规则」过滤。⛔ 规格未定义 delta 的 rule 一律不过滤。"""
+    out = []
+    for f in findings:
+        r = f["rule_id"]
+        if r == "state/total-size-cap":
+            delta = (f["actual"] or 0) - bl["size"]
+            if delta < SIZE_DELTA_IGNORE:
+                continue
+            f = dict(f, message=f["message"] + f"（较 baseline +{delta} bytes）")
+        elif r == "state/forbidden-content":
+            if f"{f['file']}:{f['line']}" in bl["forbidden"]:
+                continue
+        elif r == "health/dead-link":
+            if f["message"].split(" ")[0] in bl["dead"]:
+                continue
+        elif r == "id/unknown-prefix":
+            if f["message"].split("：")[0].replace("未知前缀 ", "") in bl["prefixes"]:
+                continue
+        out.append(f)
+    return out
+
+
 def scan_project(root, files=None):
     """project scope 的 6 条 rule。files=None 时自行遍历 docs/devdocs/。"""
     devdocs = os.path.join(root, 'docs', 'devdocs')
@@ -439,6 +533,8 @@ def main():
     ap.add_argument("--changed-only", action="store_true", help="仅扫 git diff HEAD 变更的文件")
     ap.add_argument("--fix", metavar="RULE_ID", help="仅运行指定 rule")
     ap.add_argument("--selftest", action="store_true", help="跑内置夹具自检")
+    ap.add_argument("--baseline-init", action="store_true", help="写 baseline 快照，不报告违规")
+    ap.add_argument("--since-baseline", action="store_true", help="只报告 baseline 之后新增的违规")
     ap.add_argument("--skills-dir", metavar="DIR",
                     help="改扫 skill 库，只跑 flag/dangling-reference（⛔ 与 --target 的 project-scope rule 互斥）")
     args = ap.parse_args()
@@ -478,6 +574,23 @@ def main():
             print(f"health/git-unavailable: {e}", file=sys.stderr)
             return 3
     findings = scan_project(root, files)
+
+    if args.baseline_init:
+        path = write_baseline(root, findings)
+        print(f"# baseline 已写入 {os.path.relpath(path, root)}"
+              f"（{len(findings)} 条现状快照，⛔ 未报告违规）\n"
+              f"# 建议 gitignore —— 它是本机噪声抑制，不是语义审批", file=sys.stderr)
+        return 0
+
+    if args.since_baseline:
+        bl, err = read_baseline(root)
+        if err:
+            print(f"{err}: {os.path.join(root, BASELINE_REL)}", file=sys.stderr)
+            return 3
+        before = len(findings)
+        findings = apply_baseline(findings, bl)
+        print(f"# since-baseline: {before} → {len(findings)} 条"
+              f"（抑制 {before - len(findings)} 条存量）", file=sys.stderr)
 
     if args.fix:
         findings = [f for f in findings if f["rule_id"] == args.fix]

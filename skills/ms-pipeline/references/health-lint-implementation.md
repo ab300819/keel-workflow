@@ -639,6 +639,15 @@ notes: |
 
 ⚠️ **改本文算法后跑一次 `--selftest`**（内置夹具，覆盖 9 条）。本仓无 CI，它是唯一会响的东西。
 
+| 入口 | 用途 |
+|---|---|
+| `--target <根>` | project scope 的 8 条 |
+| `--skills-dir <skills/>` | skill 库的 4 条（`flag/*` + `skill/*`）|
+| `--baseline-init` / `--since-baseline` | 存量项目噪声抑制 |
+| `--changed-only` | 仅扫 `git diff HEAD` 变更文件 |
+| `--fix=<rule_id>` | 只跑指定 rule |
+| `--selftest` | 内置夹具自检 |
+
 ```bash
 python3 <skill_dir>/scripts/health-lint.py --target <项目根> [--changed-only] [--fix=<rule_id>]
 ```
@@ -651,8 +660,21 @@ python3 <skill_dir>/scripts/health-lint.py --target <项目根> [--changed-only]
 脚本对后两条输出 `not_implemented` 到 stderr，⛔ **不得当作 pass**。
 脚本 stdout 即本文「Finding 输出 schema」格式，退出码见下方「退出码（CLI 集成）」。
 
-v1 **不含 baseline / `--apply` / 自动修复** —— 存量项目首扫噪声大属预期（尤见 `id/unknown-prefix`），
-判读时按本文各 rule 的「误报与边界」处置。
+**baseline 已实现**（存量项目落地的唯一可用方式）：
+
+```bash
+python3 health-lint.py --target <项目根> --baseline-init      # 写快照，⛔ 不报告违规
+python3 health-lint.py --target <项目根> --since-baseline     # 只报 baseline 之后的新增
+```
+
+⚠️ **delta 只对本文「Delta 计算规则」定义过的 rule 生效**（`total-size-cap` / `forbidden-content` /
+`dead-link` / `id/unknown-prefix`）。`state/line-length-cap` 与 `state/max-id-stale` 本文未定义 delta，
+⇒ **一律不过滤**，每次全报。
+
+⚠️ baseline 读取器 ⛔ **不是通用 YAML 解析器** —— 只认本脚本自己写的固定结构。
+手改后格式不符会报 `health/baseline-corrupt`（有意为之：baseline 是机器快照，不是给人编辑的配置）。
+
+v1 仍不含 `--apply` / 自动修复。
 
 ## CLI 触发
 
