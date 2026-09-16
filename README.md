@@ -11,22 +11,28 @@
 ## 安装
 
 ```bash
-# npx（跨工具通用，推荐）
+# Claude Plugin Marketplace（推荐，两步）
+/plugin marketplace add ab300819/skills
+/plugin install devdocs-skills@ab300819-skills
+
+# npx（跨工具通用；Codex / OpenCode / Cursor 等 60+ 客户端目录）
 npx skills add ab300819/skills --list          # 列出所有 skill
 npx skills add ab300819/skills@code-quality     # 安装单个
 npx skills add ab300819/skills --all            # 全装
-
-# Claude Plugin Marketplace（整包安装，两步）
-/plugin marketplace add ab300819/skills
-/plugin install devdocs-skills@ab300819-skills
 ```
 
-> **两条路的调用方式不同。** npx 装的是裸名 `/ms-pipeline`；plugin 装的带命名空间，
-> 是 `/devdocs-skills:ms-pipeline`。**本文其余部分一律用裸名书写**，走 plugin 的请自行加
-> `devdocs-skills:` 前缀。
+| | Plugin | npx |
+|---|---|---|
+| 调用名 | `/devdocs-skills:ms-pipeline`（带命名空间）| `/ms-pipeline`（裸名）|
+| 粒度 | 整包 | 可单 skill 选装 |
+| 更新 | 自动 | `skills update` + lockfile |
+| 客户端 | Claude Code | 60+ 目标目录 |
+| **`hooks/` 生效** | ✅ **唯一通道** | ❌ 只复制 skill 目录，不带根级 `hooks/` |
+
+> ⚠️ **两种方式不要同时装** —— 会出现裸名与带前缀两套并存。换装前先
+> `npx skills remove` 清掉旧的。
 >
-> 其他差异：npx 支持单 skill 选装、覆盖 60+ 种客户端目录；plugin 是整包安装、可自动更新，
-> 且是 `hooks/` 生效的唯一通道（npx 只复制 skill 目录，不带根级 hooks）。
+> 本文其余部分一律用裸名书写；走 plugin 时请自行加 `devdocs-skills:` 前缀。
 
 ---
 

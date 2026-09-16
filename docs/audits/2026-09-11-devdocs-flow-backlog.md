@@ -195,3 +195,27 @@ DevDocs 写法: /plan --brainstorm | --write | --execute | --subagent           
 ⇒ 项目早期（requirements 未完成，或该治理步失败时）**AGENTS.md 的工作流路由节不存在** —— 而那恰是最容易走错流程的阶段。
 
 来源：2026-09-16 Codex 独立调研。⚠️ **未评估影响面**，也无真实失败证据。
+
+### 4.5 待验：插件安装后模板里的裸名是否仍可解析（2026-09-16）
+
+用户决定改用 **Plugin Marketplace** 安装（原 npx）。插件安装的 skill 带命名空间
+（本会话直接可见：`superpowers:brainstorming` / `ponytail:ponytail` 是带前缀的，
+npx 装的 `ms-pipeline` 是裸名）。
+
+**风险面已量化**：
+
+| 位置 | 处数 | 性质 | 影响 |
+|---|---:|---|---|
+| `skills/*/templates/` | **72 / 20 文件** | **会复制进用户项目，用户照着敲** | 🔴 真风险 |
+| `skills/*/SKILL.md` + `references/` | 1151 | 给模型看的指路，模型自行解析到带前缀项 | 低 |
+
+⛔ **未验证**：插件装完后用户敲裸名 `/ms-sync` 到底还能不能解析。
+只观察到列表显示带前缀，**没有证据表明裸名失效**。
+
+⇒ **装完后一条命令即可测**，⛔ 不要在验证前批量改写那 72 处。
+若确认裸名失效，改动面是 20 个模板文件；若仍可解析，本条直接关闭。
+
+模板清单（按处数）：`ms-verify/verify-report.md`(11) · `ms-dev-tasks/task-template.md`(8) ·
+`agent-memory/memory-template.md`(7) · `prior-art-scan/report-template.md`(6) ·
+`ms-verify/readiness-report.md`(5) · `ms-retrofit/retrofit-report-template.md`(5) ·
+`agent-memory/best-practices.md`(5) · 其余 13 个文件各 1~4 处。
