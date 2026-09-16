@@ -226,43 +226,74 @@ def emit(findings):
                 print(f"  {k}: {v}")
 
 
-def main():
-    ap = argparse.ArgumentParser(description="health-lint v1 (6/8 rules)")
-    ap.add_argument("--target", default=".", help="项目根（含 docs/devdocs/）")
-    ap.add_argument("--changed-only", action="store_true", help="仅扫 git diff HEAD 变更的文件")
-    ap.add_argument("--fix", metavar="RULE_ID", help="仅运行指定 rule")
-    ap.add_argument("--skills-dir", metavar="DIR",
-                    help="改扫 skill 库，只跑 flag/dangling-reference（⛔ 与 --target 的 project-scope rule 互斥）")
-    args = ap.parse_args()
+SKILL_LINE_CAP = 500
+REL_LINK_RE = re.compile(r"\]\((\.{1,2}/[^)\s]*)\)")
 
-    if args.skills_dir:
-        sd = os.path.abspath(args.skills_dir)
-        if not os.path.isdir(sd):
-            print(f"lint error: {sd} 不存在", file=sys.stderr)
-            return 3
-        fs = scan_skill_flags(sd)
-        if args.fix:
-            fs = [f for f in fs if f["rule_id"] == args.fix]
-        emit(fs)
-        print(f"\n# skills-dir scan | warning={len(fs)}", file=sys.stderr)
-        return 1 if fs else 0
 
-    root = os.path.abspath(args.target)
-    devdocs = os.path.join(root, "docs", "devdocs")
+def scan_skill_repo(skills_dir):
+    """skill 库自检 3 条 —— AGENTS.md 已声明但此前零人执行的约束。
+
+    skill/size-cap      SKILL.md ≤ 500 行（AGENTS.md 硬约束）
+    skill/name-mismatch 目录名 ≡ frontmatter name（安装按 name 复制整个目录）
+    skill/dead-link     仓内相对链接目标存在
+    """
+    fs = []
+    for d in sorted(os.scandir(skills_dir), key=lambda e: e.name):
+        if not d.is_dir() or d.name.startswith("."):
+            continue
+        sk = os.path.join(d.path, "SKILL.md")
+        if not os.path.isfile(sk):
+            fs.append(find("skill/name-mismatch", "blocker", d.name, None,
+                           f"目录 {d.name}/ 没有 SKILL.md", fix="补 SKILL.md 或删除空目录"))
+            continue
+        lines = open(sk, encoding="utf-8", errors="replace").read().split("\n")
+        n = len(lines)
+        if n > SKILL_LINE_CAP:
+            fs.append(find("skill/size-cap", "blocker", f"{d.name}/SKILL.md", None,
+                           f"{n} 行 > {SKILL_LINE_CAP}（AGENTS.md 硬约束）", n, SKILL_LINE_CAP,
+                           fix="把细节下沉到 references/"))
+        name = next((l[5:].strip() for l in lines[:20] if l.startswith("name:")), None)
+        if name != d.name:
+            fs.append(find("skill/name-mismatch", "blocker", f"{d.name}/SKILL.md", None,
+                           f"目录名 {d.name!r} != frontmatter name {name!r}；"
+                           f"安装按 name 复制整个目录，跨 skill 相对引用依赖该约定",
+                           fix="改 frontmatter name 或重命名目录（两者须一致）"))
+
+    # dead-link：⛔ 只查真实相对链接（./ 或 ../ 开头），⛔ 不用裸正则一刀切。
+    #
+    # ⛔ **跳过 templates/** —— 模板会被复制进用户项目，其中的相对路径是按
+    # **产物落点**算的，不是仓内路径。实测：ms-prd/templates 的
+    # `../../codebase-insight.md` 在仓内不存在，但模板落到用户项目
+    # `docs/prd/requirements/index.md` 后正好解析到 `docs/codebase-insight.md`，
+    # 完全正确。按仓内文件系统校验模板 = 必然误报。
+    # 这是 repo-governance 1.2 明确警告过的那一类。
+    for root, dirs, files in os.walk(skills_dir):
+        dirs[:] = [x for x in dirs if not x.startswith(".") and x != "templates"]
+        for fn in sorted(f for f in files if f.endswith(".md")):
+            path = os.path.join(root, fn)
+            lines = open(path, encoding="utf-8", errors="replace").read().split("\n")
+            mask = strip_code_blocks(lines)
+            for i, ln in enumerate(lines):
+                if mask[i] or "health-lint-disable-line skill/dead-link" in ln:
+                    continue
+                for m in REL_LINK_RE.finditer(ln):
+                    tgt = m.group(1).split("#")[0]
+                    if not tgt or os.path.exists(os.path.join(root, tgt)):
+                        continue
+                    fs.append(find("skill/dead-link", "warning",
+                                   os.path.relpath(path, skills_dir), i + 1,
+                                   f"相对链接目标不存在：{tgt}", ctx=ln.strip()[:100],
+                                   fix="修正路径；若为示例请加 <!-- health-lint-disable-line skill/dead-link -->"))
+    return fs
+
+
+def scan_project(root, files=None):
+    """project scope 的 6 条 rule。files=None 时自行遍历 docs/devdocs/。"""
+    devdocs = os.path.join(root, 'docs', 'devdocs')
     if not os.path.isdir(devdocs):
-        print(f"not_applicable: {devdocs} 不存在", file=sys.stderr)
-        return 0
-
-    files = collect_files(devdocs)
-    if args.changed_only:
-        try:
-            out = subprocess.run(["git", "-C", root, "diff", "--name-only", "HEAD"],
-                                 capture_output=True, text=True, timeout=10)
-            changed = {os.path.join(root, p) for p in out.stdout.split()}
-            files = [f for f in files if f in changed]
-        except Exception as e:
-            print(f"health/git-unavailable: {e}", file=sys.stderr)
-            return 3
+        return []
+    if files is None:
+        files = collect_files(devdocs)
 
     rel = lambda p: os.path.relpath(p, root)
     docs = {}
@@ -271,7 +302,7 @@ def main():
             lines = open(f, encoding="utf-8", errors="replace").read().split("\n")
         except OSError as e:
             print(f"lint error: {f}: {e}", file=sys.stderr)
-            return 3
+            continue
         docs[f] = (lines, strip_code_blocks(lines))
 
     # ---- Phase A：定义索引（⛔ 不从 devdocs-state.md 取上界）----
@@ -344,6 +375,109 @@ def main():
     state_path = os.path.join(root, ".claude", "rules", "devdocs-state.md")
     sf, na = scan_state(state_path, os.path.relpath(state_path, root), derived_caps)
     findings += sf
+    return findings
+
+
+def selftest():
+    """最小可跑自检：造夹具 → 断言每条 rule 都命中/不命中。
+
+    ⛔ 不是完整测试套件。它只保证"规格改了脚本没跟上"时会响。
+    """
+    import tempfile, shutil
+    t = tempfile.mkdtemp()
+    try:
+        # --- project scope 夹具 ---
+        dd = os.path.join(t, "docs", "devdocs"); os.makedirs(os.path.join(dd, "_archived"))
+        os.makedirs(os.path.join(t, ".claude", "rules"))
+        open(os.path.join(dd, "01.md"), "w").write(
+            "## F-001 x\n- AC-001 a\n- AC-002 b\n"
+            "引用 AC-003 与范围 AC-001~002。决策 D-014。外部单号 SIDM-71103。\n"
+            "```\nAC-777 代码块内不算\n```\n")
+        open(os.path.join(dd, "_archived", "old.md"), "w").write("## AC-555 归档不进索引\n")
+        open(os.path.join(t, ".claude", "rules", "devdocs-state.md"), "w").write(
+            "# s\n## 编号状态\n| 类型 | 当前最大 |\n|---|---|\n| AC | AC-001 |\n"
+            "- T-01 done trade@0c263bf4d4 净 -85 LOC +184/-5 见 src/F.java:L5\n"
+            "- " + "长" * 600 + "\n")
+        # --- skills scope 夹具 ---
+        sk = os.path.join(t, "sk"); os.makedirs(os.path.join(sk, "good"))
+        os.makedirs(os.path.join(sk, "bad")); os.makedirs(os.path.join(sk, "empty"))
+        open(os.path.join(sk, "good", "SKILL.md"), "w").write("---\nname: good\n---\n引用 [x](../bad/SKILL.md)\n")
+        open(os.path.join(sk, "bad", "SKILL.md"), "w").write(
+            "---\nname: WRONG\n---\n" + "行\n" * 501 + "死链 [y](../nope/SKILL.md)\n调 `/good --ghost`\n")
+
+        want = {
+            "health/dead-link": 1,        # AC-003（AC-001~002 展开后命中定义，不报）
+            "id/unknown-prefix": 1,       # D（SIDM 限位数排除）
+            "state/forbidden-content": 1,
+            "state/line-length-cap": 1,
+            "state/max-id-stale": 2,      # AC: 表 1 < 实际 2(stale) + F: 表无该行(missing-row)
+            "skill/name-mismatch": 2,     # bad 名不符 + empty 无 SKILL.md
+            "skill/size-cap": 1,
+            "skill/dead-link": 1,
+            "flag/dangling-reference": 1,
+        }
+        got = {}
+        for f in scan_project(t) + scan_skill_flags(sk) + scan_skill_repo(sk):
+            got[f["rule_id"]] = got.get(f["rule_id"], 0) + 1
+        bad = [(k, want[k], got.get(k, 0)) for k in want if got.get(k, 0) != want[k]]
+        extra = sorted(set(got) - set(want))
+        for k, w, g in bad:
+            print(f"FAIL {k}: 期望 {w} 条，实得 {g}", file=sys.stderr)
+        for k in extra:
+            print(f"FAIL 未预期的 rule: {k} ({got[k]} 条)", file=sys.stderr)
+        if bad or extra:
+            return 1
+        print(f"selftest OK —— {len(want)} 条 rule 全部命中预期", file=sys.stderr)
+        return 0
+    finally:
+        shutil.rmtree(t, ignore_errors=True)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="health-lint v1 (6/8 rules)")
+    ap.add_argument("--target", default=".", help="项目根（含 docs/devdocs/）")
+    ap.add_argument("--changed-only", action="store_true", help="仅扫 git diff HEAD 变更的文件")
+    ap.add_argument("--fix", metavar="RULE_ID", help="仅运行指定 rule")
+    ap.add_argument("--selftest", action="store_true", help="跑内置夹具自检")
+    ap.add_argument("--skills-dir", metavar="DIR",
+                    help="改扫 skill 库，只跑 flag/dangling-reference（⛔ 与 --target 的 project-scope rule 互斥）")
+    args = ap.parse_args()
+
+    if args.selftest:
+        return selftest()
+
+    if args.skills_dir:
+        sd = os.path.abspath(args.skills_dir)
+        if not os.path.isdir(sd):
+            print(f"lint error: {sd} 不存在", file=sys.stderr)
+            return 3
+        fs = scan_skill_flags(sd) + scan_skill_repo(sd)
+        fs.sort(key=lambda f: (f["file"], f["line"] or 0))
+        if args.fix:
+            fs = [f for f in fs if f["rule_id"] == args.fix]
+        emit(fs)
+        sys.stdout.flush()
+        bl = sum(1 for f in fs if f["severity"] == "blocker")
+        print(f"\n# skills-dir scan | blocker={bl} warning={len(fs) - bl}", file=sys.stderr)
+        return 2 if bl else (1 if fs else 0)
+
+    root = os.path.abspath(args.target)
+    devdocs = os.path.join(root, "docs", "devdocs")
+    if not os.path.isdir(devdocs):
+        print(f"not_applicable: {devdocs} 不存在", file=sys.stderr)
+        return 0
+
+    files = collect_files(devdocs)
+    if args.changed_only:
+        try:
+            out = subprocess.run(["git", "-C", root, "diff", "--name-only", "HEAD"],
+                                 capture_output=True, text=True, timeout=10)
+            changed = {os.path.join(root, x) for x in out.stdout.split()}
+            files = [f for f in files if f in changed]
+        except Exception as e:
+            print(f"health/git-unavailable: {e}", file=sys.stderr)
+            return 3
+    findings = scan_project(root, files)
 
     if args.fix:
         findings = [f for f in findings if f["rule_id"] == args.fix]
@@ -354,7 +488,8 @@ def main():
     blockers = sum(1 for f in findings if f["severity"] == "blocker")
     warnings = len(findings) - blockers
     print(f"\n# scanned {len(files)} files | blocker={blockers} warning={warnings}"
-          + (" | devdocs-state.md: not_applicable" if na else ""), file=sys.stderr)
+          + ("" if os.path.isfile(os.path.join(root, ".claude", "rules", "devdocs-state.md"))
+             else " | devdocs-state.md: not_applicable"), file=sys.stderr)
     print("# not_implemented(v1): design/adr-only-revision, submodule/pointer-drift", file=sys.stderr)
     return 2 if blockers else (1 if warnings else 0)
 
