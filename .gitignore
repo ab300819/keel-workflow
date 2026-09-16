@@ -2,3 +2,4 @@ agents/
 .remember/
 .DS_Store
 .idea/
+__pycache__/

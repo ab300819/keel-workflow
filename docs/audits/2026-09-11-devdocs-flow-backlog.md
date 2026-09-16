@@ -2,7 +2,7 @@
 
 > 2026-09-11 登记，2026-09-16 §1 / §2 **已判定并结清**（结论见 §3）。原取证保留备查。
 >
-> ⚠️ **§4 是 2026-09-16 新登记的未决项**，不在上述结清范围内。
+> ⚠️ **§4 于 2026-09-16 登记**：4.1（死引用）与 4.2（守卫规则）当日即结清，**4.3~4.6 仍未决**。
 >
 > 与 [对象模型收敛设计](../superpowers/specs/2026-09-11-devdocs-object-model-convergence-design.md) 是**两条轴**：那份管编号对象与文档结构，本文管流程本身的暴露面与外部复用。
 
@@ -142,13 +142,13 @@ and types neighboring tasks use."*
 
 ---
 
-## 4. 新登记：flag 的消费契约缺口（2026-09-16，未决）
+## 4. flag 的消费契约缺口（2026-09-11 登记）—— 4.1 / 4.2 已结清，4.3~4.6 未决
 
 > 起因：`--impl` 这类子指令**没有解析器** —— skill 是 markdown，harness 把 flag 当 `args` 原样传给模型，模型读 SKILL.md 的表**对着认**。纯文本匹配。
 >
 > 推论：flag 打错、改名、删除，**没有任何东西会报错**。以下是实测出的后果。
 
-### 4.1 已实证 4 处死引用（⛔ 未修）
+### 4.1 ~~已实证 4 处死引用~~ —— 已修（2026-09-16）
 
 15 行 shell 扫 `skills/` 下所有 `/<skill> --<flag>` 引用，回查目标 skill 目录是否存在该 flag：
 
@@ -163,15 +163,26 @@ and types neighboring tasks use."*
 
 ⇒ **那次收敛自己制造了死引用。** 这正是本仓吃过多次的「双删失效模式」：删了生产方漏了消费方，而无解析器 / 无 linter，静默通过。
 
+**已修**：`270b2c0` 改掉全部 6 处 occurrence（上表 4 个 flag 名 / 3 个文件）。
+守卫已落地，见 §4.2 —— 现在 `health-lint --skills-dir skills` 对本仓报 0 条。
+
 > 误报 1 处（已排除）：`ms-requirements/references/context-mode.md:29` 的 `/ms-retrofit --baseline-update`，原文是「**不**为基线补全新建…一类的入口」，是反例不是引用。
 
-### 4.2 提案：`flag/dangling-reference` 作为 health-lint 第 9 条规则
+### 4.2 ~~提案~~：`flag/dangling-reference` 作为 health-lint 第 9 条规则 —— 已落地（2026-09-16）
 
 检测**机械可判**（本次用 15 行 shell 完成），与 `id/unknown-prefix` 同属「b 索引/链接」维度。
 
 与既有 `id/prefix-consumption-contract`（2026-09-15 落地）**完全同构** —— 那条管编号前缀的消费契约，这条管 flag 的。两者的失效模式也同一个：生产方改了，消费方不知道。
 
-⚠️ 但同样受限于 health-lint 无实现（[规格在此](../../skills/ms-pipeline/references/health-lint-implementation.md)）这个前提：672 行规格 + 0 行代码，本仓无任何可执行文件。⇒ 该规则**依赖 health-lint 先被实现**，否则只是多写一条没人跑的规格。
+**已落地**（2026-09-16）：登记时的阻塞前提「672 行规格 + 0 行代码」已不成立 ——
+`skills/ms-pipeline/scripts/health-lint.py`（`72ff2ea` 起，纯 stdlib）实现了规格 12 条 rule 中的 10 条
+（未实现：`design/adr-only-revision` · `submodule/pointer-drift`），
+`flag/dangling-reference` 是其中之一（`2e83e38`）。它**只扫 skill 库不扫用户项目**，
+入口 `--skills-dir`。
+
+⚠️ 该实现随后被 codex 独立审查查出 8 处缺陷（`6d85be2` 已修），其中一条让
+`health/dead-link` 在追溯矩阵行上完全失效 —— **「有 linter」不等于「linter 是对的」**，
+本条的守卫价值以那次修复为准。
 
 ### 4.3 ⏸️ 未决（⛔ 不是「判定不做」）：减少子指令 —— 靶子只有 `ms-verify`
 

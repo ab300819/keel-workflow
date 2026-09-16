@@ -597,7 +597,7 @@ def selftest():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="health-lint v1 (6/8 rules)")
+    ap = argparse.ArgumentParser(description="health-lint v1 (10/12 rules)")
     ap.add_argument("--target", default=".", help="项目根（含 docs/devdocs/）")
     ap.add_argument("--changed-only", action="store_true", help="仅扫 git diff HEAD 变更的文件")
     ap.add_argument("--fix", metavar="RULE_ID", help="仅运行指定 rule")
