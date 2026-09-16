@@ -155,7 +155,7 @@ e2e-test-flow:34    不适合? 设计用例 → `/test-cases`;跑测试套件 �
 | 端 | 形式 |
 |---|---|
 | Claude Code | `/keel:pipeline` ✅ 目标形态 |
-| Codex | `/keel:pipeline`（命名空间行为待 V2b 验证）|
+| Codex | `/keel:pipeline` ✅ V2b 已验：注册名就是 `keel:<name>` |
 | OpenCode | `/pipeline` 裸名 —— 该端无命名空间（§1.2）|
 
 ### 3.1 V1 实测结论（2026-09-16）：**裸名可解析**
@@ -218,10 +218,29 @@ Skill(ponytail-help)            ← ⛔ 不带 ponytail: 前缀
 | **2 拆仓 + 改名**（可逆）| clone 两份；各删对侧 skill；`_shared` → `shared/`；21 目录去前缀 + frontmatter + 2372 处字面分类处理；建三端 manifest | `health-lint --skills-dir` 两侧 `skill/name-mismatch` + `skill/dead-link` 均 0 blocker |
 | **3 接断链** | 按 §4 处置 22 处 | 两侧无跨仓可解析链接；6 个零散 skill 在**未装 keel** 时全部可独立运行 |
 | **4 hook 三端适配** | 公共检查逻辑一份 + 三个薄适配层 | 各端真实会话触发一次（⚠️ 现有两个 hook 自陈未跑过，本次是首次实测）|
-| **4b 三端调度验收** | —— | ⛔ 「能发现 33 个 skill」**不算通过**：每端须真跑一次**跨 skill 委托**（如 `pipeline` → `requirements` → `agent-memory`），确认裸名调用在该端可解析 |
+| ~~**4b 三端调度验收**~~ | ✅ 已通过（2026-09-16，见 §5.1）| —— |
 | **5 历史重写**（⛔ 不可逆）| 在 `--mirror` 副本上 `git filter-repo --mailmap`；**再用 `commit-map` 回填 13 份文档里的 21 个 SHA** | 身份唯一；366 节点不变；tree 与父子关系逐提交相同；21 个 SHA 全部解析成功 |
 | **6 远程切换**（⛔ 不可逆）| `gh api --method PATCH repos/ab300819/skills -f name=keel`；`git remote set-url`；`--force-with-lease` 按冻结时 oid 逐 ref 推 | 新 clone 的 refs 与发布清单一致；身份复查通过 |
 | **7 本地换位** | 旧工作区移走并**禁用其 push**；建壳目录；放两个仓；**按迁移清单清理旧安装**（见下）；三端重装 | 壳内无 `.git`；零散仓 `git remote -v` 为空；**三端新会话里旧 `ms-*` 名全部消失**；三端各自能发现 33 个 skill；**42 个非本仓 skill 不受影响** |
+
+#### 5.1 阶段 4b 实测结论（2026-09-16）
+
+**裸名在三端都能解析**，但三端的机制各不相同：
+
+| 端 | 注册名 | 裸名 `/requirements` 实测 |
+|---|---|---|
+| Claude Code | `keel:requirements` | ✅ V1（§3.1） |
+| Codex CLI | `keel:requirements` | ✅ 加载到 `keel:requirements`（`codex exec` 真跑） |
+| OpenCode | `requirements`（**零命名空间**）| ✅ `Skill "requirements"` 调用成功 |
+
+⚠️ **一个反例值得记下**：同一个 Codex，如果 prompt 要求「把 `/requirements` 映射成清单里的
+**精确标识符**」，它会答「解析不到」——清单里只有 `keel:requirements`。**自然委托语境下才解析得动。**
+⇒ 裸名在 Codex 上靠的是语义匹配，不是字面查表；§3.1 的「裸名是便利不是契约」在这一端尤其成立。
+
+同批验证：`skills/shared/` 随插件整包分发，`skills/pipeline/../shared/constraints.md`
+在 Codex 插件缓存里解析成功 ⇒ §2.1 把 `shared/` 留在 `skills/` 下的取舍成立。
+
+⚠️ 三端实测同时复现了 §1.1 的旧安装问题：OpenCode 注册表里 22 个旧 `ms-*` 仍在。
 
 #### 阶段 7 的旧安装清理（R2 修正，原"清理 81 个符号链接"两头都错）
 
@@ -259,7 +278,8 @@ Skill(ponytail-help)            ← ⛔ 不带 ponytail: 前缀
 ## 7. 待验 / 待决
 
 - ~~**V1**~~ —— **已验通过（2026-09-16）**，结论见 §3.1。阶段 2 解除阻塞。
-- **V2b**：Codex 是否支持 `plugin:skill` 冒号命名空间。不挡拆分，挡 README 措辞。
+- ~~**V2b**~~ —— **已验通过（2026-09-16）**：`codex debug prompt-input` 显示 33 个 skill
+  全部注册为 `keel:<name>`，Codex **支持**冒号命名空间。
 - ~~**D2**~~ —— **已定：接受**。零散仓无远程、无异地备份，误删不可恢复。
   ⚠️ 阶段 1 的 `git bundle` 备份因此是该仓**唯一**的历史保险，⛔ 不得省略。
 - ~~**D3**~~ —— **已定：两边各留精简版**，拆法见 §6。
