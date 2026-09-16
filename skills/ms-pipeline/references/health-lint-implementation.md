@@ -572,7 +572,26 @@ notes: |
   首次扫描快照；新增违规以此为基线计算 delta。
 ```
 
-### CLI 触发
+### 可执行实现（v1，6/8 条）
+
+**⛔ 先跑脚本，不要逐条人肉扫。** [`../scripts/health-lint.py`](../scripts/health-lint.py) —— 零依赖 stdlib。
+
+```bash
+python3 <skill_dir>/scripts/health-lint.py --target <项目根> [--changed-only] [--fix=<rule_id>]
+```
+
+| | rule |
+|---|---|
+| ✅ 脚本已覆盖 | `state/total-size-cap` · `state/line-length-cap` · `state/forbidden-content` · `health/dead-link` · `state/max-id-stale` · `id/unknown-prefix` |
+| ⚠️ 仍需 Agent 按本文算法执行 | `design/adr-only-revision`（git diff 行范围 × heading map）· `submodule/pointer-drift`（仅 shell 拓扑）|
+
+脚本对后两条输出 `not_implemented` 到 stderr，⛔ **不得当作 pass**。
+脚本 stdout 即本文「Finding 输出 schema」格式，退出码见下方「退出码（CLI 集成）」。
+
+v1 **不含 baseline / `--apply` / 自动修复** —— 存量项目首扫噪声大属预期（尤见 `id/unknown-prefix`），
+判读时按本文各 rule 的「误报与边界」处置。
+
+## CLI 触发
 
 | 命令 | 行为 |
 |------|------|
