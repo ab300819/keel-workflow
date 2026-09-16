@@ -3,3 +3,6 @@ agents/
 .DS_Store
 .idea/
 __pycache__/
+
+# ACM 版权论文，⛔ 不入库（本仓公开）
+docs/*.pdf

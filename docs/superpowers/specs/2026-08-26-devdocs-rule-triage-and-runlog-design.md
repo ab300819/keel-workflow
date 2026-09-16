@@ -440,7 +440,7 @@ E4 的撤回同时**强化**了 E5：把分母换对之后，「302 处 `⛔` �
 
 ## 11. 外部证据：Forge（CAIS '26）
 
-> 2026-09-07 由用户引入以佐证 §0 第 1 条。文献：Antoine Emil Zambelli, *Forge: Closing the Agentic Reliability Gap Between Self-Hosted and Frontier Language Models*, CAIS '26, San Jose, [10.1145/3786335.3813193](https://doi.org/10.1145/3786335.3813193)。本地副本 `docs/3786335.3813193.pdf`。
+> 2026-09-07 由用户引入以佐证 §0 第 1 条。文献：Antoine Emil Zambelli, *Forge: Closing the Agentic Reliability Gap Between Self-Hosted and Frontier Language Models*, CAIS '26, San Jose, [10.1145/3786335.3813193](https://doi.org/10.1145/3786335.3813193)。⛔ 本地副本已从仓库移除（ACM 版权，本仓公开后不得再分发）；按 DOI 自取。
 
 **判定：它佐证的是 §2 四分法本身，不是「模型变强所以可以简化」；并对 §0 第 1 条后半句「不要过度干预大模型行为」构成反证。**
 
