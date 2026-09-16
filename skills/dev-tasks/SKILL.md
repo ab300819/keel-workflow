@@ -1,6 +1,6 @@
 ---
 name: dev-tasks
-description: 把 DevDocs 系统设计拆为有依赖、验收标准和追溯关系的开发任务。执行任务用 dev-workflow。
+description: 把 keel 系统设计拆为有依赖、验收标准和追溯关系的开发任务。执行任务用 dev-workflow。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, TodoWrite, Bash
 metadata:
   patterns: [generator]

@@ -1,6 +1,6 @@
 ---
 name: system-design
-description: 创建或更新 DevDocs 技术设计：架构、接口、数据模型与变更影响。需求定义用 requirements；视觉设计用 ui-orchestrator。
+description: 创建或更新 keel 技术设计：架构、接口、数据模型与变更影响。需求定义用 requirements；视觉设计用 ui-orchestrator。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [inversion, generator]

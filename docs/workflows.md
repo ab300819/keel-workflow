@@ -4,7 +4,7 @@
 
 ### PRD 流程（需求发现）
 
-适用于**模糊想法**或**已有 PRD 文档**。独立于 DevDocs，成熟后由编排层桥接进去（桥接是内部动作，你不需要触发它）。
+适用于**模糊想法**或**已有 PRD 文档**。独立于 keel，成熟后由编排层桥接进去（桥接是内部动作，你不需要触发它）。
 
 #### 怎么用
 
@@ -57,8 +57,8 @@
 #### 产出与衔接
 
 - 产出文件：`docs/prd/requirements/FR-XX-*.md` + `index.md`（扁平、单需求脚手架）
-- 成熟度达到 `ready` 后，说「把 PRD 导进 DevDocs」——编排层会带着 PRD 产物路径调用 `/requirements`
-- 需求 close（上线）后，`docs/prd/` 脚手架可由 `/prd clear`（或 `/pipeline close` 末步）清理 —— 代码 + DevDocs 才是事实源
+- 成熟度达到 `ready` 后，说「把 PRD 导进 keel」——编排层会带着 PRD 产物路径调用 `/requirements`
+- 需求 close（上线）后，`docs/prd/` 脚手架可由 `/prd clear`（或 `/pipeline close` 末步）清理 —— 代码 + keel 才是事实源
 
 ---
 
@@ -286,7 +286,7 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 ## 大型需求最佳实践
 
-基于 [Harness Design for Long-Running Apps](https://www.anthropic.com/engineering/harness-design-long-running-apps) 的 Generator-Evaluator 分离、Sprint Contract、最小可行 Harness 等设计模式，结合 DevDocs 流程的推荐使用方式：
+基于 [Harness Design for Long-Running Apps](https://www.anthropic.com/engineering/harness-design-long-running-apps) 的 Generator-Evaluator 分离、Sprint Contract、最小可行 Harness 等设计模式，结合 keel 流程的推荐使用方式：
 
 ### 1. 需求阶段拉长，开发阶段提速
 
@@ -379,32 +379,32 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 ## 与 superpowers 共存
 
-> 设计与审查记录:[specs/2026-07-22-superpowers-coexistence-design.md](superpowers/specs/2026-07-22-superpowers-coexistence-design.md)(codex 3 轮)。原则:**单向兼容**(superpowers 插件零改动)+ **可选增强、单一路径归一化**(DevDocs 阶段永远执行并产出权威结果)。
+> 设计与审查记录:[specs/2026-07-22-superpowers-coexistence-design.md](superpowers/specs/2026-07-22-superpowers-coexistence-design.md)(codex 3 轮)。原则:**单向兼容**(superpowers 插件零改动)+ **可选增强、单一路径归一化**(keel 阶段永远执行并产出权威结果)。
 
 ### 路由声明(压制误触发)
 
-DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory` 幂等维护;init/retrofit 自动发货,存量项目由 pipeline 阶段检测 ℹ️ 提示补齐)。依"用户指令 > skill 默认行为"的通用优先级,该节使 superpowers 的 process skill(brainstorming / systematic-debugging / writing-plans / executing-plans / subagent-driven-development / finishing-a-development-branch 等)在 DevDocs 管理的工作上让位于 keel 入口;它们仍可用于体系外杂项(一次性脚本、非交付实验、文档体系元改造)。
+keel 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory` 幂等维护;init/retrofit 自动发货,存量项目由 pipeline 阶段检测 ℹ️ 提示补齐)。依"用户指令 > skill 默认行为"的通用优先级,该节使 superpowers 的 process skill(brainstorming / systematic-debugging / writing-plans / executing-plans / subagent-driven-development / finishing-a-development-branch 等)在 keel 管理的工作上让位于 keel 入口;它们仍可用于体系外杂项(一次性脚本、非交付实验、文档体系元改造)。
 
 ### 两座产物桥
 
 | 场景 | 通道 | 追溯 |
 |------|------|------|
-| superpowers writing-plans 产出的计划(**非 DevDocs 项目**) | `/dev-flow` 执行(契约先行+红绿+质量地板) | 零追溯 |
-| 一句话任务+验收标准(DevDocs 项目内轻量) | `/dev-workflow`（直接描述任务和验收标准） | 有追溯(AC 落 01,guarded 下限) |
+| superpowers writing-plans 产出的计划(**非 keel 项目**) | `/dev-flow` 执行(契约先行+红绿+质量地板) | 零追溯 |
+| 一句话任务+验收标准(keel 项目内轻量) | `/dev-workflow`（直接描述任务和验收标准） | 有追溯(AC 落 01,guarded 下限) |
 
-注意:DevDocs 项目内不使用 dev-flow(其自身路由判定亦如此);finishing-a-development-branch 的 merge/push 选项与 DevDocs"绝不推送远程"不变量冲突,任何情况下不接入。
+注意:keel 项目内不使用 dev-flow(其自身路由判定亦如此);finishing-a-development-branch 的 merge/push 选项与 keel"绝不推送远程"不变量冲突,任何情况下不接入。
 
 ### 能力吸收结论(2026-07-22 三方对齐)
 
-逐项映射后:9 项 superpowers 能力 DevDocs 已有等价或更强;唯一内化项 = bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
+逐项映射后:9 项 superpowers 能力 keel 已有等价或更强;唯一内化项 = bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
 
 ## 文档与代码分仓（shell 拓扑）
 
-**什么时候用**：维护 fork 的开源项目，或自有项目计划公开——DevDocs 的需求 / 设计 / 任务 / 洞察都是私有产物，不该进代码仓。
+**什么时候用**：维护 fork 的开源项目，或自有项目计划公开——keel 的需求 / 设计 / 任务 / 洞察都是私有产物，不该进代码仓。
 
 **怎么开**：
 
-- **任何时候**：`/workspace-topology`。独立 skill，**不拉起 DevDocs**，非 DevDocs 项目也能用。没有声明就问你一次：仓库是 `inline` / `shell` / `linked` 哪种，代码根在哪，答案记进 `AGENTS.md`，此后不再问
+- **任何时候**：`/workspace-topology`。独立 skill，**不拉起 keel**，非 keel 项目也能用。没有声明就问你一次：仓库是 `inline` / `shell` / `linked` 哪种，代码根在哪，答案记进 `AGENTS.md`，此后不再问
 - **新项目 / 改造已有项目**：`/pipeline init` 与 `/retrofit` 会在生成 `docs/devdocs/` 后自动委托上面那个 skill，不用你单独跑
 - **现有单仓要拆开**：`/workspace-topology`（说明要拆成外壳布局），先选手动还是自动模式（分界在谁把代码仓挪进根目录），执行前给完整 dry-run 计划
 - **后期要改**：再跑一次 `/workspace-topology` 就行——幂等，状态一致时零改动。增删代码根、新增子模块都在这里
@@ -415,7 +415,7 @@ DevDocs 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory` 幂�
 |---|------|------|
 | 文档路径 | — | `docs/devdocs/` 等全部不变 |
 | 提交 | 一个任务产生 N+1 个 commit（每个变更代码根一个 + 外壳仓一个）| 每个任务独立提交、不跨任务合并的原则不变（inline 下本就是 Commit 1 代码 + Commit 2 文档两次提交，shell 只是把 Commit 1 按变更代码根展开）|
-| 代码仓 | 只收代码和测试，commit message 沿用该仓风格、不带 DevDocs 编号 | — |
+| 代码仓 | 只收代码和测试，commit message 沿用该仓风格、不带 keel 编号 | — |
 | 自描述 / 代码注释类产物 | 默认跳过（要写进代码目录须你在动作发生时确认） | — |
 
-**追溯**：外壳仓的 commit 是枢纽——它带 T-XX，body 里记各子模块 SHA。代码仓自身干净得像没有 DevDocs 存在过。
+**追溯**：外壳仓的 commit 是枢纽——它带 T-XX，body 里记各子模块 SHA。代码仓自身干净得像没有 keel 存在过。

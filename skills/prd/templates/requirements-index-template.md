@@ -33,7 +33,7 @@
 - [ ] 无 status=pending 的块（全部至少 clarified）
 - [ ] 假设挑战已执行，且无未解决的「需修正假设」
 
-> 未满足的项不硬阻塞，用户可选择仍然进入 DevDocs。
+> 未满足的项不硬阻塞，用户可选择仍然进入 keel。
 
 ## 1. 项目愿景
 
@@ -129,9 +129,9 @@
 
 - {{PRD 文件路径/URL/会议记录等}}
 
-## DevDocs 映射
+## keel 映射
 
-> 进入 DevDocs 后由 `/requirements --from-prd` 填写。同一 product_id 以表中最后一条记录为准。
+> 进入 keel 后由 `/requirements --from-prd` 填写。同一 product_id 以表中最后一条记录为准。
 
 | product_id | devdocs_id | mapping_status | mapped_at | remapped_at |
 |-----------|-----------|----------------|-----------|-------------|

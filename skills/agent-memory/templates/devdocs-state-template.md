@@ -1,4 +1,4 @@
-# DevDocs 工作流状态模板
+# keel 工作流状态模板
 
 使用此模板生成目标项目的 `.claude/rules/devdocs-state.md`（Claude 专属运行态）。
 
@@ -56,7 +56,7 @@ ls docs/devdocs/adr/ADR-*.md 2>/dev/null | sed 's/.*ADR-\([0-9]*\).*/\1/' | sort
 ## 模板正文
 
 ```markdown
-# DevDocs 工作流状态
+# keel 工作流状态
 
 ## 单一事实源约定
 

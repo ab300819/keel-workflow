@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: 管理 DevDocs 中暂缓但需追踪的事项：登记、查询、重新激活或关闭。不用于 Jira/Linear 或 Sprint 容量管理。
+description: 管理 keel 中暂缓但需追踪的事项：登记、查询、重新激活或关闭。不用于 Jira/Linear 或 Sprint 容量管理。
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
 metadata:
   patterns: [registry, workflow-bridge]
@@ -18,7 +18,7 @@ writes_backlog: backlog.v2
 
 ## 定位
 
-`backlog` 是 DevDocs 的**暂缓任务池**：记录已经有来源编号、暂时不进入当前开发闭环、但未来需要追溯的项。
+`backlog` 是 keel 的**暂缓任务池**：记录已经有来源编号、暂时不进入当前开发闭环、但未来需要追溯的项。
 
 它只维护 `docs/devdocs/backlog.md` 这一集中索引，不创建新编号体系，不修改原编号文件。条目通过 `source_id + entry_no` 做局部锚点，允许同一来源产生多条暂缓项。
 
@@ -172,7 +172,7 @@ summary:
 | `dev-tasks` | 任务暂缓、依赖未就绪、超出当前迭代但需追踪 |
 | `verify` | P3 问题自动入池；P1/P2 不应直接 parked，需按 verify 路由处理 |
 | `insights` | 跨任务优化机会，已确认但暂不转为需求 |
-| `prd` | FR/NFR 搁置，尚不导入 DevDocs 或等待业务确认 |
+| `prd` | FR/NFR 搁置，尚不导入 keel 或等待业务确认 |
 | `dev-workflow` | **里程碑段内 / 段末**冒出的新想法（`source_id` = 当前 `M-XXX`）：用户自然语言说出，由子代理摸查后写入。挂得上已有 `F`/`AC` 的按对应编号入池，⛔ 不挂到 M |
 
 ## 消费侧转化路径

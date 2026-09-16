@@ -1,6 +1,6 @@
 ---
 name: onboard
-description: 读取或更新项目上下文摘要，用于交接、接手项目或切换 AI 工具。建立 DevDocs 基线用 retrofit。
+description: 读取或更新项目上下文摘要，用于交接、接手项目或切换 AI 工具。建立 keel 基线用 retrofit。
 allowed-tools: Read, Glob, Grep, Write, Bash, AskUserQuestion, Task
 metadata:
   patterns: [generator]
@@ -97,7 +97,7 @@ metadata:
 **`--update` / auto 模式**：
 
 ```text
-1. 扫描 DevDocs 文档
+1. 扫描 keel 文档
    │
    ▼
 2. 提取关键信息
@@ -261,7 +261,7 @@ generated_at: 2026-04-23T10:30:00+08:00
 
 ---
 
-## 8. DevDocs 文档索引
+## 8. keel 文档索引
 
 | 文档 | 路径 | 说明 |
 |------|------|------|
@@ -276,12 +276,12 @@ generated_at: 2026-04-23T10:30:00+08:00
 1. 先阅读本文档了解全貌
 2. 查看"当前进行中"任务状态
 3. 从"下一步任务"继续开发
-4. 遇到细节问题查阅对应 DevDocs 文档
+4. 遇到细节问题查阅对应 keel 文档
 ```
 
 ## 信息提取规则
 
-### 从 DevDocs 提取
+### 从 keel 提取
 
 | 信息 | 来源文档 | 提取内容 |
 |------|----------|----------|
@@ -373,16 +373,16 @@ Agent: [展示现有文档内容]
 
 - [ ] 每次生成覆盖旧文件
 - [ ] 生成时间必须记录
-- [ ] 如 DevDocs 不存在，提示用户先运行相关 skill
+- [ ] 如 keel 不存在，提示用户先运行相关 skill
 
 ## Skill 协作
 
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
-| DevDocs 不存在 | `/retrofit` | 先建立项目基线（`00-baseline.md`） |
+| keel 不存在 | `/retrofit` | 先建立项目基线（`00-baseline.md`） |
 | 进度信息过时 | `/sync` | 先同步文档状态 |
 | 需要详细任务 | `/dev-tasks` | 查看完整任务列表 |
-| 记忆文件同步 | `/agent-memory` | 更新 AGENTS.md;DevDocs 项目同步时包含工作流路由节 |
+| 记忆文件同步 | `/agent-memory` | 更新 AGENTS.md;keel 项目同步时包含工作流路由节 |
 
 ## 命令选项
 

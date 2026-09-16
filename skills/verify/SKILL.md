@@ -1,6 +1,6 @@
 ---
 name: verify
-description: 验证 DevDocs 的文档一致性、实现正确性、UI 对齐或开发就绪状态。更新文档与任务进度用 sync。
+description: 验证 keel 的文档一致性、实现正确性、UI 对齐或开发就绪状态。更新文档与任务进度用 sync。
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
 metadata:
   patterns: [reviewer]
@@ -76,7 +76,7 @@ metadata:
 ## 工作流程
 
 1. 确定验证维度（自动检测或用户指定）。
-2. 读取 DevDocs：`01-requirements.md`、`02-system-design.md`、`03-test-cases.md`、`05-test-report.md`（如存在）。
+2. 读取 keel：`01-requirements.md`、`02-system-design.md`、`03-test-cases.md`、`05-test-report.md`（如存在）。
 3. 加载 `docs/devdocs/patterns/verify-blindspots.md`（如存在），将历史盲区转化为本次额外关注点。
 4. 按维度执行检查：`--docs` 三层、`--impl` 三维度 + 可选 `--live`、`--ui` 两阶段、`--readiness` 四维度。
 5. 生成验证报告，给出 P1/P2/P3 分级、修复建议与路由。
@@ -202,7 +202,7 @@ metadata:
 
 通过浏览器自动化实际操作运行中的应用，验证 AC 描述的用户行为是否正确。
 
-**前提**：环境中有 Playwright MCP 或 Chrome DevTools MCP，可从 DevDocs 或 package.json 获取启动命令并本地启动应用。
+**前提**：环境中有 Playwright MCP 或 Chrome DevTools MCP，可从 keel 或 package.json 获取启动命令并本地启动应用。
 
 **流程**：启动应用 → 逐条读取 AC 用户操作 → 用浏览器 MCP 执行导航/点击/填表/验证 → 对比实际行为与 AC 预期 → 停止应用。
 
@@ -385,7 +385,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 
 ### 检查约束
 
-- [ ] **必须读取所有相关 DevDocs 文档后再检查**
+- [ ] **必须读取所有相关 keel 文档后再检查**
 - [ ] **如存在 `docs/devdocs/patterns/verify-blindspots.md`，必须加载并作为额外检查项**（评估者调优闭环）
 - [ ] **--docs 层 1 依赖"原始需求"章节——新文档必须存在，历史文档若不存在则输出"前置缺失"并跳过**
 - [ ] **--impl AC 满足度必须语义判断，不仅检查标注存在性**
@@ -414,7 +414,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 
 ### 安全约束
 
-- [ ] **只读：不修改代码、不修改 DevDocs 文档、不修改设计稿——仅生成报告**
+- [ ] **只读：不修改代码、不修改 keel 文档、不修改设计稿——仅生成报告**
 
 ## Skill 协作
 

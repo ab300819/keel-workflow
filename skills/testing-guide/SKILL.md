@@ -1,6 +1,6 @@
 ---
 name: testing-guide
-description: 编写或审查测试代码时，指导断言、Mock、分支覆盖和测试有效性。设计 DevDocs 用例文档用 test-cases。
+description: 编写或审查测试代码时，指导断言、Mock、分支覆盖和测试有效性。设计 keel 用例文档用 test-cases。
 allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 ---
 
@@ -110,7 +110,7 @@ Level 1: 代码覆盖   ─ 行/分支覆盖≥80% (必要非充分)
 
 ### 测试自说明规范
 
-⛔ **测试代码不写 DevDocs 编号标注。** 追溯由 `dev-workflow` 的 Commit 2 写入文档侧的追溯矩阵（`<repository>@<sha>`），代码保持干净——一个没有 DevDocs 上下文的维护者读到 `@verifies AC-001` 只会困惑。
+⛔ **测试代码不写 keel 编号标注。** 追溯由 `dev-workflow` 的 Commit 2 写入文档侧的追溯矩阵（`<repository>@<sha>`），代码保持干净——一个没有 keel 上下文的维护者读到 `@verifies AC-001` 只会困惑。
 
 测试要自说明的是**行为**，不是编号——测试名就是它的文档：
 
@@ -173,7 +173,7 @@ describe('UserService', () => {
 - [ ] **测试名必须说明验证的行为**（不靠编号标注，靠名字自说明）
 - [ ] **必须按功能点 (F-XXX) 组织 describe 结构**
 
-### 与 DevDocs 协作
+### 与 keel 协作
 
 | 阶段 | Skill | 输入 | 输出 |
 |------|-------|------|------|

@@ -1,11 +1,11 @@
 # keel
 
-**keel（龙骨）**——贯穿全船的主承重结构。一套 DevDocs 文档驱动开发流程（需求 → 设计 → 测试 → 开发 → 验证）
+**keel（龙骨）**——贯穿全船的主承重结构。一套文档驱动开发流程（需求 → 设计 → 测试 → 开发 → 验证）
 加配套的质量 / 测试 / 重构 skill，以**插件**形式分发。
 
 兼容 **Claude Code**、**Codex CLI**、**OpenCode**（遵循 [Agent Skills](https://agentskills.io) 开放标准）。
 
-> 共 33 个 skill：21 个 DevDocs 流程 skill（由 `/pipeline` 编排）+ 12 个被流程依赖的通用 skill。
+> 共 33 个 skill：21 个 keel 流程 skill（由 `/pipeline` 编排）+ 12 个被流程依赖的通用 skill。
 > 与本仓无依赖的零散独立 skill 在另一个仓（`skills-local`），两者互不阻塞。
 
 ---
@@ -56,15 +56,15 @@ ln -s <keel 仓路径>/skills/<name> ~/.config/opencode/skills/<name>
 | **想让文档和代码分仓（维护开源项目 / 项目待公开）** | `/workspace-topology` |
 | 模糊想法，想先探索需求 | `/prd` |
 | 明确需求，全新项目，走完整文档流程 | `/pipeline init` |
-| 已有 DevDocs 项目，加新功能 | `/pipeline feature` |
+| 已有 keel 项目，加新功能 | `/pipeline feature` |
 | 修 Bug | `/pipeline bugfix` |
-| **没有 DevDocs 文档，只想按计划/任务直接开发** | `/dev-flow` |
+| **没有 keel 文档，只想按计划/任务直接开发** | `/dev-flow` |
 | 接手项目，快速了解 | `/onboard --read` |
 | 已有代码无文档，想规范化 | `/retrofit` |
 | 写完代码，文档没跟上 | `/sync` |
 | 检查质量 / 周期收尾 | `/verify` / `/pipeline close` |
 
-> **两条开发主线**：重型 `DevDocs`（文档驱动，编号追溯，适合大需求）走 `/pipeline`；轻量 `/dev-flow`（计划/任务直接驱动，三道质量门控）适合小项目或无文档场景。各流程的逐步走查见 **[docs/workflows.md](docs/workflows.md)**。
+> **两条开发主线**：重型 `keel`（文档驱动，编号追溯，适合大需求）走 `/pipeline`；轻量 `/dev-flow`（计划/任务直接驱动，三道质量门控）适合小项目或无文档场景。各流程的逐步走查见 **[docs/workflows.md](docs/workflows.md)**。
 
 ---
 
@@ -102,11 +102,11 @@ ln -s <keel 仓路径>/skills/<name> ~/.config/opencode/skills/<name>
 | Skill | 命令 | 用途 |
 |-------|------|------|
 | 工作流编排器 | `/pipeline` | 顶层入口，8 个模式（init/feature/bugfix/verify/close/insights/design/realign） |
-| 通用开发流程 | `/dev-flow` | 非 DevDocs 开发执行器：契约先行 + 红绿 + 质量地板 + fresh-context 审查 |
+| 通用开发流程 | `/dev-flow` | 非 keel 开发执行器：契约先行 + 红绿 + 质量地板 + fresh-context 审查 |
 | 产品需求编排 | `/prd` | 模糊想法/大型 PRD → 结构化需求 |
 | 项目上下文 | `/onboard` | 接手项目 / AI 工具切换时的上下文传递 |
 
-### DevDocs 流程 Skill（多数由 `/pipeline` 自动调度）
+### keel 流程 Skill（多数由 `/pipeline` 自动调度）
 
 | Skill | 命令 | 用途 |
 |-------|------|------|
@@ -121,7 +121,7 @@ ln -s <keel 仓路径>/skills/<name> ~/.config/opencode/skills/<name>
 | 文档同步 | `/sync` | trace + audit + archive |
 | 新功能 / Bug | `/feature` / `/bugfix` | 增量功能 / 测试先行修复 |
 | 洞察 / 沉淀 / 暂缓 | `/insights` / `/compound` / `/backlog` | 改进项 / 经验模式 / 暂缓池 |
-| 改造 / 盘点 | `/retrofit` / `/codebase-insight` | 适配 DevDocs / 只读代码分析 |
+| 改造 / 盘点 | `/retrofit` / `/codebase-insight` | 适配 keel / 只读代码分析 |
 | PRD 子流程 | `/prd-brainstorm` / `/prd-parser` | 需求探索 / 大文档解析 |
 
 ### 独立工具 Skill

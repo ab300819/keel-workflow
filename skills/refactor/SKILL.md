@@ -54,7 +54,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
 | 代码无法测试 | `/retrofit` | 建立基线记录现状与外部约束，再与用户确认目标行为后重写 |
 | UI 重构 | `/ui-orchestrator` | 应用 UI 约束规范 |
 | 代码质量检查 | `/code-quality` | 应用 MTE 原则 |
-| 需要文档化 | DevDocs 流程 | 生成规范文档 |
+| 需要文档化 | keel 流程 | 生成规范文档 |
 | **编写/补充测试** | `/testing-guide` | 测试质量约束（断言、Mock、变异测试） |
 | **重构后更新描述** | `/code-self-describe` | 更新模块自描述（--update） |
 
@@ -90,7 +90,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion, TodoWrite
    ▼
 5. 重写流程（如需要）
    │
-   └── /retrofit 建基线 → 与用户确认目标行为 → 正常 DevDocs 流程 → 重新实现
+   └── /retrofit 建基线 → 与用户确认目标行为 → 正常 keel 流程 → 重新实现
    │
    ▼
 6. 验证与报告
@@ -406,7 +406,7 @@ docs/devdocs/
 ### 文档约束
 
 - [ ] **必须生成重构报告**
-- [ ] 重写时必须生成 DevDocs 文档
+- [ ] 重写时必须生成 keel 文档
 - [ ] 报告必须包含前后对比
 
 ---
@@ -417,6 +417,6 @@ docs/devdocs/
 
 ---
 
-## Integration with DevDocs
+## Integration with keel
 
 详见 [references/devdocs-integration.md](references/devdocs-integration.md)（流程位置图、调用关系图）

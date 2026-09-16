@@ -63,15 +63,15 @@ CLAUDE.md 通过 `@AGENTS.md` 导入通用信息，并可追加 Claude Code 专�
 <!-- agent-memory:managed -->
 ## 工作流路由
 
-> 本项目由 DevDocs 管理(存在 `docs/devdocs/`)。依"用户指令(AGENTS.md/CLAUDE.md)优先于 skill 默认行为"的通用优先级,以下路由**覆盖**任何外部通用流程 skill 的默认触发:
+> 本项目由 keel 管理(存在 `docs/devdocs/`)。依"用户指令(AGENTS.md/CLAUDE.md)优先于 skill 默认行为"的通用优先级,以下路由**覆盖**任何外部通用流程 skill 的默认触发:
 
-- 需求/功能/bug/开发/验证/同步:一律走 `/pipeline` 或对应 DevDocs 流程 skill;外部端到端通用流程 skill(头脑风暴/计划编写/计划执行/调试流程/分支收尾类)**不得接管**这些工作。
-- 轻量通道(DevDocs 体系内):一句话任务+验收标准 → `/dev-workflow --inline "<任务>" --ac "<AC>"`;bug → `/bugfix`。
-- 外部通用流程 skill 仅用于:DevDocs 体系外杂项(一次性脚本、非交付实验、文档体系自身的元改造)。
+- 需求/功能/bug/开发/验证/同步:一律走 `/pipeline` 或对应 keel 流程 skill;外部端到端通用流程 skill(头脑风暴/计划编写/计划执行/调试流程/分支收尾类)**不得接管**这些工作。
+- 轻量通道(keel 体系内):一句话任务+验收标准 → `/dev-workflow --inline "<任务>" --ac "<AC>"`;bug → `/bugfix`。
+- 外部通用流程 skill 仅用于:keel 体系外杂项(一次性脚本、非交付实验、文档体系自身的元改造)。
 - 收尾纪律:提交遵循 dev-workflow 协议(原子提交、绝不推送远程),不使用外部 skill 的 merge/push 选项。
 ```
 
-**「工作流路由」节使用规则**：仅 DevDocs 项目包含；`<!-- agent-memory:managed -->` 标记可再生章节。已有自定义路由保留；需要压缩时按 [SKILL.md 的授权与 60 行处理规则](../SKILL.md) 执行。
+**「工作流路由」节使用规则**：仅 keel 项目包含；`<!-- agent-memory:managed -->` 标记可再生章节。已有自定义路由保留；需要压缩时按 [SKILL.md 的授权与 60 行处理规则](../SKILL.md) 执行。
 
 ## 质量守则
 

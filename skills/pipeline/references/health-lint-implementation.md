@@ -297,7 +297,7 @@
 
 ### `health/dead-link`
 
-**目的**：检测 DevDocs 产物里引用的编号（F/US/AC/T/T-RF/ADR/INS/BUG/UT/IT/E2E/Journey）是否有对应定义；引用了不存在的编号 = 死链。
+**目的**：检测 keel 产物里引用的编号（F/US/AC/T/T-RF/ADR/INS/BUG/UT/IT/E2E/Journey）是否有对应定义；引用了不存在的编号 = 死链。
 
 **检测对象**：`docs/devdocs/**/*.md`（排除 `_archived/`、`.realign-plan.md`、`.health-report.md`）。
 
@@ -386,7 +386,7 @@ Phase B：扫描引用 + 范围编号展开
         （F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey）—— dead-link 已管
      b. prefix ∈ 已登记但故意不入白名单的标识：
           M         —— 里程碑（constraints.md 已登记）
-          FR / NFR  —— PRD 层官方编号，DevDocs 侧合法引用（阶段映射
+          FR / NFR  —— PRD 层官方编号，keel 侧合法引用（阶段映射
                        NFR-XX → CON-XXX）。⛔ 必须硬跳过，每个项目都会命中
      c. prefix ∈ baseline 已抑制的前缀（见「Baseline 与增量扫描」）
      d. occurrence 落在 URL 或文件路径内

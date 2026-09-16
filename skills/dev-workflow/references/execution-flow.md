@@ -199,7 +199,7 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
 
 ## 提交信息格式
 
-⛔ **commit 里不写任何 DevDocs 编号与流程状态**——权威见 [SKILL.md §提交信息格式](../SKILL.md) 与 §任务台账。
+⛔ **commit 里不写任何 keel 编号与流程状态**——权威见 [SKILL.md §提交信息格式](../SKILL.md) 与 §任务台账。
 
 ```
 <type>(<scope>): <描述可观察结果的一句话>

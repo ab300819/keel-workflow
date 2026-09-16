@@ -26,7 +26,7 @@ adoption_commit: "<git rev-parse HEAD 输出>"
 
 | 项 | 值 |
 |---|---|
-| adoption_commit | `<hash>` —— DevDocs 接管的分界线，固定不变 |
+| adoption_commit | `<hash>` —— keel 接管的分界线，固定不变 |
 | 建立日期 | YYYY-MM-DD |
 | 工作区状态 | 干净 / dirty（`<n>` 个未提交改动） |
 | 构建 | `<命令>` → ✅ 通过 / ❌ 失败：`<摘要>` / ⏭️ 无构建 |
@@ -123,7 +123,7 @@ adoption_commit: "<git rev-parse HEAD 输出>"
 | 代码现在是什么 | 当前代码；`docs/codebase-insight.md`（其 `commit_hash` 与 HEAD 一致时） |
 | 当前在做什么、下一步 | `docs/devdocs/00-context.md` |
 | 项目边界、外部约束、护栏、未知项 | **本文** |
-| 新需求该怎么做 | `docs/devdocs/01-requirements.md` 等 DevDocs 正式产物 |
+| 新需求该怎么做 | `docs/devdocs/01-requirements.md` 等 keel 正式产物 |
 
 ⛔ 代码是「**在做什么**」的权威，**不是**「还在被用吗 / 做对了吗」的权威。死代码和活代码长得一模一样；关掉的 feature flag、没人调的端点、固化了 Bug 的逻辑，代码都不会告诉你。这类判断走本文 §5。
 

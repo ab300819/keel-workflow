@@ -1,6 +1,6 @@
 ---
 name: sync
-description: 按实现进展更新 DevDocs 状态、追溯关系和归档，处理文档与代码漂移。实施正确性审查用 verify。
+description: 按实现进展更新 keel 状态、追溯关系和归档，处理文档与代码漂移。实施正确性审查用 verify。
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 metadata:
   patterns: [reviewer]
@@ -10,7 +10,7 @@ metadata:
 
 # 文档同步
 
-保持 DevDocs 文档与实际实现进度一致，检测偏差并更新状态。
+保持 keel 文档与实际实现进度一致，检测偏差并更新状态。
 
 ## 快速开始
 
@@ -93,7 +93,7 @@ metadata:
 ## 工作流程
 
 ```text
-1. 读取 DevDocs 文档
+1. 读取 keel 文档
    │
    ▼
 2. 扫描代码库（工作区状态）
@@ -126,7 +126,7 @@ metadata:
 
 无参数调用时自动执行三段流程：
 
-1. **trace 阶段**：校验追溯矩阵的「变更来源」列（⛔ 不扫描代码——代码里没有 DevDocs 编号）。详见 [trace-mode.md](references/trace-mode.md)
+1. **trace 阶段**：校验追溯矩阵的「变更来源」列（⛔ 不扫描代码——代码里没有 keel 编号）。详见 [trace-mode.md](references/trace-mode.md)
 2. **audit 阶段**：检测编号体系完整性，防止文档维护债积累。检查 AC 覆盖、F 任务闭环、INS 转化、孤立编号、**CON 闭环、needs review 未闭合项报龄**。详见 [audit-mode.md](references/audit-mode.md)
 3. **check 阶段**：输出偏差报告与 health report；schema drift 诊断统一委托 `/verify --schema-drift`，本 Skill 只合并其结果。
 
@@ -182,7 +182,7 @@ metadata:
 
 ### 检查约束
 
-- [ ] **必须读取所有 DevDocs 文档后再进行检查**
+- [ ] **必须读取所有 keel 文档后再进行检查**
 - [ ] **必须生成偏差报告**
 - [ ] **更新文档前必须询问用户确认**（吸收模式低风险除外）
 - [ ] 检查结果必须可追溯（显示检查方法）
@@ -254,7 +254,7 @@ metadata:
 
 ## --back-propagate-prd 模式
 
-反向同步 DevDocs 需求变更到 prd 映射表。仅在用户显式调用时执行。
+反向同步 keel 需求变更到 prd 映射表。仅在用户显式调用时执行。
 
 ```text
 /sync --back-propagate-prd
@@ -269,16 +269,16 @@ metadata:
     |
     v
 3. 对比 index.md 映射表 vs 01-requirements.md
-   ├── 新增 F-XXX（无对应 FR-XX 映射）→ 标注「DevDocs 侧新增，无 prd 来源」
+   ├── 新增 F-XXX（无对应 FR-XX 映射）→ 标注「keel 侧新增，无 prd 来源」
    ├── 废弃 F-XXX（已从 01-requirements.md 移除）→ 标注 mapping_status: removed（规范见 skills/prd/references/prd-mapping-status.md）
    └── 已有映射未变 → 保持
     |
     v
-4. 更新 index.md 的「DevDocs 映射」章节
+4. 更新 index.md 的「keel 映射」章节
 ```
 
 **写权限边界**：
-- 只允许修改 index.md 的「DevDocs 映射」章节
+- 只允许修改 index.md 的「keel 映射」章节
 - 若章节不存在，只允许在文末创建该章节，不得重排其他章节
 - 只写映射状态，不改 FR 内容
 

@@ -1,6 +1,6 @@
 # retrofit 建立项目基线流程详解
 
-> 当项目没有 DevDocs 文档时执行。产物形状见 [../templates/baseline-template.md](../templates/baseline-template.md)。
+> 当项目没有 keel 文档时执行。产物形状见 [../templates/baseline-template.md](../templates/baseline-template.md)。
 >
 > SKILL.md 仅保留触发判定 + 总览；本文件提供执行细节。
 
@@ -132,7 +132,7 @@ README 里写着的东西还去问用户，是浪费用户时间。
 
 按 [../templates/baseline-template.md](../templates/baseline-template.md) 写 `docs/devdocs/00-baseline.md`。
 
-`adoption_commit` 取落盘时的 `git rev-parse HEAD`，**固定不变**——它是 DevDocs 接管的分界线，让「基线前 / 基线后」成为可判定的，追溯覆盖率语义（`coverage_scope: post-baseline`）锚在它上面。
+`adoption_commit` 取落盘时的 `git rev-parse HEAD`，**固定不变**——它是 keel 接管的分界线，让「基线前 / 基线后」成为可判定的，追溯覆盖率语义（`coverage_scope: post-baseline`）锚在它上面。
 
 > ⚠️ **当前假定 `inline` 拓扑**（代码在仓库根）。`shell` / `linked` 拓扑下外壳仓的 `HEAD` 是文档仓的 commit、与代码无关，多 `code_root` 时更没有单一 HEAD——此时 `adoption_commit` 与锚在它上面的 `coverage_scope: post-baseline` 会静默给出错误范围。
 > 正确修法是 Step 1 之前先 `Task: /workspace-topology inspect`，`adoption_commit` 按 `code_roots` 逐根记录。**本轮未实施**（拓扑感知的 `adoption_commit` 属已知遗留）。
