@@ -53,7 +53,7 @@ marketplaces/<mp>/          ← git clone，`/plugin` 会 pull 到最新
    │     version 没变 → 更新器认为「已是最新」→ 一个文件都不拷
    ▼
 cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 base directory）
-   │  ③ 会话读入
+   │  ③ 会话读入一次后缓存；`/reload-plugins` 可原地刷新，不必重开会话
    ▼
 本会话的 skill 正文 / hooks.json
 ```
@@ -63,6 +63,8 @@ cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 ba
 > ⛔ **改了 skill 或 hook，必须同时 bump `plugin.json` 的 `version`**（根 `plugin.json` 与 `.claude-plugin/plugin.json` 两处），否则 `git push` + `/plugin update` 都是空转。
 >
 > 完整生效路径：bump version → commit → push → `/plugin update` → `/reload-plugins`（或新会话）。
+
+**③ 不是死路（2026-09-17 实测）**：手工把新文件拷进 `cache/…/` 后，同一会话里跑 `/reload-plugins`，新起的子代理立刻拿到新正文（Skill 工具报的 base directory 确认是 cache 那份）。所以「改完当场测不到」的责任全在 ②，不在会话生命周期。
 
 同理，下面记的「已验证」一律指**被安装的那一版**，不是工作树。
 
@@ -77,4 +79,4 @@ cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 ba
 | **Claude Code 真实会话触发** | ✅ 2026-09-16，`Edit` 埋断链探针，`additionalContext` 正确送达 |
 | Codex CLI 真实会话触发 | ⬜ 未跑 |
 | OpenCode 真实会话触发 | ⬜ 未跑 |
-| `Bash` matcher 真实会话触发 | ⬜ 未跑（改动本身受上节链路限制，需 push + update + 新会话） |
+| `Bash` matcher 真实会话触发 | ✅ 2026-09-17，装上 2.0.1 后一次 `Bash` 调用（`echo > tmp-probe.py`）触发 `devdocs-drift`，提示正确指名该文件 |
