@@ -71,6 +71,27 @@ def collect_files(devdocs):
     return sorted(out)
 
 
+def changed_set(root):
+    """--changed-only 的变更集，返回 realpath 集合（调用方也须按 realpath 比对）。
+
+    ⛔ 任何失败一律抛异常 —— 调用方必须 exit 3。这三条红线是同一个失效模式
+    （静默全漏扫 + exit 0）的三个方向，⛔ 补其一时必须回头查另两个：
+      1. git 调用失败 ⇒ 不得当成「没有变更」
+      2. git 输出是**仓根**相对路径，不是 root 相对 —— root 为子目录时直接
+         join(root, x) 会全部对不上，集合成空
+      3. `diff --name-only` **不含未跟踪文件** —— 新建的文档会整份漏扫
+    """
+    def git(*a):
+        out = subprocess.run(["git", "-C", root, *a], capture_output=True, text=True, timeout=10)
+        if out.returncode != 0:
+            raise RuntimeError(out.stderr.strip() or f"git {' '.join(a)} exit {out.returncode}")
+        return out.stdout.splitlines()   # ⛔ 不用 split()：文件名可能含空格
+    top = git("rev-parse", "--show-toplevel")[0]
+    # ⛔ ls-files 默认输出**相对 CWD**，与 diff 的仓根相对不同基准 —— 必须 --full-name
+    names = git("diff", "--name-only", "HEAD") + git("ls-files", "--others", "--exclude-standard", "--full-name")
+    return {os.path.realpath(os.path.join(top, x)) for x in names}
+
+
 def find(rule, sev, file, line, msg, actual=None, threshold=None, ctx=None, fix="manual_decision", auto=False):
     return dict(rule_id=rule, severity=sev, file=file, line=line, actual=actual,
                 threshold=threshold, message=msg, context=ctx, fix_suggestion=fix, auto_fixable=auto)
@@ -596,6 +617,40 @@ def selftest():
             print("FAIL apply_baseline: 未升级的小增长（delta<2KiB）应被过滤却报出", file=sys.stderr)
             return 1
 
+        # changed_set 的三条红线：静默全漏扫 + exit 0，是本脚本最难发现的失效
+        # （不崩溃、CI 绿）。已在此栽过两次，故三个方向各钉一条。git 缺失时跳过。
+        if shutil.which("git"):
+            g = os.path.join(t, "gitfix"); os.makedirs(os.path.join(g, "sub", "docs", "devdocs"))
+            tracked = os.path.join(g, "sub", "docs", "devdocs", "01.md")
+            open(tracked, "w").write("## F-001 x\n")
+            run = lambda *a: subprocess.run(["git", "-C", g, *a], capture_output=True, text=True)
+            run("init", "-q"); run("add", "-A")
+            run("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init")
+            open(tracked, "a").write("引用 AC-007\n")                      # 已跟踪文件的改动
+            untracked = os.path.join(g, "sub", "docs", "devdocs", "02.md")
+            open(untracked, "w").write("## F-002 y\n")                     # 未跟踪的新文件
+            cs = changed_set(os.path.join(g, "sub"))                        # ⛔ target 是子目录
+            for path, why in ((tracked, "仓根相对路径未按 toplevel 归一 → 子目录 target 全对不上"),
+                              (untracked, "未跟踪文件缺失 → 新建文档整份漏扫")):
+                if os.path.realpath(path) not in cs:
+                    print(f"FAIL changed_set: {os.path.basename(path)} 不在变更集（{why}）", file=sys.stderr)
+                    return 1
+            # 方向 1 的判例选「已 add 未 commit」而不是「非 git 目录」：后者会在
+            # rev-parse 取下标时偶然抛 IndexError，断言看似通过、实则没验到红线。
+            # 这里 rev-parse 正常而 `diff HEAD` 失败（无 HEAD），已暂存文件正是会被漏掉的那批。
+            ng = os.path.join(t, "nocommit"); os.makedirs(ng)
+            open(os.path.join(ng, "a.md"), "w").write("x\n")
+            subprocess.run(["git", "-C", ng, "init", "-q"], capture_output=True)
+            subprocess.run(["git", "-C", ng, "add", "-A"], capture_output=True)
+            try:
+                changed_set(ng)
+            except Exception:
+                pass
+            else:
+                print("FAIL changed_set: git diff 失败未抛 → 已暂存文件会被当成「没有变更」静默漏扫",
+                      file=sys.stderr)
+                return 1
+
         bp = os.path.join(t, ".claude", "rules", os.path.basename(BASELINE_REL))
         for bad_bl, why in (
             (f"schema: {BASELINE_SCHEMA}\n  devdocs_state_size_bytes: 1\n  refs: [AC-001\n", "缺字段/列表未闭合"),
@@ -661,23 +716,12 @@ def main():
     files = collect_files(devdocs)
     ref_only = None
     if args.changed_only:
-        def git(*a):
-            out = subprocess.run(["git", "-C", root, *a], capture_output=True, text=True, timeout=10)
-            if out.returncode != 0:
-                # ⛔ 不得把 git 失败当成「没有变更」——那会静默全漏扫并 exit 0
-                raise RuntimeError(out.stderr.strip() or f"git {' '.join(a)} exit {out.returncode}")
-            return out.stdout.splitlines()   # ⛔ 不用 split()：文件名可能含空格
         try:
-            # ⛔ git 输出的是**仓根**相对路径，不是 --target 相对。target 是子目录时
-            # join(root, x) 全部对不上 → ref_only 成空集 → 与上面那条红线同一个失效模式
-            top = git("rev-parse", "--show-toplevel")[0]
-            # ⛔ diff 不含未跟踪文件 —— 新建的 devdocs 文档会整份漏扫，故并上 ls-files --others
-            names = git("diff", "--name-only", "HEAD") + git("ls-files", "--others", "--exclude-standard")
-            changed = {os.path.realpath(os.path.join(top, x)) for x in names}
-            ref_only = {f for f in files if os.path.realpath(f) in changed}
+            changed = changed_set(root)
         except Exception as e:
             print(f"health/git-unavailable: {e}", file=sys.stderr)
             return 3
+        ref_only = {f for f in files if os.path.realpath(f) in changed}
     findings = scan_project(root, files, ref_only)
 
     if args.baseline_init:
