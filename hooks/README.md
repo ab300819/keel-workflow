@@ -48,18 +48,21 @@ ln -s <keel>/hooks/opencode-plugin.js ~/.config/opencode/plugins/keel.js
 工作树 HEAD
    │  ① 未推送的 commit 进不了下一级
    ▼
-marketplaces/<mp>/          ← git clone，会自动重新 clone，本地手改会被冲掉
-   │  ② /plugin install 取快照
+marketplaces/<mp>/          ← git clone，`/plugin` 会 pull 到最新
+   │  ② ⛔ 安装目录按版本号建：cache/<mp>/<plugin>/<version>/
+   │     version 没变 → 更新器认为「已是最新」→ 一个文件都不拷
    ▼
-cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份
-   │  ③ 会话启动时读入
+cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 base directory）
+   │  ③ 会话读入
    ▼
 本会话的 skill 正文 / hooks.json
 ```
 
-**实测**：把新文件直接同步进 `cache/` 与 `marketplaces/` 之后，同一会话里新起的子代理拿到的仍是旧正文（4 次独立复现）。②③ 哪一级才是注入源没分出来——判别实验被 marketplace 的自动重新 clone 冲掉了——但不影响操作结论：
+**② 是主卡点，实测**（2026-09-17）：推送 `7fa9a98` 后跑 `/plugin update` + `/reload-plugins`，marketplace clone 确实 pull 到了 `7fa9a98`（`hooks.json` mtime 更新），但 `cache/…/2.0.0/hooks/hooks.json` 的 mtime 纹丝不动，`installed_plugins.json` 里记的仍是旧 commit —— 因为 `plugin.json` 的 `version` 一直是 `2.0.0`。
 
-> **改了 skill 或 hook，必须 `git push` → `/plugin update` → 开新会话，才测得到。**
+> ⛔ **改了 skill 或 hook，必须同时 bump `plugin.json` 的 `version`**（根 `plugin.json` 与 `.claude-plugin/plugin.json` 两处），否则 `git push` + `/plugin update` 都是空转。
+>
+> 完整生效路径：bump version → commit → push → `/plugin update` → `/reload-plugins`（或新会话）。
 
 同理，下面记的「已验证」一律指**被安装的那一版**，不是工作树。
 
