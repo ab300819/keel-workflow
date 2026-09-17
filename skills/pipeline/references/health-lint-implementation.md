@@ -686,7 +686,7 @@ v1 仍不含 `--apply` / 自动修复。
 
 ### Delta 计算规则
 
-- `state/total-size-cap`：报告 `delta = current_size - baseline_size`；delta < 2 KiB 视为可忽略小增长
+- `state/total-size-cap`：报告 `delta = current_size - baseline_size`；delta < 2 KiB 视为可忽略小增长。⛔ **但 delta 过滤不得吞掉严重度升级** —— baseline 期为 warning、当前已跨过 40 KiB 成 blocker 时，即便 delta < 2 KiB 也必须报告（与 [realign.md](realign.md)「有 baseline」行的三触发条件一致）
 - `state/forbidden-content`：按 (file, line) 元组 hash；baseline 中存在的视为存量，新增的报告为 violation
 - `health/dead-link`：baseline 中已知死链不重复报；新增死链一律 ⛔
 - `design/adr-only-revision`：baseline 不适用（按 commit 时间窗判定，本身就是增量语义）
