@@ -584,6 +584,18 @@ def selftest():
         except ValueError:
             print(f"FAIL emit: context 未转义，产出非法 YAML：{ctx_line}", file=sys.stderr)
             return 1
+        # apply_baseline 的严重度升级：夹具计数覆盖不到（delta 过滤在 baseline 路径上），
+        # 而它恰恰是最容易在重构中被当成冗余删掉的一行。⛔ 删了就是静默放过跨阈值增长。
+        bl_warn = {"size": 39909, "forbidden": [], "dead": [], "prefixes": []}
+        esc = find("state/total-size-cap", "blocker", "s.md", None, "已 41009 bytes", 41009, SIZE_BLOCK)
+        if not apply_baseline([esc], bl_warn):
+            print("FAIL apply_baseline: warning→blocker 升级被 delta 过滤吞掉（delta<2KiB）", file=sys.stderr)
+            return 1
+        noop = find("state/total-size-cap", "warning", "s.md", None, "已 40009 bytes", 40009, SIZE_WARN)
+        if apply_baseline([noop], bl_warn):
+            print("FAIL apply_baseline: 未升级的小增长（delta<2KiB）应被过滤却报出", file=sys.stderr)
+            return 1
+
         bp = os.path.join(t, ".claude", "rules", os.path.basename(BASELINE_REL))
         for bad_bl, why in (
             (f"schema: {BASELINE_SCHEMA}\n  devdocs_state_size_bytes: 1\n  refs: [AC-001\n", "缺字段/列表未闭合"),
