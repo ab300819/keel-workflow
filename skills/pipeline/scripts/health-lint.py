@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""health-lint —— health-lint-implementation.md 的可执行实现（v1，6/8 条）。
+"""health-lint —— health-lint-implementation.md 的可执行实现（v1，10/12 条）。
 
 零依赖，仅 stdlib。规格见同级 ../references/health-lint-implementation.md。
+⚠️ 条数改了这里、argparse description、规格 Rule 集表三处必须同改
+（已漂移过一次，见 audits/2026-06-12-skill-ssot-audit.md A4）。
 
-v1 实现：state/total-size-cap · state/line-length-cap · state/forbidden-content
-         health/dead-link · state/max-id-stale · id/unknown-prefix
+project scope（--target）：state/total-size-cap · state/line-length-cap
+         state/forbidden-content · state/max-id-stale · health/dead-link · id/unknown-prefix
+skill 库 scope（--skills-dir，扫描对象是 **skill 库本身**，⛔ 不与 project scope 混用同一
+target）：flag/dangling-reference · skill/dead-link · skill/name-mismatch · skill/size-cap
 v1 未实现（如实报 not_implemented，⛔ 不要当成 pass）：
          design/adr-only-revision（需 git diff 行范围 × heading map）
          submodule/pointer-drift（仅 shell 拓扑）
-另有 flag/dangling-reference —— 扫描对象是 **skill 库本身**（非用户项目），
-故走独立的 --skills-dir 模式，⛔ 不与上述 project-scope 的 rule 混用同一 target。
 
 v1 不含：--apply / 自动修复。baseline 见 --baseline-init / --since-baseline。
 
@@ -180,6 +182,7 @@ def scan_skill_flags(skills_dir):
     """
     names = {d.name for d in os.scandir(skills_dir) if d.is_dir()}
     owned = {}  # skill -> 该目录下全部文本（用于判 flag 是否存在）
+    degraded = set()  # 目录内有 .md 读失败 → 内容不全，⛔ 不得据此判 flag 不存在
     fs = []
     for root, dirs, files in os.walk(skills_dir):
         dirs[:] = [d for d in dirs if not d.startswith(".")]
@@ -206,9 +209,13 @@ def scan_skill_flags(skills_dir):
                                 if n2.endswith(".md"):
                                     try:
                                         buf.append(open(os.path.join(r2, n2), encoding="utf-8", errors="replace").read())
-                                    except OSError:
-                                        pass
+                                    except OSError as e:
+                                        # ⛔ 不得静默：内容读不全会让「搜不到 flag」变成误报
+                                        print(f"lint error: {os.path.join(r2, n2)}: {e}", file=sys.stderr)
+                                        degraded.add(target)
                         owned[target] = "\n".join(buf)
+                    if target in degraded:
+                        continue          # 内容不全，判不了，⛔ 宁可漏报不误报
                     if flag not in owned[target]:
                         fs.append(find("flag/dangling-reference", "warning",
                                        os.path.relpath(path, skills_dir), i + 1,
@@ -392,9 +399,15 @@ def apply_baseline(findings, bl):
         r = f["rule_id"]
         if r == "state/total-size-cap":
             delta = (f["actual"] or 0) - bl["size"]
-            if delta < SIZE_DELTA_IGNORE:
+            # ⛔ delta 过滤不得吞掉严重度升级 —— realign.md「有 baseline」行要求
+            # delta ≥ 2 KiB / warn→blocker 升级 / baseline 不可读 三者之一即提示
+            base_sev = "blocker" if bl["size"] > SIZE_BLOCK else "warning" if bl["size"] > SIZE_WARN else None
+            escalated = f["severity"] == "blocker" and base_sev != "blocker"
+            if delta < SIZE_DELTA_IGNORE and not escalated:
                 continue
-            f = dict(f, message=f["message"] + f"（较 baseline +{delta} bytes）")
+            note = f"（较 baseline +{delta} bytes"
+            note += "，且已由 warning 升级为 blocker）" if escalated else "）"
+            f = dict(f, message=f["message"] + note)
         elif r == "state/forbidden-content":
             if f"{f['file']}:{f['line']}" in bl["forbidden"]:
                 continue
@@ -636,14 +649,20 @@ def main():
     files = collect_files(devdocs)
     ref_only = None
     if args.changed_only:
-        try:
-            out = subprocess.run(["git", "-C", root, "diff", "--name-only", "HEAD"],
-                                 capture_output=True, text=True, timeout=10)
+        def git(*a):
+            out = subprocess.run(["git", "-C", root, *a], capture_output=True, text=True, timeout=10)
             if out.returncode != 0:
                 # ⛔ 不得把 git 失败当成「没有变更」——那会静默全漏扫并 exit 0
-                raise RuntimeError(out.stderr.strip() or f"git exit {out.returncode}")
-            changed = {os.path.join(root, x) for x in out.stdout.split()}
-            ref_only = {f for f in files if f in changed}
+                raise RuntimeError(out.stderr.strip() or f"git {' '.join(a)} exit {out.returncode}")
+            return out.stdout.splitlines()   # ⛔ 不用 split()：文件名可能含空格
+        try:
+            # ⛔ git 输出的是**仓根**相对路径，不是 --target 相对。target 是子目录时
+            # join(root, x) 全部对不上 → ref_only 成空集 → 与上面那条红线同一个失效模式
+            top = git("rev-parse", "--show-toplevel")[0]
+            # ⛔ diff 不含未跟踪文件 —— 新建的 devdocs 文档会整份漏扫，故并上 ls-files --others
+            names = git("diff", "--name-only", "HEAD") + git("ls-files", "--others", "--exclude-standard")
+            changed = {os.path.realpath(os.path.join(top, x)) for x in names}
+            ref_only = {f for f in files if os.path.realpath(f) in changed}
         except Exception as e:
             print(f"health/git-unavailable: {e}", file=sys.stderr)
             return 3
