@@ -10,7 +10,7 @@
 | 变更来源失效 | 追溯矩阵的 `<repository>@<sha>` 在对应代码根解析不到 | 中 |
 | 状态落后 | 任务已完成但文档状态未更新 | 低 |
 | INS 未转化 | 已确认洞察未生成对应需求 | 低 |
-| Schema drift | 产物 frontmatter.spec_version 落后 skill 常量（`/sync --schema-drift` 触发） | 信息性（权重 0.05，不阻断 audit） |
+| Schema drift | 产物 frontmatter.spec_version 落后 skill 常量（`/verify --schema-drift` 触发，sync 仅合并其结果） | 信息性（权重 0.05，不阻断 audit） |
 
 ## 健康度计算
 

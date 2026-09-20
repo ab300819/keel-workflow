@@ -22,7 +22,7 @@
 与 `--scope=spec`（spec_version 差距补齐）/ `--scope=prd-mapping`（PRD ↔ keel 映射）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
 
 > **推/拉两个触发点**（解决"规则实装但没人跑"的断层）：
-> - **拉（全量）**：用户显式 `/pipeline realign --scope=health` —— 本文件定义的完整 4 维扫描。
+> - **拉（全量）**：用户显式 `/pipeline realign --scope=health` —— 本文件定义的完整 3 维扫描。
 >   ⛔ project scope 的 8 条 lint rule 中 6 条**已有可执行实现**，先跑 [`../scripts/health-lint.py`](../scripts/health-lint.py)，
 >   不要逐条人肉扫；余下 2 条（`design/adr-only-revision` / `submodule/pointer-drift`）仍按
 >   [health-lint-implementation.md](health-lint-implementation.md) 的算法执行。
@@ -62,7 +62,7 @@
 | `/pipeline realign --scope=health --fix=<rule_id> --apply` | 仅修复指定 rule 的违规项（例：`--fix=state/total-size-cap`）|
 | `/pipeline realign --scope=health --target=<path>` | 指定项目根或 `docs/devdocs/` |
 | `/pipeline realign --scope=health --baseline-init` | 初始化 baseline（存量项目首次落地用）|
-| `/pipeline realign --scope=health --changed-only` | 仅扫 `git diff HEAD` 变更行（增量模式，大仓推荐）|
+| `/pipeline realign --scope=health --changed-only` | 仅扫 `git diff HEAD` 变更**文件**（增量模式，大仓推荐）|
 | `/pipeline realign --scope=health --since-baseline` | 与 baseline 比对，只报告新增违规 |
 | `/pipeline realign --scope=health --no-report-file` | 严格 dry-run；不写 `.health-report.md`，只输出 stdout |
 
@@ -89,7 +89,7 @@ docs/devdocs/.health-report.md
 |------|------|
 | `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路） |
 | `.claude/rules/devdocs-state.md` | 维度 c 中 `state-size` / `state-forbidden-content` 专属扫描 |
-| `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔keel 编号引用） |
+| `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔keel 编号引用）⚠️ **未实现**：`health-lint.py` 的 `collect_files()` 只收 `docs/devdocs/`；需由 Agent 按算法补扫 |
 
 ### 执行步骤
 
@@ -141,9 +141,9 @@ dimensions:
         actual: <value>
         threshold: <value>
         severity: blocker | warning
-        route_to_scope: health | spec | layout | prd-mapping  # health scope 是否能直接修复
+        route_to_scope: health | spec | prd-mapping  # health scope 是否能直接修复
         route_recommended: <next 命令字符串，如 "/pipeline realign --scope=health --apply">
-        route_note: <可选；解释为何跨 scope，如 "current.md >1500 拆分由 layout scope 处理">
+        route_note: <可选；解释为何跨 scope，如 "归档减量走 /sync --archive">
   d_ssot:
     score: <0-100>
     restatement_findings: []
@@ -223,17 +223,12 @@ manual_decisions:
 - 对 `state/total-size-cap` 违规：将超长行按 task ID 拆出，明细落到 `04-dev-tasks-pNN.md` 或 ADR 对应文件（依据 manual_decision），主文件保留 ≤200 字符占位。
 - `state/line-length-cap` 违规：换行重排，不删除内容。
 
-#### Phase 2：维度 d 引用替换（no-restatement）
-
-- 将复制段落替换为指向权威源的引用链接。
-- 保留原段落首句作为锚点摘要（≤100 字符）。
-
-#### Phase 3：维度 b 死链处理
+#### Phase 2：维度 b 死链处理
 
 - 死链 → 用户确认是否补建目标文件 / 删除引用 / 标 `[FUTURE]`。
 - 孤立编号（仅在文档中被引用但无定义）→ 在产物中补登记，或删除该引用。
 
-#### Phase 4：维度 a 结构补齐
+#### Phase 3：维度 a 结构补齐
 
 - 委托 `/pipeline realign --scope=spec`（已有路径），不在本 scope 直接 bump frontmatter。
 
@@ -276,7 +271,7 @@ next_recommended:
 |---|---|
 | 仅 health 路由违规 | `"realign --scope=health --apply"` |
 | 仅跨 scope 违规（无 health 路由） | 取占比最高的 scope，如 `"realign --scope=spec --apply"` |
-| 混杂 health + 跨 scope | 数组形式：`["realign --scope=health --apply", "realign --scope=<跨 scope> --apply"]`，按拓扑顺序（spec → layout → prd-mapping → health）排序 |
+| 混杂 health + 跨 scope | 数组形式：`["realign --scope=health --apply", "realign --scope=<跨 scope> --apply"]`，按拓扑顺序（spec → prd-mapping → health）排序 |
 | 0 违规 | `null` |
 
 状态语义：

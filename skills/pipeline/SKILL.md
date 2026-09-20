@@ -78,7 +78,7 @@ user-invocable: true
 ### realign 参数语法
 
 ```bash
-/pipeline realign [--scope=<spec|layout|prd-mapping|health>] [--target=<path>] [--dry-run|--apply] [--fix=<rule_id>]
+/pipeline realign [--scope=<spec|prd-mapping|health>] [--target=<path>] [--dry-run|--apply] [--fix=<rule_id>]
 /pipeline realign --no-realign
 ```
 
