@@ -27,7 +27,7 @@ PREFIX_SKIP = set(WHITELIST) | {"M", "FR", "NFR"}
 
 DEF_HEADING = re.compile(r"^#{1,4}\s+(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
 DEF_TABLE = re.compile(r"^\|\s*\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\*{0,2}\s*\|")
-DEF_LIST = re.compile(r"^[-*]\s+\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
+DEF_LIST = re.compile(r"^\s*[-*]\s+\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
 KEY_RE = re.compile(r"^(.+)-(\d+)([a-z]?)$")
 
 
@@ -560,9 +560,10 @@ def selftest():
         dd = os.path.join(t, "docs", "devdocs"); os.makedirs(os.path.join(dd, "_archived"))
         os.makedirs(os.path.join(t, ".claude", "rules"))
         open(os.path.join(dd, "01.md"), "w").write(
-            "## F-001 x\n- AC-001 a\n- AC-002 b\n"
+            "## F-001 x\n- AC-001 a\n- AC-002 b\n  - **AC-010** 缩进列表定义，⛔ 不得报无定义\n"
             "引用 AC-003 与范围 AC-001~002。决策 D-014。外部单号 SIDM-71103。\n"
             "## AC-004a 后缀定义\n引用 AC-004b\n"          # 后缀参与身份
+
             "| F-001 | AC-009 | 追溯矩阵行 |\n"              # 首列定义，同行引用仍须查
             "```\nAC-777 代码块内不算\n```\n")
         open(os.path.join(dd, "_archived", "old.md"), "w").write("## AC-555 归档不进索引\n")
