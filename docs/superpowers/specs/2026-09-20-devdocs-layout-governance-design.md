@@ -1,290 +1,252 @@
 ---
-title: devdocs 布局治理——命名语法、权威清单、尺寸规则
-status: 📐 设计稿，待实施
+title: 实现 realign --scope=layout——填补悬空的布局健康维度
+status: 📐 设计稿 v2（推翻 v1 的「新建命名规范」骨架），待实施
 date: 2026-09-20
-scope: devdocs 文件命名、权威清单 SSOT、尺寸阈值、存量迁移、SessionStart hook
+supersedes: 本文件 v1（同日 commit 0722126）——骨架已废，结论仅部分留用
+scope: layout scope 实现、布局清单 SSOT、字节尺寸规则、SessionStart 触发点
 inputs:
-  - 用户原话 4 条 + 4 次 AskUserQuestion 裁定
-  - 17 个真实项目 devdocs 目录实测
+  - 用户原话 4 条 + 5 次裁定
+  - 17 个真实项目 devdocs 实测
+  - Codex 独立评审（禁读 v1 稿，逐条已复核）
 related:
-  - docs/superpowers/specs/2026-09-11-devdocs-object-model-convergence-v2-design.md（已封存，§6 文档结构与本稿相邻但不重叠）
-  - docs/superpowers/specs/2026-08-31-layout-v2-goal-attainment-design.md（原则 2「主文件只记索引」）
+  - docs/superpowers/specs/2026-09-11-devdocs-object-model-convergence-v2-design.md（已封存，不 reactivate）
 ---
 
-# devdocs 布局治理
+# 实现 `realign --scope=layout`
 
-## 0. 诉求与已拍板决定
+## 0. 诉求与裁定
 
 用户原话（逐字）：
 
-> 1. 我有个发现，devdocs 目录下文档有点乱，第一命名格式不统一，第二没有全局的索引控制，第三部分文档可能过大
-> 2. 应当由 keel 做检测，然后进行迁移，而且在当前会话进行
-> 3. 我在思考 hook 机制，以及 rule 能为优化带来什么？或者整个 keel 流
+> 1.「我有个发现，devdocs 目录下文档有点乱，第一命名格式不统一，第二没有全局的索引控制，第三部分文档可能过大」
+> 2.「应当由 keel 做检测，然后进行迁移，而且在当前会话进行」
+> 3.「我在思考hook机制，以及rule 能为优化带来什么？或者整个keel 流」
+> 4.「我的原本意思是keel可以做一次文档健康检查，决定下一步要干什么」
 
-四次裁定：
+⛔ **第 4 条是诉求的权威表述，前三条是它的症状面。** v1 稿把症状当成了诉求，据此新建了一套命名法规——方向错了。
+
+裁定：
 
 | # | 问题 | 裁定 |
 |---|---|---|
-| 1 | 哪个场景在咬人 | **四个全中**：存量大项目读不动 · 新项目一开头就歪 · Agent 定位错文件 · 人找不到文件 |
-| 2 | 迁移触发时机 | 开工时自动检测，**当场问**要不要迁，同一会话跑完 |
-| 3 | 自动迁移的权限边界 | **只改名 + 归档移位**（`git mv` 级），⛔ 不自动拆分内容 |
-| 4 | hook 范围 | **只进 `SessionStart`**，`PostToolUse` 防漂移本轮不做 |
+| 1 | 痛点来源 | 四项全中：存量读不动 · 新项目一开头就歪 · Agent 定位错文件 · 人找不到文件 |
+| 2 | 迁移触发 | 开工时自动检测，**当场问**，同一会话跑完 |
+| 3 | 自动迁移权限 | **只改名 + 归档移位**，⛔ 不自动拆分内容 |
+| 4 | hook 范围 | **只进 `SessionStart`** |
+| 5 | v1 推翻后 | **重写**，不做局部修补 |
 
-## 1. 现状与根因
+## 1. 关键发现：槽位已经存在，且是空的
 
-### 1.1 三个症状是一个根因
+用户要的「做一次文档健康检查，决定下一步干什么」——`realign --scope=health` 就是它，且设计相当完整：
 
-没有「多大该拆、拆完叫什么」的规则 → 文档涨到读不动时临时拆 → 每次拆各起各的名 → 文件多到找不着 → 才冒出索引需求。
-
-**症状 ① 和 ③ 是因果两端，② 是后果。**
-
-### 1.2 命名混乱在规范层，不只是项目漂移
-
-`docs/devdocs/` 里现在并存四套命名，全部由 skills 正式写出：
-
-| 形态 | 实例 | 产出方 |
-|---|---|---|
-| 编号型 | `01-requirements.md` … `05-insights.md` | requirements / system-design / … |
-| 裸名型 | `backlog.md` · `verify-report.md` · `readiness-report.md` · `schema-drift-report.md` | backlog / verify |
-| 隐藏型 | `.health-report.md` · `.batch-checkpoint.json` | pipeline |
-| 目录型 | `adr/` · `audit/` · `bugs/` · `insights/` · `patterns/` · `archive/` | 多个 |
-
-`docs/architecture.md` 的「文件结构」块**列了 10 项，skills 实际写出 ≥18 种路径**。缺的那份权威清单本该是它，它已经过期。后果：每个 skill 自己发明路径，没人对账。
-
-⚠️ **`05` 段同时挂 test-report / insights / bugfix-log 不是缺陷**——三者同属收尾段。但规则从没写清「`NN` 是段不是文件序号」，于是 codex-mcp 自行顺延发明了 `06-test-report.md`。
-
-### 1.3 尺寸不是「零机制」，是「测错了东西 + 没人跑」
-
-`sync/references/archive.md` 已有归档阈值，但按**行数**：
-
-| 文件 | 行数 | 字节 | 平均每行 |
-|---|---|---|---|
-| tm-reborn `01-requirements.md` | 620 行 | 28 KB | 46 B |
-| mic-en `01-requirements.md` | 556 行 | **160 KB** | 288 B |
-
-⛔ **行数阈值测错了东西。** 按「需求 > 400 行」这把尺子，28 KB 的文件比 160 KB 的更超标，差 5.7 倍的原因是后者全是宽表格。而痛点是「读一个文件把上下文预算吃光」——预算按 token 算，不按行算。隔壁 `state/total-size-cap` 用的正是字节。
-
-第二个断层：`realign --scope=health` 维度 c 名为「过大文档识别」，但挂的三条规则（`state/total-size-cap` / `state/line-length-cap` / `state/forbidden-content`）**全部只作用于 `.claude/rules/devdocs-state.md`**，devdocs 正文一条都不管。这就是 400 KB 的 `02-system-design.md` 从没被报过的原因。
-
-### 1.4 存量分布
-
-17 个 devdocs 目录，**近两周还在动的只有 3 个**：tm-reborn（21 文件/340 KB）· dji-4g（9 文件）· file-server-dev（7 文件）。最大的 mic-en-legacy（59 文件/7.8 MB）名字就带 legacy，最后改动 6 月 25。
-
-这个分布是本设计敢做迁移的前提：迁移面小。
-
-## 2. 方案选型
-
-| 方案 | 内容 | 裁定 |
-|---|---|---|
-| **1 清单驱动** | 一份 SSOT 清单，retrofit / health-lint / 各 skill 三方消费 | ✅ **采用** |
-| 2 规则驱动 | 不做清单，health-lint 里硬编合法名正则，skill 路径维持各写各的 | ❌ 清单仍散着，正则与 skill 正文是两处真源，下次加新产物照样漏——现状的加固版，不是修复 |
-| 3 换布局 | `changes/<ID>.md` + `verification/` + `tasks/` + `evidence/` | ❌ 封存稿已判「迁移成本过高暂缓」，且需重切全部内容，超出裁定 3 的授权 |
-
-## 3. 命名语法
-
-**不发明新体系**——现有四套命名其实有一套潜规则，只是从没写下来。本节把它命名下来并补掉缺口。
-
-| 载体 | 语法 | 含义 | 合规实例 |
-|---|---|---|---|
-| 阶段主文件 | `NN-<name>.md` | `NN` 是**流程段**，⛔ 不是文件序号 | `01-requirements.md` |
-| 分册 | `NN-<name>-<key>.md` | `<key>` 须表意，且须在主文件登记 | `03-test-unit.md` |
-| 跨阶段 / 一次性产物 | `<name>.md` | 不属任何单段，不带号 | `backlog.md` · `verify-report.md` |
-| 机器状态 | `.<name>.<ext>` | 不给人读，排除扫描 | `.health-report.md` |
-| 归档 | `archive/<原名>-archive.md` | sync 已这么定，存量在根目录需迁 | — |
-
-### 3.1 `NN` 是段，不是序号
-
-同段可挂多个文件（`05` 段的 test-report / insights / bugfix-log 均合法）。**自造段号即违规**，可检测。
-
-### 3.2 分册键：表意 + 登记
-
-原设计写的是「键须来自受控键集」，**已撤回**。受控键集要预先枚举，而 `02-system-design` 的键封存稿也没枚举出来；硬编一个现在编得出来、但会编错。
-
-改为两条，都机器可查：
-
-- `layout/unregistered-split`：分册文件名没在主文件正文里出现过 → 报
-- `layout/ordinal-key`：键匹配 `^[a-z]?\d+$` 或单字母（`p1` / `a` / `b`）→ 报
-
-**依据是现实而非发明**：`04-dev-tasks.md` 与 `03-test-cases.md` 已自发在主文件列出分册目录（带编号区间 / 数量）；`02-system-design.md` 有 `-api` / `-data` 两个分册却零登记——正是「拆了找不到」的具体形态。规则只是把已有的好做法固化。
-
-mic-en 那 19 个 `-p1`~`-p19` 分册正是 `ordinal-key` 形态：没人知道哪册装什么。
-
-> ⚠️ **本节比原方案弱**：不保证键正交（对象模型那套才保证）。这是用便宜一个数量级换来的，明示为已知代价。
-
-## 4. 权威清单与消费契约
-
-### 4.1 落点
-
-`skills/shared/devdocs-layout.md`。
-
-- 消费方全在 `skills/` 里，`shared/` 是跨 skill 共享资源的既定家（`constraints.md` / `runlog.md` 同处）
-- ⛔ 不放 `constraints.md`：该文件已 559 行，且装的是**规则**；文件清单是**结构事实**，混入会稀释
-
-### 4.2 内容
-
-四块：四类载体语法（§3）· 合法文件全表（文件 × 产出方）· 分册登记规则 · 尺寸阈值（§5）。
-
-### 4.3 三个消费方
-
-| 消费方 | 用法 | 现状 |
-|---|---|---|
-| `retrofit` M1 规范检查 | 当检测表，比对实际文件 → 出迁移清单 | 硬编了几个例子，没有表 |
-| `health-lint.py` | 当 rule 的数据源（合法名 / 阈值） | 完全不管 devdocs 正文 |
-| 各产出 skill | 当落盘路径的权威 | 18 处各写各的 |
-
-### 4.4 防复发
-
-⛔ **任何 skill 新增一种 devdocs 产出，必须先进清单。**
-
-今天这个缺陷的成因就是 `verify-report.md` / `.health-report.md` / `schema-drift-report.md` 是各 skill 自己长出来的，从没人汇总——所以架构文档的文件结构块才会只列 10 项而实际有 18 种。
-
-### 4.5 连带改动
-
-`docs/architecture.md` 的文件结构块改成指向清单的一行。留着它就是第二处真源，而它**已经证明会过期**。
-
-## 5. 尺寸规则
-
-- **单位换字节**（依据见 §1.3）
-- **一档警告，⛔ 不设阻断**，阈值 **96 KiB**
-- 警告出口接到已有动作：超阈值 → 报警 + 建议跑 `/sync --archive`（它有真实的自动减量动作）；分不分册、怎么分当场问用户
-
-按 96 KiB 校准的实测结果：
-
-| 项目 | 命中 |
+| 能力 | 位置 |
 |---|---|
-| tm-reborn（活跃） | 0 个（最大 61 KB，且已按 `-ui`/`-core`/`-infra` 表意分册，正面样本） |
-| mic-en-legacy | `02`(400 KB) · `03-test-unit`(215 KB) · `01`(160 KB) · `04`(135 KB) |
+| 三大维度 + 评分（0-100）+ 阈值提示（<60 建议立即处理 / <40 不达标）| [realign-scope-health.md:179](../../../skills/pipeline/references/realign-scope-health.md) |
+| `.health-report.md` 产出 + schema + 防 stale（`report_hash` / `source_git_commit`）| 同文件 :108 / :203 |
+| **`next_recommended`**——按违规分布动态生成的「下一步干什么」| 同文件 :245 |
+| `AskUserQuestion` 触发点表 | 同文件 :191 |
+| `--apply` 四 Phase 修复路径 | 同文件 :217 |
 
-⛔ **不设阻断的理由**：裁定 3 只授权改名 + 归档移位，未授权自动拆分；而 `02` / `00-context` / `backlog` 的分册键封存稿明说未解。设一个 ⛔ 就是造一个**用户被卡住却没有解法**的门。
+而 `layout` 这个 scope **在同一文件里被引用了三次**：
 
-### 5.1 连带改动：消掉第二处尺寸真源
+1. `next_recommended` 拓扑顺序：`spec → layout → prd-mapping → health`（:245 区）
+2. 边界：「维度 c 中单文件 ≥ 1500 行 → 仅报告，**不拆分**」（:294）
+3. 报告字段：`route_note: "current.md >1500 拆分由 layout scope 处理"`（:146）
 
-`sync/references/archive.md` 的「行数阈值」列**删除**，改为引用清单的字节阈值。不删则尺寸标准有两处真源——正是本设计在治的病。
+⛔ **全仓搜不到 `layout` scope 的任何定义。** 它是悬空引用。
 
-该表的「数量阈值」与「状态条件」两列**保留**：它们是**归档的语义触发器**，与尺寸警报是两件事，分工在清单里写清。
+> **这就是 v1 跑偏的根因**：在重造一个已经有名字的空槽。本稿改为把槽填上。
 
-## 6. 迁移执行
+## 2. v1 为什么被推翻
 
-复用 `retrofit` 的 M1-M4（规范检查 → 差异清单 → 执行 → 报告），⛔ 不新建工具。该路径本就定义为「检测到已有 keel 文档但不符合当前规范时执行」，`git mv 03-test-plan.md → 03-test-cases.md` 是它现成的例子。
+Codex 独立评审（禁读 v1 稿），六条，**逐条已由本方复核属实**：
 
-**动作只有两种**，都是 `git mv`：改名、移进 `archive/`。
+| # | 发现 | 证据 | 对 v1 的杀伤 |
+|---|---|---|---|
+| 1 | `04-dev-tasks-pNN.md` 是**现役契约声明的权威位置**；mic-en 的 pN 分册全部在主文件登记且带语义（「P1 后端基础 + 买家端」T-01~T-22）| [devdocs-state-template.md:71](../../../skills/agent-memory/templates/devdocs-state-template.md) · mic-en `04-dev-tasks.md:373` | v1 的 `layout/ordinal-key` 会把一份现役契约判违规。⇒ **删除该规则** |
+| 2 | 主从关系不能靠连字符反推：`03-test-unit.md` 的主文件是 `03-test-cases.md`（词干不同）；`05-refactor-{audit,plan,report,rewrite}.md` 是四个独立产物，反推会去找不存在的 `05-refactor.md` | [test-cases/SKILL.md:156](../../../skills/test-cases/SKILL.md) · [refactor/SKILL.md:365](../../../skills/refactor/SKILL.md) | v1 的「文件名语法」不成立 ⇒ 改为**显式映射表** |
+| 3 | 行数阈值有第三处消费方，且**拆分阈值 ≠ 归档阈值** | [archive-rules.md:16](../../../skills/dev-tasks/templates/archive-rules.md) · [requirements/SKILL.md:244](../../../skills/requirements/SKILL.md) · [system-design/SKILL.md:264](../../../skills/system-design/SKILL.md) | v1 的「删掉行数阈值列」会误伤拆分规则 ⇒ **限定范围** |
+| 4 | 「只做 `git mv`」闭不了环：tm-reborn 的 `06-ui-hig-swiftui-checklist.md` 在 `04-dev-tasks.md:19` 被链接，改名即制造死链 | tm-reborn 实盘 | ⇒ 改名必须连带改引用，或列为「仅移动无法闭合」交用户 |
+| 5 | `SessionStart` 在 OpenCode **没有接入点**——适配器只实现 `tool.execute.after` | [opencode-plugin.js:50](../../../hooks/opencode-plugin.js) | ⇒ ⛔ 不得宣称三端覆盖 |
+| 6 | retrofit M1 **不是表驱动**（只有示例检测结果，无规则表读取 / 路径匹配 / 主从解析契约）；M2/M4 含拆分、加编号、补追溯矩阵，接布局检查会顺带触发内容迁移；基线项目进 M1 前短路 | [version-migration.md:7](../../../skills/retrofit/references/version-migration.md) · [retrofit/SKILL.md:131](../../../skills/retrofit/SKILL.md) | ⇒ **整个绕开 retrofit**，迁移的家是 layout scope 自己 |
 
-触发链：`SessionStart` hook 扫描 → 命中则一行提示 → 用户点头 → retrofit M1-M4 → 单独 commit。
+> ⚠️ **提案方在 v1 中两次用同一个错误样本（mic-en 的 `-pN` 分册）论证 `ordinal-key` 规则。** 按本仓熔断判据（连续自引入即复盘、塌缩维度而非继续加固），v1 重写而非修补。
 
-安全约束沿用现成的，⛔ 不新造：
+此外 codex 指出 v1 的载体分类装不下：`audit/<T-XX>-external-review.yaml`（门禁唯一权威输入）、`audit/<T-XX>-external-review-raw/<round-N>.txt`（嵌套目录）、`archive/releases/v1.0.0/01-requirements.md`（版本快照）。而 [health-lint.py:64](../../../skills/pipeline/scripts/health-lint.py) 的 `collect_files()` **只收 `.md`** ⇒ 非 md 产物永不受检。
 
-- `confirm/destructive-change`（constraints §5）——重命名 / 移动前必须用户确认
-- realign 安全不变量——工作区洁净才能跑、每阶段单独 commit 便于回滚
+⇒ 清单必须描述**相对路径模式 + owner + 主从关系**，⛔ 不能只列文件名语法。
 
-### 6.1 一条纪律
+## 3. 设计：`--scope=layout`
 
-⛔ **机械判不出归属的，只列清单问用户，不猜。**
+### 3.1 定位与边界
 
-例：`T-31-a11y-interactive-checklist.md`，keel 不知道它该叫什么。猜一个改过去等于静默丢失信息。
+**layout = 布局健康维度**：devdocs 目录里「有什么文件、归谁、谁是谁的分册、多大」。
 
-### 6.2 对 tm-reborn 的实测预测（可验证）
+与既有三个 scope 正交：
 
-| 文件 | 判定 | 动作 |
+| scope | 管 |
+|---|---|
+| `spec` | `spec_version` 差距补齐（产物**内容**是否跟上规范） |
+| `prd-mapping` | PRD ↔ keel 编号映射 |
+| `health` | 当前规范下产物是否健康（结构 / 链接 / state 卫生） |
+| **`layout`** | **文件本身的位置、归属、主从、体积** |
+
+⛔ **layout 不改文件内容**，只改文件名与位置（裁定 3）。内容减量仍走 `/sync --archive`。
+
+### 3.2 数据源：布局清单
+
+落点 `skills/shared/devdocs-layout.md`。理由：消费方全在 `skills/` 里，`shared/` 是跨 skill 共享资源的既定家（`constraints.md` / `runlog.md` 同处）。⛔ 不放 `constraints.md`（已 559 行，且它装规则、清单是结构事实）。
+
+**三列结构**，⛔ 不是文件名语法：
+
+| 相对路径模式 | owner | 主文件 |
 |---|---|---|
-| `06-ui-hig-swiftui-checklist.md` | 自造段号 | 问用户归哪段 |
-| `T-31-a11y-interactive-checklist.md` | 不属任何载体 | 问用户 |
-| `02-system-design.md` | 有 2 个分册但主文件未登记 | ⚠️ 只警告 |
-| 其余 18 个 | 合规，尺寸全通过 | 不动 |
+| `01-requirements.md` | requirements | — |
+| `02-system-design.md` | system-design | — |
+| `02-system-design-api.md` | system-design | `02-system-design.md` |
+| `02-system-design-data.md` | system-design | `02-system-design.md` |
+| `03-test-cases.md` | test-cases | — |
+| `03-test-{unit,integration,e2e}.md` | test-cases | `03-test-cases.md` |
+| `04-dev-tasks.md` | dev-tasks | — |
+| `04-dev-tasks-p<NN>.md` | dev-tasks | `04-dev-tasks.md` |
+| `05-refactor-{audit,plan,report,rewrite}.md` | refactor | —（四个独立产物，⛔ 非分册）|
+| `audit/<T-XX>-external-review.yaml` | dev-workflow | — |
+| `audit/<T-XX>-external-review-raw/<round-N>.txt` | dev-workflow | — |
+| `.health-report.md` · `.batch-checkpoint.json` | pipeline | —（机器态，排除扫描）|
 
-一个跑了几个月的活跃项目，迁移面是 **2 个要问 + 1 条警告**。该量级是设计未跑偏的证据。
+（完整表在实施时从各 skill 的输出声明逐一提取，⛔ 不凭记忆填。）
 
-## 7. hook
+**防复发**：⛔ 任何 skill 新增一种 devdocs 产出，必须先进清单。v1 暴露的问题正是 `verify-report.md` / `schema-drift-report.md` 等是各 skill 自己长出来的，`docs/architecture.md` 的文件结构块只列 10 项而实际 ≥18 种。
 
-### 7.1 分工
+**连带改动**：`docs/architecture.md` 文件结构块改成指向清单的一行——留着就是第二处真源，而它已证明会过期。
 
-**rule = 权威 + 覆盖 + 可测；hook = 送达。** 两者是一件事的两半，不是两个方案。
+### 3.3 三条检测规则
 
-现状的病正是只有一半：维度 c 的规则装了，但要人主动敲 `/pipeline realign --scope=health` 才跑。`realign-scope-health.md` 自己写了这个断层——原话「解决"规则实装但没人跑"的断层」。
+全部 ⚠️，⛔ 无 blocker。
 
-hook 治的是**一类特定病：该跑的没跑**。⛔ 它治不了别的。
+| rule_id | 检测 | 为什么不是 blocker |
+|---|---|---|
+| `layout/unknown-path` | 实际文件不匹配清单任何模式 → 报「待分类」 | 新产物先于清单出现是正常时序，判非法会误伤 |
+| `layout/unregistered-split` | 清单中**已声明主文件**的分册，其文件名未在主文件正文出现 | 登记缺失不影响正确性，只影响可发现性 |
+| `layout/size-cap` | devdocs 正文 `.md` > 96 KiB | 拆分键未解（见 §7），设 blocker 即造无解之门 |
 
-### 7.2 本设计只用 `SessionStart`
+⛔ **v1 的 `layout/ordinal-key` 与 `layout/illegal-name` 删除**（理由见 §2 之 1、2）。
 
-新增 `hooks/devdocs-layout`：开工时扫描 → 命中则一行非阻塞提示 → 接 §6 触发链。keel 现在**完全没用过 `SessionStart`**，是空槽。
+`unknown-path` 的措辞是「待分类」而非「非法」——这是 codex 建议的准确命名，⛔ 不把「字符串命中」宣传成全局索引完整性。
 
-`PostToolUse` 防漂移（文件刚落盘就判名字）价值更高——它防止漂移而非事后清理，tm-reborn 那个自造段号会在出生那一秒被抓住——但**本轮不做**（裁定 4），理由是常驻成本需单独算账。
+**扫描面须扩**：`collect_files()` 现只收 `.md`（[health-lint.py:64](../../../skills/pipeline/scripts/health-lint.py)），`layout/unknown-path` 必须看见 `.yaml` / `.txt` / 嵌套目录，否则三类已知产物永不受检。
 
-### 7.3 四条硬限制
+### 3.4 尺寸：单位换字节
 
-1. ⛔ **OpenCode 没有 `additionalContext` 通道。** 三端里只有 Claude Code 与 Codex 能收 hook 提示。故 **hook 不能是唯一载体**，清单 + rule 必须独立成立，hook 只是加速器；否则 OpenCode 用户拿到的是不设防的规范。
-2. ⛔ **`PostToolUse` 在写完之后才跑**，只能提示不能拦。要真拦需 `PreToolUse`，那是阻断级，超出授权，且会让 agent 卡在半路没有出口。
-3. ⛔ **不挂在 `devdocs-drift` 上。** 该文件头明写：「试验件。验不过就删，⛔ 不要在它之上加功能。」布局检查另起一个 hook。
-4. ⚠️ **hook 是常驻成本。** 现役两个 `PostToolUse` hook 都被迫加冷却戳（5 分钟 / 2 分钟）才没变噪声；且有实测教训：hook 常驻会让验收结果混叠。加 hook 按个算账，⛔ 不按批加。
+**依据**：行数与字节严重脱钩——tm-reborn `01-requirements.md` = 620 行 / 28 KB；mic-en `01-requirements.md` = 556 行 / 160 KB（平均每行 46 B vs 288 B，后者全是宽表格）。痛点是「读一个文件把上下文预算吃光」，预算按 token 算不按行算。隔壁 `state/total-size-cap` 用的正是字节。
 
-### 7.4 冷却与静默
+阈值 **96 KiB** 单档警告。校准：tm-reborn 全部通过（最大 61 KB）；mic-en 命中 `02`(400KB) `03-test-unit`(215KB) `01`(160KB) `04`(135KB)。
 
-沿用现役形态：非 keel 项目（无 `docs/devdocs/`）静默退出；戳文件置于 `.git/`；`SessionStart` 天然低频，⛔ 无需 `PostToolUse` 那种分钟级冷却。
+⛔ **不删 `sync/references/archive.md` 的行数阈值列**（v1 的连带改动撤回）。理由见 §2 之 3：那些是**归档触发器**与**拆分建议**，与**尺寸警报**是三件事。本稿只新增尺寸警报，三者分工在清单里写清。
 
-## 8. 改动面
+### 3.5 出口：复用已有的决策机制
+
+⛔ 不新建任何决策通道：
+
+- **`next_recommended`**——layout 违规时生成 `"realign --scope=layout --apply"`；已有的拓扑顺序 `spec → layout → prd-mapping → health` 本就给 layout 留了位
+- **`AskUserQuestion` 触发点**——新增一行：判不出归属的文件（如 tm-reborn 的 `T-31-a11y-interactive-checklist.md`），展示候选归属交用户
+
+⛔ **机械判不出归属的，只列清单问用户，不猜。** 猜一个改过去等于静默丢信息。
+
+### 3.6 apply：改名 + 归档移位
+
+按 health scope 的 apply 形态：工作区洁净前置、每项独立 commit、`report_hash` 防 stale、`pending` 决策未答不得继续。
+
+两种动作：
+
+1. **改名**（清单里有明确旧名→新名映射时）——`git mv` + **同批更新所有指向它的引用**
+2. **归档移位**——把 `*-archive.md` 从根目录移进 `archive/`
+
+⚠️ **仅移动无法闭合的项单列**（codex 发现 4）：改名会打断 `04-dev-tasks.md:19` 这类链接；补登记要编辑正文。这两类超出裁定 3 的 `git mv` 授权，⛔ 不隐含扩权——列清单，逐项问。
+
+## 4. 触发：`SessionStart` hook
+
+新增 `hooks/devdocs-layout`：开工时扫描 → 命中则一行非阻塞提示 → 接 §3.5 决策链。这落裁定 2 的「开工时自动检测，当场问」。
+
+`SessionStart` 在 keel 现有 `hooks.json` 里是空槽（现只用 `PostToolUse`）。
+
+### 4.1 rule 与 hook 的分工
+
+**rule = 权威 + 覆盖 + 可测；hook = 送达。** 两者是一件事的两半。现状的病正是只有一半：维度 c 的规则装了，但要人主动敲命令才跑——`realign-scope-health.md` 自己写了这个断层（原话「解决"规则实装但没人跑"的断层」）。
+
+⛔ hook 只治「该跑的没跑」这一类病，治不了别的。
+
+### 4.2 四条硬限制
+
+1. ⛔ **OpenCode 不覆盖**：适配器只实现 `tool.execute.after`，`SessionStart` 无接入点（[opencode-plugin.js:50](../../../hooks/opencode-plugin.js)）。本轮明确只覆盖 Claude Code + Codex。清单 + rule 必须独立成立，hook 只是加速器。
+2. ⛔ **不挂在 `devdocs-drift` 上**——其文件头自述「试验件。验不过就删，⛔ 不要在它之上加功能」。
+3. ⛔ **不做 `PostToolUse` 防漂移**（裁定 4）。它价值更高（漂移出生即被抓）但是常驻成本，单独算账。
+4. ⚠️ **hook 是常驻成本**：现役两个 `PostToolUse` 都被迫加冷却戳（5 / 2 分钟）；且有实测教训——hook 常驻会让验收结果混叠。`SessionStart` 天然低频，⛔ 无需分钟级冷却；非 keel 项目（无 `docs/devdocs/`）静默退出。
+
+## 5. 顺手修的既存缺陷
+
+调查中发现，与本设计同源，⛔ 不另开任务：
+
+| # | 缺陷 | 证据 |
+|---|---|---|
+| 1 | `--apply` Phase 2 写「维度 d 引用替换」，但**维度 d 已废弃**（同文件前文明写「原维度 d 与维度 e 均已废弃」）——死规格 | realign-scope-health.md :217 区 vs :43 区 |
+| 2 | `1500 行` 阈值只在散文出现两次（:146 / :294），不在 Rule 集表，无实现 | 同文件 |
+| 3 | `collect_files()` 排除 `_archived/`，但归档约定是 `archive/`（sync）——排除的是规格里不存在的目录名 | [health-lint.py:67](../../../skills/pipeline/scripts/health-lint.py) vs [sync/references/archive.md:147](../../../skills/sync/references/archive.md)。⚠️ 实盘 17 个项目均无 `_archived/`，故目前无实际漏扫，属规格层不一致 |
+
+缺陷 2 的处理：`1500 行` 被 §3.4 的字节阈值取代，散文两处改写为指向 `layout/size-cap`。
+
+## 6. 改动面
 
 | # | 文件 | 动作 |
 |---|---|---|
-| 1 | `skills/shared/devdocs-layout.md` | **新增**——清单 + 语法 + 阈值 |
-| 2 | `docs/architecture.md` 文件结构块 | 改指针，消第二处真源 |
-| 3 | `skills/pipeline/scripts/health-lint.py` | 加 4 条 rule + selftest 夹具 |
-| 4 | `skills/pipeline/references/health-lint-implementation.md` | Rule 集表登记新 rule |
-| 5 | `skills/pipeline/references/realign-scope-health.md` | 维度 c 扩到 devdocs 正文；命名归维度 a |
-| 6 | `skills/sync/references/archive.md` | 删「行数阈值」列 → 引用清单 |
-| 7 | `skills/retrofit/references/version-migration.md` | M1 检测表 → 引用清单 |
+| 1 | `skills/shared/devdocs-layout.md` | **新增**——路径模式 / owner / 主从映射 / 尺寸阈值 |
+| 2 | `skills/pipeline/references/realign-scope-layout.md` | **新增**——layout scope 执行接口（对标 `realign-scope-health.md`）|
+| 3 | `skills/pipeline/references/realign.md` | scope 表加 `layout` 行 |
+| 4 | `skills/pipeline/references/realign-scope-health.md` | 修缺陷 1、2；`next_recommended` 补 layout 路由 |
+| 5 | `skills/pipeline/scripts/health-lint.py` | 加 3 条 rule；`collect_files()` 扩到非 `.md`；selftest 夹具 |
+| 6 | `skills/pipeline/references/health-lint-implementation.md` | Rule 集表登记 3 条新 rule |
+| 7 | `docs/architecture.md` | 文件结构块改指针 |
 | 8 | `hooks/devdocs-layout` + `hooks/hooks.json` | **新增** `SessionStart` |
-| 9 | 18 处 skill 落盘路径 | 只核对是否已在清单，发现矛盾才改 |
-| 10 | `plugin.json` + `.claude-plugin/plugin.json` | version bump（不 bump 则分发空转） |
+| 9 | `plugin.json` + `.claude-plugin/plugin.json` | version bump（⛔ 不 bump 则分发空转且零报错）|
 
-约 10 个文件。对比封存的对象模型方案（50+ 文件跨 21 个 skill，因此被封存）——规模差一个数量级，是两件事可以拆开做的证据。
+⛔ **不碰** `retrofit`（§2 之 6）、⛔ **不碰** `sync/references/archive.md`（§3.4）——v1 的这两项连带改动全部撤回。
 
-### 8.1 新增 rule 清单
+## 7. 非目标与诚实残留
 
-| rule_id | 严重度 | 检测 |
-|---|---|---|
-| `layout/illegal-name` | ⚠️ | 文件名不匹配四类载体任一语法（含自造段号） |
-| `layout/unregistered-split` | ⚠️ | 分册文件名未在主文件正文出现 |
-| `layout/ordinal-key` | ⚠️ | 分册键为纯序号 / 单字母 |
-| `layout/size-cap` | ⚠️ | devdocs 正文 `.md` > 96 KiB |
+### 7.1 非目标
 
-四条全为 ⚠️，⛔ 无 blocker（理由见 §5）。
+⛔ 不新建命名法规 · ⛔ 不做全局强制改名 · ⛔ 不自动拆分大文件 · ⛔ 不做项目内 `index.md` · ⛔ 不改编号对象模型 · ⛔ 不碰 version-bump 检测 · ⛔ 不设 blocker 级门 · ⛔ 不做 `PostToolUse` 防漂移 · ⛔ 不覆盖 OpenCode
 
-## 9. 非目标与诚实残留
+### 7.2 为什么不做项目内 `index.md`
 
-### 9.1 非目标
+清单 + 主从映射到位后，「哪册装什么」由主文件的分册目录承载（`04-dev-tasks.md` 与 `03-test-cases.md` 已自发这么做）。独立 index 多一个会漂的文件。⚠️ 但须承认 codex 的提醒：**插件内的路径清单不能替代用户项目自己的导航索引**——若将来实证需要，另案。
 
-⛔ 不改编号对象模型（封存稿范围）· ⛔ 不自动拆分大文件 · ⛔ 不做项目内 `index.md` · ⛔ 不定 `02` / `00-context` / `backlog` 的分册键 · ⛔ 不碰 version-bump 检测 · ⛔ 不设阻断级门 · ⛔ 不做 `PostToolUse` 防漂移
+### 7.3 诚实残留
 
-### 9.2 为什么不做项目内 `index.md`
+- `02-system-design` / `00-context` / `backlog` 的**分册键仍未解**，与已封存的对象模型稿 §6.2 结论一致。超阈值只报警，怎么拆当场问用户。
+- `unregistered-split` 只做「文件名在主文件正文出现过」的字面检查。codex 构造的反例成立：历史说明里写「已弃用 `02-system-design-api.md`」也会通过；链接文字对而目标错也会通过。⇒ 规则**只保证可发现性下限**，⛔ 不宣称索引完整性。
+- 14 个不活跃项目不迁、⛔ 也不报错（裁定 1 的既定代价）。
+- `layout/unknown-path` 对**文件放错目录**的检测依赖清单的路径模式写得够细；清单粗则漏检。
 
-命名语法一旦定死，`ls` 排出来的就是索引；再加一个文件反而多一个会漂的东西。`ls` 唯一解决不了的是「分册后哪册装什么」，该职责由主文件的分册目录承载（§3.2），主文件本就是入口。
+## 8. 验证方式
 
-这与 layout.v2 原则 2「主文件只记索引」一致——该原则的目标已被判定达成，手段不同。
+本仓无统一 build/test/lint，按 AGENTS.md 逐项：
 
-### 9.3 诚实残留
-
-- `02-system-design` / `00-context` / `backlog` 的分册键仍未解，与封存稿 §6.2 的结论一致。超阈值只报警，怎么拆当场问用户。
-- 分册键不保证正交（§3.2）。
-- `mic-en-legacy` 等 14 个不活跃目录不迁，⛔ 也不报错。回头再挖它们时仍然难用——这是裁定 1 的既定代价。
-
-## 10. 验证方式
-
-本仓无统一 build/test/lint，按 AGENTS.md 的验证要求逐项：
-
-| 改动类型 | 验证 |
+| 改动 | 验证 |
 |---|---|
-| `health-lint.py` 新 rule | selftest 夹具红绿各一（先构造违规文件证明会报，再修正证明不报）；⛔ 格式检查不算 |
-| 新 rule 的 delta 行为 | 确认 `--since-baseline` 不吞掉新 rule 的首次报告 |
-| `hooks/devdocs-layout` | `bash -n` 语法检查 + 三种输入实测：非 keel 项目（须静默）· 合规项目（须静默）· tm-reborn（须报 2 项） |
-| 清单与消费方 | 生产方 / 消费方同时核对；18 处落盘路径逐一比对清单 |
-| 分发配置 | version bump 后确认注入版本，⛔ 不改 version 则 push 与 update 全空转且零报错 |
-| 文案改动 | `git diff --check` |
+| 3 条新 rule | selftest 夹具**红绿各一**（先构造违规证明会报，再修正证明不报）；⛔ 格式检查不算 |
+| `collect_files()` 扩面 | 夹具含 `.yaml` / `.txt` / 嵌套目录，证明新路径进扫描且旧行为不变 |
+| delta 行为 | 确认 `--since-baseline` 不吞掉新 rule 首次报告 |
+| `hooks/devdocs-layout` | `bash -n` + 三种输入实测：非 keel 项目须静默 · 合规项目须静默 · tm-reborn 须命中 |
+| 清单 | 生产方 / 消费方同时核对；各 skill 输出声明**逐一提取**，⛔ 不凭记忆 |
+| scope 接入 | `next_recommended` 在 layout 违规时真的路由到 layout |
+| 分发 | version bump 后确认注入版本 |
+| 文案 | `git diff --check` |
 
-⚠️ **端到端行为须用代表性任务实测**：在 tm-reborn 上跑一次完整触发链（SessionStart 报告 → 确认 → retrofit 迁移 → 复扫归零）。未能实测的部分明确说明。
+⚠️ **端到端须实测**：在 tm-reborn 跑完整触发链（SessionStart 命中 → 报告 → 决策 → apply → 复扫归零）。未能实测的部分明确说明。
 
-## 11. 与封存稿的关系
+## 9. 与封存稿的关系
 
-`2026-09-11-devdocs-object-model-convergence-v2-design.md` 已于 2026-09-15 封存，`reactivate_when: 第二个项目在技术升级/重构/治理上撞同一堵墙`。
+`2026-09-11-devdocs-object-model-convergence-v2-design.md` 于 2026-09-15 封存，`reactivate_when: 第二个项目在技术升级/重构/治理上撞同一堵墙`。
 
-**本稿不 reactivate 它。** 那份稿的主体是**编号对象模型**（`F` 的字段、`AC.kind`、`CHK.level`、追溯链），封存理由是该主体要改 50+ 文件跨 21 个 skill。它的 §6「文档结构」只是次要范围，且自陈「三个最大的文件本设计都没解」。
-
-本稿只取文档结构这一维，且用「表意 + 登记」替掉「对象模型字段做键」，故与封存主体不冲突、不依赖、不解锁。封存稿的 `reactivate_when` 仍然有效，本稿不满足其触发条件。
+**本稿不 reactivate 它。** 那份稿的主体是编号对象模型（`F` 字段 / `AC.kind` / `CHK.level` / 追溯链），封存因其要改 50+ 文件跨 21 个 skill。本稿只填一个已被现役规格引用三次的空 scope，且用「显式映射表」替掉「对象模型字段做键」——不冲突、不依赖、不解锁。其 `reactivate_when` 仍有效，本稿不满足触发条件。
