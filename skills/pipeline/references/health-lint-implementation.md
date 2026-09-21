@@ -46,7 +46,7 @@
 | `layout/size-cap` | ⚠️ | c 过大 | v1+v2 | ❌（manual_decision）|
 | `skill/dead-link` | ⚠️ | b 索引/链接 | **skill 库** | ❌（manual_decision）|
 
-> 15 条全部 [新增]；其中 `design/adr-only-revision` 与 `submodule/pointer-drift` 脚本输出 `not_implemented`，需 Agent 按算法补执行。⚠️ `flag/dangling-reference` 扫 skill 库不扫项目，走 `--skills-dir`，**不在** `--scope=health` 的 8 条之内。项目可直接调 `/pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+> 15 条全部 [新增]；其中 `design/adr-only-revision` 与 `submodule/pointer-drift` 脚本输出 `not_implemented`，需 Agent 按算法补执行。⚠️ `flag/dangling-reference` 扫 skill 库不扫项目，走 `--skills-dir`，**不在** `--scope=health` 的 11 条之内。项目可直接调 `/pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
 
 ---
 
@@ -74,7 +74,7 @@
 
 **目的**：检测 skill 之间互相引用的 `--flag` 在目标 skill 目录内是否存在。
 
-**⛔ 扫描对象与其余 8 条不同**：其余扫用户项目的 `docs/devdocs/` 与 `devdocs-state.md`；
+**⛔ 扫描对象与其余 11 条不同**：其余扫用户项目的 `docs/devdocs/` 与 `devdocs-state.md`；
 本条扫 **skill 库自身**，故走独立入口 `health-lint.py --skills-dir <skills/>`，
 ⛔ 不并入 `--target` 的 project-scope 扫描。
 
@@ -644,7 +644,7 @@ notes: |
 
 | 入口 | 用途 |
 |---|---|
-| `--target <根>` | project scope 的 8 条 |
+| `--target <根>` | project scope 的 11 条 |
 | `--skills-dir <skills/>` | skill 库的 4 条（`flag/*` + `skill/*`）|
 | `--baseline-init` / `--since-baseline` | 存量项目噪声抑制 |
 | `--changed-only` | 仅扫 `git diff HEAD` 变更文件 |
@@ -740,7 +740,7 @@ v1 仍不含 `--apply` / 自动修复。
 
 ## Finding 输出 schema
 
-所有 12 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
+所有 15 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
 
 ```yaml
 - rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix
@@ -759,7 +759,7 @@ v1 仍不含 `--apply` / 自动修复。
 
 | 命令 | 执行的 rule |
 |------|------------|
-| `/pipeline realign --scope=health --dry-run` | project scope 的 8 条（⛔ 不含 `flag/dangling-reference`）|
+| `/pipeline realign --scope=health --dry-run` | project scope 的 11 条（⛔ 不含 `flag/dangling-reference`）|
 | `/pipeline realign --scope=health --fix=state/total-size-cap` | 仅该 rule |
 | `/pipeline realign --scope=health --apply` | 修复 auto_fixable + 已 AskUserQuestion 的 manual_decision |
 
@@ -767,7 +767,7 @@ v1 仍不含 `--apply` / 自动修复。
 
 ## 历史项目兼容
 
-- project scope 的 8 条全部可用，直接通过 `/pipeline realign --scope=health --dry-run` 调用。
+- project scope 的 11 条中 9 条脚本已实现，可直接通过 `/pipeline realign --scope=health --dry-run` 调用；`design/adr-only-revision` 与 `submodule/pointer-drift` 报 `not_implemented`，需 Agent 按算法补执行。
 
 ## 变更日志
 
