@@ -30,6 +30,70 @@ DEF_TABLE = re.compile(r"^\|\s*\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]
 DEF_LIST = re.compile(r"^\s*[-*]\s+\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
 KEY_RE = re.compile(r"^(.+)-(\d+)([a-z]?)$")
 
+LAYOUT_DOC = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "..", "..", "shared", "devdocs-layout.md")
+_ROW_RE = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*(`[^`]+`|—)\s*\|\s*$")
+
+
+def pat_to_re(pattern):
+    """清单路径模式 → 正则源串。语法见 devdocs-layout.md「路径模式语法」节。"""
+    out, i = [], 0
+    while i < len(pattern):
+        c = pattern[i]
+        if c == "{":
+            j = pattern.index("}", i)
+            alts = [re.escape(a) for a in pattern[i + 1:j].split(",")]
+            out.append("(?:" + "|".join(alts) + ")")
+            i = j + 1
+        elif c == "<":
+            j = pattern.index(">", i)
+            tok = pattern[i + 1:j]
+            out.append({"N": r"\d+", "slug": r"[A-Za-z0-9_-]+"}.get(tok, r"[^/]+"))
+            i = j + 1
+        elif pattern.startswith("**/", i):
+            out.append(r"(?:[^/]+/)*")
+            i += 3
+        else:
+            out.append(re.escape(c))
+            i += 1
+    return "".join(out)
+
+
+def load_layout(path=None):
+    """解析布局清单「## 清单」节的三列表，返回 [(编译正则, owner, 主文件|None), ...]。
+
+    只收「## 清单」标题之后、下一个「## 」标题之前的行 —— 清单文件里还有路径模式语法 /
+    双形态存储 / 阈值分工三张说明性表格，逐行匹配 _ROW_RE 会把它们的示例行也当成清单条目。
+
+    ⛔ 清单缺失或零可解析行一律抛 RuntimeError —— 静默返回空表会让
+    layout/unknown-path 把项目里每个文件都判成「待分类」，是最糟的失效形态。
+    """
+    p = path or LAYOUT_DOC
+    try:
+        text = open(p, encoding="utf-8").read()
+    except OSError as e:
+        raise RuntimeError(f"布局清单读不到：{p}：{e}")
+    lines = text.split("\n")
+    has_section = any(ln.strip() == "## 清单" for ln in lines)
+    rows = []
+    # 无「## 清单」标题（如不分节的最小夹具）时退化为整篇扫描，保持向后兼容。
+    in_section = not has_section
+    for ln in lines:
+        if ln.startswith("## "):
+            in_section = ln.strip() == "## 清单"
+            continue
+        if not in_section:
+            continue
+        m = _ROW_RE.match(ln)
+        if not m:
+            continue
+        pat, owner, parent = m.group(1), m.group(2).strip(), m.group(3)
+        rows.append((re.compile(pat_to_re(pat)), owner,
+                     None if parent == "—" else parent.strip("`")))
+    if not rows:
+        raise RuntimeError(f"布局清单无可解析行：{p}")
+    return rows
+
 
 def key_parts(k):
     """归一化键 → (类型, 数字)。字母后缀参与身份、不参与数值上界。"""
@@ -571,6 +635,39 @@ def selftest():
             "# s\n## 编号状态\n| 类型 | 当前最大 |\n|---|---|\n| AC | AC-001 |\n"
             "- T-01 done trade@0c263bf4d4 净 -85 LOC +184/-5 见 src/F.java:L5\n"
             "- " + "长" * 600 + "\n")
+        # --- 布局清单解析 ---
+        lay = os.path.join(t, "devdocs-layout.md")
+        open(lay, "w").write(
+            "# 布局清单\n\n"
+            "| 相对路径模式 | owner | 主文件 |\n"
+            "|---|---|---|\n"
+            "| `01-requirements.md` | requirements | — |\n"
+            "| `03-test-{unit,integration,e2e}.md` | test-cases | `03-test-cases.md` |\n"
+            "| `04-dev-tasks-p<N>.md` | dev-tasks | `04-dev-tasks.md` |\n"
+            "| `patterns/<slug>.md` | compound | — |\n"
+            "| `audit/**/<slug>.yaml` | dev-workflow | — |\n")
+        rows = load_layout(lay)
+        if len(rows) != 5:
+            print(f"FAIL load_layout: 期望 5 行，实得 {len(rows)}", file=sys.stderr)
+            return 1
+        cases = [("01-requirements.md", 0), ("03-test-e2e.md", 1),
+                 ("04-dev-tasks-p12.md", 2), ("patterns/sqlite-wal.md", 3),
+                 ("audit/x/y/T-01-external-review.yaml", 4)]
+        for relpath, idx in cases:
+            if not rows[idx][0].fullmatch(relpath):
+                print(f"FAIL load_layout: 模式 {idx} 匹配不到 {relpath}", file=sys.stderr)
+                return 1
+        if rows[1][2] != "03-test-cases.md" or rows[0][2] is not None:
+            print("FAIL load_layout: 主文件列解析错（— 应为 None）", file=sys.stderr)
+            return 1
+        try:
+            load_layout(os.path.join(t, "nope.md"))
+        except RuntimeError:
+            pass
+        else:
+            print("FAIL load_layout: 清单缺失应抛 RuntimeError，静默空表会把所有文件判成待分类",
+                  file=sys.stderr)
+            return 1
         # --- skills scope 夹具 ---
         sk = os.path.join(t, "sk"); os.makedirs(os.path.join(sk, "good"))
         os.makedirs(os.path.join(sk, "bad")); os.makedirs(os.path.join(sk, "empty"))
