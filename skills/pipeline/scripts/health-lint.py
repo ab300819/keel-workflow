@@ -551,6 +551,24 @@ def scan_layout(root, devdocs, layout_rows):
                 f"{rel_dd} 不在布局清单中 —— 待分类，⛔ 非「非法」",
                 fix="在 skills/shared/devdocs-layout.md 登记该路径模式；"
                     "若属临时产物则移出 docs/devdocs/"))
+        for pat, _owner, parent in layout_rows:
+            if parent is None or not pat.fullmatch(rel_dd):
+                continue
+            ppath = os.path.join(devdocs, parent)
+            if not os.path.isfile(ppath):
+                break                       # 主文件不存在是另一类问题，⛔ 不在本规则报
+            try:
+                ptext = open(ppath, encoding="utf-8", errors="replace").read()
+            except OSError:
+                break
+            if os.path.basename(rel_dd) not in ptext:
+                findings.append(find(
+                    "layout/unregistered-split", "warning", rel, None,
+                    f"分册 {os.path.basename(rel_dd)} 未在主文件 {parent} 正文出现",
+                    ctx=f"parent: {parent}",
+                    fix=f"在 {parent} 的分册目录里加一行指向本文件；"
+                        "⛔ 本规则只保证可发现性下限，不校验链接目标"))
+            break
     return findings
 
 
@@ -683,6 +701,10 @@ def selftest():
         os.makedirs(os.path.join(dd, "audit"))
         open(os.path.join(dd, "audit", "T-01-external-review.yaml"), "w").write("k: v\n")
         open(os.path.join(dd, "99-mystery.md"), "w").write("# 不在清单里\n")
+        open(os.path.join(dd, "04-dev-tasks.md"), "w").write(
+            "# 任务\n分册：[04-dev-tasks-p1.md](04-dev-tasks-p1.md)\n")
+        open(os.path.join(dd, "04-dev-tasks-p1.md"), "w").write("# P1\n")   # 已登记 → 不报
+        open(os.path.join(dd, "04-dev-tasks-p2.md"), "w").write("# P2\n")   # 未登记 → 报
         open(os.path.join(t, ".claude", "rules", "devdocs-state.md"), "w").write(
             "# s\n## 编号状态\n| 类型 | 当前最大 |\n|---|---|\n| AC | AC-001 |\n"
             "- T-01 done trade@0c263bf4d4 净 -85 LOC +184/-5 见 src/F.java:L5\n"
@@ -783,7 +805,10 @@ def selftest():
             "skill/size-cap": 1,
             "skill/dead-link": 1,
             "flag/dangling-reference": 1,
-            "layout/unknown-path": 1,     # 99-mystery.md 不在清单；audit/*.yaml 在清单
+            "layout/unknown-path": 2,     # 99-mystery.md + 04-dev-tasks.md 不在清单（清单第三
+                                           # 行模式是 `04-dev-tasks-p<N>.md`，不含 04-dev-tasks.md
+                                           # 本身）；-p1/-p2 都匹配该模式，不算未知；audit/*.yaml 在清单
+            "layout/unregistered-split": 1,   # p2 未在主文件出现；p1 已出现
         }
         got = {}
         lay_rows = load_layout(lay)
