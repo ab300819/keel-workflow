@@ -743,7 +743,7 @@ v1 仍不含 `--apply` / 自动修复。
 所有 15 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
 
 ```yaml
-- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix
+- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix | layout/unknown-path | layout/unregistered-split | layout/size-cap | flag/dangling-reference | skill/size-cap | skill/name-mismatch | skill/dead-link
   severity: blocker | warning
   file: <relative-path>
   line: <int 或 null>
