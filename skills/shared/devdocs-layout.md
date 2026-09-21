@@ -14,6 +14,7 @@
 | `{a,b,c}` | 择一 |
 | `<N>` | 一个或多个数字 |
 | `<slug>` | 标识符片段（字母/数字/下划线/连字符）|
+| `<any>` | 除 `/` 外任意字符（宽松兜底，用于时间戳等不受上面几种约束的片段）|
 | `**/` | 任意层级目录（含零层）|
 | 其他 | 字面量 |
 
@@ -36,8 +37,7 @@
 | `03-test-cases.md` | test-cases | — |
 | `03-test-{unit,integration,e2e}.md` | test-cases | `03-test-cases.md` |
 | `04-dev-tasks.md` | dev-tasks | — |
-| `04-dev-tasks-{infra,core,api,test,ui}.md` | dev-tasks | `04-dev-tasks.md` |
-| `04-dev-tasks-p<N>.md` | dev-tasks | `04-dev-tasks.md` |
+| `04-dev-tasks-<slug>.md` | dev-tasks | `04-dev-tasks.md` |
 | `05-bugfix-log.md` | bugfix | — |
 | `05-insights.md` | insights | — |
 | `05-test-report.md` | test-run | — |
@@ -61,6 +61,7 @@
 | `archive/{01-requirements,02-system-design,03-test-cases,04-dev-tasks}-archive.md` | sync | — |
 | `archive/releases/**/<slug>.md` | sync | — |
 | `audit/<slug>-external-review.yaml` | dev-workflow | — |
+| `audit/<slug>-external-review-realigned-<any>.yaml` | dev-workflow | — |
 | `audit/**/<slug>.txt` | dev-workflow | — |
 | `.health-report.md` | pipeline | — |
 | `.realign-plan.md` | pipeline | — |
@@ -77,6 +78,10 @@ ADR / INS / BUG / Backlog 四类资源**两套形态都合法**，上表各登�
 | INS | `05-insights.md` | `insights/INS-<N>.md` + 索引 |
 | BUG | `05-bugfix-log.md` | `bugs/BUG-<N>.md` + 索引 |
 | Backlog | `backlog.md` | `backlog/<slug>.md` + 索引 |
+
+⚠️ **资源目录形态的声明来源目前只有 `skills/agent-memory/templates/devdocs-state-template.md`**，
+四个生产方 skill（system-design / insights / bugfix / backlog）的正文**未声明**该形态。
+这是已知的规格缺口，由用户裁定判为合法形态，⛔ 本清单不代表生产方已支持它。
 
 **判据是规模，不是对错。** 实测：`mic-en`（360 md）有 `bugs/` 122 文件、`insights/` 33、
 `adr/` 30，集中文件全缩成 1~2 KB 指针并自留说明「本文件已采用一文件一资源结构」；

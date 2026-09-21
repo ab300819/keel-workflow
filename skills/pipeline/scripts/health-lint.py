@@ -35,20 +35,33 @@ LAYOUT_DOC = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 _ROW_RE = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*(`[^`]+`|—)\s*\|\s*$")
 
 
+_TOKEN_RE = {"N": r"\d+", "slug": r"[A-Za-z0-9_-]+", "any": r"[^/]+"}
+
+
 def pat_to_re(pattern):
-    """清单路径模式 → 正则源串。语法见 devdocs-layout.md「路径模式语法」节。"""
+    """清单路径模式 → 正则源串。语法见 devdocs-layout.md「路径模式语法」节。
+
+    ⛔ 未知 token 与 {}/<> 不闭合一律抛 RuntimeError —— 静默兜底成 `[^/]+` 或让
+    str.index() 的裸 ValueError 冒出去，都是同一种失效形态（见 load_layout 的注释）。
+    """
     out, i = [], 0
     while i < len(pattern):
         c = pattern[i]
         if c == "{":
-            j = pattern.index("}", i)
+            j = pattern.find("}", i)
+            if j == -1:
+                raise RuntimeError(f"布局清单路径模式 {{ 未闭合：{pattern}")
             alts = [re.escape(a) for a in pattern[i + 1:j].split(",")]
             out.append("(?:" + "|".join(alts) + ")")
             i = j + 1
         elif c == "<":
-            j = pattern.index(">", i)
+            j = pattern.find(">", i)
+            if j == -1:
+                raise RuntimeError(f"布局清单路径模式 < 未闭合：{pattern}")
             tok = pattern[i + 1:j]
-            out.append({"N": r"\d+", "slug": r"[A-Za-z0-9_-]+"}.get(tok, r"[^/]+"))
+            if tok not in _TOKEN_RE:
+                raise RuntimeError(f"布局清单路径模式含未知记法 <{tok}>：{pattern}")
+            out.append(_TOKEN_RE[tok])
             i = j + 1
         elif pattern.startswith("**/", i):
             out.append(r"(?:[^/]+/)*")
@@ -682,6 +695,34 @@ def selftest():
         else:
             print("FAIL load_layout: 有表格但缺「## 清单」节应抛 RuntimeError，"
                   "否则重构改名/拆走标题会静默退回全文扫描", file=sys.stderr)
+            return 1
+        lay_bogus = os.path.join(t, "devdocs-layout-bogus.md")
+        open(lay_bogus, "w").write(
+            "## 清单\n\n"
+            "| 相对路径模式 | owner | 主文件 |\n"
+            "|---|---|---|\n"
+            "| `x-<bogus>.md` | requirements | — |\n")
+        try:
+            load_layout(lay_bogus)
+        except RuntimeError:
+            pass
+        else:
+            print("FAIL pat_to_re: 未知记法 <bogus> 应抛 RuntimeError，不该静默兜底成 [^/]+",
+                  file=sys.stderr)
+            return 1
+        lay_unclosed = os.path.join(t, "devdocs-layout-unclosed.md")
+        open(lay_unclosed, "w").write(
+            "## 清单\n\n"
+            "| 相对路径模式 | owner | 主文件 |\n"
+            "|---|---|---|\n"
+            "| `x-{a,b.md` | requirements | — |\n")
+        try:
+            load_layout(lay_unclosed)
+        except RuntimeError:
+            pass
+        else:
+            print("FAIL pat_to_re: { 未闭合应抛 RuntimeError，不该让裸 ValueError 冒出去",
+                  file=sys.stderr)
             return 1
         # --- skills scope 夹具 ---
         sk = os.path.join(t, "sk"); os.makedirs(os.path.join(sk, "good"))
