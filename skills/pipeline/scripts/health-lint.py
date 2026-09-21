@@ -74,10 +74,8 @@ def load_layout(path=None):
     except OSError as e:
         raise RuntimeError(f"布局清单读不到：{p}：{e}")
     lines = text.split("\n")
-    has_section = any(ln.strip() == "## 清单" for ln in lines)
     rows = []
-    # 无「## 清单」标题（如不分节的最小夹具）时退化为整篇扫描，保持向后兼容。
-    in_section = not has_section
+    in_section = False
     for ln in lines:
         if ln.startswith("## "):
             in_section = ln.strip() == "## 清单"
@@ -91,6 +89,8 @@ def load_layout(path=None):
         rows.append((re.compile(pat_to_re(pat)), owner,
                      None if parent == "—" else parent.strip("`")))
     if not rows:
+        if not any(ln.strip() == "## 清单" for ln in lines):
+            raise RuntimeError(f"布局清单缺少「## 清单」节：{p}")
         raise RuntimeError(f"布局清单无可解析行：{p}")
     return rows
 
@@ -639,6 +639,7 @@ def selftest():
         lay = os.path.join(t, "devdocs-layout.md")
         open(lay, "w").write(
             "# 布局清单\n\n"
+            "## 清单\n\n"
             "| 相对路径模式 | owner | 主文件 |\n"
             "|---|---|---|\n"
             "| `01-requirements.md` | requirements | — |\n"
@@ -667,6 +668,20 @@ def selftest():
         else:
             print("FAIL load_layout: 清单缺失应抛 RuntimeError，静默空表会把所有文件判成待分类",
                   file=sys.stderr)
+            return 1
+        lay_nosection = os.path.join(t, "devdocs-layout-nosection.md")
+        open(lay_nosection, "w").write(
+            "# 布局清单\n\n"
+            "| 相对路径模式 | owner | 主文件 |\n"
+            "|---|---|---|\n"
+            "| `01-requirements.md` | requirements | — |\n")
+        try:
+            load_layout(lay_nosection)
+        except RuntimeError:
+            pass
+        else:
+            print("FAIL load_layout: 有表格但缺「## 清单」节应抛 RuntimeError，"
+                  "否则重构改名/拆走标题会静默退回全文扫描", file=sys.stderr)
             return 1
         # --- skills scope 夹具 ---
         sk = os.path.join(t, "sk"); os.makedirs(os.path.join(sk, "good"))
