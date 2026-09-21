@@ -538,6 +538,14 @@ def apply_baseline(findings, bl):
 
 SIZE_CAP_BYTES = 98304          # 96 KiB，spec §P3
 
+# 四类双形态资源的集中文件 → 超阈值建议转资源目录（devdocs-layout.md「双形态存储」）
+DUAL_FORM_CENTRAL = {
+    "05-bugfix-log.md": "bugs/BUG-<N>.md",
+    "05-insights.md": "insights/INS-<N>.md",
+    "backlog.md": "backlog/<slug>.md",
+    "02-system-design.md": None,        # ADR 的集中形态是它的 ADR 节，⛔ 整文件不等于 ADR
+}
+
 
 def scan_layout(root, devdocs, layout_rows):
     """layout/* 三条规则。全部 warning，⛔ 无 blocker。"""
@@ -569,6 +577,22 @@ def scan_layout(root, devdocs, layout_rows):
                     fix=f"在 {parent} 的分册目录里加一行指向本文件；"
                         "⛔ 本规则只保证可发现性下限，不校验链接目标"))
             break
+        if rel_dd.endswith(".md"):
+            try:
+                size = os.path.getsize(path)
+            except OSError:
+                size = 0
+            if size > SIZE_CAP_BYTES:
+                target = DUAL_FORM_CENTRAL.get(rel_dd)
+                if target:
+                    sug = f"建议转资源目录 {target} + 索引；⛔ 转换是内容迁移，需用户确认后手动执行"
+                else:
+                    sug = ("历史内容 → /sync --archive；活跃内容 → 该 skill 的拆分规则；"
+                           "⛔ 本 scope 不减量")
+                findings.append(find(
+                    "layout/size-cap", "warning", rel, None,
+                    f"{rel_dd} 已 {size} bytes（阈值 {SIZE_CAP_BYTES}）",
+                    actual=size, threshold=SIZE_CAP_BYTES, fix=sug))
     return findings
 
 
@@ -705,6 +729,8 @@ def selftest():
             "# 任务\n分册：[04-dev-tasks-p1.md](04-dev-tasks-p1.md)\n")
         open(os.path.join(dd, "04-dev-tasks-p1.md"), "w").write("# P1\n")   # 已登记 → 不报
         open(os.path.join(dd, "04-dev-tasks-p2.md"), "w").write("# P2\n")   # 未登记 → 报
+        open(os.path.join(dd, "05-bugfix-log.md"), "w").write("B\n" * 60000)   # ~120 KB，四类之一
+        open(os.path.join(dd, "02-system-design.md"), "w").write("D\n" * 60000)  # ~120 KB，其余
         open(os.path.join(t, ".claude", "rules", "devdocs-state.md"), "w").write(
             "# s\n## 编号状态\n| 类型 | 当前最大 |\n|---|---|\n| AC | AC-001 |\n"
             "- T-01 done trade@0c263bf4d4 净 -85 LOC +184/-5 见 src/F.java:L5\n"
@@ -805,10 +831,13 @@ def selftest():
             "skill/size-cap": 1,
             "skill/dead-link": 1,
             "flag/dangling-reference": 1,
-            "layout/unknown-path": 2,     # 99-mystery.md + 04-dev-tasks.md 不在清单（清单第三
+            "layout/unknown-path": 4,     # 99-mystery.md + 04-dev-tasks.md 不在清单（清单第三
                                            # 行模式是 `04-dev-tasks-p<N>.md`，不含 04-dev-tasks.md
                                            # 本身）；-p1/-p2 都匹配该模式，不算未知；audit/*.yaml 在清单
+                                           # + 05-bugfix-log.md、02-system-design.md 也不在清单里
+                                           # （size-cap 夹具复用，两者本身也未登记路径模式）
             "layout/unregistered-split": 1,   # p2 未在主文件出现；p1 已出现
+            "layout/size-cap": 2,         # 05-bugfix-log(建议转资源目录) + 02(建议归档/拆分)
         }
         got = {}
         lay_rows = load_layout(lay)
