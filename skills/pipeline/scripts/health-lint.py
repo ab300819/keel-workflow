@@ -148,6 +148,23 @@ def collect_files(devdocs):
     return sorted(out)
 
 
+def collect_all(devdocs):
+    """layout 规则的扫描面：devdocs 下**全部文件**，⛔ 不过滤扩展名。
+
+    目录排除策略与 collect_files() 一致（跳过 _archived/，历史归档不是活跃布局，
+    报它是噪音），只在扩展名过滤上不同：本函数不过滤，含 .yaml / .txt / 无扩展名。
+
+    ⛔ 与 collect_files() 分开：后者喂编号定义索引，塞进 .yaml/.txt 会改变
+    health/dead-link 行为（见 commit 35a4da8 修的那类误报）。
+    """
+    out = []
+    for root, dirs, files in os.walk(devdocs):
+        dirs[:] = [d for d in dirs if d != "_archived"]
+        for f in sorted(files):
+            out.append(os.path.join(root, f))
+    return sorted(out)
+
+
 def changed_set(root):
     """--changed-only 的变更集，返回 realpath 集合（调用方也须按 realpath 比对）。
 
@@ -519,6 +536,24 @@ def apply_baseline(findings, bl):
     return out
 
 
+SIZE_CAP_BYTES = 98304          # 96 KiB，spec §P3
+
+
+def scan_layout(root, devdocs, layout_rows):
+    """layout/* 三条规则。全部 warning，⛔ 无 blocker。"""
+    findings = []
+    for path in collect_all(devdocs):
+        rel_dd = os.path.relpath(path, devdocs)
+        rel = os.path.relpath(path, root)
+        if not any(pat.fullmatch(rel_dd) for pat, _, _ in layout_rows):
+            findings.append(find(
+                "layout/unknown-path", "warning", rel, None,
+                f"{rel_dd} 不在布局清单中 —— 待分类，⛔ 非「非法」",
+                fix="在 skills/shared/devdocs-layout.md 登记该路径模式；"
+                    "若属临时产物则移出 docs/devdocs/"))
+    return findings
+
+
 def scan_project(root, files=None, ref_only=None):
     """project scope 的 6 条 rule。files=None 时自行遍历 docs/devdocs/。
 
@@ -644,6 +679,10 @@ def selftest():
             "| F-001 | AC-009 | 追溯矩阵行 |\n"              # 首列定义，同行引用仍须查
             "```\nAC-777 代码块内不算\n```\n")
         open(os.path.join(dd, "_archived", "old.md"), "w").write("## AC-555 归档不进索引\n")
+        # --- layout 夹具 ---
+        os.makedirs(os.path.join(dd, "audit"))
+        open(os.path.join(dd, "audit", "T-01-external-review.yaml"), "w").write("k: v\n")
+        open(os.path.join(dd, "99-mystery.md"), "w").write("# 不在清单里\n")
         open(os.path.join(t, ".claude", "rules", "devdocs-state.md"), "w").write(
             "# s\n## 编号状态\n| 类型 | 当前最大 |\n|---|---|\n| AC | AC-001 |\n"
             "- T-01 done trade@0c263bf4d4 净 -85 LOC +184/-5 见 src/F.java:L5\n"
@@ -655,7 +694,7 @@ def selftest():
             "## 清单\n\n"
             "| 相对路径模式 | owner | 主文件 |\n"
             "|---|---|---|\n"
-            "| `01-requirements.md` | requirements | — |\n"
+            "| `01.md` | requirements | — |\n"
             "| `03-test-{unit,integration,e2e}.md` | test-cases | `03-test-cases.md` |\n"
             "| `04-dev-tasks-p<N>.md` | dev-tasks | `04-dev-tasks.md` |\n"
             "| `patterns/<slug>.md` | compound | — |\n"
@@ -664,7 +703,7 @@ def selftest():
         if len(rows) != 5:
             print(f"FAIL load_layout: 期望 5 行，实得 {len(rows)}", file=sys.stderr)
             return 1
-        cases = [("01-requirements.md", 0), ("03-test-e2e.md", 1),
+        cases = [("01.md", 0), ("03-test-e2e.md", 1),
                  ("04-dev-tasks-p12.md", 2), ("patterns/sqlite-wal.md", 3),
                  ("audit/x/y/T-01-external-review.yaml", 4)]
         for relpath, idx in cases:
@@ -744,9 +783,12 @@ def selftest():
             "skill/size-cap": 1,
             "skill/dead-link": 1,
             "flag/dangling-reference": 1,
+            "layout/unknown-path": 1,     # 99-mystery.md 不在清单；audit/*.yaml 在清单
         }
         got = {}
-        for f in scan_project(t) + scan_skill_flags(sk) + scan_skill_repo(sk):
+        lay_rows = load_layout(lay)
+        for f in (scan_project(t) + scan_layout(t, dd, lay_rows)
+                  + scan_skill_flags(sk) + scan_skill_repo(sk)):
             got[f["rule_id"]] = got.get(f["rule_id"], 0) + 1
         # --- 计数夹具覆盖不到的两条静默失效，直接断言 ---
         import contextlib
@@ -877,6 +919,11 @@ def main():
             return 3
         ref_only = {f for f in files if os.path.realpath(f) in changed}
     findings = scan_project(root, files, ref_only)
+    try:
+        findings += scan_layout(root, devdocs, load_layout())
+    except RuntimeError as e:
+        print(f"layout/clause-unavailable: {e}", file=sys.stderr)
+        return 3
 
     if args.baseline_init:
         path = write_baseline(root, findings)
