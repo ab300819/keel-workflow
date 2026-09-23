@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""health-lint —— health-lint-implementation.md 的可执行实现（v1，10/12 条）。
+"""health-lint —— health-lint-implementation.md 的可执行实现（v1，13/15 条）。
 
 零依赖，仅 stdlib。规格见同级 ../references/health-lint-implementation.md。
 ⚠️ 条数改了这里、argparse description、规格 Rule 集表三处必须同改
@@ -7,6 +7,7 @@
 
 project scope（--target）：state/total-size-cap · state/line-length-cap
          state/forbidden-content · state/max-id-stale · health/dead-link · id/unknown-prefix
+         layout/unknown-path · layout/unregistered-split · layout/size-cap
 skill 库 scope（--skills-dir，扫描对象是 **skill 库本身**，⛔ 不与 project scope 混用同一
 target）：flag/dangling-reference · skill/dead-link · skill/name-mismatch · skill/size-cap
 v1 未实现（如实报 not_implemented，⛔ 不要当成 pass）：
@@ -152,7 +153,9 @@ def collect_all(devdocs):
     """layout 规则的扫描面：devdocs 下**全部文件**，⛔ 不过滤扩展名。
 
     目录排除策略与 collect_files() 一致（跳过 _archived/，历史归档不是活跃布局，
-    报它是噪音），只在扩展名过滤上不同：本函数不过滤，含 .yaml / .txt / 无扩展名。
+    报它是噪音）；扩展名过滤上不同：本函数不过滤，含 .yaml / .txt / 无扩展名；
+    另外 collect_files() 还按文件名排除 .realign-plan.md / .health-report.md，
+    本函数不排除。
 
     ⛔ 与 collect_files() 分开：后者喂编号定义索引，塞进 .yaml/.txt 会改变
     health/dead-link 行为（见 commit 35a4da8 修的那类误报）。
@@ -928,7 +931,7 @@ def selftest():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="health-lint v1 (10/12 rules)")
+    ap = argparse.ArgumentParser(description="health-lint v1 (13/15 rules)")
     ap.add_argument("--target", default=".", help="项目根（含 docs/devdocs/）")
     ap.add_argument("--changed-only", action="store_true", help="仅扫 git diff HEAD 变更的文件")
     ap.add_argument("--fix", metavar="RULE_ID", help="仅运行指定 rule")
@@ -976,6 +979,7 @@ def main():
     try:
         findings += scan_layout(root, devdocs, load_layout())
     except RuntimeError as e:
+        emit(findings)
         print(f"layout/clause-unavailable: {e}", file=sys.stderr)
         return 3
 

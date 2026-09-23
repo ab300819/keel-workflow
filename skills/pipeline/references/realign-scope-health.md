@@ -23,7 +23,7 @@
 
 > **推/拉两个触发点**（解决"规则实装但没人跑"的断层）：
 > - **拉（全量）**：用户显式 `/pipeline realign --scope=health` —— 本文件定义的完整 3 维扫描。
->   ⛔ project scope 的 8 条 lint rule 中 6 条**已有可执行实现**，先跑 [`../scripts/health-lint.py`](../scripts/health-lint.py)，
+>   ⛔ project scope 的 11 条 lint rule 中 9 条**已有可执行实现**，先跑 [`../scripts/health-lint.py`](../scripts/health-lint.py)，
 >   不要逐条人肉扫；余下 2 条（`design/adr-only-revision` / `submodule/pointer-drift`）仍按
 >   [health-lint-implementation.md](health-lint-implementation.md) 的算法执行。
 > - **推（轻量探针）**：pipeline 路由入口的 health drift 探针（≤2s，仅 stat `devdocs-state.md`），命中则一行非阻塞提示来跑全量。探针**不挂 `.devdocs-realign-ack`**（health 是持续监控信号非一次性升级决策），按 `.health-baseline.yml` 重评估。探针规则见 [realign.md § health drift 探针](realign.md#health-drift-探针阶段-3与-schema-drift-并列但语义不同)。
@@ -90,7 +90,7 @@ docs/devdocs/.health-report.md
 | `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路） |
 | `.claude/rules/devdocs-state.md` | 维度 c 中 `state-size` / `state-forbidden-content` 专属扫描 |
 | `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔keel 编号引用）⚠️ **未实现**：`health-lint.py` 的 `collect_files()` 只收 `docs/devdocs/`；需由 Agent 按算法补扫 |
-| `docs/devdocs/**`（**全部文件**，含 `.yaml` / `.txt`）| `layout/*` 三条规则专属扫描（`collect_all()`，⛔ 与喂编号索引的 `collect_files()` 分开）|
+| `docs/devdocs/**`（**全部文件**，含 `.yaml` / `.txt`，⛔ 跳过 `_archived/`）| `layout/*` 三条规则专属扫描（`collect_all()`，⛔ 与喂编号索引的 `collect_files()` 分开）|
 
 ### 执行步骤
 
@@ -223,6 +223,7 @@ manual_decisions:
 #### Phase 1：布局改名与归档移位（`layout/*`）
 
 - 仅两种动作，均为 `git mv`：**改名**（清单中有明确旧名→新名映射时）、**归档移位**（把 `*-archive.md` 移进 `archive/`）。
+  ⚠️ 清单当前不提供旧名→新名映射列 ⇒ 改名分支暂无输入来源，待清单扩列后生效。
 - ⛔ **改名必须同批更新所有指向它的引用**。实证：tm-reborn 的 `06-ui-hig-swiftui-checklist.md` 在 `04-dev-tasks.md:19` 被链接，只 `git mv` 即制造死链。
 - ⛔ **仅移动无法闭合的项单列**：补登记（`unregistered-split`）要编辑正文、集中→资源目录转换是内容迁移——两者均超出「只改名 + 归档移位」授权，列清单逐项问用户。
 - ⛔ `layout/unknown-path` **不自动动手**，一律走 `AskUserQuestion`。
