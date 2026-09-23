@@ -97,3 +97,9 @@ ADR / INS / BUG / Backlog 四类资源**两套形态都合法**，上表各登�
 | 各 skill 的 300 行拆分规则 | requirements / system-design / test-cases / dev-tasks | 生成时的**拆分建议** |
 | `sync --archive` 的 400/500/400/300 行 + 数量 + 状态 | `sync/references/archive.md` | **归档触发器**（需语义条件同时满足）|
 | `layout/size-cap` 的 96 KiB | 本文件 | **体积警报**（纯尺寸，无语义条件）|
+
+`/sync --archive` 已于 2026-09-23 首次真实执行验证（`tm-reborn`，净减 767 行），
+⛔ 不再是未验证路径。但 `sync/references/archive.md` 的归档模板早于本清单对拆分布局的
+登记，两者互不知情：它假设单文件源、任务嵌套挂单个 F、有完成日期字段。⇒ 拆分布局或
+任务多对多关联的项目，归档需人工跨文件改造，⛔ 不是按钮式自动出口。
+详见 [docs/audits/2026-09-23-sync-archive-first-run.md](../../docs/audits/2026-09-23-sync-archive-first-run.md)。
