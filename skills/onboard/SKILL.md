@@ -263,12 +263,9 @@ generated_at: 2026-04-23T10:30:00+08:00
 
 ## 8. keel 文档索引
 
-| 文档 | 路径 | 说明 |
-|------|------|------|
-| 需求文档 | `docs/devdocs/01-requirements.md` | 功能点、用户故事、验收标准 |
-| 系统设计 | `docs/devdocs/02-system-design.md` | 架构、接口、数据模型 |
-| 测试用例 | `docs/devdocs/03-test-cases.md` | 测试策略、追溯矩阵 |
-| 开发任务 | `docs/devdocs/04-dev-tasks.md` | 任务列表、依赖关系 |
+| 文档 | 路径 | 产出方 | 说明 |
+|------|------|--------|------|
+| （本表按项目实际产出的文档生成，行数因项目而异）| | | |
 
 ---
 
@@ -309,6 +306,17 @@ generated_at: 2026-04-23T10:30:00+08:00
 | 未提交变更 | `git status`（onboard 直接执行） |
 | 提交风格 | `git log --oneline -5`（onboard 直接执行） |
 | 运行命令 | 从 package.json scripts 或 Makefile 提取（onboard 直接执行） |
+
+### 「8. keel 文档索引」生成规则
+
+> 清单说「keel 允许产出什么」，本节索引说「这个项目现在有什么」，二者不可互替。
+> 路径模式与 owner 权威见 [shared/devdocs-layout.md](../shared/devdocs-layout.md)。
+
+1. 列出 `docs/devdocs/` 下全部文件（含子目录，含非 `.md`，如 `.yaml` / `.txt`）
+2. 逐个匹配清单的路径模式，取其 owner 作「产出方」列
+3. 清单中有主文件的，在「说明」列标注 `<主文件> 的分册`
+4. 匹配不到任何模式的，「产出方」列填 `待分类`，⛔ 不得省略不列
+5. 清单里有模式但项目中无对应文件的，⛔ 不列（本节是项目现状，不是规范）
 
 ## 使用场景
 

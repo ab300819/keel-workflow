@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""health-lint —— health-lint-implementation.md 的可执行实现（v1，10/12 条）。
+"""health-lint —— health-lint-implementation.md 的可执行实现（v1，13/15 条）。
 
 零依赖，仅 stdlib。规格见同级 ../references/health-lint-implementation.md。
 ⚠️ 条数改了这里、argparse description、规格 Rule 集表三处必须同改
@@ -7,6 +7,7 @@
 
 project scope（--target）：state/total-size-cap · state/line-length-cap
          state/forbidden-content · state/max-id-stale · health/dead-link · id/unknown-prefix
+         layout/unknown-path · layout/unregistered-split · layout/size-cap
 skill 库 scope（--skills-dir，扫描对象是 **skill 库本身**，⛔ 不与 project scope 混用同一
 target）：flag/dangling-reference · skill/dead-link · skill/name-mismatch · skill/size-cap
 v1 未实现（如实报 not_implemented，⛔ 不要当成 pass）：
@@ -29,6 +30,83 @@ DEF_HEADING = re.compile(r"^#{1,4}\s+(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?
 DEF_TABLE = re.compile(r"^\|\s*\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\*{0,2}\s*\|")
 DEF_LIST = re.compile(r"^\s*[-*]\s+\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
 KEY_RE = re.compile(r"^(.+)-(\d+)([a-z]?)$")
+
+LAYOUT_DOC = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "..", "..", "shared", "devdocs-layout.md")
+_ROW_RE = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*(`[^`]+`|—)\s*\|\s*$")
+
+
+_TOKEN_RE = {"N": r"\d+", "slug": r"[A-Za-z0-9_-]+", "any": r"[^/]+"}
+
+
+def pat_to_re(pattern):
+    """清单路径模式 → 正则源串。语法见 devdocs-layout.md「路径模式语法」节。
+
+    ⛔ 未知 token 与 {}/<> 不闭合一律抛 RuntimeError —— 静默兜底成 `[^/]+` 或让
+    str.index() 的裸 ValueError 冒出去，都是同一种失效形态（见 load_layout 的注释）。
+    """
+    out, i = [], 0
+    while i < len(pattern):
+        c = pattern[i]
+        if c == "{":
+            j = pattern.find("}", i)
+            if j == -1:
+                raise RuntimeError(f"布局清单路径模式 {{ 未闭合：{pattern}")
+            alts = [re.escape(a) for a in pattern[i + 1:j].split(",")]
+            out.append("(?:" + "|".join(alts) + ")")
+            i = j + 1
+        elif c == "<":
+            j = pattern.find(">", i)
+            if j == -1:
+                raise RuntimeError(f"布局清单路径模式 < 未闭合：{pattern}")
+            tok = pattern[i + 1:j]
+            if tok not in _TOKEN_RE:
+                raise RuntimeError(f"布局清单路径模式含未知记法 <{tok}>：{pattern}")
+            out.append(_TOKEN_RE[tok])
+            i = j + 1
+        elif pattern.startswith("**/", i):
+            out.append(r"(?:[^/]+/)*")
+            i += 3
+        else:
+            out.append(re.escape(c))
+            i += 1
+    return "".join(out)
+
+
+def load_layout(path=None):
+    """解析布局清单「## 清单」节的三列表，返回 [(编译正则, owner, 主文件|None), ...]。
+
+    只收「## 清单」标题之后、下一个「## 」标题之前的行 —— 清单文件里还有路径模式语法 /
+    双形态存储 / 阈值分工三张说明性表格，逐行匹配 _ROW_RE 会把它们的示例行也当成清单条目。
+
+    ⛔ 清单缺失或零可解析行一律抛 RuntimeError —— 静默返回空表会让
+    layout/unknown-path 把项目里每个文件都判成「待分类」，是最糟的失效形态。
+    """
+    p = path or LAYOUT_DOC
+    try:
+        text = open(p, encoding="utf-8").read()
+    except OSError as e:
+        raise RuntimeError(f"布局清单读不到：{p}：{e}")
+    lines = text.split("\n")
+    rows = []
+    in_section = False
+    for ln in lines:
+        if ln.startswith("## "):
+            in_section = ln.strip() == "## 清单"
+            continue
+        if not in_section:
+            continue
+        m = _ROW_RE.match(ln)
+        if not m:
+            continue
+        pat, owner, parent = m.group(1), m.group(2).strip(), m.group(3)
+        rows.append((re.compile(pat_to_re(pat)), owner,
+                     None if parent == "—" else parent.strip("`")))
+    if not rows:
+        if not any(ln.strip() == "## 清单" for ln in lines):
+            raise RuntimeError(f"布局清单缺少「## 清单」节：{p}")
+        raise RuntimeError(f"布局清单无可解析行：{p}")
+    return rows
 
 
 def key_parts(k):
@@ -68,6 +146,25 @@ def collect_files(devdocs):
         for f in sorted(files):
             if f.endswith(".md") and f not in (".realign-plan.md", ".health-report.md"):
                 out.append(os.path.join(root, f))
+    return sorted(out)
+
+
+def collect_all(devdocs):
+    """layout 规则的扫描面：devdocs 下**全部文件**，⛔ 不过滤扩展名。
+
+    目录排除策略与 collect_files() 一致（跳过 _archived/，历史归档不是活跃布局，
+    报它是噪音）；扩展名过滤上不同：本函数不过滤，含 .yaml / .txt / 无扩展名；
+    另外 collect_files() 还按文件名排除 .realign-plan.md / .health-report.md，
+    本函数不排除。
+
+    ⛔ 与 collect_files() 分开：后者喂编号定义索引，塞进 .yaml/.txt 会改变
+    health/dead-link 行为（见 commit 35a4da8 修的那类误报）。
+    """
+    out = []
+    for root, dirs, files in os.walk(devdocs):
+        dirs[:] = [d for d in dirs if d != "_archived"]
+        for f in sorted(files):
+            out.append(os.path.join(root, f))
     return sorted(out)
 
 
@@ -442,6 +539,66 @@ def apply_baseline(findings, bl):
     return out
 
 
+SIZE_CAP_BYTES = 98304          # 96 KiB，spec §P3
+
+# 四类双形态资源的集中文件 → 超阈值建议转资源目录（devdocs-layout.md「双形态存储」）
+DUAL_FORM_CENTRAL = {
+    "05-bugfix-log.md": "bugs/BUG-<N>.md",
+    "05-insights.md": "insights/INS-<N>.md",
+    "backlog.md": "backlog/<slug>.md",
+    "02-system-design.md": None,        # ADR 的集中形态是它的 ADR 节，⛔ 整文件不等于 ADR
+}
+
+
+def scan_layout(root, devdocs, layout_rows):
+    """layout/* 三条规则。全部 warning，⛔ 无 blocker。"""
+    findings = []
+    for path in collect_all(devdocs):
+        rel_dd = os.path.relpath(path, devdocs)
+        rel = os.path.relpath(path, root)
+        if not any(pat.fullmatch(rel_dd) for pat, _, _ in layout_rows):
+            findings.append(find(
+                "layout/unknown-path", "warning", rel, None,
+                f"{rel_dd} 不在布局清单中 —— 待分类，⛔ 非「非法」",
+                fix="在 skills/shared/devdocs-layout.md 登记该路径模式；"
+                    "若属临时产物则移出 docs/devdocs/"))
+        for pat, _owner, parent in layout_rows:
+            if parent is None or not pat.fullmatch(rel_dd):
+                continue
+            ppath = os.path.join(devdocs, parent)
+            if not os.path.isfile(ppath):
+                break                       # 主文件不存在是另一类问题，⛔ 不在本规则报
+            try:
+                ptext = open(ppath, encoding="utf-8", errors="replace").read()
+            except OSError:
+                break
+            if os.path.basename(rel_dd) not in ptext:
+                findings.append(find(
+                    "layout/unregistered-split", "warning", rel, None,
+                    f"分册 {os.path.basename(rel_dd)} 未在主文件 {parent} 正文出现",
+                    ctx=f"parent: {parent}",
+                    fix=f"在 {parent} 的分册目录里加一行指向本文件；"
+                        "⛔ 本规则只保证可发现性下限，不校验链接目标"))
+            break
+        if rel_dd.endswith(".md"):
+            try:
+                size = os.path.getsize(path)
+            except OSError:
+                size = 0
+            if size > SIZE_CAP_BYTES:
+                target = DUAL_FORM_CENTRAL.get(rel_dd)
+                if target:
+                    sug = f"建议转资源目录 {target} + 索引；⛔ 转换是内容迁移，需用户确认后手动执行"
+                else:
+                    sug = ("历史内容 → /sync --archive；活跃内容 → 该 skill 的拆分规则；"
+                           "⛔ 本 scope 不减量")
+                findings.append(find(
+                    "layout/size-cap", "warning", rel, None,
+                    f"{rel_dd} 已 {size} bytes（阈值 {SIZE_CAP_BYTES}）",
+                    actual=size, threshold=SIZE_CAP_BYTES, fix=sug))
+    return findings
+
+
 def scan_project(root, files=None, ref_only=None):
     """project scope 的 6 条 rule。files=None 时自行遍历 docs/devdocs/。
 
@@ -567,10 +724,96 @@ def selftest():
             "| F-001 | AC-009 | 追溯矩阵行 |\n"              # 首列定义，同行引用仍须查
             "```\nAC-777 代码块内不算\n```\n")
         open(os.path.join(dd, "_archived", "old.md"), "w").write("## AC-555 归档不进索引\n")
+        # --- layout 夹具 ---
+        os.makedirs(os.path.join(dd, "audit"))
+        open(os.path.join(dd, "audit", "T-01-external-review.yaml"), "w").write("k: v\n")
+        open(os.path.join(dd, "99-mystery.md"), "w").write("# 不在清单里\n")
+        open(os.path.join(dd, "04-dev-tasks.md"), "w").write(
+            "# 任务\n分册：[04-dev-tasks-p1.md](04-dev-tasks-p1.md)\n")
+        open(os.path.join(dd, "04-dev-tasks-p1.md"), "w").write("# P1\n")   # 已登记 → 不报
+        open(os.path.join(dd, "04-dev-tasks-p2.md"), "w").write("# P2\n")   # 未登记 → 报
+        open(os.path.join(dd, "05-bugfix-log.md"), "w").write("B\n" * 60000)   # ~120 KB，四类之一
+        open(os.path.join(dd, "02-system-design.md"), "w").write("D\n" * 60000)  # ~120 KB，其余
         open(os.path.join(t, ".claude", "rules", "devdocs-state.md"), "w").write(
             "# s\n## 编号状态\n| 类型 | 当前最大 |\n|---|---|\n| AC | AC-001 |\n"
             "- T-01 done trade@0c263bf4d4 净 -85 LOC +184/-5 见 src/F.java:L5\n"
             "- " + "长" * 600 + "\n")
+        # --- 布局清单解析 ---
+        lay = os.path.join(t, "devdocs-layout.md")
+        open(lay, "w").write(
+            "# 布局清单\n\n"
+            "## 清单\n\n"
+            "| 相对路径模式 | owner | 主文件 |\n"
+            "|---|---|---|\n"
+            "| `01.md` | requirements | — |\n"
+            "| `03-test-{unit,integration,e2e}.md` | test-cases | `03-test-cases.md` |\n"
+            "| `04-dev-tasks-p<N>.md` | dev-tasks | `04-dev-tasks.md` |\n"
+            "| `patterns/<slug>.md` | compound | — |\n"
+            "| `audit/**/<slug>.yaml` | dev-workflow | — |\n")
+        rows = load_layout(lay)
+        if len(rows) != 5:
+            print(f"FAIL load_layout: 期望 5 行，实得 {len(rows)}", file=sys.stderr)
+            return 1
+        cases = [("01.md", 0), ("03-test-e2e.md", 1),
+                 ("04-dev-tasks-p12.md", 2), ("patterns/sqlite-wal.md", 3),
+                 ("audit/x/y/T-01-external-review.yaml", 4)]
+        for relpath, idx in cases:
+            if not rows[idx][0].fullmatch(relpath):
+                print(f"FAIL load_layout: 模式 {idx} 匹配不到 {relpath}", file=sys.stderr)
+                return 1
+        if rows[1][2] != "03-test-cases.md" or rows[0][2] is not None:
+            print("FAIL load_layout: 主文件列解析错（— 应为 None）", file=sys.stderr)
+            return 1
+        try:
+            load_layout(os.path.join(t, "nope.md"))
+        except RuntimeError:
+            pass
+        else:
+            print("FAIL load_layout: 清单缺失应抛 RuntimeError，静默空表会把所有文件判成待分类",
+                  file=sys.stderr)
+            return 1
+        lay_nosection = os.path.join(t, "devdocs-layout-nosection.md")
+        open(lay_nosection, "w").write(
+            "# 布局清单\n\n"
+            "| 相对路径模式 | owner | 主文件 |\n"
+            "|---|---|---|\n"
+            "| `01-requirements.md` | requirements | — |\n")
+        try:
+            load_layout(lay_nosection)
+        except RuntimeError:
+            pass
+        else:
+            print("FAIL load_layout: 有表格但缺「## 清单」节应抛 RuntimeError，"
+                  "否则重构改名/拆走标题会静默退回全文扫描", file=sys.stderr)
+            return 1
+        lay_bogus = os.path.join(t, "devdocs-layout-bogus.md")
+        open(lay_bogus, "w").write(
+            "## 清单\n\n"
+            "| 相对路径模式 | owner | 主文件 |\n"
+            "|---|---|---|\n"
+            "| `x-<bogus>.md` | requirements | — |\n")
+        try:
+            load_layout(lay_bogus)
+        except RuntimeError:
+            pass
+        else:
+            print("FAIL pat_to_re: 未知记法 <bogus> 应抛 RuntimeError，不该静默兜底成 [^/]+",
+                  file=sys.stderr)
+            return 1
+        lay_unclosed = os.path.join(t, "devdocs-layout-unclosed.md")
+        open(lay_unclosed, "w").write(
+            "## 清单\n\n"
+            "| 相对路径模式 | owner | 主文件 |\n"
+            "|---|---|---|\n"
+            "| `x-{a,b.md` | requirements | — |\n")
+        try:
+            load_layout(lay_unclosed)
+        except RuntimeError:
+            pass
+        else:
+            print("FAIL pat_to_re: { 未闭合应抛 RuntimeError，不该让裸 ValueError 冒出去",
+                  file=sys.stderr)
+            return 1
         # --- skills scope 夹具 ---
         sk = os.path.join(t, "sk"); os.makedirs(os.path.join(sk, "good"))
         os.makedirs(os.path.join(sk, "bad")); os.makedirs(os.path.join(sk, "empty"))
@@ -591,9 +834,18 @@ def selftest():
             "skill/size-cap": 1,
             "skill/dead-link": 1,
             "flag/dangling-reference": 1,
+            "layout/unknown-path": 4,     # 99-mystery.md + 04-dev-tasks.md 不在清单（清单第三
+                                           # 行模式是 `04-dev-tasks-p<N>.md`，不含 04-dev-tasks.md
+                                           # 本身）；-p1/-p2 都匹配该模式，不算未知；audit/*.yaml 在清单
+                                           # + 05-bugfix-log.md、02-system-design.md 也不在清单里
+                                           # （size-cap 夹具复用，两者本身也未登记路径模式）
+            "layout/unregistered-split": 1,   # p2 未在主文件出现；p1 已出现
+            "layout/size-cap": 2,         # 05-bugfix-log(建议转资源目录) + 02(建议归档/拆分)
         }
         got = {}
-        for f in scan_project(t) + scan_skill_flags(sk) + scan_skill_repo(sk):
+        lay_rows = load_layout(lay)
+        for f in (scan_project(t) + scan_layout(t, dd, lay_rows)
+                  + scan_skill_flags(sk) + scan_skill_repo(sk)):
             got[f["rule_id"]] = got.get(f["rule_id"], 0) + 1
         # --- 计数夹具覆盖不到的两条静默失效，直接断言 ---
         import contextlib
@@ -679,7 +931,7 @@ def selftest():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="health-lint v1 (10/12 rules)")
+    ap = argparse.ArgumentParser(description="health-lint v1 (13/15 rules)")
     ap.add_argument("--target", default=".", help="项目根（含 docs/devdocs/）")
     ap.add_argument("--changed-only", action="store_true", help="仅扫 git diff HEAD 变更的文件")
     ap.add_argument("--fix", metavar="RULE_ID", help="仅运行指定 rule")
@@ -724,6 +976,12 @@ def main():
             return 3
         ref_only = {f for f in files if os.path.realpath(f) in changed}
     findings = scan_project(root, files, ref_only)
+    try:
+        findings += scan_layout(root, devdocs, load_layout())
+    except RuntimeError as e:
+        emit(findings)
+        print(f"layout/clause-unavailable: {e}", file=sys.stderr)
+        return 3
 
     if args.baseline_init:
         path = write_baseline(root, findings)

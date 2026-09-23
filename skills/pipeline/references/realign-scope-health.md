@@ -23,7 +23,7 @@
 
 > **推/拉两个触发点**（解决"规则实装但没人跑"的断层）：
 > - **拉（全量）**：用户显式 `/pipeline realign --scope=health` —— 本文件定义的完整 3 维扫描。
->   ⛔ project scope 的 8 条 lint rule 中 6 条**已有可执行实现**，先跑 [`../scripts/health-lint.py`](../scripts/health-lint.py)，
+>   ⛔ project scope 的 11 条 lint rule 中 9 条**已有可执行实现**，先跑 [`../scripts/health-lint.py`](../scripts/health-lint.py)，
 >   不要逐条人肉扫；余下 2 条（`design/adr-only-revision` / `submodule/pointer-drift`）仍按
 >   [health-lint-implementation.md](health-lint-implementation.md) 的算法执行。
 > - **推（轻量探针）**：pipeline 路由入口的 health drift 探针（≤2s，仅 stat `devdocs-state.md`），命中则一行非阻塞提示来跑全量。探针**不挂 `.devdocs-realign-ack`**（health 是持续监控信号非一次性升级决策），按 `.health-baseline.yml` 重评估。探针规则见 [realign.md § health drift 探针](realign.md#health-drift-探针阶段-3与-schema-drift-并列但语义不同)。
@@ -44,9 +44,9 @@
 
 | 维度 | 检查内容 | 依赖能力 | 状态 |
 |------|----------|----------|------|
-| a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订、子模块指针一致性（仅 shell 拓扑）| verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）+ `submodule/pointer-drift`（[新增]，仅 shell）| [新增] |
-| b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 | sync trace（[现状]）+ `health/dead-link`（[新增]）| [新增] |
-| c 过大文档识别（含 state-hygiene 子项）| size 三档（byte 阈值 / 单行长度）+ state-hygiene（内嵌禁用模式）| `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content`（[新增]）| [新增] |
+| a 结构正确性 | frontmatter 必填字段、spec_version 当前性、设计文档 ADR ↔ 正文同期修订、子模块指针一致性（仅 shell 拓扑）、布局清单中未登记路径（`layout/unknown-path`）| verify --schema-drift（[现状]）+ `design/adr-only-revision`（[新增]）+ `submodule/pointer-drift`（[新增]，仅 shell）+ `layout/unknown-path`（[新增]）| [新增] |
+| b 索引/链接正确性 | 编号引用文件存在性 + 追溯矩阵完整性 + 分册未在主文件登记（`layout/unregistered-split`）| sync trace（[现状]）+ `health/dead-link`（[新增]）+ `layout/unregistered-split`（[新增]）| [新增] |
+| c 过大文档识别（含 state-hygiene 子项）| size 三档（byte 阈值 / 单行长度）+ state-hygiene（内嵌禁用模式）+ 布局清单体积上限（`layout/size-cap`）| `state/total-size-cap` + `state/line-length-cap` + `state/forbidden-content` + `layout/size-cap`（[新增]）| [新增] |
 
 > **原维度 d「SSOT 遵从」与维度 e「三层分离自动检测」均已废弃**（不再保留为 FUTURE）：维度 d 依赖已删除的 layout.v2 ssot-lint，无检测对象；三层分离（决策/执行/数据）作为原则已由编号文件结构 + `state/*`、`design/adr-only-revision` 症状规则承载，无需独立的关键词扫描维度；审查时作**人工尺子**使用。权威见 [shared/constraints.md §9 分层记忆原则](../../shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 >
@@ -90,6 +90,7 @@ docs/devdocs/.health-report.md
 | `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路） |
 | `.claude/rules/devdocs-state.md` | 维度 c 中 `state-size` / `state-forbidden-content` 专属扫描 |
 | `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔keel 编号引用）⚠️ **未实现**：`health-lint.py` 的 `collect_files()` 只收 `docs/devdocs/`；需由 Agent 按算法补扫 |
+| `docs/devdocs/**`（**全部文件**，含 `.yaml` / `.txt`，⛔ 跳过 `_archived/`）| `layout/*` 三条规则专属扫描（`collect_all()`，⛔ 与喂编号索引的 `collect_files()` 分开）|
 
 ### 执行步骤
 
@@ -195,6 +196,7 @@ manual_decisions:
 | 归档目标 | `state/total-size-cap` 违规 + 需要把内容拆出 | 展示拟归档段落 + 拟目标文件（task / ADR / archive），3 个候选 |
 | state prose 修剪 | `state/forbidden-content` 检出 commit/LOC/codex 分数 | 展示违规片段 + 拟保留占位形态，确认动作 |
 | 跨产物影响 | 维度 b 死链涉及多个产物 | 展示受影响产物列表，确认是否一并修复 |
+| 待分类文件归属 | `layout/unknown-path` 检出 | 展示文件名 + 清单中相近的路径模式候选（≤3 个）+「移出 devdocs」选项；⛔ 判不出归属时不得代为猜测 |
 
 `--apply` 遇到 `pending` 决策必须暂停问询；headless 场景不得跳过，只能返回 `status: partial` 或 `interrupted`。
 
@@ -218,19 +220,34 @@ manual_decisions:
 
 按维度顺序、每项独立 commit：
 
-#### Phase 1：维度 c 自动归档（state-size / size-cap）
+#### Phase 1：布局改名与归档移位（`layout/*`）
+
+- 仅两种动作，均为 `git mv`：**改名**（清单中有明确旧名→新名映射时）、**归档移位**（把 `*-archive.md` 移进 `archive/`）。
+  ⚠️ 清单当前不提供旧名→新名映射列 ⇒ 改名分支暂无输入来源，待清单扩列后生效。
+- ⛔ **改名必须同批更新所有指向它的引用**。实证：tm-reborn 的 `06-ui-hig-swiftui-checklist.md` 在 `04-dev-tasks.md:19` 被链接，只 `git mv` 即制造死链。
+- ⛔ **仅移动无法闭合的项单列**：补登记（`unregistered-split`）要编辑正文、集中→资源目录转换是内容迁移——两者均超出「只改名 + 归档移位」授权，列清单逐项问用户。
+- ⛔ `layout/unknown-path` **不自动动手**，一律走 `AskUserQuestion`。
+
+#### Phase 2：维度 c 自动归档（state-size / size-cap）
 
 - 对 `state/total-size-cap` 违规：将超长行按 task ID 拆出，明细落到 `04-dev-tasks-pNN.md` 或 ADR 对应文件（依据 manual_decision），主文件保留 ≤200 字符占位。
 - `state/line-length-cap` 违规：换行重排，不删除内容。
 
-#### Phase 2：维度 b 死链处理
+#### Phase 3：维度 b 死链处理
 
 - 死链 → 用户确认是否补建目标文件 / 删除引用 / 标 `[FUTURE]`。
 - 孤立编号（仅在文档中被引用但无定义）→ 在产物中补登记，或删除该引用。
 
-#### Phase 3：维度 a 结构补齐
+#### Phase 4：维度 a 结构补齐
 
 - 委托 `/pipeline realign --scope=spec`（已有路径），不在本 scope 直接 bump frontmatter。
+
+#### 复查（⛔ 必须执行）
+
+apply 全部 Phase 完成后**重新全量 dry-run**，比对 `total_score` 与各 rule 计数。
+
+⛔ 不接受「post-apply 估算总分」——实证：mic-en 的 `47252f3` 报告写的就是估算值，
+而当次 apply 后 state 又涨回 58 KB，估算掩盖了未收敛的事实。
 
 ### Apply 失败处理
 
@@ -286,7 +303,7 @@ next_recommended:
 ## 与其他 scope 的边界
 
 - 维度 a 的 spec_version 差距 → 仅报告，**不补齐**；补齐走 `--scope=spec`（沿用现有 realign 主流程）。
-- 维度 c 中单文件 ≥ 1500 行 → 仅报告，**不拆分**；归档减量走 `/sync --archive`。
+- 维度 c 中单文件 > 96 KiB（`layout/size-cap`）→ 仅报告，**不拆分**；历史内容归档走 `/sync --archive`，活跃内容走各 skill 拆分规则，四类双形态资源的集中文件建议转资源目录。
 - 维度 b 的死链涉及 PRD ↔ keel 编号映射 → 由 `--scope=prd-mapping` 处理。
 - 本 scope 自身只负责：可逆的小范围修复（state 修剪、引用替换、死链标注）。
 

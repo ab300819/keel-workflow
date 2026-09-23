@@ -2,13 +2,13 @@
 
 > 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
 >
-> 本文件 12 条 rule：8 条 **project scope**（解决 devdocs-state 膨胀 / 陈旧 + 死链 + 自造编号前缀），
+> 本文件 15 条 rule：11 条 **project scope**（解决 devdocs-state 膨胀 / 陈旧 + 死链 + 自造编号前缀 + 布局清单一致性），
 > 4 条 **skill-library scope**（`flag/dangling-reference` + `skill/*`，⛔ 扫描对象不同，走 `--skills-dir`）。
 
 ## 目录
 
 - 定位
-- Rule 集（[新增] 12 条）
+- Rule 集（[新增] 15 条）
 - Rule 详情
 - Baseline 与增量扫描
 - 退出码（CLI 集成）
@@ -26,7 +26,7 @@
 | **本文件**：[新增] rule 的检测算法、严重度、修复路径（清单见下方 Rule 集表）| health-lint-implementation.md |
 | 既有偏差评分 | `../../sync/references/health-scoring.md` |
 
-## Rule 集（[新增] 12 条）
+## Rule 集（[新增] 15 条）
 
 | rule_id | 严重度 | 维度 | 适用 | 自动修复 |
 |---------|--------|------|------|---------|
@@ -41,9 +41,12 @@
 | `flag/dangling-reference` | ⚠️ | b 索引/链接 | **skill 库**（非项目）| ❌（manual_decision）|
 | `skill/size-cap` | ⛔ | a 结构正确性 | **skill 库** | ❌（manual_decision）|
 | `skill/name-mismatch` | ⛔ | a 结构正确性 | **skill 库** | ❌（manual_decision）|
+| `layout/unknown-path` | ⚠️ | a 结构正确性 | v1+v2 | ❌（manual_decision）|
+| `layout/unregistered-split` | ⚠️ | b 索引/链接 | v1+v2 | ❌（manual_decision）|
+| `layout/size-cap` | ⚠️ | c 过大 | v1+v2 | ❌（manual_decision）|
 | `skill/dead-link` | ⚠️ | b 索引/链接 | **skill 库** | ❌（manual_decision）|
 
-> 12 条全部 [新增]，可执行。⚠️ `flag/dangling-reference` 扫 skill 库不扫项目，走 `--skills-dir`，**不在** `--scope=health` 的 8 条之内。项目可直接调 `/pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+> 15 条全部 [新增]；其中 `design/adr-only-revision` 与 `submodule/pointer-drift` 脚本输出 `not_implemented`，需 Agent 按算法补执行。⚠️ `flag/dangling-reference` 扫 skill 库不扫项目，走 `--skills-dir`，**不在** `--scope=health` 的 11 条之内。项目可直接调 `/pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
 
 ---
 
@@ -71,7 +74,7 @@
 
 **目的**：检测 skill 之间互相引用的 `--flag` 在目标 skill 目录内是否存在。
 
-**⛔ 扫描对象与其余 8 条不同**：其余扫用户项目的 `docs/devdocs/` 与 `devdocs-state.md`；
+**⛔ 扫描对象与其余 11 条不同**：其余扫用户项目的 `docs/devdocs/` 与 `devdocs-state.md`；
 本条扫 **skill 库自身**，故走独立入口 `health-lint.py --skills-dir <skills/>`，
 ⛔ 不并入 `--target` 的 project-scope 扫描。
 
@@ -144,7 +147,7 @@
 **修复路径**：
 
 - **不可自动修复**。归档目标决策必须 AskUserQuestion（每条超长行的明细应归到 04-dev-tasks-pNN.md / ADR-NNN.md / archive 哪个文件）。
-- 修复执行由 `--scope=health --apply` Phase 1 调度（详见 [realign-scope-health.md § Phase 1](realign-scope-health.md#phase-1维度-c-自动归档state-size--size-cap)）。
+- 修复执行由 `--scope=health --apply` Phase 2 调度（详见 [realign-scope-health.md § Phase 2](realign-scope-health.md#phase-2维度-c-自动归档state-size--size-cap)）。
 
 **误报与边界**：
 
@@ -185,7 +188,7 @@
 **修复路径**：
 
 - **不可自动修复**。拆分边界（按 `；` 还是按 task ID）必须用户确认；同行内混杂多个 task 时，每个 task 的明细去向也需独立决策。
-- `--scope=health --apply` Phase 1 执行：将每条 task 明细按确认目标搬到对应资源文件，原行替换为简洁占位（≤ 200 字符）。
+- `--scope=health --apply` Phase 2 执行：将每条 task 明细按确认目标搬到对应资源文件，原行替换为简洁占位（≤ 200 字符）。
 
 **误报与边界**：
 
@@ -637,14 +640,14 @@ notes: |
 
 **⛔ 先跑脚本，不要逐条人肉扫。** [`../scripts/health-lint.py`](../scripts/health-lint.py) —— 零依赖 stdlib。
 
-⚠️ **改本文算法后跑一次 `--selftest`**（内置夹具，覆盖 9 条）。本仓无 CI，它是唯一会响的东西。
+⚠️ **改本文算法后跑一次 `--selftest`**（内置夹具，覆盖 12 条）。本仓无 CI，它是唯一会响的东西。
 
 | 入口 | 用途 |
 |---|---|
-| `--target <根>` | project scope 的 8 条 |
+| `--target <根>` | project scope 的 11 条 |
 | `--skills-dir <skills/>` | skill 库的 4 条（`flag/*` + `skill/*`）|
 | `--baseline-init` / `--since-baseline` | 存量项目噪声抑制 |
-| `--changed-only` | 仅扫 `git diff HEAD` 变更文件 |
+| `--changed-only` | 仅扫 `git diff HEAD` 变更文件（⚠️ `layout/*` 三条不受此收窄，布局是全树属性，始终全量扫描）|
 | `--fix=<rule_id>` | 只跑指定 rule |
 | `--selftest` | 内置夹具自检 |
 
@@ -737,10 +740,10 @@ v1 仍不含 `--apply` / 自动修复。
 
 ## Finding 输出 schema
 
-所有 12 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
+所有 15 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
 
 ```yaml
-- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix
+- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix | layout/unknown-path | layout/unregistered-split | layout/size-cap | flag/dangling-reference | skill/size-cap | skill/name-mismatch | skill/dead-link
   severity: blocker | warning
   file: <relative-path>
   line: <int 或 null>
@@ -756,7 +759,7 @@ v1 仍不含 `--apply` / 自动修复。
 
 | 命令 | 执行的 rule |
 |------|------------|
-| `/pipeline realign --scope=health --dry-run` | project scope 的 8 条（⛔ 不含 `flag/dangling-reference`）|
+| `/pipeline realign --scope=health --dry-run` | project scope 的 11 条（⛔ 不含 `flag/dangling-reference`）|
 | `/pipeline realign --scope=health --fix=state/total-size-cap` | 仅该 rule |
 | `/pipeline realign --scope=health --apply` | 修复 auto_fixable + 已 AskUserQuestion 的 manual_decision |
 
@@ -764,7 +767,7 @@ v1 仍不含 `--apply` / 自动修复。
 
 ## 历史项目兼容
 
-- project scope 的 8 条全部可用，直接通过 `/pipeline realign --scope=health --dry-run` 调用。
+- project scope 的 11 条中 9 条脚本已实现，可直接通过 `/pipeline realign --scope=health --dry-run` 调用；`design/adr-only-revision` 与 `submodule/pointer-drift` 报 `not_implemented`，需 Agent 按算法补执行。
 
 ## 变更日志
 
