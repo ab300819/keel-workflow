@@ -640,14 +640,14 @@ notes: |
 
 **⛔ 先跑脚本，不要逐条人肉扫。** [`../scripts/health-lint.py`](../scripts/health-lint.py) —— 零依赖 stdlib。
 
-⚠️ **改本文算法后跑一次 `--selftest`**（内置夹具，覆盖 9 条）。本仓无 CI，它是唯一会响的东西。
+⚠️ **改本文算法后跑一次 `--selftest`**（内置夹具，覆盖 12 条）。本仓无 CI，它是唯一会响的东西。
 
 | 入口 | 用途 |
 |---|---|
 | `--target <根>` | project scope 的 11 条 |
 | `--skills-dir <skills/>` | skill 库的 4 条（`flag/*` + `skill/*`）|
 | `--baseline-init` / `--since-baseline` | 存量项目噪声抑制 |
-| `--changed-only` | 仅扫 `git diff HEAD` 变更文件 |
+| `--changed-only` | 仅扫 `git diff HEAD` 变更文件（⚠️ `layout/*` 三条不受此收窄，布局是全树属性，始终全量扫描）|
 | `--fix=<rule_id>` | 只跑指定 rule |
 | `--selftest` | 内置夹具自检 |
 

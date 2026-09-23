@@ -1,6 +1,6 @@
 {
   "name": "keel",
-  "version": "2.0.14",
+  "version": "2.0.15",
   "description": "keel 文档驱动开发流程（需求→设计→测试→开发→验证）+ 配套质量 / 测试 / 重构 skill",
   "author": {
     "name": "ab300819"

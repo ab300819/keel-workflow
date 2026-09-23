@@ -96,7 +96,7 @@ ADR / INS / BUG / Backlog 四类资源**两套形态都合法**，上表各登�
 |---|---|---|
 | 各 skill 的 300 行拆分规则 | requirements / system-design / test-cases / dev-tasks | 生成时的**拆分建议** |
 | `sync --archive` 的 400/500/400/300 行 + 数量 + 状态 | `sync/references/archive.md` | **归档触发器**（行数 / 数量 / 状态三类条件；三者组合关系 archive.md 未写明，本批采用的解读与依据见审计）|
-| `layout/size-cap` 的 96 KiB | 本文件 | **体积警报**（纯尺寸，无语义条件）|
+| `layout/size-cap` 的 96 KiB | `pipeline/scripts/health-lint.py` 的 `SIZE_CAP_BYTES`（:542） | **体积警报**（纯尺寸，无语义条件）|
 
 `/sync --archive` 已于 2026-09-23 首次真实执行验证（`tm-reborn`，净减 767 行），
 ⛔ 不再是未验证路径。但 `sync/references/archive.md` 的归档模板早于本清单对拆分布局的
