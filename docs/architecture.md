@@ -232,8 +232,8 @@ docs/
 `docs/devdocs/` 的完整产物清单（路径模式 / owner / 主从关系）见
 [skills/shared/devdocs-layout.md](../skills/shared/devdocs-layout.md)。
 
-⛔ **本文件不再复述该清单。** 此处曾列 10 项而 skills 实际产出 ≥18 种，
-是三份互不一致的清单之一（另两份：`onboard` §8 的 4 行硬编码表、各 skill 散落声明）。
+⛔ **本文件不再复述该清单。** 此处曾列 10 项而 skills 实际产出 ≥18 种，是历史上三份互不一致的清单之一；
+另两份 —— `onboard` §8 的硬编码表已于同批改为按清单生成，各 skill 的散落声明由清单收口。
 
 ### shell 拓扑布局
 
