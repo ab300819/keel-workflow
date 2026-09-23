@@ -225,19 +225,15 @@ docs/
 │   └── chunks/                   # PRD 原文分片
 │
 ├── devdocs/                      # keel 流程产出
-│   ├── 00-context.md             # 项目上下文（/onboard）
-│   ├── 00-baseline.md            # 项目基线（接手记录，retrofit 产出）
-│   ├── 01-requirements.md        # 需求文档
-│   ├── 02-system-design*.md      # 系统设计
-│   ├── 03-test-*.md              # 测试用例
-│   ├── 04-dev-tasks*.md          # 开发任务
-│   ├── 05-test-report.md         # 测试报告
-│   ├── 05-insights.md            # 洞察日志
-│   ├── 05-bugfix-log.md          # Bug 修复日志
-│   └── patterns/                 # 经验模式库（/compound）
 │
 └── codebase-insight.md           # 代码盘点（/codebase-insight）
 ```
+
+`docs/devdocs/` 的完整产物清单（路径模式 / owner / 主从关系）见
+[skills/shared/devdocs-layout.md](../skills/shared/devdocs-layout.md)。
+
+⛔ **本文件不再复述该清单。** 此处曾列 10 项而 skills 实际产出 ≥18 种，
+是三份互不一致的清单之一（另两份：`onboard` §8 的 4 行硬编码表、各 skill 散落声明）。
 
 ### shell 拓扑布局
 
