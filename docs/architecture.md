@@ -80,7 +80,7 @@ health scope 治理「已有文档体系是否健康」，与 `spec` scope（产
 > 原维度 d「SSOT 遵从」与维度 e「三层分离自动检测」均已废弃：d 依赖已删除的 layout.v2 ssot-lint，无检测对象。三层分离作为**原则**已由编号文件结构 + `state/*` / `design/adr-only-revision` 症状规则承载，审查时作人工尺子用，不再做独立的关键词扫描维度。权威见 [constraints.md §9 分层记忆原则](../skills/shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 
 **关键设计**：
-- health-lint rule 清单以 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md) Rule 集表为权威，12 条中 10 条可执行，2 条 not_implemented（`design/adr-only-revision` · `submodule/pointer-drift`）
+- health-lint rule 清单以 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md) Rule 集表为权威，15 条中 13 条可执行，2 条 not_implemented（`design/adr-only-revision` · `submodule/pointer-drift`）
 - `devdocs-state.md` 模板硬化（forbidden 6 类内嵌模式 + 200/500/40K 三档阈值）+ `agent-memory --update` 健康度自检（双重保险）
 - `design/adr-only-revision` 把 system-design 既有 ⛔ 硬约束（仅追加 ADR 不改正文）从人工自检升级为 git 历史自动扫描
 
@@ -225,19 +225,15 @@ docs/
 │   └── chunks/                   # PRD 原文分片
 │
 ├── devdocs/                      # keel 流程产出
-│   ├── 00-context.md             # 项目上下文（/onboard）
-│   ├── 00-baseline.md            # 项目基线（接手记录，retrofit 产出）
-│   ├── 01-requirements.md        # 需求文档
-│   ├── 02-system-design*.md      # 系统设计
-│   ├── 03-test-*.md              # 测试用例
-│   ├── 04-dev-tasks*.md          # 开发任务
-│   ├── 05-test-report.md         # 测试报告
-│   ├── 05-insights.md            # 洞察日志
-│   ├── 05-bugfix-log.md          # Bug 修复日志
-│   └── patterns/                 # 经验模式库（/compound）
 │
 └── codebase-insight.md           # 代码盘点（/codebase-insight）
 ```
+
+`docs/devdocs/` 的完整产物清单（路径模式 / owner / 主从关系）见
+[skills/shared/devdocs-layout.md](../skills/shared/devdocs-layout.md)。
+
+⛔ **本文件不再复述该清单。** 此处曾列 10 项而 skills 实际产出 ≥18 种，是历史上三份互不一致的清单之一；
+另两份 —— `onboard` §8 的硬编码表已于同批改为按清单生成，各 skill 的散落声明由清单收口。
 
 ### shell 拓扑布局
 
