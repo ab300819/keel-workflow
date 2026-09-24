@@ -24,8 +24,14 @@ ln -s <keel>/hooks/opencode-plugin.js ~/.config/opencode/plugins/keel.js
 |---|---|---|---|
 | `devdocs-drift` | **用户 keel 项目** | PostToolUse `Edit\|Write\|NotebookEdit\|Bash` | 改了代码但 `docs/devdocs/` 没动 → 一行提示。5 分钟冷却 |
 | `skill-flag-lint` | **skill 库自身** | PostToolUse `Edit\|Write\|NotebookEdit`，且编辑的是 `skills/**/*.md` | 跑 `health-lint.py --skills-dir` 的 `flag/dangling-reference`。2 分钟冷却 |
+| `devdocs-layout` | **用户 keel 项目** | SessionStart（⛔ 无 matcher） | 跑 `health-lint.py --target` 取 `layout/*` 三条 → 一行提示。⛔ 无冷却（SessionStart 天然低频）|
 
-⚠️ **两者 matcher 不同，是有意的。** `devdocs-drift` 看 `git status`，与用哪个工具改的无关，所以必须覆盖 `Bash`——否则 shell 改文件（auto 模式、脚本化编辑、CI）全程不触发。`skill-flag-lint` 依赖 `tool_input.file_path`，`Bash` 调用没有该字段，加进去也只是空转，故不加。
+⚠️ **`devdocs-layout` ⛔ 跑真实扫描而非启发式探针。** 实测 0.11s（22 文件）/ 0.48s（360 文件），
+远低于路由探针的 2s 预算，所以没必要退化成廉价启发式——这样它的提示内容与用户手动跑
+`/pipeline realign --scope=health` **完全一致**，两者不会给出打架的结论。
+⚠️ 它**只扩大触达，⛔ 不能证明用户会处理**：闭环靠「检查→决策→执行→复查」四步，不靠本 hook。
+
+⚠️ **`devdocs-drift` 与 `skill-flag-lint` 两者 matcher 不同，是有意的。** `devdocs-drift` 看 `git status`，与用哪个工具改的无关，所以必须覆盖 `Bash`——否则 shell 改文件（auto 模式、脚本化编辑、CI）全程不触发。`skill-flag-lint` 依赖 `tool_input.file_path`，`Bash` 调用没有该字段，加进去也只是空转，故不加。
 
 两者都在不适用时**静默 exit 0**，互不干扰。
 
@@ -78,5 +84,7 @@ cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 ba
 | 脚本逻辑（构造 payload，9 个场景：该响 / 文档跟上 / 只改文档 / 冷却 / 非 keel 项目 / 非 skills 路径 / lint 干净 / lint 有 finding / Bash 形状 payload） | ✅ 2026-09-16 全过 |
 | **Claude Code 真实会话触发** | ✅ 2026-09-16，`Edit` 埋断链探针，`additionalContext` 正确送达 |
 | Codex CLI 真实会话触发 | ⬜ 未跑 |
+| `devdocs-layout` 脚本逻辑（3 种输入：非 keel 项目须静默 / 合规项目须静默 / tm-reborn 须命中 8 项） | ✅ 2026-09-24 全过 |
+| `devdocs-layout` 真实会话触发（SessionStart） | ⬜ 未跑 —— 需重开会话或 `/reload-plugins` 后验证 |
 | OpenCode 真实会话触发 | ⬜ 未跑 |
 | `Bash` matcher 真实会话触发 | ✅ 2026-09-17，装上 2.0.1 后一次 `Bash` 调用（`echo > tmp-probe.py`）触发 `devdocs-drift`，提示正确指名该文件 |
