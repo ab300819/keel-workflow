@@ -1,6 +1,6 @@
 ---
 title: devdocs 文档健康检查——检测器修复、死规格清理、双形态存储裁定、布局清单
-status: 📐 设计稿 v4（v1/v2/v3 三个骨架均已推翻），P0 已实施，P1~P4 待实施
+status: 📐 设计稿 v4 —— P0~P4 全部已实施（2026-09-24）；三项残留见 §7 与各 Ruling
 date: 2026-09-20
 supersedes: 本文件 v1（0722126）、v2（cf4749e）、v3（20cd84f）
 scope: health-lint 误报修复、health 规格死引用清理、存储模型裁定、布局清单 SSOT、三条检测规则、SessionStart 触发点
@@ -216,7 +216,7 @@ mic-en 的 `04-backlog.md` 原文：「**本文件已采用一文件一资源结
 
 ⚠️ 承认：**插件内的路径类型清单 ≠ 项目当前文件索引**，两者不可互替。清单承担前者，onboard §8 承担后者。
 
-### P4 · `SessionStart` 触发点
+### P4 · `SessionStart` 触发点 ✅ 已实施（2026-09-24）
 
 新增 `hooks/devdocs-layout`：开工时扫描 → 命中则一行非阻塞提示 → 接闭环。落裁定 2。`SessionStart` 在现有 `hooks.json` 是空槽。
 
