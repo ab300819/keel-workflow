@@ -1,0 +1,36 @@
+#!/bin/bash
+# devdocs-layout — SessionStart 提示：docs/devdocs/ 的布局有待处理项。
+#
+# 治的是一类特定病：「规则装了没人跑」。三条 layout/* 规则要生效，此前只能手动敲
+# /pipeline realign --scope=health。⛔ 它只扩大触达，不能证明用户会处理——
+# 闭环靠「检查→决策→执行→复查」四步，不靠本 hook。
+# 设计依据见 docs/superpowers/specs/2026-09-20-devdocs-layout-governance-design.md § P4
+set -u
+# ⛔ 本目录禁用 timeout(1)：macOS 默认没有，失败会静默吞掉输入。见 README.md
+
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+[ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 keel 项目，静默
+
+LINT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/pipeline/scripts/health-lint.py"
+[ -f "$LINT" ] || exit 0                                    # 取不到脚本，静默
+
+# ⛔ 跑真实扫描而非启发式探针：实测 0.11s（22 文件）/ 0.48s（360 文件），
+# 远低于探针的 2s 预算。这样提示内容与用户手动跑 --scope=health 完全一致，两者不会打架。
+OUT=$(python3 "$LINT" --target "$ROOT" 2>/dev/null) || true
+[ -n "$OUT" ] || exit 0
+
+N=$(printf '%s\n' "$OUT" | grep -c '^- rule_id: layout/') || true
+[ "${N:-0}" -gt 0 ] 2>/dev/null || exit 0                   # 无布局待处理项，静默
+
+# 按 rule 分类计数，让一行提示能说清是哪类问题
+UNK=$(printf '%s\n' "$OUT" | grep -c '^- rule_id: layout/unknown-path') || true
+SPL=$(printf '%s\n' "$OUT" | grep -c '^- rule_id: layout/unregistered-split') || true
+CAP=$(printf '%s\n' "$OUT" | grep -c '^- rule_id: layout/size-cap') || true
+DETAIL=""
+[ "$UNK" -gt 0 ] && DETAIL="${DETAIL}${UNK} 个待分类路径、"
+[ "$SPL" -gt 0 ] && DETAIL="${DETAIL}${SPL} 个分册未在主文件登记、"
+[ "$CAP" -gt 0 ] && DETAIL="${DETAIL}${CAP} 个文件超 96 KiB、"
+DETAIL="${DETAIL%、}"
+
+printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"ℹ️ devdocs-layout: 检出 %s（共 %s 项，均为 ⚠️ 非阻断）。要处理跑 /pipeline realign --scope=health；不处理可继续，本提示不拦任何操作。"}}\n' "$DETAIL" "$N"
+exit 0
