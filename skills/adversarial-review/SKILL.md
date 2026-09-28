@@ -1,7 +1,7 @@
 ---
 name: adversarial-review
 description: >
-  用户要求对计划、设计或代码进行外部独立审查、对抗审查或 second opinion 时使用。
+  需要外部第三方独立审查计划、设计或代码，或独立出方案、独立调研，或要 second opinion 时使用。
   内部自检用 verify；代码规范检查用 code-quality。
 allowed-tools:
   - Read
@@ -25,7 +25,7 @@ metadata:
 
 # 对抗性审查（Adversarial Review）
 
-调用外部 LLM 对当前工作进行独立审查，然后逐条验证审查结论的真实性，通过审查循环达成共识。
+调用外部 LLM 充当第三方：审查当前工作并逐条验证结论、通过审查循环达成共识；或独立出方案、独立调研，再与我方对照。
 
 ## 角色
 
@@ -48,6 +48,8 @@ metadata:
 ```
 
 审查对象可以是：工作区 diff（默认）、指定文件、方案文本、或当前对话中的方案描述。
+
+**独立出方案 / 独立调研**：用户要第三方从问题出发独立给答案（而非审查已有产物）时，⛔ 不走下文 S1–S6，改按 [references/independent-work.md](references/independent-work.md) 执行——brief 只给用户原话与硬约束、不给我方方案；复用 S3 调度与截断规则；消费时只核实事实断言与分歧，不算健康分、不熔断。
 
 ## 核心工作流
 
@@ -350,54 +352,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 > **⛔ 禁止继续：收敛检测或安全上限触发时必须执行熔断复盘，不得跳过**
 > 恢复方式：用户在复盘后选择继续/接受/回退/升级
 
-触发时执行以下 4 步：
-
-**1. 趋势数据展示**
-
-```
-## 审查趋势
-
-| 轮次 | 健康分 | 确认 | 新增 | 复现 | P1 | P2 | 趋势 |
-|------|--------|------|------|------|----|----|------|
-| R1   | 22     | 4    | -    | -    | 2  | 2  | —    |
-| R2   | 18     | 3    | 1    | 2    | 1  | 2  | ⬇️   |
-| R3   | 20     | 2    | 2    | 1    | 1  | 3  | ⬆️   |
-
-熔断原因：<convergence — score 未下降 / safety_limit — 达到 N 轮上限>
-```
-
-**2. 根因分析**（基于 round_history 和各轮验证记录判断）
-
-- new_issues 占比高 → "修复引入新问题"
-- recurring 占比高 → "修复不到位 / 审查标准模糊"
-- 问题位置频繁变化 → "根本性设计分歧"
-- 同一 finding 反复驳回又确认 → "上下文差异"
-
-可同时存在多个根因。
-
-**3. 改动合理性评估**
-
-```
-## 改动合理性评估
-
-**评估结论**：合理 / 部分合理 / 不合理
-
-**论据**：
-- 合理：<哪些改动确实解决了真实问题，引用 finding ID>
-- 不合理：<哪些改动引入了更多问题或偏离了原始目标，引用证据>
-
-**建议**：
-- 如果不合理 → 建议回退到第 N 轮状态，附反驳理由
-- 如果部分合理 → 建议保留 <X>，回退 <Y>
-```
-
-**4. 用户决策**
-
-用 AskUserQuestion 让用户选择：
-- **继续审查**：解除安全上限（如适用，将 max_rounds 提升为 current_round + 3），带上根因分析的补充上下文进入下一轮
-- **接受当前状态**：生成最终报告，记录遗留项
-- **回退到指定轮次**：如果评估认为某轮之后的改动不合理，建议回退
-- **升级处理**：建议人工介入或重新设计方案
+触发时按 [references/breaker-retro.md](references/breaker-retro.md) 执行 4 步：趋势数据展示 → 根因分析 → 改动合理性评估 → 用户决策（继续 / 接受 / 回退 / 升级）。
 
 ---
 
@@ -470,7 +425,7 @@ summary:
   headline: "审查完成，2 条 P1 确认，1 条误报驳回"
   details:
     review_target: "工作区 diff / 文件路径 / 方案描述"
-    review_type: "代码审查 / 方案评审 / 文档审查"
+    review_type: "代码审查 / 方案评审 / 文档审查 / 独立方案 / 独立调研"
     review_method: codex-cli | codex-cli-alt | codex-mcp | task-subagent  # 最后一轮实际生效的通道
     primary_method: codex-cli | codex-mcp | task-subagent  # 首次探测锁定；⛔ 不含 codex-cli-alt（T1b 不参与首选探测）
     fallback_events: []          # 降级事件列表，如 ["R2: codex-cli→codex-cli-alt (quota)"]

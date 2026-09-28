@@ -131,7 +131,7 @@ ln -s <keel 仓路径>/skills/<name> ~/.config/opencode/skills/<name>
 | 代码质量 | `/code-quality` | MTE 原则、核心阈值表、命名/注释规范、Review 清单 |
 | 测试指导 | `/testing-guide` | 断言质量、Mock、覆盖率/变异得分阈值 |
 | 重构 | `/refactor` | 系统化重构，测试驱动 |
-| 对抗审查 | `/adversarial-review` | 外部 LLM 独立审查计划/设计/代码 |
+| 对抗审查 | `/adversarial-review` | 外部 LLM 当第三方：独立审查计划/设计/代码，或独立出方案、独立调研 |
 | 仓库拓扑 | `/workspace-topology` | 声明代码与文档同仓（inline）、代码作子模块（shell），还是代码根在本仓之外只持有引用（linked）；幂等可重入，含单仓→外壳布局的双模式迁移 |
 | 文档信息组织 | `/doc-organization` | 五条指导原则：当前状态与变更历史分离、编号先定义、引言职责、结论单一出处、写给缺上下文的读者 |
 | UI 调度 / 自描述 / 记忆 | `/ui-orchestrator` / `/code-self-describe` / `/agent-memory` | 专项工具 |
