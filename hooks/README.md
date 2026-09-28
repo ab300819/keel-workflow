@@ -85,11 +85,23 @@ cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 ba
 | **Claude Code 真实会话触发** | ✅ 2026-09-16，`Edit` 埋断链探针，`additionalContext` 正确送达 |
 | Codex CLI 真实会话触发 | ⬜ 未跑 |
 | `devdocs-layout` 脚本逻辑（3 种输入：非 keel 项目须静默 / 合规项目须静默 / tm-reborn 须命中 8 项） | ✅ 2026-09-24 全过 |
-| `devdocs-layout` 真实会话触发（SessionStart） | ⬜ **待验证，步骤见下** —— ⛔ `/reload-plugins` 验不了，见下方说明 |
+| `devdocs-layout` 真实会话触发（SessionStart） | ✅ 2026-09-28 · `chiaki-ng-dev`、`investment` 的 `resume` 会话，见下方记录；`startup` / `compact` 未在 keel 项目中实际观察到 |
 | OpenCode 真实会话触发 | ⬜ 未跑 |
 | `Bash` matcher 真实会话触发 | ✅ 2026-09-17，装上 2.0.1 后一次 `Bash` 调用（`echo > tmp-probe.py`）触发 `devdocs-drift`，提示正确指名该文件 |
 
-### 待验证：`devdocs-layout` 的 SessionStart 真实触发
+### 已验证：`devdocs-layout` 的 SessionStart 真实触发
+
+**验证记录**（2026-09-28，plugin 2.1.0，Claude Code 2.1.28）：从会话 jsonl 取证，两个 keel 项目
+各有一次 `SessionStart:resume` 调起本 hook，退出码 0，耗时 83 / 143 ms；紧随其后出现
+`hook_additional_context` 条目，说明提示已送进模型上下文：
+
+- `chiaki-ng-dev`：「检出 3 个待分类路径（共 3 项…）」
+- `investment`：「检出 18 个待分类路径、3 个分册未在主文件登记、1 个文件超 96 KiB（共 22 项…）」
+
+`hooks.json` 的 `SessionStart` 未设 matcher，`startup` / `compact` / `clear` 走同一注册；
+这三种来源在 keel 项目里尚无实际记录，若将来出现不触发，按下文分环排查。
+
+以下为原验证步骤，保留作排查参考。
 
 **已验证的部分**（2026-09-24，plugin 2.1.0）：脚本逻辑三输入全过；**已安装副本**
 （`~/.claude/plugins/cache/ab300819-keel/keel/2.1.0/hooks/devdocs-layout`）直接调用时
