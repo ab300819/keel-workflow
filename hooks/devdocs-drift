@@ -8,7 +8,8 @@ set -u
 # ⛔ 本目录禁用 timeout(1)：macOS 默认没有，失败会静默吞掉输入。见 README.md
 
 ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
-[ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 keel 项目，静默
+# 只有目录不算 keel 项目：认基线或需求文档（基线项目无 01，见 pipeline 路由表）
+[ -f "$ROOT/docs/devdocs/00-baseline.md" ] || [ -f "$ROOT/docs/devdocs/01-requirements.md" ] || exit 0
 git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
 # 5 分钟冷却——PostToolUse 每次工具调用都触发，不冷却必然变噪声
@@ -17,7 +18,7 @@ now=$(date +%s)
 last=$(stat -f %m "$STAMP" 2>/dev/null || stat -c %Y "$STAMP" 2>/dev/null || echo 0)
 [ $((now - last)) -lt 300 ] && exit 0
 
-CHANGED=$(git -C "$ROOT" status --porcelain 2>/dev/null | awk '{print $NF}')
+CHANGED=$(git -C "$ROOT" status --porcelain --ignore-submodules=untracked 2>/dev/null | awk '{print $NF}')
 [ -n "$CHANGED" ] || exit 0
 printf '%s\n' "$CHANGED" | grep -q '^docs/devdocs/' && exit 0   # 文档已跟上，不提示
 
