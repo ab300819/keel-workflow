@@ -294,7 +294,7 @@ spec_version_notes: |
 
 ### 记忆文件同步约束
 
-- [ ] **仅允许更新 `## 当前状态` 章节**（活跃任务编号、进度统计）
+- [ ] **仅允许更新 `## 当前状态` 章节**（台账或状态文档链接；已有任务摘要时仅同步其字段）
 - [ ] **禁止修改结构性章节**（Project Overview、Skill Architecture、Conventions 等由 /agent-memory 管理）
 - [ ] CLAUDE.md 通过 @AGENTS.md 自动导入，无需同步
 - [ ] 仅做文本替换，不调用 /agent-memory
