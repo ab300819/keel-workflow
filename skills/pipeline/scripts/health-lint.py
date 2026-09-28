@@ -27,7 +27,7 @@ PREFIX_RE = re.compile(r"(?<![\w-])([A-Z][A-Za-z0-9]{0,5})-\d{1,4}[a-z]?(?![\w-]
 PREFIX_SKIP = set(WHITELIST) | {"M", "FR", "NFR"}
 
 DEF_HEADING = re.compile(r"^#{1,4}\s+(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
-DEF_TABLE = re.compile(r"^\|\s*\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\*{0,2}\s*\|")
+DEF_TABLE = re.compile(r"^\|\s*[*`]{0,3}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)[*`]{0,3}(?:\s+[^\w|]*)?\s*\|")
 DEF_LIST = re.compile(r"^\s*[-*]\s+\*{0,2}(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)\b")
 KEY_RE = re.compile(r"^(.+)-(\d+)([a-z]?)$")
 
@@ -722,6 +722,8 @@ def selftest():
             "## AC-004a 后缀定义\n引用 AC-004b\n"          # 后缀参与身份
 
             "| F-001 | AC-009 | 追溯矩阵行 |\n"              # 首列定义，同行引用仍须查
+            "| `UT-001` | 反引号定义 |\n| **CON-001** 🔴 | 加粗加装饰符定义 |\n"
+            "| AC-011 落点 | 首格带文字仍是引用 |\n"
             "```\nAC-777 代码块内不算\n```\n")
         open(os.path.join(dd, "_archived", "old.md"), "w").write("## AC-555 归档不进索引\n")
         # --- layout 夹具 ---
@@ -735,7 +737,7 @@ def selftest():
         open(os.path.join(dd, "05-bugfix-log.md"), "w").write("B\n" * 60000)   # ~120 KB，四类之一
         open(os.path.join(dd, "02-system-design.md"), "w").write("D\n" * 60000)  # ~120 KB，其余
         open(os.path.join(t, ".claude", "rules", "devdocs-state.md"), "w").write(
-            "# s\n## 编号状态\n| 类型 | 当前最大 |\n|---|---|\n| AC | AC-001 |\n"
+            "# s\n## 编号状态\n| 类型 | 当前最大 |\n|---|---|\n| AC | AC-001 |\n| UT | UT-001 |\n| CON | CON-001 |\n"
             "- T-01 done trade@0c263bf4d4 净 -85 LOC +184/-5 见 src/F.java:L5\n"
             "- " + "长" * 600 + "\n")
         # --- 布局清单解析 ---
@@ -825,7 +827,7 @@ def selftest():
             "---\nname: WRONG\n---\n" + "行\n" * 501 + "死链 [y](../nope/SKILL.md)\n调 `/good --ghost`\n")
 
         want = {
-            "health/dead-link": 3,        # AC-003 + AC-004b（后缀）+ AC-009（定义行同行）
+            "health/dead-link": 4,        # AC-003 + AC-004b（后缀）+ AC-009（定义行同行）+ AC-011（首格带文字）
             "id/unknown-prefix": 1,       # D（SIDM 限位数排除）
             "state/forbidden-content": 1,
             "state/line-length-cap": 1,
