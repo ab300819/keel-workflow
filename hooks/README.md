@@ -85,6 +85,30 @@ cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 ba
 | **Claude Code 真实会话触发** | ✅ 2026-09-16，`Edit` 埋断链探针，`additionalContext` 正确送达 |
 | Codex CLI 真实会话触发 | ⬜ 未跑 |
 | `devdocs-layout` 脚本逻辑（3 种输入：非 keel 项目须静默 / 合规项目须静默 / tm-reborn 须命中 8 项） | ✅ 2026-09-24 全过 |
-| `devdocs-layout` 真实会话触发（SessionStart） | ⬜ 未跑 —— 需重开会话或 `/reload-plugins` 后验证 |
+| `devdocs-layout` 真实会话触发（SessionStart） | ⬜ **待验证，步骤见下** —— ⛔ `/reload-plugins` 验不了，见下方说明 |
 | OpenCode 真实会话触发 | ⬜ 未跑 |
 | `Bash` matcher 真实会话触发 | ✅ 2026-09-17，装上 2.0.1 后一次 `Bash` 调用（`echo > tmp-probe.py`）触发 `devdocs-drift`，提示正确指名该文件 |
+
+### 待验证：`devdocs-layout` 的 SessionStart 真实触发
+
+**已验证的部分**（2026-09-24，plugin 2.1.0）：脚本逻辑三输入全过；**已安装副本**
+（`~/.claude/plugins/cache/ab300819-keel/keel/2.1.0/hooks/devdocs-layout`）直接调用时
+静默路径与命中路径均正确；该版本的 `hooks.json` 确实注册了 `SessionStart`。
+
+**没验到的一环**：Claude Code 是否真的在会话开始时调起它、`additionalContext` 是否送达。
+
+⛔ **`/reload-plugins` 验不了这件事**，两个原因：① 它重载定义，不重新放 `SessionStart` 事件；
+② 本仓自身没有 `docs/devdocs/`，hook 在这里必然静默（正确行为，但也意味着验不出正向路径）。
+
+**怎么验**：在一个**有待处理项的 keel 项目**里**新开一个会话**。`tm-reborn` 稳定命中 8 项，
+是现成的样本。会话开头应出现：
+
+```
+ℹ️ devdocs-layout: 检出 6 个待分类路径、2 个分册未在主文件登记（共 8 项，均为 ⚠️ 非阻断）。
+要处理跑 /pipeline realign --scope=health；不处理可继续，本提示不拦任何操作。
+```
+
+- **出现** ⇒ 整条链通，把本表该行改 ✅ 并记日期与所用项目。
+- **不出现** ⇒ ⛔ 不要直接改 hook。先分清是哪一环：`SessionStart` 没被调起 / 调起了但脚本静默 /
+  脚本输出了但 `additionalContext` 没送达。可在脚本首行临时加 `echo "$(date) fired" >> /tmp/devdocs-layout.log`
+  区分前两者——日志有行说明被调起了，问题在脚本或送达；日志无行说明事件压根没到。
