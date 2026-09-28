@@ -9,7 +9,8 @@ set -u
 # ⛔ 本目录禁用 timeout(1)：macOS 默认没有，失败会静默吞掉输入。见 README.md
 
 ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
-[ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 keel 项目，静默
+# 只有目录不算 keel 项目：认基线或需求文档（基线项目无 01，见 pipeline 路由表）
+[ -f "$ROOT/docs/devdocs/00-baseline.md" ] || [ -f "$ROOT/docs/devdocs/01-requirements.md" ] || exit 0
 
 LINT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/pipeline/scripts/health-lint.py"
 [ -f "$LINT" ] || exit 0                                    # 取不到脚本，静默
