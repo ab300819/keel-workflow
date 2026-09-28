@@ -39,8 +39,9 @@
 > **设计说明**：T1 直接使用 codex CLI（非 companion 脚本），因为 `CLAUDE_PLUGIN_ROOT` 在 skill 上下文中不可用。
 > adversarial-review skill 对外部审查输出做二次加工（解析、映射、F-XXX 合成、收敛评分），是 skill 层面的有意架构选择；dev-workflow embedded-headless 模式下则由 Phase 4 调度器自行生成摘要和状态，不经过本 skill 的二次加工层。
 
-> **ACP（Agent Client Protocol）待定，⛔ 未下结论**（2026-09-28）：用户另一台机器上的 agent-hub 项目尚未核对，结论以核对后为准。本机已知事实：OpenCode 原生支持 `opencode acp`，codex / claude 需适配器（`@zed-industries/codex-acp`、`@agentclientprotocol/claude-agent-acp`），客户端可用 `acpx`（本机未装）。
-> 待核对的顾虑：丢 `--output-schema` 后代码审查截断判定只剩尾标记；失败分类表经适配器是否仍成立；T1b 的 `CODEX_HOME` 切换能否透传。潜在收益：换任意厂商当第三方，解决「宿主与审查者同为 codex 即自审」。
+> **ACP（Agent Client Protocol）接入搁置，⛔ 未下结论**（2026-09-28 核对 agent-hub 后）：agent-hub 仅有设计文档、进度 0/20，没有可复用的实现；其实测（`docs/research/2026-09-06-agent-runtime-facts.md`）未消除下列任一顾虑。待用户实现 agent-hub 后再定。
+> 已知事实：OpenCode 原生支持 `opencode acp`；codex / claude 需适配器，已迁入官方组织 `@agentclientprotocol/codex-acp`、`@agentclientprotocol/claude-agent-acp`（旧 `@zed-industries/*` 命名空间检索会误判不存在）；客户端可用 `acpx`（本机未装，其 claude 适配器 pin 落后）。
+> 顾虑核对：① 丢 `--output-schema` —— **成立**，四家适配器均未声明结构化输出，截断判定只剩尾标记；② 失败分类表 —— **需重映射**，适配器报 JSON-RPC 错误码（如 `-32000 Authentication required`、fork 后未 resume 的 `-32603 Session not found`），额度类信号是否透出未实测；③ T1b 的 `CODEX_HOME` 透传 —— **未知**，agent-hub 自己也挂为待决项（ACP 下配置隔离归属未定）。潜在收益不变：换任意厂商当第三方，解决「宿主与审查者同为 codex 即自审」。
 
 ---
 
