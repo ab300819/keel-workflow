@@ -55,6 +55,7 @@ spec_version: shared-constraints.v13
 - `gate/advice-non-blocking`：`ℹ️ 建议` 不得写成阻塞条件；如必须阻塞，应升级为 `⛔` 或 `⚠️`。
 - `gate/no-private-severity`：共享层不定义 P1/P2/P3、health score 等私有严重度；这些只可作为触发条件上下文，不可替代三类门控。
 - `gate/difference-label`：若某 skill 对同一标记有更窄语义，引用本文时必须在本地标注“差异点”，不得悄悄覆盖共享定义。
+- `gate/marker-scope`：三类标记只用于 skill 规格与门控输出，且标记后必须跟文字标签（`禁止继续` / `必须确认` / `建议`）。给用户的答复、进度汇报与项目文档正文不用装饰性 emoji 表达强调或状态；代码注释不用 emoji。项目用户明确要求不用 emoji 时，门控输出只写文字标签。
 
 ### 推荐写法
 
