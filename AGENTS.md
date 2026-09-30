@@ -26,7 +26,7 @@ keel 是以插件形式分发的通用开发 harness，为 AI 辅助开发提供
   | --- | --- | --- |
   | Claude Code | `.claude-plugin/{plugin,marketplace}.json` | 可用 `/keel:<name>` |
   | Codex | 根 `plugin.json`（Agent Plugins 可移植格式 + `extensions.com.openai`）、`.agents/plugins/marketplace.json` | 可用 `/keel:<name>` |
-  | OpenCode | 直接扫描 skill 目录，无 plugin 分发 skill 的机制 | 无命名空间，只能裸名 |
+  | OpenCode（仅 v2） | 根 `package.json`（`main` → `hooks/opencode-plugin.js`，由插件注册 skill 并挂 hooks），`opencode plugin add github:…` 安装 | 无命名空间，只能裸名 |
 
 - 不使用 `.codex-plugin/` 兼容回退；根 `plugin.json` 带 `extensions.com.openai` 时该回退整体失效。
 - skill 名不带前缀；执行路径中的委托一律用裸名（如 `Task: /agent-memory`），`keel:` 前缀只用于给人看的文档。

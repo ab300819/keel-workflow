@@ -26,11 +26,13 @@ codex plugin marketplace add ab300819/keel-workflow
 codex plugin add keel@ab300819-keel
 ```
 
-**OpenCode** —— 直接扫描 skill 目录，软链进去即可：
+**OpenCode**（仅 v2，⛔ 不再支持 v1）—— 以插件包安装，skill 与 hooks 一并注册：
 
 ```bash
-ln -s <keel 仓路径>/skills/<name> ~/.config/opencode/skills/<name>
+opencode plugin add github:ab300819/keel-workflow
 ```
+
+> ⚠️ 从旧的软链方式迁移：删掉 `~/.config/opencode/skills/` 等目录下指向 keel 的软链——同名时文件系统里的 skill 优先于插件注册的，留着会一直读旧路径。
 
 ### 调用形式按端不同
 
@@ -42,7 +44,7 @@ ln -s <keel 仓路径>/skills/<name> ~/.config/opencode/skills/<name>
 
 > 本文其余部分一律用**裸名**书写（三端通用）。Claude Code / Codex 上想显式标归属时加 `keel:` 前缀。
 >
-> ⚠️ `hooks/` 只在插件安装路径下生效；OpenCode 走 `plugins/*.js`。
+> ⚠️ `hooks/` 只在插件安装路径下生效；OpenCode 由插件包入口 `hooks/opencode-plugin.js` 接入（v2 插件 API，见 [hooks/README.md](hooks/README.md)）。
 
 ---
 

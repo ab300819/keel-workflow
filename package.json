@@ -1,0 +1,7 @@
+{
+  "name": "keel",
+  "private": true,
+  "type": "module",
+  "description": "OpenCode v2 插件入口：注册 skills/ 并挂接 hooks/ 检查",
+  "main": "./hooks/opencode-plugin.js"
+}

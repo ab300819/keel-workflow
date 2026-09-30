@@ -12,12 +12,12 @@
 |---|---|---|
 | Claude Code | `hooks/hooks.json` | 插件根下的默认发现路径，⛔ 不需要在 `plugin.json` 里声明 |
 | Codex CLI | **同一个 `hooks/hooks.json`** | Codex 默认发现插件根的 `hooks/hooks.json`（根 `plugin.json` 的 `extensions.com.openai.hooks` 显式声明了同一路径）；事件名 / handler 字段 / 输出契约与 Claude Code 同形，`${CLAUDE_PLUGIN_ROOT}` 作为 `PLUGIN_ROOT` 的 legacy 别名仍受支持（[docs](https://learn.chatgpt.com/docs/hooks)）|
-| OpenCode | `hooks/opencode-plugin.js` | 该端**不读 hooks.json**，只加载 `plugins/*.js`；且**没有 additionalContext 通道**，只能在 `tool.execute.after` 里把消息追加进 `output.output`（[docs](https://opencode.ai/docs/plugins)）|
+| OpenCode（仅 v2） | `hooks/opencode-plugin.js` | 该端**不读 hooks.json**，由根 `package.json` 的 `main` 指向本文件作为插件包入口（同时用 `ctx.skill.transform` 注册 `skills/`）；且**没有 additionalContext 通道**，只能在 `ctx.tool.hook("execute.after")` 里把消息追加进 `event.result.content`（[docs](https://opencode.ai/v2/docs/build/plugins)）。⛔ v1 插件 API（返回 hooks 对象）在 v2 不运行，已不再支持 |
 
 OpenCode 安装：
 
 ```bash
-ln -s <keel>/hooks/opencode-plugin.js ~/.config/opencode/plugins/keel.js
+opencode plugin add github:ab300819/keel-workflow
 ```
 
 | hook | 作用域 | 触发 | 干什么 |
@@ -86,7 +86,7 @@ cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 ba
 | Codex CLI 真实会话触发 | ⬜ 未跑 |
 | `devdocs-layout` 脚本逻辑（3 种输入：非 keel 项目须静默 / 合规项目须静默 / tm-reborn 须命中 8 项） | ✅ 2026-09-24 全过 |
 | `devdocs-layout` 真实会话触发（SessionStart） | ✅ 2026-09-28 · `chiaki-ng-dev`、`investment` 的 `resume` 会话，见下方记录；`startup` / `compact` 未在 keel 项目中实际观察到 |
-| OpenCode 真实会话触发 | ⬜ 未跑 |
+| OpenCode v2 真实会话触发 | ✅ 2026-09-30，opencode 2.0.20 `opencode run`：`git+file://` 包安装（项目 `opencode.json` 的 `plugins`）后 `patch` 与 `shell` 均触发 `devdocs-drift`，模型原文复述提示；插件注册的 skill 可被 skill 工具加载；`skill-flag-lint` 仅验证了 patch 路径提取（未在真实会话触发）|
 | `Bash` matcher 真实会话触发 | ✅ 2026-09-17，装上 2.0.1 后一次 `Bash` 调用（`echo > tmp-probe.py`）触发 `devdocs-drift`，提示正确指名该文件 |
 
 ### 已验证：`devdocs-layout` 的 SessionStart 真实触发
