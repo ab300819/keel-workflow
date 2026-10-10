@@ -73,7 +73,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 | 04-dev-tasks.md | 活跃任务 + 进度 |
 | 所有文档 | 编号状态（max F/US/AC/T/ADR） |
 
-**工作流路由节(幂等补节)**:`docs/devdocs/` 存在且 AGENTS.md 缺「工作流路由」节 → 按 [memory-template.md](templates/memory-template.md) 补入(带 `<!-- agent-memory:managed -->` 标记);节已存在 → 保留原文不覆盖(用户自定义优先)。
+**工作流路由节(幂等补节)**:`docs/devdocs/` 存在且 AGENTS.md 缺「工作流路由」节 → 按 [memory-template.md](templates/memory-template.md) 补入(带 `<!-- agent-memory:managed -->` 标记);节已存在且带该标记 → 按模板补齐缺失的约束行,项目自定义行保留,与模板措辞冲突的行展示差异请求确认;节已存在但无标记 → 保留原文不覆盖(用户自定义优先)。
 
 **60 行硬限处理**：计行超限时，先压缩带 `<!-- agent-memory:managed -->` 标记的可再生章节。用户已授权精简或重组时，可在其指定范围内保留语义地压缩正文；否则需裁剪未受管章节时，展示候选差异并请求确认。无法在保留有效规则的前提下达标时，保留原文件并报告待决项。
 
