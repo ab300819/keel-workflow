@@ -268,6 +268,7 @@ MVP 范围： / 非目标： / 删减理由：
 
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /dev-workflow 执行编码）
+- [ ] 产出文档遵守 [`gate/marker-scope`](../shared/constraints.md)：正文不用门控标记与装饰性 emoji，禁令直接写成文字（如「不得…」）；本文件写给 agent 的指令原句不抄进产出文档
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/requirements-template.md](templates/requirements-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md) § 当前 spec_version）
 
 ### 功能点约束
