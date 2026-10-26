@@ -169,6 +169,7 @@ docs/devdocs/
 
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /dev-workflow 执行编码）
+- [ ] 产出文档遵守 [`gate/marker-scope`](../shared/constraints.md)：正文不用门控标记与装饰性 emoji，禁令直接写成文字（如「不得…」）；本文件写给 agent 的指令原句不抄进产出文档
 - [ ] Bash 工具仅用于只读操作（如查看目录结构），不得执行代码修改
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/task-template.md](templates/task-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）
 

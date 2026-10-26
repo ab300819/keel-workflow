@@ -326,7 +326,7 @@ metadata:
 
 ⛔ **不自动重划**。里程碑是人按需求规模定的产品切片，检出即报告，由用户调整划分或合并两段。
 
-未划里程碑（整列 `—` 或无该列）→ 本维度跳过，⛔ 不因此扣分。
+未划里程碑（整列 `—` 或无该列）→ 本维度跳过且不扣分；报告只写跳过原因（如「未划里程碑」）。
 
 ---
 
@@ -358,6 +358,8 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | `docs/devdocs/readiness-report.md` | `--readiness` | 验证时间、验证维度、验证范围、关联文档、D1-D4 就绪度摘要、D1-D4 明细、问题汇总、修复路由 |
 
 `--impl` 报告必须包含 CE 三问；触发 IT 断言完备性检查时必须填写 B4。字段与 A/B/C 类示例见 [templates/verify-report.md](templates/verify-report.md)，就绪报告见 [templates/readiness-report.md](templates/readiness-report.md)。
+
+报告是给用户读的产出文档，遵守 [`gate/marker-scope`](../shared/constraints.md)：本文件的评分与流程指令（如「不扣分」「不自动重划」）不抄进报告，跳过的维度只写原因。
 
 ## 上下文管理
 
