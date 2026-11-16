@@ -185,6 +185,7 @@ docs/devdocs/
 1. **上下文隔离**：每个子 Agent 自行读取所需文档，feature 编排层不传递全文
 2. **摘要传递**：步骤间只传递 YAML 摘要 + 新增编号列表
 3. **异常回退**：子 Agent 返回 `status: failed` + `blockers` 时，展示阻塞项询问用户
+   - Step 6 的 `/dev-workflow` 返回 `status: partial`（里程碑段末等人验证）时，⛔ 不得当成完成：feature 自身也返回 `partial`，并把 `details.milestones_pending` 与 `next_recommended` **原样上传**——上层编排只看信封判停
 4. **不自行排障**：编排层不读取子技能的完整输出文档来尝试修复
 
 > 轻量模式因任务简单，**文档步骤**（Step 1-4）直接在 feature 上下文内执行，不启动子 Agent。Step 6 开发衔接仍需委托 `/dev-workflow`。

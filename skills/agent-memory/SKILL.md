@@ -122,7 +122,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
    ▼
 6. 健康度自检（步骤 5 写了状态文件时）
    ├── Bash: wc -c .claude/rules/devdocs-state.md
-   ├── 读取 .claude/rules/.health-baseline.yml（若存在）→ 拿到 baseline 大小
+   ├── 读取 .claude/rules/.health-baseline.yml（若存在）→ 取其中 `devdocs_state_size_bytes` 作 baseline 大小
    ├── 计算 delta = current_size - baseline_size
    ├── delta < 0（缩小）→ 不阻断，更新 baseline
    ├── 0 ≤ delta < 2 KiB（小幅增长）→ 不阻断，更新 baseline
@@ -135,13 +135,13 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 **baseline 文件**：`.claude/rules/.health-baseline.yml`（gitignore 推荐加入；首次 bypass 时自动生成）
 
-```yaml
-schema: health-baseline.v1
-devdocs_state_size_bytes: <int>
-created_at: <iso-ts>
-created_by: /agent-memory --update --bypass-state-check
-bypass_reason: <用户提供的原因>
+⛔ **本 skill 不手写该文件。** 它的唯一写入方是 health-lint 脚本，读取器只认脚本自己写的固定结构，手写的会被判 `health/baseline-corrupt`。「init baseline」与上文「更新 baseline」一律执行：
+
+```bash
+python3 <keel>/skills/pipeline/scripts/health-lint.py --target <项目根> --baseline-init
 ```
+
+结构见 [health-lint-implementation.md § Baseline 文件](../pipeline/references/health-lint-implementation.md)。bypass 原因不进该文件，记入本次 yaml 摘要的 `summary.details.bypass_reason`。
 
 设计意图：避免 mic-en 等存量项目（245k）立即被 ⛔ 卡死；首次 bypass 锚定 baseline，之后只阻断"新增膨胀"。
 

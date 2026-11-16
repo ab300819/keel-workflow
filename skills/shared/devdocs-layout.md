@@ -66,7 +66,7 @@
 | `.health-report.md` | pipeline | — |
 | `.realign-plan.md` | pipeline | — |
 | `.batch-checkpoint.json` | dev-workflow | — |
-| `.runlog.yaml` | 编排层 | — |
+| `.runlog.yaml` | 编排层（已废弃：runlog 规则 2026-11 按自带死期删除，存量文件可删）| — |
 
 ## 双形态存储：集中文件 vs 资源目录
 

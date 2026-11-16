@@ -19,7 +19,7 @@ keel 是以插件形式分发的通用开发 harness，为 AI 辅助开发提供
 
 - `keel` 是 harness 与插件名，`devdocs` 是其文档驱动工作流使用的文档目录与协议命名。`docs/devdocs/`、`.claude/rules/devdocs-state.md`、`devdocs_id` 等路径与字段保留 `devdocs`；改成 keel 属于协议改动，不能作为改名顺手处理。
 - 每个 skill 位于 `skills/<name>/SKILL.md`，目录名必须等于 frontmatter 的 `name`；安装按该名称复制整个目录，跨 skill 链接依赖此约定。
-- skill 内的 `templates/` 存输出模板，`references/` 存评估标准、rubric 和规则。`skills/shared/` 存共享资源（`constraints.md` / `runlog.md`），无 SKILL.md，不是 skill，随整包分发。
+- skill 内的 `templates/` 存输出模板，`references/` 存评估标准、rubric 和规则。`skills/shared/` 存共享资源（`constraints.md` / `devdocs-layout.md`），无 SKILL.md，不是 skill，随整包分发。
 - 三端共用同一份 `skills/`，不建 `dist/`。manifest 使用各端主路径，不依赖 legacy 别名：
 
   | 客户端 | 分发入口 | 调用形式 |

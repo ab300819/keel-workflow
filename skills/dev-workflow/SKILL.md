@@ -215,7 +215,7 @@ spec_version_notes: |
 - [ ] **Test Agent 先写测试，Impl Agent 后写实现**（物理隔离）
 - [ ] **Test Agent 断言来自行为契约 + 03-test-\*.md，Impl Agent 禁止读取 03-test-\*.md**
 - [ ] **Impl Agent 严禁修改 Test Agent 产出的测试代码**（疑似缺陷须 AskUserQuestion 确认）
-- [ ] □/○ 步骤跳过时必须在提交信息中记录原因
+- [ ] □/○ 步骤跳过时必须在任务台账条目记录原因（⛔ 不写进提交信息）
 
 ### 完成检查约束
 

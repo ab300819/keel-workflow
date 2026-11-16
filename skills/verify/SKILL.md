@@ -417,6 +417,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 ### 安全约束
 
 - [ ] **只读：不修改代码、不修改 keel 文档、不修改设计稿——仅生成报告**
+- [ ] **唯一写例外：`--review-drain`** 把清审结论写回 `04-dev-tasks*.md` 的任务台账（状态 `review_pending` → `已完成` 及审查字段）。清审结论不落盘，任务会永远停在 `review_pending`；除此之外 ⛔ 不写任何文档
 
 ## Skill 协作
 
@@ -447,8 +448,10 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 |------|------|-------------|
 | `EXT_REVIEWED` | T1 codex CLI 或 T2 codex-mcp 成功且无 blocker | 可继续后续同步/沉淀 |
 | `review_pending` | fast/guarded 任务独立审查**延后**(非阻塞,已 Commit 1) | 由 `--review-drain` 集中清审转 `已完成` |
-| `EXT_UNRESOLVED` | T1/T2 全失败或环境不可用 | 标为 P2 环境风险，提示补跑外审 |
-| `EXT_BLOCKED` | 外审发现未解除 blocker | 保持阻塞，修复后重跑 `--impl` + 外审 |
+| `EXT_UNRESOLVED` | 外审未通过（含有未解除 blocker），或 L2 证据缺失（含 T1/T2 全失败） | 保持阻塞，修复或补跑外审后重跑 `--impl` |
+| `EXT_BLOCKED` | 熔断终态 | 保持阻塞，交用户决策 |
+
+值域与放行语义权威见 [constraints.md § 独立审查状态机枚举](../shared/constraints.md)：非放行态一律阻塞，⛔ 本 skill 不得把它降级为 P2 或另立含义。
 
 ## 子 Agent 摘要格式
 

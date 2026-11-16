@@ -6,7 +6,7 @@
 ## 协议规则
 
 - `inline/satisfy-not-exist`:前置条件的语义是"所需上下文可满足";具名文件存在只是**默认**满足方式,不是唯一方式。
-- `inline/explicit-entry`:inline 分支仅由显式参数触发:`/dev-workflow --inline "<任务定义>" --ac "<验收标准>"`;自由文本不进指定符解析,避免与 T/F/US 语法歧义。缺 `--ac` 时 ⚠️ 必须确认
+- `inline/explicit-entry`:用户直接给出任务定义 + 验收标准(输入里没有 T/F/US 指定符)即进入 inline 分支,不需要记参数;`/dev-workflow --inline "<任务定义>" --ac "<验收标准>"` 是等价的显式写法。输入既像指定符又像自由描述时 ⚠️ 问一次走哪条,⛔ 不猜。缺验收标准时 ⚠️ 必须确认
   恢复方式:用户补验收标准后继续物化;或确认转 `/dev-flow`(零追溯);无确认不写入。
 - `inline/materialize-two-files`:入口物化**两处** stub:`01-requirements.md`(AC 条目,唯一编号源)+ `04-dev-tasks.md`(任务条目);文件不存在则按下方模板创建最小骨架。
 - `inline/provenance-marker`:stub 条目必须标注 `来源: inline`;追溯矩阵照常引用该编号;`grep "来源: inline" docs/devdocs/` 即未回填台账。
