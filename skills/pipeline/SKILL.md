@@ -426,4 +426,4 @@ pipeline 完成后，所有产出文档均已生成/更新。用户可：
 - 继续下一轮 feature/bugfix
 - 运行 `/onboard --read` 传递上下文给新 AI
 
-> ⚠️ 新增功能开发时，不得跳过 test-cases、dev-tasks、verify --readiness 直接进入 dev-workflow。Bug 修复按 `/pipeline bugfix` 路径处理。
+> ⚠️ 新增功能开发时，进入 dev-workflow 前必须具备三样：03 里的用例、04 里的任务、`verify --readiness` 的通过结果。前两样是产物要求，通常由 `test-cases` / `dev-tasks` 产出，`feature` 轻量模式自己直接追加最小条目也算；readiness 一律委托 `verify`，不得省略。Bug 修复按 `/pipeline bugfix` 路径处理。
