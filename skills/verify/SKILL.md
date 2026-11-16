@@ -78,7 +78,7 @@ metadata:
 1. 确定验证维度（自动检测或用户指定）。
 2. 读取 keel：`01-requirements.md`、`02-system-design.md`、`03-test-cases.md`、`05-test-report.md`（如存在）。
 3. 加载 `docs/devdocs/patterns/verify-blindspots.md`（如存在），将历史盲区转化为本次额外关注点。
-4. 按维度执行检查：`--docs` 三层、`--impl` 三维度 + 可选 `--live`、`--ui` 两阶段、`--readiness` 四维度。
+4. 按维度执行检查：`--docs` 三层、`--impl` 三维度 + 可选 `--live`、`--ui` 两阶段、`--readiness` 四维度（划了里程碑时加 D5）。
 5. 生成验证报告，给出 P1/P2/P3 分级、修复建议与路由。
 
 ---
@@ -140,7 +140,7 @@ metadata:
 
 ### 层 3：需求文档 → 测试用例
 
-检查 AC → 测试用例映射、正向路径覆盖、异常路径覆盖。**复用 sync --check 的孤立编号检测能力**（只读模式，不修改文档）。
+检查 AC → 测试用例映射、正向路径覆盖、异常路径覆盖。**复用 sync 默认流程内置检查的孤立编号检测能力**（只读模式，不修改文档）。
 
 ---
 
@@ -156,7 +156,7 @@ metadata:
 
 1. 读取 `01-requirements.md` 中所有 AC
 2. 从追溯矩阵「变更来源」列取 `<repository>@<sha>` 定位当时的变更范围，再用**当前代码搜索**确认这些行为今天是否仍然存在（⛔ 不得只看旧 diff）
-3. **语义判断**实现是否匹配 AC 描述（不仅检查标注存在性）
+3. **语义判断**实现是否匹配 AC 描述（⛔ 不以「有变更来源 / 有测试编号」代替判断）
 4. 对每条 AC 给出判定：✅ 满足 / ⚠️ 部分满足 / ❌ 未满足
 5. **标注覆盖范围**：读 `docs/devdocs/00-baseline.md` 的 `adoption_commit`——
    - 基线存在 → 报告写 `coverage_scope: post-baseline`，并附 `adoption_commit`
@@ -355,7 +355,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | 报告 | 适用维度 | 必填字段 / 章节 |
 |------|----------|----------------|
 | `docs/devdocs/verify-report.md` | `--docs` / `--impl` / `--ui` | 验证时间、`verified_commit`、验证维度、验证范围、关联文档、验证结果摘要（各维度 P1/P2/P3/状态）、**「要你知道的」人话摘要**（有 P1/P2 时必填，全绿时删除）、对应 A/B/C 章节、问题汇总、修复路由 |
-| `docs/devdocs/readiness-report.md` | `--readiness` | 验证时间、验证维度、验证范围、关联文档、D1-D4 就绪度摘要、D1-D4 明细、问题汇总、修复路由 |
+| `docs/devdocs/readiness-report.md` | `--readiness` | 验证时间、验证维度、验证范围、关联文档、D1-D4 就绪度摘要与明细（划了里程碑时含 D5）、问题汇总、修复路由 |
 
 `--impl` 报告必须包含 CE 三问；触发 IT 断言完备性检查时必须填写 B4。字段与 A/B/C 类示例见 [templates/verify-report.md](templates/verify-report.md)，就绪报告见 [templates/readiness-report.md](templates/readiness-report.md)。
 
@@ -390,7 +390,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 - [ ] **必须读取所有相关 keel 文档后再检查**
 - [ ] **如存在 `docs/devdocs/patterns/verify-blindspots.md`，必须加载并作为额外检查项**（评估者调优闭环）
 - [ ] **--docs 层 1 依赖"原始需求"章节——新文档必须存在，历史文档若不存在则输出"前置缺失"并跳过**
-- [ ] **--impl AC 满足度必须语义判断，不仅检查标注存在性**
+- [ ] **--impl AC 满足度必须语义判断，⛔ 不以「有变更来源 / 有测试编号」代替**
 - [ ] **--impl 设计符合度必须对照设计文档原文，不凭记忆**
 - [ ] **--ui 阶段 1 必须读取需求文档中的 UI 相关 AC**
 - [ ] **--ui 阶段 2 必须获取实现截图进行视觉对比**
@@ -429,7 +429,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | 设计完成 | `/system-design` | 被调用：设计完成后触发 --docs --layer2 |
 | 测试设计完成 | `/test-cases` | 被调用：测试设计后触发 --docs --layer3 |
 | UI 任务完成 | `/dev-workflow` | 被调用：UI 任务完成后触发 --ui |
-| 追溯扫描 | `/sync` | 复用：标注扫描能力（追溯同步） |
+| 追溯校验 | `/sync` | 复用：追溯矩阵「变更来源」校验（trace 阶段）|
 | 追溯检查 | `/sync` | 复用：孤立编号检测（审计同步） |
 | AC 缺失 | `/requirements` | 路由：发现 AC 不完整时 |
 | 设计偏离 | `/system-design` | 路由：发现设计文档需更新时 |
@@ -464,7 +464,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 | `docs` | `layer1/layer2/layer3: pass | fail | skipped` |
 | `impl` | `ac_satisfaction`、`design_conformance`、`traceability`、`test_report_used`、`live_verification` |
 | `ui` | `stage1/stage2: pass | fail | skipped` |
-| `readiness` | `ac_test_coverage`、`path_specificity`、`dependency_cycle`、`design_task_consistency` |
+| `readiness` | `ac_test_coverage`、`path_specificity`、`dependency_cycle`、`design_task_consistency`、`milestone_deliverable`（仅划了里程碑时）|
 
 `blockers` 使用 `"P1: <问题>（<维度>）"`；`output_files` 列出 `verify-report.md` / `readiness-report.md`；`next_recommended` 条件分支：全部通过→`sync`，有 P1→按下方"下一步"表路由。
 

@@ -145,9 +145,6 @@ dimensions:
         route_to_scope: health | spec | prd-mapping  # health scope 是否能直接修复
         route_recommended: <next 命令字符串，如 "/pipeline realign --scope=health --apply">
         route_note: <可选；解释为何跨 scope，如 "归档减量走 /sync --archive">
-  d_ssot:
-    score: <0-100>
-    restatement_findings: []
 
 auto_fixable:
   - rule_id: <rule>
@@ -208,7 +205,7 @@ manual_decisions:
 
 1. 工作区洁净。
 2. 存在 `.health-report.md` 且 `report_schema=realign-health-report.v1`。
-3. **report 防 stale**（参考 `.realign-plan.md` 的 `plan_hash` 设计）：
+3. **report 防 stale**：
    - `report_hash` 校验通过（重算 sha256 与文件中存储值一致）。
    - `source_git_commit` 等于当前 HEAD（或差距 ≤ 由 `--max-commits-drift=N` 控制，默认 0）。
    - `generated_from_dirty_state=true` 时必须 `⚠️ 必须确认`，提示用户报告基于未提交变更，可能与当前状态不一致。
@@ -309,6 +306,6 @@ next_recommended:
 
 ## 幂等性
 
-- 同一 plan 二次 dry-run 报告 `total_score` 应一致（除非源文件变化）。
-- 同一 plan 二次 apply 已修复项必须跳过、不重复写入。
+- 同一报告二次 dry-run `total_score` 应一致（除非源文件变化）。
+- 同一报告二次 apply 已修复项必须跳过、不重复写入。
 - `--fix=<rule_id>` 多次调用同一 rule 不应产生重复修复 commit。

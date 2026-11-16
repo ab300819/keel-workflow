@@ -210,7 +210,7 @@ metadata:
 |------|-----------|------|
 | 开发完成 | `/dev-workflow` | 被调用：任务完成后触发 trace 阶段 |
 | 任务完成后 | `/dev-tasks` | 执行任务后触发同步 |
-| 测试追溯 | `/test-cases` | 协作：更新追溯矩阵代码位置 |
+| 测试追溯 | `/test-cases` | 协作：校验与补齐追溯矩阵「变更来源」列 |
 | 需求变更 | `/feature` | 新功能添加后同步 |
 | Bug 修复 | `/bugfix` | Bug 修复后更新文档 |
 | 洞察确认 | `/insights` | 改进建议确认后同步 |
@@ -220,7 +220,7 @@ metadata:
 
 - [absorb-mode.md](references/absorb-mode.md) - 吸收模式详解
 - [audit-mode.md](references/audit-mode.md) - 追溯健康度检查
-- [trace-mode.md](references/trace-mode.md) - 代码追溯扫描
+- [trace-mode.md](references/trace-mode.md) - 追溯矩阵「变更来源」校验与补齐（⛔ 不扫代码）
 - [archive.md](references/archive.md) - 任务归档功能
 - [examples.md](references/examples.md) - 使用示例与偏差类型
 
@@ -234,7 +234,7 @@ metadata:
 | AC 缺测试 | `/test-cases` | 验收标准无对应测试用例 |
 | F 缺任务闭环 | `/dev-tasks` | 功能点无关联开发任务 |
 | 代码已实现文档落后 | `/sync` | 状态未更新、新内容未登记，默认流程处理低风险吸收 |
-| 追溯矩阵代码位置缺失 | `/sync` | 代码标注未扫描到矩阵 |
+| 追溯矩阵「变更来源」缺失或失效 | `/sync` | Commit 2 漏写或 sha 失效，trace 阶段校验补齐 |
 
 > **调度器原则**：偏差报告不能只列出问题，必须给出明确的修复路由。
 
@@ -295,8 +295,8 @@ summary:
     mode: default | archive | back_propagate_prd
     internal_operations: [trace, audit, check, absorb]
     trace_results:
-      satisfies_found: X
-      verifies_found: X
+      sources_checked: X     # 校验过的「变更来源」条数
+      sources_invalid: X     # sha 失效或待补齐的条数
       coverage: "XX%"
       coverage_scope: "post-baseline | full"    # post-baseline 时必填 adoption_commit
       adoption_commit: ""                        # coverage_scope 为 post-baseline 时填

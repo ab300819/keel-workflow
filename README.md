@@ -75,7 +75,7 @@ opencode plugin add github:ab300819/keel-workflow
 **例 1 — 全新项目，需求已明确**
 ```
 /pipeline init        # 引导走 requirements → design → test-cases → dev-tasks
-/dev-workflow --all   # 按依赖批量开发，骨架优先 + 分层 TDD
+/dev-workflow         # 说「把剩下的都跑完」：按依赖批量开发，骨架优先 + 分层 TDD
 ```
 
 **例 2 — 没有文档，直接做个小功能**
@@ -103,7 +103,7 @@ opencode plugin add github:ab300819/keel-workflow
 
 | Skill | 命令 | 用途 |
 |-------|------|------|
-| 工作流编排器 | `/pipeline` | 顶层入口，8 个模式（init/feature/bugfix/verify/close/insights/design/realign） |
+| 工作流编排器 | `/pipeline` | 顶层入口，9 个入口（init/feature/bugfix/verify/close/insights/design/backlog/realign） |
 | 通用开发流程 | `/dev-flow` | 非 keel 开发执行器：契约先行 + 红绿 + 质量地板 + fresh-context 审查 |
 | 产品需求编排 | `/prd` | 模糊想法/大型 PRD → 结构化需求 |
 | 项目上下文 | `/onboard` | 接手项目 / AI 工具切换时的上下文传递 |
@@ -149,5 +149,5 @@ opencode plugin add github:ab300819/keel-workflow
 ## 详细文档
 
 - **[docs/workflows.md](docs/workflows.md)** — 各流程逐步走查 + 大型需求最佳实践
-- **[docs/architecture.md](docs/architecture.md)** — 治理体系、编号规则（F/US/AC/UT/IT/T/INS/BUG）、文件结构（维护者参考）
-- 每个 skill 的完整规范见 `skills/<dir>/SKILL.md`；跨 skill 共享约束见 [skills/shared/constraints.md](skills/shared/constraints.md)；架构决策与约定见 [AGENTS.md](AGENTS.md)
+- **[docs/architecture.md](docs/architecture.md)** — 治理体系、编号规则（F/US/AC/CON/UT/IT/E2E/T/INS/BUG/M）、决策记录索引、文件结构（维护者参考）
+- 每个 skill 的完整规范见 `skills/<dir>/SKILL.md`；跨 skill 共享约束见 [skills/shared/constraints.md](skills/shared/constraints.md)；本仓维护约定见 [AGENTS.md](AGENTS.md)

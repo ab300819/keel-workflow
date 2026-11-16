@@ -66,7 +66,7 @@ dev-workflow 私有的执行差异（**仅此三条不在上游**，Phase 1 执�
 
 ### 审查清单
 
-> **清单权威在 [`/testing-guide` 单元测试约束](../../testing-guide/SKILL.md#单元测试约束)**（断言质量 / Mock 质量 / 追溯标注 / 分支覆盖分析）；覆盖率与断言阈值以 [核心阈值表](../../testing-guide/SKILL.md#核心阈值表) 为准。**本文件不再镜像**（理由同 Phase 1）。
+> **清单权威在 [`/testing-guide` 单元测试约束](../../testing-guide/SKILL.md#单元测试约束)**（断言质量 / Mock 质量 / 分支覆盖分析）；覆盖率与断言阈值以 [核心阈值表](../../testing-guide/SKILL.md#核心阈值表) 为准。**本文件不再镜像**（理由同 Phase 1）。
 
 dev-workflow 私有的执行差异：
 
@@ -94,7 +94,7 @@ dev-workflow 私有的执行差异：
 ### ✅ 良好实践
 
 - AAA 结构使用正确
-- 需求追溯标注完整
+- 测试名说明了被验证的行为
 ```
 
 ---

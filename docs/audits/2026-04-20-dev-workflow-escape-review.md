@@ -1,5 +1,7 @@
 # Dev-Workflow 逃逸漏洞审查与加固计划
 
+> **销账记录（2026-11-16 清点）**：6 条修补方案均已落地或以替代设计结案：skip 通道已删、逐层强制改为 `review_profile` 三档 + 5 条质量地板、绿验 `skipped/todo=0`、单任务后置 `--affected`、S8 逐条 AC 表、续做 Step 1.5 证据复核、探索模式最小行为验证（均见现役 `skills/dev-workflow/`）。两处 UI 子句（UI Blocker 映射到可执行验证、UI 状态覆盖证明）未检索到对应文字，未销。
+
 ## Summary
 
 已确认 `ms-dev-workflow` 的 spec 层存在多条可导致“漏做、错做、未验证也能过关”的逃逸路径，且多数不是实现细节，而是规范本身允许降级或缺少完备性校验。

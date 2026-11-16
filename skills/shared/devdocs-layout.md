@@ -64,7 +64,7 @@
 | `audit/<slug>-external-review-realigned-<any>.yaml` | dev-workflow | — |
 | `audit/**/<slug>.txt` | dev-workflow | — |
 | `.health-report.md` | pipeline | — |
-| `.realign-plan.md` | pipeline | — |
+| `.realign-plan.md` | pipeline（已废弃：产出它的 layout scope 已随 layout.v2 删除，存量文件可删）| — |
 | `.batch-checkpoint.json` | dev-workflow | — |
 | `.runlog.yaml` | 编排层（已废弃：runlog 规则 2026-11 按自带死期删除，存量文件可删）| — |
 

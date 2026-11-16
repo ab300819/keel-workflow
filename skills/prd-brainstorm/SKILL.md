@@ -237,6 +237,9 @@ source_chunk: FR-09                      # chunk ID，仅块澄清模式
 moscow: Must
 maturity: draft
 status: clarified
+relation: new                            # new | extend | modify（与已有系统的关系）
+related_module: ""                       # extend/modify 时标注关联的已有模块名
+design_ref: ""                           # 关联的设计稿页面/组件 ID
 open_questions: 1
 ---
 

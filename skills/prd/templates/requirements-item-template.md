@@ -1,4 +1,9 @@
 ---
+# realign 元数据（必填，缺字段会被 /verify --schema-drift 判为 legacy）
+generated_by: prd-brainstorm
+spec_version: fr.v1
+generated_at: {{ISO-8601 时间戳}}
+# 业务字段
 id: FR-XX
 title: {{功能名称}}
 type: FR                    # FR | NFR
@@ -9,6 +14,7 @@ status: clarified           # clarified（brainstorm 产出即为已澄清）→
 relation: new               # new | extend | modify（与已有系统的关系）
 related_module: ""          # extend/modify 时标注关联的已有模块名
 design_ref: ""              # 关联的设计稿页面/组件 ID（如 D-01:登录页）
+open_questions: 0           # 未解决的开放问题数
 ---
 
 ## 来源追溯

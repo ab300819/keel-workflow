@@ -1,5 +1,7 @@
 # `/sync --archive` 首次真实执行记录
 
+> **销账记录（2026-11-16 清点）**：「size-cap 引用归档出口时应加限定」已结（`skills/shared/devdocs-layout.md` 已加注）。F1~F8 八条 `archive.md` 规格缺陷仍未修，F1 的读法待裁定。
+
 > 2026-09-23 登记。任务来源：`.superpowers/sdd/2026-09-21-devdocs-layout-clause-and-rules/task-7-brief.md`。
 >
 > 起因：Task 4 把 `/sync --archive` 写成 `layout/size-cap` 三条分流出口之一（「历史内容 → 归档」），但磁盘上 17 个使用 keel 的项目里 `docs/devdocs/archive/` 目录数 = **0**——这条路径、`archive/index.md`、归档行数阈值，此前**从未在任何真实项目上执行过一次**。本次任务是第一次真跑，如实记录结果，不修改 `skills/sync/` 的规格或代码。

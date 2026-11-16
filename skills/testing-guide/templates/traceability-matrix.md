@@ -79,52 +79,9 @@
 | AC-008 | 连续5次错误锁定 | UT-009 | IT-002 | E2E-002 |
 ```
 
-## 测试代码标注
+## 测试代码里不写编号
 
-### 方式一：注释标注
-
-```typescript
-describe('F-001: 用户注册', () => {
-  describe('US-001: 使用邮箱注册', () => {
-    // UT-001: AC-001 - 有效邮箱
-    it('应该返回 true 当邮箱格式有效', () => {
-      expect(validateEmail('test@example.com')).toBe(true);
-    });
-
-    // UT-002: AC-002 - 已存在邮箱
-    it('应该抛出错误当邮箱已存在', () => {
-      expect(() => register(existingEmail)).toThrow('邮箱已存在');
-    });
-  });
-});
-```
-
-### 方式二：JSDoc 标注
-
-```typescript
-/**
- * @feature F-001
- * @story US-001
- */
-describe('UserService.register', () => {
-  /**
-   * @testId UT-001
-   * @acceptance AC-001
-   */
-  it('应该创建用户当邮箱有效', () => {
-    // ...
-  });
-});
-```
-
-### 方式三：测试名称包含编号
-
-```typescript
-describe('validateEmail', () => {
-  it('UT-001: AC-001 - 应该返回 true 当邮箱有效', () => {});
-  it('UT-002: AC-002 - 应该返回 false 当邮箱无效', () => {});
-});
-```
+⛔ 测试代码不写 `// UT-001: AC-001`、`@testId`、`@acceptance` 这类 keel 编号标注。AC 与测试编号的映射只在本追溯矩阵里维护，代码里不留第二份；测试名用自然语言说明被验证的行为即可。规则见 [testing-guide SKILL.md](../SKILL.md)。
 
 ## 自动化脚本
 
@@ -173,7 +130,7 @@ echo "| 验收标准 | $AC_TOTAL | $AC_COVERED | $((AC_COVERED*100/AC_TOTAL))% |
    - 在追溯矩阵中添加条目，状态标记为 ❌
 
 2. **编写测试时**
-   - 在测试代码中添加 AC 编号标注
+   - 测试名说明被验证的行为（⛔ 不写 AC 编号标注）
    - 更新追溯矩阵状态
 
 3. **定期审查**

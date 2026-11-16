@@ -56,7 +56,7 @@ spec_version_notes: |
 | **标准** | 新功能、需求变更 | → 完整 Requirements→Design→Tests→Tasks→Dev |
 | **探索** | 原型、技术调研 | → 允许跳过部分验证，事后由用户确认目标行为后补建 AC |
 
-> **探索模式最小行为验证**：可跳过文档强制（AC/追溯标注/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；写入任务台账 `exploration_mode: true`，便于事后由用户确认目标行为后补建真实 AC。无证据 ⛔ 阻止提交。
+> **探索模式最小行为验证**：可跳过文档强制（AC/追溯矩阵/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；写入任务台账 `exploration_mode: true`，便于事后由用户确认目标行为后补建真实 AC。无证据 ⛔ 阻止提交。
 
 ## 触发条件
 
@@ -132,7 +132,7 @@ spec_version_notes: |
 
 ### 骨架生成约束
 
-判据清单见 [skeleton-examples.md](references/skeleton-examples.md)（接口签名完整性 / 追溯标注 / 未实现方法抛错 / 测试骨架 skip 标记）。
+判据清单见 [skeleton-examples.md](references/skeleton-examples.md)（接口签名完整性 / 命名自说明 / 未实现方法抛错 / 测试骨架 skip 标记）。
 
 ## 分层 TDD 模式
 

@@ -150,7 +150,7 @@ stateDiagram-v2
 
 | 方案 | 行为 | 取舍 |
 |---|---|---|
-| A 推荐 | 来源 skill 在 `summary.details.backlog_candidates` 输出候选；pipeline 或用户显式调用 `backlog --park` 写入 | 职责清晰、便于 dry-run、避免双写 |
+| A 推荐 `[FUTURE]` | 来源 skill 在 `summary.details.backlog_candidates` 输出候选（尚无 skill 输出该字段）；pipeline 或用户显式调用 `backlog --park` 写入 | 职责清晰、便于 dry-run、避免双写 |
 | B 可选 | 来源 skill 直接调用 `backlog --park` 子 Agent | 自动化更强，但需要严格传 allowed paths 与写入锁 |
 
 候选项最小结构：
@@ -165,12 +165,12 @@ summary:
         related_ids: [F-01, AC-07]
 ```
 
-触发场景：
+触发场景（`[FUTURE]`：下表除 `dev-workflow` 一行外，来源 skill 尚未实现候选输出，目前入池只能由用户或编排层显式调用本 skill）：
 
 | 来源 skill | 入池场景 |
 |---|---|
 | `dev-tasks` | 任务暂缓、依赖未就绪、超出当前迭代但需追踪 |
-| `verify` | P3 问题自动入池；P1/P2 不应直接 parked，需按 verify 路由处理 |
+| `verify` | P3 问题可入池（⛔ 目前不自动）；P1/P2 不应直接 parked，需按 verify 路由处理 |
 | `insights` | 跨任务优化机会，已确认但暂不转为需求 |
 | `prd` | FR/NFR 搁置，尚不导入 keel 或等待业务确认 |
 | `dev-workflow` | **里程碑段内 / 段末**冒出的新想法（`source_id` = 当前 `M-XXX`）：用户自然语言说出，由子代理摸查后写入。挂得上已有 `F`/`AC` 的按对应编号入池，⛔ 不挂到 M |

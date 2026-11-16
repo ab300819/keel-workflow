@@ -1,5 +1,7 @@
 # 仓库治理待办
 
+> **销账记录（2026-11-16 清点）**：`board` 的 capability preflight 已做（`skills/board/SKILL.md` 探测 MCP 可用性并降级）；`e2e-test-flow`、`idea-mcp-workflow` 已移出本仓，相关条目转 skills-local。validator 部分已做（`skill/name-mismatch` / `skill/size-cap` / `skill/dead-link` / `flag/dangling-reference`），其余检查项仍未做。
+
 > **与 DevDocs 治理是两条轴。** 这里是发布、发现、跨客户端能力、工具漂移——不涉及 skill 内容规则。
 >
 > 来源：2026-08-10 Codex 对本仓的独立盘点（`SKILL-OPTIMIZATION-HANDOFF.md`，794 行）。该文件已删除——它携带 3 处已被证伪的结论，留着的风险大于残值。原文在历史里：`git show 7b77287:SKILL-OPTIMIZATION-HANDOFF.md`。
