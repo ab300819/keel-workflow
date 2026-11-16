@@ -140,9 +140,11 @@ def strip_code_blocks(lines):
 
 
 def collect_files(devdocs):
+    """喂编号定义索引的文件集。含 archive/：已归档的编号仍算已定义，
+    否则活跃文档引用它们会全部误报 dead-link。archive/ 自身的违规由
+    scan_project() 跳过不报。"""
     out = []
     for root, dirs, files in os.walk(devdocs):
-        dirs[:] = [d for d in dirs if d != "_archived"]
         for f in sorted(files):
             if f.endswith(".md") and f not in (".realign-plan.md", ".health-report.md"):
                 out.append(os.path.join(root, f))
@@ -152,8 +154,8 @@ def collect_files(devdocs):
 def collect_all(devdocs):
     """layout 规则的扫描面：devdocs 下**全部文件**，⛔ 不过滤扩展名。
 
-    目录排除策略与 collect_files() 一致（跳过 _archived/，历史归档不是活跃布局，
-    报它是噪音）；扩展名过滤上不同：本函数不过滤，含 .yaml / .txt / 无扩展名；
+    跳过顶层 archive/（历史归档不是活跃布局，报它是噪音）——collect_files()
+    不跳，因为归档编号要进定义索引；本函数也不过滤扩展名，含 .yaml / .txt / 无扩展名；
     另外 collect_files() 还按文件名排除 .realign-plan.md / .health-report.md，
     本函数不排除。
 
@@ -162,7 +164,8 @@ def collect_all(devdocs):
     """
     out = []
     for root, dirs, files in os.walk(devdocs):
-        dirs[:] = [d for d in dirs if d != "_archived"]
+        if root == devdocs:
+            dirs[:] = [d for d in dirs if d != "archive"]
         for f in sorted(files):
             out.append(os.path.join(root, f))
     return sorted(out)
@@ -612,6 +615,9 @@ def scan_project(root, files=None, ref_only=None):
         files = collect_files(devdocs)
 
     rel = lambda p: os.path.relpath(p, root)
+    arch = os.path.join(devdocs, "archive") + os.sep
+    # 不报违规的文件：归档（只贡献定义）+ 增量扫描范围外
+    quiet = lambda f: f.startswith(arch) or (ref_only is not None and f not in ref_only)
     docs = {}
     for f in files:
         try:
@@ -643,7 +649,7 @@ def scan_project(root, files=None, ref_only=None):
     # ---- Phase B：引用扫描 ----
     dead = {}
     for f, (lines, mask) in docs.items():
-        if ref_only is not None and f not in ref_only:
+        if quiet(f):
             continue
         for i, ln in enumerate(lines):
             if mask[i]:
@@ -678,7 +684,7 @@ def scan_project(root, files=None, ref_only=None):
     # ---- id/unknown-prefix：按 prefix 聚合，⛔ 只报不判 ----
     agg = {}
     for f, (lines, mask) in docs.items():
-        if ref_only is not None and f not in ref_only:
+        if quiet(f):
             continue
         for i, ln in enumerate(lines):
             if mask[i]:
@@ -714,18 +720,21 @@ def selftest():
     t = tempfile.mkdtemp()
     try:
         # --- project scope 夹具 ---
-        dd = os.path.join(t, "docs", "devdocs"); os.makedirs(os.path.join(dd, "_archived"))
+        dd = os.path.join(t, "docs", "devdocs"); os.makedirs(os.path.join(dd, "archive"))
         os.makedirs(os.path.join(t, ".claude", "rules"))
         open(os.path.join(dd, "01.md"), "w").write(
             "## F-001 x\n- AC-001 a\n- AC-002 b\n  - **AC-010** 缩进列表定义，⛔ 不得报无定义\n"
             "引用 AC-003 与范围 AC-001~002。决策 D-014。外部单号 SIDM-71103。\n"
+            "引用已归档的 AC-555，⛔ 不得报无定义\n"
             "## AC-004a 后缀定义\n引用 AC-004b\n"          # 后缀参与身份
 
             "| F-001 | AC-009 | 追溯矩阵行 |\n"              # 首列定义，同行引用仍须查
             "| `UT-001` | 反引号定义 |\n| **CON-001** 🔴 | 加粗加装饰符定义 |\n"
             "| AC-011 落点 | 首格带文字仍是引用 |\n"
             "```\nAC-777 代码块内不算\n```\n")
-        open(os.path.join(dd, "_archived", "old.md"), "w").write("## AC-555 归档不进索引\n")
+        # 归档：编号进定义索引，自身的死链 / 未知前缀 / layout 一律不报
+        open(os.path.join(dd, "archive", "old.md"), "w").write(
+            "## AC-555 已归档\n引用 AC-556。旧单号 OLDX-123。\n")
         # --- layout 夹具 ---
         os.makedirs(os.path.join(dd, "audit"))
         open(os.path.join(dd, "audit", "T-01-external-review.yaml"), "w").write("k: v\n")

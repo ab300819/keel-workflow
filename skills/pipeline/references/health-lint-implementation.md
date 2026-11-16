@@ -151,7 +151,7 @@
 
 **误报与边界**：
 
-- `_archived/` 目录下的 devdocs-state.md 副本不扫（属历史归档）。
+- `archive/` 目录下的 devdocs-state.md 副本不扫（属历史归档）。
 - 跨 worktree 多份 devdocs-state.md 时只扫主 worktree。
 
 ---
@@ -302,14 +302,14 @@
 
 **目的**：检测 keel 产物里引用的编号（F/US/AC/T/T-RF/ADR/INS/BUG/UT/IT/E2E/Journey）是否有对应定义；引用了不存在的编号 = 死链。
 
-**检测对象**：`docs/devdocs/**/*.md`（排除 `_archived/`、`.realign-plan.md`、`.health-report.md`）。
+**检测对象**：`docs/devdocs/**/*.md`（排除 `.realign-plan.md`、`.health-report.md`）。`archive/` 下的文件只贡献编号定义（已归档的编号仍算已定义），自身的引用不查、不报。
 
 **算法**（两遍扫描）：
 
 ```text
 Phase A：构建编号定义索引（definition index）
   1. 遍历定义源文件（**注意：devdocs-state.md 既不是定义源，也不是编号上界源**）：
-       - docs/devdocs/**/*.md（排除 _archived/、.realign-plan.md、.health-report.md）
+       - docs/devdocs/**/*.md（排除 .realign-plan.md、.health-report.md；archive/ 只进定义索引）
        - ⛔ **不从 devdocs-state.md 取"当前最大"作为上界**——该文件自称"事实快照，不追踪
          drift"，把它的手填值当上界会在它滞后时把合法新编号误报为 out-of-range
          （实测：state 表停在 AC-062 而资源文件已到 AC-064）。上界改由资源文件推导。
@@ -334,7 +334,7 @@ Phase B：扫描引用 + 范围编号展开
                 AC-006~AC-008 → [AC-006, AC-007, AC-008]
                 AC-148~AC-152（带前缀重复）→ 同上展开
        c. 代码块 ``` ``` 内的 occurrence 跳过（不视为有效引用）
-       d. _archived/ 内的引用打 low-priority 标记
+       d. archive/ 内的引用不查
   3. 排除"定义位置"自身（Phase A 中已记为 definition 的 occurrence 不计为引用）
   4. 对剩余引用查 index：
        - 命中 → 跳过
@@ -362,7 +362,7 @@ Phase B：扫描引用 + 范围编号展开
 **误报与边界**：
 
 - 代码块内的编号引用（``` ``` 包围）不扫，避免命中示例代码。
-- 引用在 `_archived/` 内的产物 → finding 标 `low-priority`，不阻断。
+- 引用目标定义在 `archive/` 内 → 算已定义，不报；`archive/` 文件自身的引用不查。
 - 同一文件内多次引用同一死链编号 → 合并为一条 finding，`occurrences: [<line>, <line>, ...]`。
 
 ---
@@ -375,14 +375,14 @@ Phase B：扫描引用 + 范围编号展开
 
 **背景**：实战项目 `ai-code`（2026-09-10 按本节算法的文本原型抽样）有 **29 类**白名单外前缀候选、**3017 次** occurrence（口径：51 个 devdocs 文件，去代码块与 URL / 文件路径，**保留**行内代码；⛔ 非完整 Markdown 解析，是量级而非精确值）。其中 `D-`(853，决策) 与既有 `ADR-`(282) 并存且边界从未写下，是本 rule 想让人看见的那类；同一批里也有 `R-`(211，重定向安全判定规则) / `B-`(217，改动白名单放宽登记) 这类**合理的项目局部标识**，以及 `UTF`(11) 这类纯形态噪声。⇒ 三者工具分不开，**只报不判**。
 
-**检测对象**：与 `health/dead-link` 同一批文件（`docs/devdocs/**/*.md`，排除 `_archived/`、`.realign-plan.md`、`.health-report.md`）。
+**检测对象**：与 `health/dead-link` 同一批文件（`docs/devdocs/**/*.md`，排除 `.realign-plan.md`、`.health-report.md`；`archive/` 不查）。
 
 **算法**（与 dead-link 共用一次文件遍历，⛔ 但词法独立，见下方"与 dead-link 的词法差异"）：
 
 ```text
 1. 候选 regex（⛔ 不能用 \b 开头——`T-RF-001` 会被 \bRF-001\b 抓出幻影前缀 RF）：
      (?<![\w-])([A-Z][A-Za-z0-9]{0,5})-\d{1,4}[a-z]?(?![\w-])
-   跳过：代码块 ``` ``` 内；_archived/ 内打 low-priority
+   跳过：代码块 ``` ``` 内；archive/ 内
 
 2. 逐条过滤（命中任一即跳过）：
      a. prefix ∈ dead-link 白名单
@@ -574,7 +574,7 @@ Phase B：扫描引用 + 范围编号展开
 > `phantom` 子类型额外提示先查是否有编号被误删（那可能是 `health/dead-link` 的同源问题）。
 
 **边界**：
-- `_archived/` 下的副本不扫。
+- `archive/` 下的副本不扫。
 - 跨 worktree 多份 state.md 时只扫主 worktree（与 `state/total-size-cap` 一致）。
 - 模板占位（`F-XXX` / `AC-XXX` 这类字面）不参与比对，避免对未实例化模板误报。
 
