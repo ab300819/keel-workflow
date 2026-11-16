@@ -304,20 +304,22 @@ SKILL.md 只列两条必记项，完整表在此。⛔ **不得一律按"失败"
 
 ⛔ **`model_provider` 不是计费身份**，不得用它判断「是否独立额度」：同一 provider 可对应不同账号 / 项目 / key；不同 provider id 也可能共用同一 key 或预算池。
 
-**候选必须显式声明，⛔ 不靠推断**。约定在主 `CODEX_HOME` 的 `config.toml` 写有序候选表。
+**候选必须显式声明，⛔ 不靠推断**。约定在主 `CODEX_HOME` 下的独立文件 `adversarial-review.toml` 写有序候选表（主 home 默认 `~/.codex`）。
+
+> ⛔ **不要写进 `config.toml`**：codex 按官方 schema 解析 `config.toml`，自定义表会在启动时报 `unrecognized setting` 并被忽略；独立文件 codex 不读，由本 skill 自行读取。
 
 > ⚠️ **没有这张表 = T1b 不可用**（走下方流程第 1 步的「不存在」分支）。
 > 装好 skill 但没建表时，额度耗尽仍然只能报告并停下——**声明了 T1b ≠ T1b 通了**。
 > 首次使用前请按下方格式建表，并跑一次 § T1 Step 2 的冒烟（含真实工具调用）确认。
 
 ```toml
-# 主通道自己的计费身份 —— ⛔ 必填，否则第 2 步无可比较的左值
-[adversarial_review]
+# $CODEX_HOME/adversarial-review.toml
+# 主通道自己的计费身份 —— ⛔ 必填，否则第 3 步无可比较的左值
 billing_group = "openai-subscription"
 
-# [[adversarial_review.alt_backends]] —— 供本 skill T1b 使用的有序候选
+# [[alt_backends]] —— 供本 skill T1b 使用的有序候选
 # 本表由人维护：谁跟谁共用额度只有你知道，⛔ 不可从 model_provider 推断
-[[adversarial_review.alt_backends]]
+[[alt_backends]]
 codex_home    = "~/.codex-openrouter"
 billing_group = "openrouter-personal"   # 与主 home 的 billing_group 不同 = 独立额度
 quality_tier  = "peer"                  # peer=同档可用于正式审查 / lower=仅应急
@@ -330,7 +332,8 @@ auto_use      = true                    # false = 仅在用户明示时使用
 
 流程：
 
-1. 读候选表（不存在、或主通道缺 `billing_group` → T1b 不可用，按 [SKILL.md § 额度耗尽的默认行为](../SKILL.md) 处理）
+1. 读候选表 `adversarial-review.toml`（不存在、或主通道缺 `billing_group` → T1b 不可用，按 [SKILL.md § 额度耗尽的默认行为](../SKILL.md) 处理）
+   - 旧约定兼容：该文件不存在但 `config.toml` 仍有 `[adversarial_review]` / `[[adversarial_review.alt_backends]]` 时，按同样语义读旧表继续本轮，并在报告中提示用户把它挪到 `adversarial-review.toml`（去掉 `adversarial_review` 前缀）
 2. **路径归一**：把每个 `codex_home` 解析为**绝对路径**（展开 `~` 与环境变量）。⛔ 从 TOML 读出的是字面字符串，`~` **不会自行展开**——直接赋给 `CODEX_HOME` 会得到 `path does not exist`，且该报错长得像「没配好」而非「没展开」，极易查错方向。解析失败或目录不存在 → 该候选不可用
 3. 跳过：`billing_group` **与主通道相同**的、`billing_group` 与本轮已耗尽通道相同的、`auto_use = false` 的，以及**本轮已试过的**（见第 6 步）
 4. 按表中顺序（⛔ 不按字典序）逐个跑 § T1 Step 2 冒烟（**含真实工具调用 + 三条判据**）
