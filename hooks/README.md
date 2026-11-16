@@ -23,7 +23,7 @@ opencode plugin add github:ab300819/keel-workflow
 | hook | 作用域 | 触发 | 干什么 |
 |---|---|---|---|
 | `devdocs-drift` | **用户 keel 项目** | PostToolUse `Edit\|Write\|NotebookEdit\|Bash` | 改了代码但 `docs/devdocs/` 没动 → 一行提示。5 分钟冷却 |
-| `skill-flag-lint` | **skill 库自身** | PostToolUse `Edit\|Write\|NotebookEdit`，且编辑的是 `skills/**/*.md` | 跑 `health-lint.py --skills-dir` 的 `flag/dangling-reference`。2 分钟冷却 |
+| `skill-flag-lint` | **skill 库自身** | PostToolUse `Edit\|Write\|NotebookEdit`，且编辑的是 `skills/**/*.md` | 跑 `health-lint.py --skills-dir`（`flag/dangling-reference` + `skill/dead-link` / `skill/name-mismatch` / `skill/size-cap`）。2 分钟冷却 |
 | `devdocs-layout` | **用户 keel 项目** | SessionStart（⛔ 无 matcher） | 跑 `health-lint.py --target` 取 `layout/*` 三条 → 一行提示。⛔ 无冷却（SessionStart 天然低频）|
 
 ⚠️ **`devdocs-layout` ⛔ 跑真实扫描而非启发式探针。** 实测 0.11s（22 文件）/ 0.48s（360 文件），
@@ -76,7 +76,7 @@ cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 ba
 
 ## 状态
 
-⚠️ **两个都是试验件。** 验不过就删，⛔ 不要在它们之上加功能。背景见
+三个 hook 都只做提示、不拦操作。`devdocs-drift` 与 `skill-flag-lint` 起初是试验件，Claude Code 真实会话触发验证通过后转正（2026-11）；未验证的端与事件见下表。背景见
 [docs/audits/2026-08-28-skill-soft-trigger-miss-brief.md](../docs/audits/2026-08-28-skill-soft-trigger-miss-brief.md)。
 
 | 验证项 | 状态 |

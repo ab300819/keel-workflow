@@ -1,5 +1,5 @@
 #!/bin/bash
-# skill-flag-lint — PostToolUse：编辑 skills/ 下的 .md 后跑 flag/dangling-reference。
+# skill-flag-lint — PostToolUse：编辑 skills/ 下的 .md 后跑 skill 库 lint（flag/dangling-reference + skill/*）。
 #
 # 只在 **skill 库自身**的仓库里生效（用户 keel 项目走 devdocs-drift，那是另一件事）。
 # 规则与已知盲区见 skills/pipeline/references/health-lint-implementation.md
@@ -21,7 +21,8 @@ try: print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))
 except Exception: print("")' 2>/dev/null)
 case "$EDITED" in *"/skills/"*.md) ;; *) exit 0 ;; esac     # 只关心 skills/ 下的 .md
 
-STAMP="$ROOT/.git/skill-flag-lint.stamp"
+GITDIR=$(git -C "$ROOT" rev-parse --absolute-git-dir 2>/dev/null) || exit 0   # worktree 下 .git 是文件
+STAMP="$GITDIR/skill-flag-lint.stamp"
 now=$(date +%s)
 last=$(stat -f %m "$STAMP" 2>/dev/null || stat -c %Y "$STAMP" 2>/dev/null || echo 0)
 [ $((now - last)) -lt 120 ] && exit 0                       # 2 分钟冷却
@@ -30,6 +31,8 @@ OUT=$(python3 "$LINT" --skills-dir "$ROOT/skills" 2>/dev/null) || true
 [ -n "$OUT" ] || exit 0
 
 touch "$STAMP"
-MSG=$(printf '%s' "$OUT" | grep '^  message:' | sed 's/^  message: //;s/"//g' | head -5 | tr '\n' ' ' | tr -d '\\')
-printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"⚠️ flag/dangling-reference: %s（反例请加 health-lint-disable-line 注释）"}}\n' "$MSG"
+# --skills-dir 跑四条规则（flag/dangling-reference + skill/*），每条带上自己的 rule_id
+MSG=$(printf '%s\n' "$OUT" | awk '/^- rule_id: /{r=$3} /^  message: /{sub(/^  message: /,""); print r ": " $0}' | sed 's/"//g' | head -5 | tr '\n' ' ' | tr -d '\\')
+[ -n "$MSG" ] || exit 0
+printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"⚠️ skill-lint: %s（flag/dangling-reference 的反例可加 health-lint-disable-line 注释）"}}\n' "$MSG"
 exit 0
