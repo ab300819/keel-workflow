@@ -338,6 +338,8 @@ Fixes #123
 
 ## 编排规范（子 Agent 调度）
 
+上层握手未带 `workspace_context`（用户直接调 `/bugfix`）时，开头调一次 `/workspace-topology inspect` 并随握手下传；已带则沿用。
+
 复杂 Bug 路径下，bugfix 调用子技能时**必须通过 Task tool 启动子 Agent**：
 
 | 场景 | 被调度技能 | 调度方式 |

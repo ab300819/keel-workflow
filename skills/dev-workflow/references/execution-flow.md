@@ -68,7 +68,7 @@
 │     ├── 批量模式：/test-run --trace（全量+追溯）  │
 │     ├── 单任务模式：/test-run --affected         │
 │     │    └── --affected 无匹配 → 回退 /test-run --trace │
-│     └── --skip-trace="<原因>" → 跳过并登记尾注      │
+│     └── --skip-trace="<原因>" → 跳过并登记台账      │
 │                    │                                │
 │                    ▼                                │
 │  5. 批量执行报告                                    │
@@ -99,6 +99,12 @@
 | **⚪ 不适用** | **□** | **不先写断言**；S6 实现后由 S3 产出的验证手段确认（`⚪ 基础设施` 的常见形态）|
 
 ⛔ `⚪ 不适用` **不等于「没有验证」**——S2/S3 仍为 ■，产出物是**验证手段**（测试文件，或可复核的验证命令 / 核对步骤）；S8 的证据就是它的实际执行结果。
+
+**只关联 `CON` 的任务**按任务卡「测试方法」取证（质量地板第 4 条，见 [constraints.md](../../shared/constraints.md)）：
+- 测试方法是可执行的命令 / 脚本（`档 = 可执行`）→ S3 产出的验证命令在**改动前跑一次（应失败）、改动后跑一次（应通过）**，两次实际输出即证据。这不是 S4/S5 的断言红验，⛔ 不为它另写断言
+- 测试方法是人工核对（`档 = 人工`）→ 留人工核对记录（谁、何时、观察到什么）
+
+⛔ 本 skill 不解析 CON 的类别与语义，只执行任务卡写明的测试方法。
 
 ### 强制程度矩阵
 
@@ -142,7 +148,7 @@
 - 红验基线比较的完整判定见 [task-orchestration.md](task-orchestration.md)。
 - 信息屏障（Impl Agent 不可读 `03-test-*.md`、不可改测试文件）见 [SKILL.md](../SKILL.md) 约束节。
 
-> **跳过记录**：□ 或 ○ 步骤被跳过时，在提交信息中记录 `跳过: 步骤X（原因）`。
+> **跳过记录**：□ 或 ○ 步骤被跳过时，在该任务的台账条目记录 `跳过: 步骤X（原因）`（⛔ 不写进提交信息）。
 
 ## 任务完成流程
 
@@ -183,18 +189,17 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
    - 交互模式：AskUserQuestion："任务 T-XX 已完成，是否提交代码？"
      - 选项："提交" / "继续修改" / "跳过"
 9. **如提交**（原子提交）：
-   - Commit 1: `git add [代码文件] && git commit -m "<type>(T-XX): <名称>"`
+   - Commit 1: `git add [代码文件] && git commit`，信息按下方「提交信息格式」（⛔ 标题不带 keel 编号）
    - **audit**：提交后更新 04-dev-tasks*.md 状态为 `已完成`
-   - **fast/guarded**：提交后更新 04-dev-tasks*.md 状态为 `review_pending`（独立审查延后），在 Commit 1 尾注附加：
+   - **fast/guarded**：提交后更新 04-dev-tasks*.md 状态为 `review_pending`（独立审查延后），并在该任务的台账条目写入：
      ```
-     任务台账（04-dev-tasks.md 条目）：
      batch: <batch-id>
      due: <YYYY-MM-DD>
      pending_reason: deferred-fast | deferred-guarded
      ```
      `/verify --review-drain` 通过后（无 Blocker）才转 `已完成`
    - 运行 /sync
-   - Commit 2: `git add [文档文件] && git commit -m "docs(T-XX): 更新任务状态并同步 trace"`
+   - Commit 2: `git add [文档文件] && git commit -m "docs: 更新任务状态并同步 trace"`（`shell` 拓扑的外壳仓 commit 按 [protocol.md §6.3](../../workspace-topology/references/protocol.md) 带 T-XX，其余不带）
 10. **更新 TodoWrite**：将任务标记为已完成（audit）或 review_pending（fast/guarded）
 
 ## 提交信息格式

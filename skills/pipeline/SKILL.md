@@ -11,7 +11,7 @@ user-invocable: true
 
 # keel 工作流编排器
 
-顶层编排器，提供 8 个流程入口，降低用户面对 13 个原子 skill 的认知负担。
+顶层编排器，提供 9 个流程入口，降低用户逐个挑选原子 skill 的认知负担。
 
 ## 语言规则
 
@@ -23,7 +23,7 @@ user-invocable: true
 ```
 用户 → /pipeline → 自动路由到合适的 skill 组合
                          ↓
-              取代手动选择 13 个原子 skill
+              取代手动选择原子 skill
 ```
 
 **核心价值**：用户只需说"我要做什么"，pipeline 负责"用哪些 skill、按什么顺序"。
@@ -70,6 +70,7 @@ user-invocable: true
 /pipeline close          → 周期收尾
 /pipeline insights       → 外部洞察吸收
 /pipeline design         → 设计稿到达/更新（主动推送）
+/pipeline backlog        → 暂缓任务池维护
 /pipeline realign        → 规范升级入口（统一 realign 维度）
 ```
 
@@ -85,7 +86,7 @@ user-invocable: true
 | 参数 | 说明 |
 |------|------|
 | `--scope=spec` | 默认值；处理 spec_version 维度 |
-| `--scope=prd-mapping` | 处理 PRD 映射维度 |
+| `--scope=prd-mapping` | `[FUTURE]` 处理 PRD 映射维度（尚未落地，当前调用只提示未实现）|
 | `--scope=health` | 文档健康度主动审查（3 维度 / health-lint rule，清单见 [references/health-lint-implementation.md](references/health-lint-implementation.md)），执行接口见 [references/realign-scope-health.md](references/realign-scope-health.md) |
 | `--target=<path>` | 限定回扫目标路径 |
 | `--dry-run` | 只出差距报告，**业务产物零写入**；scope=health 允许写 `.health-report.md` 作报告载体 |
@@ -146,7 +147,7 @@ user-invocable: true
 
 **B. 健康类 drift（持续监控信号，baseline-aware，*不*受 `.devdocs-realign-ack` / `--no-realign` 控制）**
 
-3. **health drift**（文档健康度）：路由时跑廉价探针（≤2s，仅 stat `.claude/rules/devdocs-state.md` 体积 + 该文件单行长度，**不**全量扫描、**不**碰 frontmatter/死链/ADR）→ 命中则一行非阻塞提示 `/pipeline realign --scope=health`（跑全量扫描）。
+**health drift**（文档健康度）：路由时跑廉价探针（≤2s，仅 stat `.claude/rules/devdocs-state.md` 体积 + 该文件单行长度，**不**全量扫描、**不**碰 frontmatter/死链/ADR）→ 命中则一行非阻塞提示 `/pipeline realign --scope=health`（跑全量扫描）。
 
 > **语义分叉（关键，勿退化）**：升级类是"版本落后→升级决策"，ack 后永久静默合理；健康类是"文档持续退化"的监控信号，**绝不挂 ack**——否则 state 文件涨到 209KiB 也只提醒一次就永久哑火。health 每次进入路由按 `.health-baseline.yml` 重评估：承认存量债、只报新增退化。探针信号、baseline 比对、会话内去重见 [references/realign.md](references/realign.md) § health drift 探针。
 
@@ -201,13 +202,13 @@ Q3（feature/bugfix 追加，可选）:
 | 入口 | 适用边界 | 调用顺序 / 路由 | 必传摘要字段 |
 |------|---------|----------------|-------------|
 | `init` | 全新项目，从需求到开发的完整流程<br>⚠️ dev-workflow 返回 `partial`（里程碑待验证）时停在该步 | **发布状态提问**（见下注）→ `requirements` → `agent-memory --update`（治理委托，见下注）→ `system-design` → `test-cases` → `dev-tasks` → `verify --readiness` → `dev-workflow`（批量）→ `verify --docs --impl` → `sync` | `output_files`、`new_ids.features`、`new_ids.acceptance`、各阶段 `status` |
-| `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep<br>⚠️ dev-workflow 返回 `partial` 时停在该步 | `feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness + Step 6 dev-workflow）→ `verify --docs --impl` → `sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
-| `bugfix` | 修复 Bug；不改变 feature 入口语义 | 简单 Bug：`bugfix` → `verify --impl` → `sync`；复杂 Bug：`dev-tasks` → `dev-workflow` → `verify --impl` → `sync` | Bug 范围、复杂度判定、修复文件、验证结果 |
+| `feature` | 已有项目追加新功能；按 Harness 自动选择 Lite/Standard/Deep<br>⚠️ dev-workflow 返回 `partial` 时停在该步 | `feature`（内置 requirements/design/tests/tasks + Step 4.5 readiness（完整模式）+ Step 6 dev-workflow）→ `verify --docs --impl` → `sync` | `entry`、Harness 档位、影响面摘要、`output_files`、`new_ids` |
+| `bugfix` | 修复 Bug；不改变 feature 入口语义 | 一律先委托 `bugfix`（BUG 记录、复杂度评估、根因诊断门都在它内部；复杂 Bug 由它自己调度 `dev-tasks` → `dev-workflow`）→ `verify --impl` → `sync`。⛔ pipeline 不自己判复杂度、不绕过 bugfix 直调 dev-tasks | Bug 范围、复杂度判定、修复文件、验证结果 |
 | `verify` | 任意阶段质量检查 | 有代码变更 → `verify --impl`；有文档变更 → `verify --docs`；有 UI 设计稿 → `verify --ui`；不确定 → 询问用户；再路由到对应 skill 修复 | 检查维度、问题摘要、建议修复 skill |
 | `close` | 开发周期结束收尾（上线后需求终结） | `sync`（trace + audit）→ `compound`（知识沉淀）→ `onboard --update` → `prd clear`（清理当前需求脚手架，末步执行确保 why 记忆已沉淀）；health 探针命中 blocker 级时，二级强化：建议顺带 `realign --scope=health` 全量扫描 | 同步结果、沉淀文件、更新后的上下文摘要、脚手架清理结果 |
 | `insights` | 外部洞察吸收<br>⚠️ dev-workflow 返回 `partial` 时停在该步 | `insights`（收集 + 用户确认 + 追加 01）→ 有架构变更则 `system-design` → `test-cases` → `dev-tasks` → `verify --readiness` → `dev-workflow` → `verify` → `sync`；简单改进则 `dev-tasks` → `dev-workflow` → `verify` → `sync` | 洞察确认结果、架构影响判定、变更链路 |
 | `design` | 用户主动推送设计资产；pipeline 只做阶段检测和收集 | no-prd → 收集并提示先 `/prd` 或 `/requirements`；prd-ready → `requirements --update-design --target prd-index`；post-requirements/post-design → `requirements --update-design`; in-dev → `requirements --update-design` + 提示 `verify --ui`; post-tasks → `requirements --update-design` → `dev-tasks --backfill-design` | `design_context`、目标阶段、委托目标、UI 验证提示 |
-| `backlog` | 暂缓任务池维护（park / close / supersede / list / init）| 委托 `backlog`，传入 `source_id` 与动作 | 条目状态迁移结果、当前池内清单 |
+| `backlog` | 暂缓任务池维护（park / reactivate / close / supersede / list / init）| 委托 `backlog`，传入 `source_id` 与动作 | 条目状态迁移结果、当前池内清单 |
 | `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | 扫描 frontmatter → 比对各 skill 当前常量 → Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1 | drift 数量、Phase 结果、确认项 |
 
 ### 入口私有约束
@@ -235,10 +236,10 @@ pipeline 启动 `test-cases` 和 `dev-workflow` 时，保留跨 skill 协作的�
 |------|------|---------|------|
 | `test-cases` | `dev-tasks` | UT/IT/E2E 编号、覆盖到的 AC、测试文件建议 | 只传摘要 + 文件路径，具体测试设计由下游自行读取 |
 | `dev-tasks` | `verify --readiness` | 任务清单、依赖关系、任务 ↔ AC/测试映射 | readiness 失败时阻塞进入 dev-workflow |
-| `verify --readiness` | `dev-workflow` | 通过状态、P1 阻塞清零证据、可执行任务范围 | 无通过证据不得启动开发执行 |
+| `verify --readiness` | `dev-workflow` | 通过状态、P1 阻塞清零证据、可执行任务范围 | 无通过证据不得启动开发执行（`feature` 轻量模式除外，见文末说明）|
 | `dev-workflow` | `sync` / `verify` | 已完成任务、修改文件、测试结果、trace 变更 | pipeline 后置全量验证，覆盖跨任务遗漏 |
 
-### realign / layout 协调细节
+### realign 协调细节
 
 `realign` 处理 spec_version 维度，由 pipeline 汇总 yaml-summary-v1。
 
@@ -365,7 +366,7 @@ keel 工作流严格区分**文档阶段**和**编码阶段**：
 |------|----------------|
 | init | requirements → system-design → test-cases → dev-tasks → **verify --readiness** → dev-workflow → verify → sync |
 | feature | feature(含 readiness + dev-workflow) → verify → sync（深度档时 dev-workflow 强制独立审查 + verify 含 --docs） |
-| bugfix | bugfix / (dev-tasks → dev-workflow) → verify → sync |
+| bugfix | bugfix（复杂 Bug 由它内部调度 dev-tasks → dev-workflow）→ verify → sync |
 | verify | verify --docs/--impl/--ui |
 | insights | 见下方 insights 流程图 |
 | close | sync → compound → onboard --update → prd clear（脚手架清理，dry-run→⚠️确认→删） |
@@ -398,7 +399,7 @@ keel 工作流严格区分**文档阶段**和**编码阶段**：
 summary:
   headline: "init 流程完成 2/5 阶段"
   details:
-    entry: init | feature | bugfix | verify | close | insights | design
+    entry: init | feature | bugfix | verify | close | insights | design | backlog | realign
     harness_depth: Lite | Standard | Deep
     stages_completed:
       - { skill: requirements, status: success }
@@ -426,3 +427,5 @@ pipeline 完成后，所有产出文档均已生成/更新。用户可：
 - 运行 `/onboard --read` 传递上下文给新 AI
 
 > ⚠️ 新增功能开发时，不得跳过 test-cases、dev-tasks、verify --readiness 直接进入 dev-workflow。Bug 修复按 `/pipeline bugfix` 路径处理。
+>
+> **唯一例外：`feature` 轻量模式**（Lite 档：只在现有 F 下追加 AC 与任务）。它不更新 03、不调 dev-tasks、不过 readiness，任务卡内联的测试编号与验收标准即该任务的测试权威；超出轻量边界即改走标准档，例外随之失效。边界见 [feature/SKILL.md](../feature/SKILL.md)。

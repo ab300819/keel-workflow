@@ -372,7 +372,7 @@ def scan_skill_repo(skills_dir):
     """
     fs = []
     for d in sorted(os.scandir(skills_dir), key=lambda e: e.name):
-        # shared/ 是共享资源目录（constraints.md / runlog.md），不是 skill
+        # shared/ 是共享资源目录（constraints.md 等），不是 skill
         if not d.is_dir() or d.name.startswith(".") or d.name == "shared":
             continue
         sk = os.path.join(d.path, "SKILL.md")
@@ -941,7 +941,7 @@ def main():
     ap.add_argument("--baseline-init", action="store_true", help="写 baseline 快照，不报告违规")
     ap.add_argument("--since-baseline", action="store_true", help="只报告 baseline 之后新增的违规")
     ap.add_argument("--skills-dir", metavar="DIR",
-                    help="改扫 skill 库，只跑 flag/dangling-reference（⛔ 与 --target 的 project-scope rule 互斥）")
+                    help="改扫 skill 库，跑 flag/dangling-reference 与 skill/* 三条（⛔ 与 --target 的 project-scope rule 互斥）")
     args = ap.parse_args()
 
     if args.selftest:

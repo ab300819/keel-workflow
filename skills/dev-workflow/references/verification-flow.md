@@ -33,7 +33,7 @@
 2. 独立源验证：Phase 4 调用外部不同进程/模型的审查者，不被主编排器解释层污染
 3. 问题分级：区分必须修复（Blocker）和建议修复（Suggestion）——元语义以 /code-quality 反馈分级表为权威
 4. 闭环验证：修复后重新验证，确保问题真正解决
-5. 证据留痕：所有审查产出（角色演绎报告 / 外部 raw findings / yaml 摘要 / Commit trailer）三级协议存储
+5. 证据留痕：所有审查产出（角色演绎报告 / 外部 raw findings / yaml 摘要 / 任务台账字段）三级协议存储
 ```
 
 ---
@@ -260,10 +260,10 @@ Phase 3 综合报告在标准章节外追加 "发现汇总"：
 
 修复 Blocker 或 Suggestion 时，以下检测自动执行（交互和 `--headless` 模式均生效）：
 
-### 标注删减检测
+### 用例删减检测
 
 修复前快照所有测试用例名集合。
-修复后重新扫描。若任何标注被移除，视为新增 Blocker：
+修复后重新扫描。若任何测试用例被移除，视为新增 Blocker：
 
 > "🚫 Blocker: 修复过程中删除了测试用例 `should reject invalid email`（文件: tests/user.test.ts:20）"
 
@@ -338,7 +338,7 @@ Phase 4 由 dev-workflow 编排器在 S9 自审（Phase 1~3）之后、S10 之�
 │             EXT_UNRESOLVED（headless 立即 fail-fast）      │
 │                                                            │
 │  5. 产出（L1 由 L2 派生生成）                               │
-│     ├── L1 尾注：写 Commit 1 时从 L2 读取派生              │
+│     ├── L1 台账：写任务条目时从 L2 读取派生                │
 │     ├── L2 权威：docs/devdocs/audit/<T-XX>-external-review │
 │     │            .yaml（Step 1.5 [D2] 唯一消费源）         │
 │     └── L3 可选调试：audit/<T-XX>-external-review-raw/     │
@@ -385,7 +385,7 @@ audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `r
 
 ### `EXT_*` 状态执行判定表
 
-**值域与放行语义权威见 [shared/constraints.md §独立审查状态机枚举](../../shared/constraints.md)，本表为执行判定摘要**。所有文档、约束、续做信号表、Step 1.5 [D2] 校验失败分支、Commit 1 尾注字段、场景回放描述必须仅使用该值域常量，禁用 `external_reviewed` / `external_review_pending` / `CONVERGED` / `DEGRADED` / `SKIPPED` / 单独的 `reviewed` 等非 canonical 词汇。
+**值域与放行语义权威见 [shared/constraints.md §独立审查状态机枚举](../../shared/constraints.md)，本表为执行判定摘要**。所有文档、约束、续做信号表、Step 1.5 [D2] 校验失败分支、任务台账字段、场景回放描述必须仅使用该值域常量，禁用 `external_reviewed` / `external_review_pending` / `CONVERGED` / `DEGRADED` / `SKIPPED` / 单独的 `reviewed` 等非 canonical 词汇。
 
 | 状态 ID | 触发条件 | 优先级 | 唯一恢复动作 | 放行 |
 |---------|---------|--------|-------------|------|
@@ -398,7 +398,7 @@ audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `r
 本身不是状态枚举，但作为 `EXT_*` 判定的派生输入参与计算：
 - `external_review_channel_used: T1 | T2 | none`——实际生效的调用通道
 
-此字段同时写入 L1 尾注（非状态字段区）和 L2 yaml 摘要的 `summary.details`。
+此字段同时写入 L1 台账条目（非状态字段区）和 L2 yaml 摘要的 `summary.details`。
 
 ### 状态判定真值表
 

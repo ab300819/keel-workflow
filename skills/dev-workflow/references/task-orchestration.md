@@ -20,7 +20,7 @@
 /dev-workflow F-001               # 按功能点（通过 关联需求 字段反查）
 /dev-workflow US-001              # 按用户故事（同上）
 /dev-workflow --all               # 所有待开发任务
-/dev-workflow --inline "<任务定义>" --ac "<验收标准>"   # 轻量入口:物化 stub 后转单任务
+/dev-workflow "<任务定义> + <验收标准>"              # 轻量入口(自然语言;显式写法 --inline "<任务>" --ac "<AC>"):物化 stub 后转单任务
 ```
 
 ### 解析流程
@@ -34,8 +34,8 @@
    ├── F-XXX         → 扫描所有任务的 关联需求 字段，匹配 F-XXX
    ├── US-XXX        → 扫描所有任务的 关联需求 字段，匹配 US-XXX
    ├── --all         → 收集所有 状态∈{待开发,进行中} 的任务（dev 执行跳过 review_pending，不重跑；review_pending 由 /verify --review-drain 专门收集）
-   └── --inline      → 不读 04 指定符;按 [inline-entry.md](inline-entry.md) 物化 01 AC 条目 + 04 任务条目
-                       (缺 --ac ⚠️ 必须确认:补验收标准或转 /dev-flow),物化得到 T-XX 后转单任务路径(与现有 T-XX 行为一致)
+   └── 无指定符的任务描述 / --inline → 不读 04 指定符;按 [inline-entry.md](inline-entry.md) 物化 01 AC 条目 + 04 任务条目
+                       (缺验收标准 ⚠️ 必须确认:补验收标准或转 /dev-flow),物化得到 T-XX 后转单任务路径(与现有 T-XX 行为一致)
 3. 返回去重后的任务 ID 列表
 ```
 
@@ -160,17 +160,19 @@ Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判
         ├── [B] 关联测试存在且 skipped/todo=0（除显式豁免）
         ├── [C] trace 矩阵作为索引按需维护——缺失不阻塞放行,记 trace_pending 供后续 /sync 增量补齐(不再是提交前阻塞门)
         ├── [D1] 对抗式验证 Phase 1~3 证据：**audit 任务**须有 Phase 1~3 综合报告；缺失 → `INT_UNRESOLVED`。fast/guarded 的延后内审由 [F] review_pending + drain 覆盖，不在 [D1] 判定。
-        ├── [D2] Phase 4 外部对抗审查证据：**audit 任务**必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 尾注由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；fast/guarded 不在 [D2] 判定（其延后外审经 [F] review_pending + drain 闭合）。
+        ├── [D2] Phase 4 外部对抗审查证据：**audit 任务**必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 台账字段由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；fast/guarded 不在 [D2] 判定（其延后外审经 [F] review_pending + drain 闭合）。
         ├── [E] 后置测试证据（任一即可）：单任务为 `/test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/test-run --trace` 执行记录；若台账有 `skip_trace_reason` 且补跑未完成 → `postcheck_pending`
         ├── [F] review_pending 检测:台账 `pending_reason: deferred-*` 且无对应 drain verdict → 任务为 `review_pending`,**非"已完成"**,不得跳过;须经 `/verify --review-drain` 转 `已完成`
         ├── A~F 全部可复核(含 [F] 无未清 review_pending)（[D1] `INT_REVIEWED` ∧ [D2] `EXT_REVIEWED` 或均未触发）→ 跳过该任务
         └── 任一不可复核 → 进入"复核续做"（续做信号表对应 pending/state 之一）
             └── 旧任务迁移（前版本完成，A/D1/D2/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
 
-Step 2: Git 历史检测（任务状态非"已完成"时的兜底）
-        ├── git log --grep="(T-XX)" --oneline
-        ├── 有代码提交 + 有文档提交 → ⚠️ 不再直接跳过，改为进入 Step 1.5 证据复核路径
-        ├── 有代码提交 + 无文档提交 → 标 docs_only_pending，仅执行文档同步（/sync + Commit 2）
+Step 2: 提交检测（任务状态非"已完成"时的兜底）
+        ├── 读任务台账 `commits` 字段（commit 标题不带 T-XX，⛔ 不靠 grep 提交信息找任务）
+        ├── 台账已有 `commits`（Commit 2 已落）→ ⚠️ 不直接跳过，进入 Step 1.5 证据复核路径
+        ├── 台账无 `commits`，但 `git log -- <任务卡列出的文件>` 有晚于任务卡创建的提交
+        │     → ⚠️ 必须确认该提交属于本任务；确认后标 docs_only_pending，仅执行文档同步（/sync + Commit 2 回填 `commits`）
+        │     （`shell` 拓扑另可用外壳仓 `git log --grep="T-XX"`，见 protocol.md §6.3）
         └── 无提交 → Step 3
 
 Step 3: 工作区检测
@@ -220,7 +222,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 | audit 任务缺 S9 Phase 1~3 综合报告（`INT_UNRESOLVED`） | 代码/文档均已提交 | 对抗式验证 Phase 1~3 补跑 | 编排器 |
 | 单任务 `--skip-trace` 后未补跑后置测试（`postcheck_pending`） | 代码/文档均已提交 | `/test-run --affected` 或 `--trace` 补跑 | 编排器 |
 | 旧任务（AC 表不存在，前版本完成） | 全量历史 | AskUserQuestion：复核 / 豁免 / 终止 | 编排器 |
-| fast/guarded 延后审查未 drain(`review_pending`,Commit 1 带 deferred-* 尾注) | 代码已提交 | `/verify --review-drain` 集中清审 | verify(编排器调度) |
+| fast/guarded 延后审查未 drain(`review_pending`,台账 `pending_reason: deferred-*`) | 代码已提交 | `/verify --review-drain` 集中清审 | verify(编排器调度) |
 | 段内任务全部完成但该段未经人工验证（`milestone_pending`）| 该段实现执行结束 | 重跑该段**段末停点**（⛔ 不重跑任务）| 编排器 |
 
 ### Phase 4 状态在批量编排中的处理
@@ -293,7 +295,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 │  6.9 Commit 1(纯代码)+ 台账记 batch/due/pending_reason(fast/guarded)      │
 │  7. 更新 04-dev-tasks*.md 状态:audit→已完成;fast/guarded→review_pending(drain 通过后才转已完成)│
 │  8. /sync                                │
-│  9. Commit 2: docs(T-XX): 更新任务状态+追踪      │
+│  9. Commit 2: 文档提交（任务状态+追踪）         │
 │     └── git add [文档文件] && git commit        │
 │ 10. 洁净校验 + 写检查点                         │
 │     └── git status --porcelain 非空 → 报错      │
@@ -327,7 +329,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 │  ├── 批量模式：/test-run --trace（全量+追溯） │
 │  ├── 单任务模式：/test-run --affected         │
 │  │    └── affected 无匹配 → 回退 /test-run --trace │
-│  └── --skip-trace="<原因>" → 跳过并登记尾注      │
+│  └── --skip-trace="<原因>" → 跳过并登记台账      │
 │  结果处理：                                      │
 │  ├── 全部通过 → 记录到执行报告                   │
 │  └── 有失败 →                                    │
@@ -443,23 +445,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 
 ### Commit 消息格式
 
-**Commit 1（代码）**：
-
-```
-<type>(T-XX): <任务名称>
-
-- <完成内容1>
-- <完成内容2>
-
-关联: F-XXX, AC-XXX
-测试: UT-XXX, IT-XXX 通过
-```
-
-**Commit 2（文档）**：
-
-```
-docs(T-XX): 更新任务状态并同步 trace
-```
+权威见 [SKILL.md § 提交信息格式](../SKILL.md)，本文不复述模板。⛔ 标题与正文不带 keel 编号，流程状态写任务台账。
 
 ### 单任务模式编排
 
@@ -470,7 +456,7 @@ docs(T-XX): 更新任务状态并同步 trace
 - **依赖扩展后 >1 任务时，自动升级为批量编排**（逐任务子 Agent + 拓扑排序）
 - 仅 1 任务时，同样使用双 Agent 模型（Test Agent → 红色验证 → Impl Agent），复用下方子 Agent 协议
 - 断点检测由编排器执行，根据续做信号表判定从哪个 Agent 的哪个步骤续做
-- **完成后必须调用 `/test-run --affected`** 做受影响测试校验（见上方"后置测试校验"块）；affected 无匹配时回退 `/test-run --trace`；显式关闭须 `--skip-trace="<原因>"` 并登记尾注
+- **完成后必须调用 `/test-run --affected`** 做受影响测试校验（见上方"后置测试校验"块）；affected 无匹配时回退 `/test-run --trace`；显式关闭须 `--skip-trace="<原因>"` 并登记台账 `skip_trace_reason`
 
 ### 批量模式中断处理
 

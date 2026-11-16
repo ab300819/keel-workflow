@@ -78,7 +78,12 @@ code_roots:
 missing_code_roots:               # 声明了但解析不到实体
   - name: web
     declared_path: ../pool/web
+capabilities:                     # 写入策略，由 mode 派生；消费方读它，⛔ 不自己按 mode 分支
+  code_metadata_write_policy: unrestricted | explicit_opt_in   # 文件头注释、模块级 CLAUDE.md 等代码目录内的元信息
+  code_dir_write_policy: unrestricted | explicit_opt_in        # 往代码根写非代码文件
 ```
+
+`capabilities` 两项的取值：`inline` → `unrestricted`；`shell` / `linked` → `explicit_opt_in`（零污染红线，见 [protocol.md §5](references/protocol.md)）。
 
 三种 mode 下 `code_roots` 元素形状**完全一致**——**调用方不分支**，`inline` 也是一个代码根（单项，`path` = 仓根绝对路径）。
 
@@ -95,8 +100,8 @@ missing_code_roots:               # 声明了但解析不到实体
 
 走 [constraints.md §3](../shared/constraints.md) 的最小握手协议：
 
-- **编排层**（`pipeline` / `feature` / `bugfix` / `dev-workflow`）在流程开头调一次 `inspect`，把 `workspace_context` 随握手的 `inputs` 下传
-- **原子 skill** 从 `inputs.workspace_context` 读，不需要 `Task`
+- **编排层**（`pipeline` / `feature` / `bugfix` / `dev-workflow`）在流程开头调一次 `inspect`，把结果放进握手的 `workspace_context` 下传（上层已传入时直接沿用，不重复调）
+- **原子 skill** 从握手的 `workspace_context` 读，不需要 `Task`
 - **单跑**（用户直接调某个原子 skill，无编排层）：无 `workspace_context` → 按 `inline` 缺省 + ℹ️ 提示「`shell` / `linked` 项目请经编排层调用」
 
 消费方依赖的是**入参形状**，不是声明文件、不是 `.gitmodules`。

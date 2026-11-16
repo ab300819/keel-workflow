@@ -6,7 +6,6 @@ related:
   - AGENTS.md（yaml-summary-v1 原始定义）
   - skills/prd/references/governance/prd-revision-policy.md（PRD 修订边界）
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
-  - skills/shared/runlog.md（运行日志：形状、纪律、判决点）
 generated_at: 2026-05-18
 spec_version: shared-constraints.v13
 ---
@@ -19,7 +18,7 @@ spec_version: shared-constraints.v13
   - **现状提取**（起源，T-106）：仓库已有重复规则的共享 SSOT，不改变任何 skill 的行为。**无标记**。
   - **新增跨切面规则**：后续确立的、不属于任何单一 skill 的协议层规则。一律标 `[新增]`（见 `future/use-new`）。
 
-  > 本条取代原 `doc/status-extraction`（「只整理已有规则，不引入新执行语义」）。该表述在 `§11 作用域匹配`、`§3 task/runlog-append` 等 6 条规则落地后已与实际不符，且**它没有阻止任何一次新增，只是让每次新增都要附一段例外说明**——一条被绕过 6 次的规则不是规则。
+  > 本条取代原 `doc/status-extraction`（「只整理已有规则，不引入新执行语义」）。该表述在 `§11 作用域匹配`、`§3 task/runlog-append`（已于 2026-11 按自带死期删除）等 6 条规则落地后已与实际不符，且**它没有阻止任何一次新增，只是让每次新增都要附一段例外说明**——一条被绕过 6 次的规则不是规则。
 
   新增的准入三条，**全部满足**才能进本文：
 
@@ -123,7 +122,6 @@ next_recommended:
 - `task/yaml-summary-required`：被委托的 keel 流程 skill 必须以 yaml-summary-v1 返回结果。
 - `task/no-implicit-apply`：子 Agent 的 `next_recommended` 只表示建议，不代表编排层可自动执行下一步。
 - `task/private-fields-in-details`：子 Agent 私有输出必须放入 `summary.details`，避免污染编排层通用字段。
-- `task/runlog-append` `[新增]`：编排层收到子 Agent 的 yaml-summary 后，**原样**追加一条到 `<docs_dir>/devdocs/.runlog.yaml`。**不设门禁**——写失败静默跳过，不得因此阻断流程；**子 Agent 不自行写入**。信封不改、字段不增，形状与判决点见 [runlog.md](runlog.md)。**本规则自带死期（2026-11-30），到期未读即作废。**
 
 ### success / failed 判定
 
@@ -154,11 +152,11 @@ expected_output: yaml-summary-v1
   - `unattended`: `true` | `false` —— 用户是否明确授权无人值守（缺省 `false`）
   - `granted_scope`: 一句话记录用户授权了什么，供 `task/consent-at-action` 判定「是否超范围」
   - 持久化位置：随断点检查点一同保存（v1 为 `docs/devdocs/.batch-checkpoint.json`），续做时原样恢复，⛔ 不重新推断。
-- `task/workspace-context`：**编排层**在流程开头调一次 `/workspace-topology inspect`，把返回的 `workspace-context.v2` 经本字段下传（`mode`（`inline` | `shell` | `linked`）/ `workspace_root` / `docs_dir` / `code_roots` / `missing_code_roots`）。被委托 skill 从此字段读代码根与 docs 根，**不自行读取声明文件、不解析 `.gitmodules`**。三种 mode 下 `code_roots` 元素形状一致（`name` / `path` / `declared_path`，`path` 为解析后的绝对路径），**调用方不分支**。`missing_code_roots` 非空表示有声明了但解析不到的代码根，⚠️ 报告即可、不阻塞。字段缺失（用户单跑原子 skill、无编排层）时按 `inline` 缺省并 ℹ️ 提示。契约见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
-- `task/mode-honored`：子 Agent 不得越过传入 `mode`；`read` / `dry-run` 不得产生写入。
+- `task/workspace-context`：**编排层**在流程开头调一次 `/workspace-topology inspect`，把返回的 `workspace-context.v2` 经本字段下传（`mode`（`inline` | `shell` | `linked`）/ `workspace_root` / `docs_dir` / `code_roots` / `missing_code_roots` / `capabilities`）。被委托 skill 从此字段读代码根与 docs 根，**不自行读取声明文件、不解析 `.gitmodules`**。三种 mode 下 `code_roots` 元素形状一致（`name` / `path` / `declared_path`，`path` 为解析后的绝对路径），**调用方不分支**。`missing_code_roots` 非空表示有声明了但解析不到的代码根，⚠️ 报告即可、不阻塞。字段缺失（用户单跑原子 skill、无编排层）时按 `inline` 缺省并 ℹ️ 提示。契约见 [../workspace-topology/SKILL.md](../workspace-topology/SKILL.md)。
+- `task/mode-honored`：子 Agent 不得越过传入 `mode`；`read` / `dry-run` 不得产生写入（报告载体例外见 `dry-run/default-non-mutating`）。
 - `task/intent-normalization` `[新增]`：**档位与授权类偏好词不作为用户必须打对的语法**（`--fast` / `--deep` 一类）。用户以自然语言表达意图，由**编排层**归一化后下传：
   - **适用范围 ≡ `task/normalized-intent-shape` 的字段集**（`ceremony` / `review_profile` / `unattended` / `granted_scope`）。⛔ 选阶段 / 选维度 / 选子集参数（`--impl` / `--docs` / `--readiness` / `--ui` / `--ut` / `--from-prd` 等）**不在本规则内**——它们是动词不是偏好词，归一化目标里没有对应字段，可在用户面文档作为可发现性入口列出。
-  - 归一化结果写入本握手，**子 Agent 只读归一化字段，不得自行解读用户原话**；原话只进 runlog 的 `entry` 作审计线索
+  - 归一化结果写入本握手，**子 Agent 只读归一化字段，不得自行解读用户原话**；原话不下传
   - 歧义**只问一次**，答案落盘并随断点恢复一同持久化；反复追问等价于把记忆负担改成对话负担
   - ⛔ **授权不可由模型自行升格**。「跑快点」不等于授权无人值守提交；缺省取最保守档
   - 本范围内的协议参数（`--review-profile` / `--no-realign` / `--force-code-docs` 等）**保留**，但用户面文档 ⛔ 不得把它们呈现为必须输入的语法
@@ -254,6 +252,7 @@ expected_output: yaml-summary-v1
 ### dry-run / apply 命名
 
 - `dry-run/default-non-mutating`：`--dry-run` 表示只输出计划、影响范围、风险、待确认项，不写文件。
+  - **唯一登记的例外：报告载体。** dry-run 的输出本身可落盘为报告文件（现役仅 `--scope=health` 的 `.health-report.md`），它不是业务产物；⛔ 例外不外延到任何业务文档。调用方要求完全零写入时用该命令的免报告开关（health 为 `--no-report-file`）。新增报告载体须在本条登记。
 - `dry-run/apply-mutating`：`--apply` 表示执行已确认的变更；若存在不可逆或跨边界动作，仍需确认。
 - `dry-run/fix-default`：自动修复类命令默认应先 dry-run，只有明确 `--apply` 才写入。
 - `dry-run/report-required`：dry-run 输出必须足以让用户判断是否 apply，至少包含目标文件、操作类型、风险或不可自动项。
