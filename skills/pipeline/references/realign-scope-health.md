@@ -288,6 +288,8 @@ next_recommended:
 | 混杂 health + 跨 scope | 数组形式：`["realign --scope=health --apply", "realign --scope=<跨 scope> --apply"]`，按拓扑顺序（spec → prd-mapping → health）排序 |
 | 0 违规 | `null` |
 
+⛔ 尚未落地的 scope（`[FUTURE]`，当前为 `prd-mapping`）不生成推荐命令：它的违规只在报告里列为人工修复项，上表按「不计入跨 scope」处理。
+
 状态语义：
 
 | status | 含义 |
