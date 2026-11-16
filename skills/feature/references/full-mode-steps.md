@@ -115,7 +115,7 @@
 
 展示步骤摘要块（新增任务范围 + TDD 分层标注），等待用户确认。`ceremony: fast` 时跳过此确认。
 
-## Step 4.5: 就绪检查（完整模式）
+## Step 4.5: 就绪检查（完整与轻量模式同规则）
 
 > **委托执行**：本步骤必须委托给 `/verify --readiness`，作为进入开发前的质量关卡。
 
@@ -165,7 +165,7 @@ docs/devdocs/
 - dev-workflow 自动附加 `--review`（所有任务强制对抗式验证）
 - Step 6 完成后自动追加 `/verify --docs`（文档层间对齐检查）
 
-> 轻量模式同样支持 Step 6，通过委托 `/dev-workflow` 衔接少量任务的开发。轻量模式自身不编写实现代码。
+> 轻量模式同样支持 Step 6，就绪检查通过后委托 `/dev-workflow` 衔接少量任务的开发。轻量模式自身不编写实现代码。
 
 ## 编排规范（子 Agent 调度）
 
@@ -188,4 +188,4 @@ docs/devdocs/
    - Step 6 的 `/dev-workflow` 返回 `status: partial`（里程碑段末等人验证）时，⛔ 不得当成完成：feature 自身也返回 `partial`，并把 `details.milestones_pending` 与 `next_recommended` **原样上传**——上层编排只看信封判停
 4. **不自行排障**：编排层不读取子技能的完整输出文档来尝试修复
 
-> 轻量模式因任务简单，**文档步骤**（Step 1-4）直接在 feature 上下文内执行，不启动子 Agent。Step 6 开发衔接仍需委托 `/dev-workflow`。
+> 轻量模式因任务简单，**文档步骤**（Step 1-4）直接在 feature 上下文内执行，不启动子 Agent。就绪检查与 Step 6 开发衔接仍需委托（`/verify --readiness`、`/dev-workflow`）。
