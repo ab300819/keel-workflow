@@ -143,9 +143,10 @@ Lite（以上均无）→ 轻量模式
 - **Step 1-4 为文档阶段，仅产出 `docs/devdocs/` 下的 Markdown 文档，不编写实现代码；需要编码时必须通过 Step 6 衔接 `/dev-workflow`**
 - 不新建 F-XXX（功能点），仅追加 AC 到现有功能
 - 不更新 02-system-design（无架构变更）
-- 不更新 03-test-cases、不过 `verify --readiness`：任务卡内联的测试用例编号与验收标准即该任务的测试权威，
-  dev-workflow 以它为测试输入，⛔ 不要求 03 里另有对应条目（这是 pipeline「不得跳过 test-cases / readiness」
-  规则登记的唯一例外；追溯链因此不完整，见下方警告）
+- 不更新 03-test-cases、不过 `verify --readiness`：追加的 AC 条目与任务条目按 dev-workflow
+  [inline-entry.md](../dev-workflow/references/inline-entry.md) 的 stub 形状写，**标 `来源: inline`**。下游据此走现成的
+  inline 分支（Test Agent 以 AC + 当前代码为测试输入、`sync` trace 跳过并提示待回填、`grep "来源: inline"` 即回填台账），
+  ⛔ 不另立例外通道。这是 pipeline「不得跳过 test-cases / readiness」规则登记的唯一例外；追溯链因此不完整，见下方警告
 - 任务量小到可直接追加，无需调用 dev-tasks；超出即改走标准档
 - **里程碑归属自动继承**：轻量任务挂在现有 F 上，该 F 在 `01` §2 的「归属里程碑」值即它的段。⛔ 不在任务卡另写 M（§2 归属列是唯一权威源）；⛔ 不因为轻量模式绕过分段执行
 - 任务必须遵循 TAR 原则格式
