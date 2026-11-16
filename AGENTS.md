@@ -56,3 +56,4 @@ keel 是以插件形式分发的通用开发 harness，为 AI 辅助开发提供
 - 查询架构决策、编号与文件结构：[docs/architecture.md](docs/architecture.md)。
 - 修改门控、子代理摘要、Recovery 或 spec_version：[skills/shared/constraints.md](skills/shared/constraints.md)。
 - 修改 keel 路由或升级入口：[skills/pipeline/SKILL.md](skills/pipeline/SKILL.md)。
+- 核对 skill frontmatter 与官方规范：`spec/claude-skill-spec.md`（源 `code.claude.com/docs/en/skills.md`）与 `spec/codex-skill-spec.md`（源 `developers.openai.com/codex/skills.md`）是官方文档副本，抓取日期看 `git log -- spec`。副本会过期，拿不准时重新抓取并覆盖，⛔ 不手改内容。

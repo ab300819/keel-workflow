@@ -1,5 +1,7 @@
 # Skill 软触发漏检：真实案例与硬触发课题
 
+> **销账记录（2026-11-16 清点）**：「首批 hook 未在真实会话跑过」已结（Claude Code / Bash matcher / SessionStart resume / OpenCode 的实测记录见 `hooks/README.md` § 状态）；「模板里裸名 `/ms-xxx` 能否解析」已结（`ms-` 前缀已去，裸名可解析见 README 调用形式表）。候选方向 A~D 仍为暂缓。
+
 > 来源：`~/Projects/dev-ops` 2026-08-27/28 会话的外部输入。
 >
 > ## ⛔ 已调研，判定**暂不做**（2026-09-16）

@@ -17,14 +17,14 @@ export class UserService {
    * 创建用户
    */
   async createUser(dto: CreateUserDTO): Promise<User> {
-    throw new Error('Not implemented: T-02');
+    throw new Error('Not implemented');
   }
 
   /**
    * 获取用户
    */
   async getUser(id: string): Promise<User | null> {
-    throw new Error('Not implemented: T-03');
+    throw new Error('Not implemented');
   }
 }
 ```
@@ -72,8 +72,8 @@ skip/todo 标记仅限 S3 骨架阶段，S4 写完断言后必须移除：
 
 ```typescript
 describe('CreateOrderService', () => {
-  it.todo('should create order with valid input (AC-001)');
-  it.todo('should reject input with missing customer (AC-002)');
+  it.todo('should create order with valid input');
+  it.todo('should reject input with missing customer');
 });
 ```
 
@@ -136,7 +136,7 @@ describe('UserService.createUser', () => {
 
 - [ ] **接口骨架必须包含完整签名**（参数、返回值、泛型）
 - [ ] **接口骨架的方法名与签名必须自说明**（⛔ 不写 keel 编号标注）
-- [ ] **未实现方法必须抛出 Error 并注明任务编号**
+- [ ] **未实现方法必须抛出 Error**（⛔ 报错文案不带 keel 编号）
 - [ ] **测试骨架必须使用 skip/todo 标记**
 - [ ] **测试名必须说明验证的行为**（⛔ 不写 keel 编号标注）
 - [ ] **测试骨架 S3 可含纯 AAA 占位**（`// Arrange` / `// Act` / `// Assert`，不带来源）；**S4 后不得保留来源记录式注释**

@@ -1,5 +1,7 @@
 # CON-XXX 非编码类需求追溯 —— 实施记录与待办
 
+> **销账记录（2026-11-16 清点）**：「部署未做（源与运行态两份拷贝）」前提已变：现走插件分发、按版本号键控，该条作废。另：CON 可执行档「改动前后各跑一次验证命令」的执行路径已补进 dev-workflow `execution-flow.md`，requirements 模板与 test-run 的相反说法已改。D4 与端到端真实项目验证仍未做。
+
 > 2026-09-02。**已缩回。** 配对方案：[specs/2026-09-01-artifact-requirement-traceability-design.md](../superpowers/specs/2026-09-01-artifact-requirement-traceability-design.md)（该文记录的是**扩张版**，已被本文推翻，⛔ 不作为现役规格）。
 >
 > 现役规格：[_shared/constraints.md § CON 标识登记 / CON 的消费边界](../../skills/_shared/constraints.md)。

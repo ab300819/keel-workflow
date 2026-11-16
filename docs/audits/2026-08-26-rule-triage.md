@@ -7,6 +7,8 @@ spec: docs/superpowers/specs/2026-08-26-devdocs-rule-triage-and-runlog-design.md
 
 # 规则四分法分类（B1）
 
+> **销账记录（2026-11-16 清点）**：「本仓 AGENTS.md 超 60 行上限」已结：现 58 行。
+
 判据见 spec §2。四格：
 
 | 规则性质 | 处置 |

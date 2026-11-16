@@ -48,8 +48,8 @@
 | scope | 入口 | 执行接口文件 | 定位 |
 |-------|------|-------------|------|
 | `spec` | `/pipeline realign --scope=spec` | 沿用本文 § "编排层职责" + 各 skill `references/realign.md` | spec_version 差距补齐 |
-| `prd-mapping` | `/pipeline realign --scope=prd-mapping` | 沿用 `skills/prd/references/governance/prd-devdocs-mapping.md` | PRD ↔ keel 映射对齐 |
-| `health` | `/pipeline realign --scope=health` | [realign-scope-health.md](realign-scope-health.md) | 文档健康度主动审查（结构 / 索引 / 过大 / SSOT）|
+| `prd-mapping` `[FUTURE]` | `/pipeline realign --scope=prd-mapping` | 沿用 `skills/prd/references/governance/prd-devdocs-mapping.md` | PRD ↔ keel 映射对齐 |
+| `health` | `/pipeline realign --scope=health` | [realign-scope-health.md](realign-scope-health.md) | 文档健康度主动审查（结构 / 索引 / 过大）|
 
 ## 编排层职责（`pipeline realign`）
 
@@ -106,7 +106,7 @@
 
 ## Dry-run 样例（首次调用 vs 二次调用）
 
-> **说明**：以下为**示意**样例，用于展示报告格式与幂等性，非实际运行结果。`design.v1 → design.v2` 已是真实演进（2026-08-31，§0 摘要节，见 [system-design/references/realign.md](../../system-design/references/realign.md)）；其余 skill 的 `spec_version` 常量仍为 v1 首版、Migration Matrix 仍为"保留字段，未来启用"。本仓尚未真实触发过 realign 执行。
+> **说明**：以下为**示意**样例，用于展示报告格式与幂等性，非实际运行结果。样例里的版本号只为演示格式；各 skill 当前的 `spec_version` 常量与迁移矩阵以各自 `references/realign.md` 为准，⛔ 本文不复述。
 
 **假想场景**：仓库有 3 个产物，其中 `02-system-design.md` 是 `design.v1`（假设常量已升至 `design.v2`），`04-dev-tasks.md` 是 `tasks.v1`（当前常量 `tasks.v1`，无 drift），`00-context.md` 缺 frontmatter（legacy）。
 
@@ -128,7 +128,7 @@
 ## 建议动作
 
 - /system-design --realign  # 补齐 2 项 additive（§15 设计审查"原则校验"列、ADR"升级原因"条目）
-- /retrofit docs/devdocs/00-context.md  # legacy 产物先由 retrofit 加 frontmatter
+- /retrofit  # legacy 产物（无 spec_version）归 retrofit 处理，见下方「与 retrofit 的边界」
 - （04-dev-tasks.md 无需动作）
 
 未执行任何修改（dry-run）。运行 /pipeline realign 实际执行。
@@ -226,7 +226,7 @@ dev-workflow 的 realign 在任务正文追加一行：`Realigned-From: <old_spe
 
 ## health drift 探针（阶段 3，与 schema drift 并列但语义不同）
 
-> **语义分叉**：schema/layout drift 是一次性版本升级决策，受 `.devdocs-realign-ack` 控制（上文）。health drift 是**持续退化的监控信号**，**不读不写 `.devdocs-realign-ack`、不受 `--no-realign` 控制**；每次进入路由按 baseline 重评估。维护者勿把 health 接回 ack。
+> **语义分叉**：schema drift 是一次性版本升级决策，受 `.devdocs-realign-ack` 控制（上文）。health drift 是**持续退化的监控信号**，**不读不写 `.devdocs-realign-ack`、不受 `--no-realign` 控制**；每次进入路由按 baseline 重评估。维护者勿把 health 接回 ack。
 
 ### 廉价探针（路由时 ≤2s，不全量扫描）
 
@@ -267,11 +267,11 @@ dev-workflow 的 realign 在任务正文追加一行：`Realigned-From: <old_spe
    （此提示按 baseline 重评估，修复后自动消失；非升级决策，不写 ack）
 ```
 
-> 全量 health 扫描（4 维度 / 死链 / ADR 漂移 / 所有文档）仍由显式 `/pipeline realign --scope=health` 执行，见 [realign-scope-health.md](realign-scope-health.md)。探针只决定"要不要提示去跑全量"。
+> 全量 health 扫描（3 维度 / 死链 / ADR 漂移 / 所有文档）仍由显式 `/pipeline realign --scope=health` 执行，见 [realign-scope-health.md](realign-scope-health.md)。探针只决定"要不要提示去跑全量"。
 
 ## 与 retrofit 的边界
 
-> 本节与上方"向后兼容"章节自洽：**阶段 1**（当前，产物尚无 frontmatter 元数据）下，表格内"无 frontmatter"场景尚未触发；用户显式 `/pipeline realign` 统一归 realign 的 legacy 全量扫描。**阶段 2 起**（产物引入 frontmatter 之后），下表规则生效。
+> 本节与上方"向后兼容"章节自洽：现役各 skill 的产物模板都已带 frontmatter 与 `spec_version`，**阶段 2 规则是当前规则**。「阶段 1」一行只适用于模板引入 frontmatter 之前生成的存量产物。
 
 | 场景 | 归属 |
 |---|---|

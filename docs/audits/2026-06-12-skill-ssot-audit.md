@@ -1,5 +1,7 @@
 # Skill 体系 SSOT 摸排报告
 
+> **销账记录（2026-11-16 清点）**：修复路线批次 1~4 已执行（见同日 `2026-06-12-e2e-system-validation.md`，抽查 A1 / B10 / S6 / S2 成立，其余未逐条复核）。持续项「health-lint 镜像一致性 rule」仍未做。
+
 > 2026-06-12 · 范围：全部 32 个 skill + _shared + README/AGENTS · 方法：Claude 双探查 agent 全量扫描 + Codex 独立全仓审计，双向交叉复核后合并（Claude 侧剔除误报 1 条；Codex 独有发现 2 项 A 级经 grep 实证采纳）
 > 基线治理原则：dev-workflow spec 1.1「权威文件唯一原则」——每个机制唯一权威文件，其余仅 2-3 行指针
 

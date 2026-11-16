@@ -250,7 +250,7 @@ MVP 范围： / 非目标： / 删减理由：
 
 ## 文档结构
 
-11 个章节：`## 0. 原始需求` / `## 0.5 设计资产（可选）` / `## 1. 背景与目标` / `## 2. 功能点清单` / `## 2.5 里程碑（可选）` / `## 3. 用户故事` / `## 4. 验收标准` / `## 5. 追溯矩阵` / `## 6. 非功能性需求` / `## 7. 范围边界` / `## 8. 风险与假设`。`## 0. 原始需求` 记录用户原话作为精化基准。`## 2.5` 不划分里程碑时整节删除。详细格式见 [templates/requirements-template.md](templates/requirements-template.md)。
+11 个章节：`## 0. 原始需求` / `## 0.5 设计资产（可选）` / `## 1. 背景与目标` / `## 2. 功能点清单` / `## 2.5 里程碑（可选）` / `## 3. 用户故事` / `## 4. 验收标准` / `## 5. 追溯矩阵` / `## 6. 约束（CON）` / `## 7. 范围边界` / `## 8. 风险与假设`。`## 0. 原始需求` 记录用户原话作为精化基准。`## 2.5` 不划分里程碑时整节删除。详细格式见 [templates/requirements-template.md](templates/requirements-template.md)。
 
 ## 核心概念
 
@@ -375,7 +375,7 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 | `下游影响` | 对 `/system-design`、`/test-cases` 的影响 |
 
 **为什么必填**：待实测项若无归属与关闭条件，会一直躺着直到被**完全无关的动机**偶然撞开。
-`/sync --audit` 按 `提出` 日期报龄，`/verify --readiness` 在 ≥120 天时升 P1 阻塞。
+`/sync` 的 audit 阶段按 `提出` 日期报龄，≥120 天 ⚠️ 建议本轮关闭（见 [sync audit-mode.md](../sync/references/audit-mode.md)）。⛔ 目前没有 skill 因超龄阻塞流程。
 
 ```markdown
 ### needs review
