@@ -172,7 +172,7 @@ manual_decisions:
 |----|----|----|
 | health-lint 全部 rule（清单见 [health-lint-implementation.md](health-lint-implementation.md) Rule 集表；`submodule/pointer-drift` 仅 shell 拓扑适用）| `health` | health scope `--apply` 直接处理（`health/dead-link` 手动修复；`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
 | `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
-| PRD↔keel 死链 | `prd-mapping` | 修复 mapping 走 prd-mapping scope |
+| PRD↔keel 死链 | `prd-mapping` | `prd-mapping` scope 尚未落地（`[FUTURE]`）：目前仅报告，由人工按 [prd-devdocs-mapping.md](../../prd/references/governance/prd-devdocs-mapping.md) 修复映射 |
 
 ### 评分契约
 
@@ -301,7 +301,7 @@ next_recommended:
 
 - 维度 a 的 spec_version 差距 → 仅报告，**不补齐**；补齐走 `--scope=spec`（沿用现有 realign 主流程）。
 - 维度 c 中单文件 > 96 KiB（`layout/size-cap`）→ 仅报告，**不拆分**；历史内容归档走 `/sync --archive`，活跃内容走各 skill 拆分规则，四类双形态资源的集中文件建议转资源目录。
-- 维度 b 的死链涉及 PRD ↔ keel 编号映射 → 由 `--scope=prd-mapping` 处理。
+- 维度 b 的死链涉及 PRD ↔ keel 编号映射 → 仅报告、人工修复（`--scope=prd-mapping` 为 `[FUTURE]`，尚未落地）。
 - 本 scope 自身只负责：可逆的小范围修复（state 修剪、引用替换、死链标注）。
 
 ## 幂等性

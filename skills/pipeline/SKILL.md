@@ -428,4 +428,4 @@ pipeline 完成后，所有产出文档均已生成/更新。用户可：
 
 > ⚠️ 新增功能开发时，不得跳过 test-cases、dev-tasks、verify --readiness 直接进入 dev-workflow。Bug 修复按 `/pipeline bugfix` 路径处理。
 >
-> **唯一例外：`feature` 轻量模式**（Lite 档：只在现有 F 下追加 AC 与任务）。它不更新 03、不调 dev-tasks、不过 readiness，任务卡内联的测试编号与验收标准即该任务的测试权威；超出轻量边界即改走标准档，例外随之失效。边界见 [feature/SKILL.md](../feature/SKILL.md)。
+> **唯一例外：`feature` 轻量模式**（Lite 档：只在现有 F 下追加 AC 与任务）。它不更新 03、不调 dev-tasks、不过 readiness，追加的条目标 `来源: inline`、下游走 dev-workflow 的 inline 分支；超出轻量边界即改走标准档，例外随之失效。边界见 [feature/SKILL.md](../feature/SKILL.md)。

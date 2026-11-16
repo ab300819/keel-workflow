@@ -171,7 +171,8 @@ Step 2: 提交检测（任务状态非"已完成"时的兜底）
         ├── 读任务台账 `commits` 字段（commit 标题不带 T-XX，⛔ 不靠 grep 提交信息找任务）
         ├── 台账已有 `commits`（Commit 2 已落）→ ⚠️ 不直接跳过，进入 Step 1.5 证据复核路径
         ├── 台账无 `commits`，但 `git log -- <任务卡列出的文件>` 有晚于任务卡创建的提交
-        │     → ⚠️ 必须确认该提交属于本任务；确认后标 docs_only_pending，仅执行文档同步（/sync + Commit 2 回填 `commits`）
+        │     → ⚠️ 必须确认该提交属于本任务；确认后**先走 Step 1.5 证据复核**（提交归属 ≠ 已过门控），
+        │       复核通过才标 docs_only_pending 补文档同步（/sync + Commit 2 回填 `commits`），不通过按复核续做
         │     （`shell` 拓扑另可用外壳仓 `git log --grep="T-XX"`，见 protocol.md §6.3）
         └── 无提交 → Step 3
 

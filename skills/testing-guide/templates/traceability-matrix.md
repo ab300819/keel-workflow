@@ -83,46 +83,6 @@
 
 ⛔ 测试代码不写 `// UT-001: AC-001`、`@testId`、`@acceptance` 这类 keel 编号标注。AC 与测试编号的映射只在本追溯矩阵里维护，代码里不留第二份；测试名用自然语言说明被验证的行为即可。规则见 [testing-guide SKILL.md](../SKILL.md)。
 
-## 自动化脚本
-
-### 检查未覆盖的验收标准
-
-```bash
-#!/bin/bash
-# check-ac-coverage.sh
-
-# 从需求文档提取 AC 编号
-AC_LIST=$(grep -oE "AC-[0-9]+" docs/devdocs/01-requirements.md | sort | uniq)
-
-# 从测试代码提取已覆盖的 AC 编号
-COVERED=$(grep -rhoE "AC-[0-9]+" tests/ --include="*.ts" | sort | uniq)
-
-echo "未覆盖的验收标准:"
-comm -23 <(echo "$AC_LIST") <(echo "$COVERED")
-```
-
-### 生成覆盖报告
-
-```bash
-#!/bin/bash
-# generate-traceability-report.sh
-
-echo "# 追溯覆盖报告"
-echo ""
-echo "| 类型 | 总数 | 已覆盖 | 覆盖率 |"
-echo "|------|------|--------|--------|"
-
-# 统计 F
-F_TOTAL=$(grep -coE "F-[0-9]+" docs/devdocs/01-requirements.md)
-F_COVERED=$(grep -rhoE "F-[0-9]+" tests/ --include="*.ts" | sort | uniq | wc -l)
-echo "| 功能点 | $F_TOTAL | $F_COVERED | $((F_COVERED*100/F_TOTAL))% |"
-
-# 统计 AC
-AC_TOTAL=$(grep -coE "AC-[0-9]+" docs/devdocs/01-requirements.md)
-AC_COVERED=$(grep -rhoE "AC-[0-9]+" tests/ --include="*.ts" | sort | uniq | wc -l)
-echo "| 验收标准 | $AC_TOTAL | $AC_COVERED | $((AC_COVERED*100/AC_TOTAL))% |"
-```
-
 ## 维护建议
 
 1. **新增需求时**
@@ -134,7 +94,7 @@ echo "| 验收标准 | $AC_TOTAL | $AC_COVERED | $((AC_COVERED*100/AC_TOTAL))% |
    - 更新追溯矩阵状态
 
 3. **定期审查**
-   - 运行覆盖检查脚本
+   - 对照追溯矩阵核对每条 AC 是否有通过的测试（`/test-run` 的追溯验证）
    - 确保 P0 验收标准 100% 覆盖
 
 4. **CI 集成**
