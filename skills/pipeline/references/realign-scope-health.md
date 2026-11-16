@@ -87,10 +87,10 @@ docs/devdocs/.health-report.md
 
 | 来源 | 用途 |
 |------|------|
-| `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路） |
+| `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路）；`archive/` 只贡献编号定义，自身违规不报 |
 | `.claude/rules/devdocs-state.md` | 维度 c 中 `state-size` / `state-forbidden-content` 专属扫描 |
 | `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔keel 编号引用）⚠️ **未实现**：`health-lint.py` 的 `collect_files()` 只收 `docs/devdocs/`；需由 Agent 按算法补扫 |
-| `docs/devdocs/**`（**全部文件**，含 `.yaml` / `.txt`，⛔ 跳过 `_archived/`）| `layout/*` 三条规则专属扫描（`collect_all()`，⛔ 与喂编号索引的 `collect_files()` 分开）|
+| `docs/devdocs/**`（**全部文件**，含 `.yaml` / `.txt`，⛔ 跳过 `archive/`）| `layout/*` 三条规则专属扫描（`collect_all()`，⛔ 与喂编号索引的 `collect_files()` 分开）|
 
 ### 执行步骤
 
