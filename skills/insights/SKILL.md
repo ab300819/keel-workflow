@@ -261,25 +261,21 @@ generated_at: 2026-04-23T10:30:00+08:00
 
 ### 功能点格式
 
-```markdown
-### F-XXX: <功能名称> [优化]
+⛔ 不自造格式。追加到 `01-requirements.md` 时照 [requirements 模板](../requirements/templates/requirements-template.md) 的现有结构写三处，下游（feature / dev-tasks / verify）只认这个结构：
 
-**来源**：INS-XXX (<来源类型>)
-**优先级**：P0 / P1 / P2
+| 写到哪 | 写什么 |
+|---|---|
+| §2 功能点清单（表格行）| 新 `F-XXX`；「来源」列填 `INS-XXX`；优化 / 技术改进类在「功能点」名称后标 `[优化]` / `[技术债务]`；「变更历史」填本次版本 |
+| §3 用户故事 | 该 F 下至少一条 `US-XXX`（⛔ 新增 F 必须有对应 US）|
+| §4 验收标准 | 挂在对应 US 下的 `AC-XXX`，逐条可验证 |
 
-**描述**：
-<从建议转化的功能描述>
-
-**验收标准**：
-- AC-XXX: <可验证的标准1>
-- AC-XXX: <可验证的标准2>
-```
+决策类洞察同理：按 `/system-design` 的 ADR 格式追加到 02「设计变更记录」节，由本 skill 直接写。
 
 ### 编号规则
 
 >
 
-- 功能点编号：延续 `01-requirements.md` 中的编号（v1: F-XXX / v2: FEAT-XXX）
+- 功能点编号：延续 `01-requirements.md` 中的 `F-XXX` 编号
 - 验收标准编号：延续现有 AC 编号
 - 建议编号：`INS-XXX`
 
@@ -310,7 +306,7 @@ generated_at: 2026-04-23T10:30:00+08:00
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
 | UI/UX 审查来源 | `/ui-orchestrator` | 审查结果可作为洞察来源 |
-| 需求转化 | `/requirements` | 被调用：洞察转化为需求 |
+| 需求转化 | `/requirements` | 格式来源：本 skill 按其模板结构直接追加 01，不调用它 |
 | 设计变更 | `/system-design` | 触发：复杂改进需要设计调整 |
 | 测试补充 | `/test-cases` | 触发：改进建议需要测试覆盖 |
 | 简单改进 | `/dev-tasks` | 无架构变更，直接拆分任务 |

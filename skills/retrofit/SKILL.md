@@ -37,7 +37,7 @@ metadata:
 
 ## 与 realign 的边界
 
-retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmatter + `spec_version` 字段为主判据**：文档顶部 YAML frontmatter 存在且含有效 `spec_version` → 信任元数据，归 **realign**（`/pipeline realign`），无论正文是否缺 F-XXX 编号（编号补齐由 realign 内 additive 差距处理）；反之（无 frontmatter / 无 `spec_version` / 无 keel）归 **retrofit**。详见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 retrofit 的边界。
+retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmatter + `spec_version` 字段为主判据**：文档顶部 YAML frontmatter 存在且含有效 `spec_version` → 信任元数据，归 **realign**（`/pipeline realign`）；此时正文若缺 F-XXX 编号，realign 只报告、⛔ 不补（补编号是业务内容，不属于规范结构差距），要补由用户决定走本 skill 的版本迁移；反之（无 frontmatter / 无 `spec_version` / 无 keel）归 **retrofit**。详见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 retrofit 的边界。
 
 ## 工作流程
 
@@ -151,6 +151,7 @@ retrofit 与 realign（规范升级回扫）**互补不重叠**，**以 frontmat
 
 | 检查项 | 检查内容 | 规范要求 |
 |--------|----------|----------|
+| **元数据** | 文档顶部 frontmatter 含有效 `spec_version` | 必须（主判据，见上节）；迁移完成时由 M4 末步补齐 |
 | **编号体系** | F-XXX, US-XXX, AC-XXX | 必须 |
 | **测试编号** | UT-XXX, IT-XXX, E2E-XXX | 必须 |
 | **追溯矩阵** | F → US → AC → 测试 映射 | 必须 |

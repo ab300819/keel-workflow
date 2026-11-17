@@ -350,7 +350,7 @@ INVEST 标准和 AC 可验证性标准详见 [references/ac-quality-rubric.md](r
 | 场景 | 协作 Skill | 说明 |
 |------|-----------|------|
 | 新功能需求 | `/feature` | 被调用：新功能触发需求追加 |
-| 洞察转化 | `/insights` | 被调用：改进建议转化为需求 |
+| 洞察转化 | `/insights` | 上游：insights 按本 skill 模板结构直接追加 01，不经本 skill |
 | Bug 暴露需求 | `/bugfix` | 被调用：Bug 修复发现需求缺失 |
 | 项目改造 | `/retrofit` | 前置：建立项目基线（存量代码不编号，本 skill 的 F-001 从新需求起） |
 | **基线增量补全** | `/retrofit` | **后续**：基线建立后用 `--context` 补齐 `未知` / `推导待确认` 条目 |

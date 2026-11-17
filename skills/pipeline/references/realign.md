@@ -100,9 +100,8 @@
 
 ## 向后兼容（无元数据的旧产物）
 
-- 阶段 1（纯 flag，无 frontmatter）：产物无 `spec_version` 字段 → 由用户显式 `/pipeline realign` 触发，skill 假设产物 = legacy，直接按当前规范做全量差距扫描。
-- 阶段 2（有 frontmatter）：无字段 → `spec_version: legacy` → 归 `retrofit` 处理（大规模迁移），不由 realign 直接重写。
-- 阶段 3（诊断入口）：`/verify --schema-drift` 扫描所有产物并报告 legacy / drift / current 三态。
+- 产物无 `spec_version` 字段 → 视为 `spec_version: legacy` → 归 `retrofit` 处理（大规模迁移，迁移末步补齐元数据），不由 realign 直接重写。
+- 诊断入口：`/verify --schema-drift` 扫描所有产物并报告 legacy / drift / current 三态。
 
 ## Dry-run 样例（首次调用 vs 二次调用）
 
@@ -271,16 +270,16 @@ dev-workflow 的 realign 在任务正文追加一行：`Realigned-From: <old_spe
 
 ## 与 retrofit 的边界
 
-> 本节与上方"向后兼容"章节自洽：现役各 skill 的产物模板都已带 frontmatter 与 `spec_version`，**阶段 2 规则是当前规则**。「阶段 1」一行只适用于模板引入 frontmatter 之前生成的存量产物。
+> 判据只有一个：产物有没有有效的 `spec_version`。现役各 skill 的产物模板都已带 frontmatter 与 `spec_version`；没有的一律是存量产物，归 retrofit。
 
 | 场景 | 归属 |
 |---|---|
 | 无 keel → keel 首次化 | **retrofit**（现状不变） |
-| 阶段 2 起：产物无 frontmatter 或无 F/US/AC 体系（**基线项目除外**：有 `00-baseline.md` 且无 `01`~`04` 时属终态，retrofit 会驳回） | **retrofit**（M1 流程） |
-| 阶段 1：产物无 frontmatter（尚未引入元数据） | **realign**（用户显式 --realign 时按 legacy 全量扫描） |
+| 产物无 frontmatter 或无 `spec_version`（**基线项目除外**：有 `00-baseline.md` 且无 `01`~`04` 时属终态，retrofit 会驳回） | **retrofit**（M1 流程） |
 | 已合规 keel + 单个 skill 的 spec_version 升级 | **realign**（本契约） |
 | 已合规 keel + 跨多 spec 大版本升级 | `pipeline realign` 依次调度各 skill realign |
 | 产物 frontmatter 标 `legacy` | 归 retrofit 处理 |
+| 有 frontmatter 与有效 `spec_version`，但正文缺 F/US/AC 编号 | **realign 只报告**，⛔ 不补编号（`realign/no-business-rewrite`）；要补由用户决定走 retrofit 版本迁移 |
 
 ## 与 codebase-insight 的关系
 
