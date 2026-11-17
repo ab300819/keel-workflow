@@ -2,13 +2,13 @@
 
 > 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
 >
-> 本文件 15 条 rule：11 条 **project scope**（解决 devdocs-state 膨胀 / 陈旧 + 死链 + 自造编号前缀 + 布局清单一致性），
-> 4 条 **skill-library scope**（`flag/dangling-reference` + `skill/*`，⛔ 扫描对象不同，走 `--skills-dir`）。
+> 本文件 16 条 rule：11 条 **project scope**（解决 devdocs-state 膨胀 / 陈旧 + 死链 + 自造编号前缀 + 布局清单一致性），
+> 5 条 **skill-library scope**（`flag/dangling-reference` + `skill/*`，⛔ 扫描对象不同，走 `--skills-dir`）。
 
 ## 目录
 
 - 定位
-- Rule 集（[新增] 15 条）
+- Rule 集（[新增] 16 条）
 - Rule 详情
 - Baseline 与增量扫描
 - 退出码（CLI 集成）
@@ -26,7 +26,7 @@
 | **本文件**：[新增] rule 的检测算法、严重度、修复路径（清单见下方 Rule 集表）| health-lint-implementation.md |
 | 既有偏差评分 | `../../sync/references/health-scoring.md` |
 
-## Rule 集（[新增] 15 条）
+## Rule 集（[新增] 16 条）
 
 | rule_id | 严重度 | 维度 | 适用 | 自动修复 |
 |---------|--------|------|------|---------|
@@ -45,8 +45,9 @@
 | `layout/unregistered-split` | ⚠️ | b 索引/链接 | v1+v2 | ❌（manual_decision）|
 | `layout/size-cap` | ⚠️ | c 过大 | v1+v2 | ❌（manual_decision）|
 | `skill/dead-link` | ⚠️ | b 索引/链接 | **skill 库** | ❌（manual_decision）|
+| `skill/retired-term` | ⚠️ | a 结构正确性 | **skill 库** | ❌（manual_decision）|
 
-> 15 条全部 [新增]；其中 `design/adr-only-revision` 与 `submodule/pointer-drift` 脚本输出 `not_implemented`，需 Agent 按算法补执行。⚠️ `flag/dangling-reference` 扫 skill 库不扫项目，走 `--skills-dir`，**不在** `--scope=health` 的 11 条之内。项目可直接调 `/pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+> 16 条全部 [新增]；其中 `design/adr-only-revision` 与 `submodule/pointer-drift` 脚本输出 `not_implemented`，需 Agent 按算法补执行。⚠️ `flag/dangling-reference` 扫 skill 库不扫项目，走 `--skills-dir`，**不在** `--scope=health` 的 11 条之内。项目可直接调 `/pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
 
 ---
 
@@ -60,6 +61,7 @@
 | `skill/size-cap` | `SKILL.md` > 500 行 | ⛔ | [AGENTS.md](../../../AGENTS.md) 硬约束 |
 | `skill/name-mismatch` | 目录名 ≠ frontmatter `name`，或目录缺 `SKILL.md` | ⛔ | 安装按 `name` 复制整个目录，跨 skill 相对引用依赖该约定 |
 | `skill/dead-link` | 仓内相对链接（`./` `../` 开头）目标不存在 | ⚠️ | — |
+| `skill/retired-term` | 出现已删除机制的说法（词表是脚本里的 `RETIRED_TERMS`；删机制时把它的专有词加进去）| ⚠️ | 防止删掉的入口被后续改动写回来 |
 
 **`skill/dead-link` ⛔ 跳过 `templates/`**：模板会复制进用户项目，其中相对路径按**产物落点**算，
 不是仓内路径。实测 `prd/templates` 的 `../../codebase-insight.md` 在仓内不存在，但模板落到
@@ -640,7 +642,7 @@ notes: |
 
 **⛔ 先跑脚本，不要逐条人肉扫。** [`../scripts/health-lint.py`](../scripts/health-lint.py) —— 零依赖 stdlib。
 
-⚠️ **改本文算法后跑一次 `--selftest`**（内置夹具，覆盖 12 条）。本仓无 CI，它是唯一会响的东西。
+⚠️ **改本文算法后跑一次 `--selftest`**（内置夹具，覆盖 13 条）。本仓无 CI，它是唯一会响的东西。
 
 | 入口 | 用途 |
 |---|---|
@@ -740,10 +742,10 @@ v1 仍不含 `--apply` / 自动修复。
 
 ## Finding 输出 schema
 
-所有 15 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
+所有 16 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
 
 ```yaml
-- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix | layout/unknown-path | layout/unregistered-split | layout/size-cap | flag/dangling-reference | skill/size-cap | skill/name-mismatch | skill/dead-link
+- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix | layout/unknown-path | layout/unregistered-split | layout/size-cap | flag/dangling-reference | skill/size-cap | skill/name-mismatch | skill/dead-link | skill/retired-term
   severity: blocker | warning
   file: <relative-path>
   line: <int 或 null>
