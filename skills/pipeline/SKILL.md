@@ -92,7 +92,9 @@ user-invocable: true
 | `--dry-run` | 只出差距报告，**业务产物零写入**；scope=health 允许写 `.health-report.md` 作报告载体 |
 | `--apply` | 执行已确认的迁移 / 补齐动作 |
 | `--fix=<rule_id>` | 仅 scope=health；仅修复指定 rule 的违规（须配 `--dry-run` 或 `--apply`，未配视为 `--dry-run`）|
-| `--no-realign` | 拒绝升级提示，写入 `.devdocs-realign-ack`（`--headless` 时必需） |
+| `--no-realign` | 拒绝升级提示，写入 `.devdocs-realign-ack`（无法向用户提问的运行环境下，调用方必须显式给 `realign` 或 `--no-realign` 之一）|
+
+`--scope=health` 另有专属参数（`--baseline-init` / `--changed-only` / `--since-baseline` / `--no-report-file` / `--max-commits-drift` / `--skip-manual`），只在该 scope 下有效，定义见 [references/realign-scope-health.md](references/realign-scope-health.md)。
 
 ## 提问式调度（智能引导）
 
@@ -225,7 +227,7 @@ Q3（feature/bugfix 追加，可选）:
   - 理由：版本号和进度是**自己造的现状**，代码里读不出来，天然需要有人定。没有真实发布节点可依时，版本号只能当占位符用，被大量引用后回潮难防；在源头问一次的成本远低于事后清理。
   - 接手既有项目走 `retrofit`，同一个问题在 `00-baseline.md` §2.1 问，两条路径结论都落 AGENTS.md。
 - **close 脚手架清理**：close 末步委托 `prd clear` 清理 `docs/prd/` 一次性脚手架；先 dry-run 出范围 + 影响（孤儿 / 未同步项默认不删），⚠️ 必须确认后 `--apply` 删除；无 `docs/prd/` 时静默跳过。pipeline 只委托不自己删文件（见 prd [清理脚手架](../prd/SKILL.md#清理脚手架close-收尾)）。
-- **realign 协调机制**：realign 非续做信号；restructuring 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；`--headless` 必须显式 `--realign` 或 `--no-realign`。
+- **realign 协调机制**：realign 非续做信号；restructuring 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；无法向用户提问的运行环境下，调用方必须显式给 `/pipeline realign` 或 `--no-realign` 之一。
 - **工作区拓扑（`init`）**：`requirements` 完成后（首次产生 `docs/devdocs/`）执行 `Task: /workspace-topology reconcile`。该 skill 自己写 `AGENTS.md` 的 `workspace:` 块，**不经 `agent-memory` 代写**——`devdocs_frontmatter` 入参不再传 workspace 字段。无声明时它问一次 mode 与代码根并落声明，此后不再问。另在流程开头调一次 `/workspace-topology inspect`，把结果经握手的 `workspace_context` 下传给各原子 skill（见 [shared/constraints.md §3](../shared/constraints.md) `task/workspace-context`）。retrofit 场景的路径由 [retrofit/SKILL.md](../retrofit/SKILL.md) 自己承载。
 
 ### Sprint Contract 握手
