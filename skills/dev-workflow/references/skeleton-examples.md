@@ -61,7 +61,7 @@ Impl Agent 在 S6 以最小实现让测试转绿——业务逻辑/边界/异常
 ```typescript
 export class CreateOrderService {
   async execute(input: CreateOrderInput): Promise<Order> {
-    throw new Error('TODO(T-XX): replace with minimal implementation');
+    throw new Error('Not implemented');
   }
 }
 ```

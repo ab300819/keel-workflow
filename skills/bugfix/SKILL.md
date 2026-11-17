@@ -349,6 +349,8 @@ Fixes #123
 | 复杂 Bug 开发 | `/dev-workflow` | Task tool 子 Agent |
 | 文档同步 | `/sync` | Task tool 子 Agent |
 
+⛔ `/dev-workflow` 返回 `status: partial`（里程碑段末等人验证）时不得当成完成：bugfix 自身也返回 `partial`，并把 `details.milestones_pending` 与 `next_recommended` 原样上传——上层编排只看信封判停。
+
 ### 调度原则
 
 1. **上下文隔离**：每个子 Agent 自行读取所需文档，bugfix 编排层不传递全文
@@ -416,6 +418,7 @@ summary:
     related: { feature: F-XXX | baseline, ac: AC-XXX | null }
     test_added: [UT-025]
     commit_hash: "abc1234"
+    milestones_pending: []   # 仅复杂 Bug 路径的 dev-workflow 返回 partial 时原样透传；此时本信封 status 也为 partial
 blockers: []
 output_files:
   - docs/devdocs/05-bugfix-log.md

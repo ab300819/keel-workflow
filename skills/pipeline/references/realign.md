@@ -126,7 +126,7 @@
 
 ## 建议动作
 
-- /system-design --realign  # 补齐 2 项 additive（§15 设计审查"原则校验"列、ADR"升级原因"条目）
+- /system-design --realign  # 补齐 2 项 additive（「设计审查」节"原则校验"列、ADR"升级原因"条目）
 - /retrofit  # legacy 产物（无 spec_version）归 retrofit 处理，见下方「与 retrofit 的边界」
 - （04-dev-tasks.md 无需动作）
 

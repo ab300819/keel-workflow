@@ -117,7 +117,7 @@ devdocs:                       # keel 项目才有；非 keel 项目只有 works
 | 子模块内 `AGENTS.md` / `CLAUDE.md` | 子模块 | **不主动创建、不主动改**；已存在则读取并尊重其编码纪律 |
 | `code-self-describe` 的模块级 `CLAUDE.md` + 文件头注释 | — | shell 下**默认跳过**，仅 `--force-code-docs` 显式启用 |
 | dev-workflow 流程内的「自描述更新」步骤 | — | 同上，跳过时在 yaml 摘要里 ℹ️ 记录跳过原因 |
-| `@satisfies` / `@verifies` 代码注释 | — | shell 下**禁用**——子模块是开源上游，keel 元信息不得进入 |
+| 代码注释里的 keel 编号 | — | 任何拓扑都不写（见 dev-workflow「代码零 keel 编号」）；shell 下尤其不得进入开源上游 |
 | `.claude/settings.local.json`、`.remember/` | 外壳仓 | 参考仓既有实践 |
 
 **违约检测**：dev-workflow / bugfix 提交前，对每个变更子模块跑 `git status --porcelain`，**列出全部变更路径清单**交用户判断（⚠️ AskUserQuestion：提交 / 排除 / 终止）。**不预先判定哪条是「非源码」** —— 上游仓目录约定各异，静态白名单会误伤。裁法与 §4 `workspace/root-residue` 一致。

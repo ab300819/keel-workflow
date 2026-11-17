@@ -56,7 +56,7 @@ metadata:
 /verify --impl --live      → 显式启用实际交互验证（启动应用 + 浏览器自动化）
 /verify --ui               → UI 设计对齐（两阶段默认覆盖）
 /verify --readiness        → 开发就绪检查（进入 dev-workflow 前的质量关卡）
-/verify --schema-drift     → 合并 drift 报告（schema drift + layout drift）
+/verify --schema-drift     → schema drift 报告
 /verify T-01 T-02          → 指定任务范围（自动 --impl）
 ```
 
