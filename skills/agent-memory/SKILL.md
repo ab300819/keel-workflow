@@ -124,8 +124,8 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
    ├── Bash: wc -c .claude/rules/devdocs-state.md
    ├── 读取 .claude/rules/.health-baseline.yml（若存在）→ 取其中 `devdocs_state_size_bytes` 作 baseline 大小
    ├── 计算 delta = current_size - baseline_size
-   ├── delta < 0（缩小）→ 不阻断，更新 baseline
-   ├── 0 ≤ delta < 2 KiB（小幅增长）→ 不阻断，更新 baseline
+   ├── delta < 0（缩小）→ 不阻断
+   ├── 0 ≤ delta < 2 KiB（小幅增长）→ 不阻断
    ├── delta ≥ 2 KiB 且 size > 10 KiB → ⚠️ 提示 `/pipeline realign --scope=health --dry-run`
    ├── size > 40 KiB AND 无 baseline → ⛔ 阻断；用户两种恢复方式：
    │     a. /pipeline realign --scope=health --apply 修复后重跑 update
@@ -135,11 +135,13 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
 
 **baseline 文件**：`.claude/rules/.health-baseline.yml`（gitignore 推荐加入；首次 bypass 时自动生成）
 
-⛔ **本 skill 不手写该文件。** 它的唯一写入方是 health-lint 脚本，读取器只认脚本自己写的固定结构，手写的会被判 `health/baseline-corrupt`。「init baseline」与上文「更新 baseline」一律执行：
+⛔ **本 skill 不手写该文件。** 它的唯一写入方是 health-lint 脚本，读取器只认脚本自己写的固定结构，手写的会被判 `health/baseline-corrupt`。「init baseline」（仅首次 bypass 时）执行：
 
 ```bash
 python3 <keel>/skills/pipeline/scripts/health-lint.py --target <项目根> --baseline-init
 ```
+
+⛔ 日常 update 不刷新 baseline。该脚本写的是整份快照（体积之外还有当前的死链、禁用内容、未知前缀清单），每次 update 都重写等于把新出现的违规悄悄记成存量，之后 `--since-baseline` 就不报了。baseline 只在首次 bypass 时建立；之后要重置由用户显式跑 `/pipeline realign --scope=health --baseline-init`。
 
 结构见 [health-lint-implementation.md § Baseline 文件](../pipeline/references/health-lint-implementation.md)。bypass 原因不进该文件，记入本次 yaml 摘要的 `summary.details.bypass_reason`。
 

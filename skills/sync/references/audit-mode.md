@@ -68,7 +68,7 @@
 
 天数算法：`提出` 为 ISO 日期，与当前日期作差。⛔ **不用「躺过几个版本」**——「已发布版本」无权威源（git tag / 商店版本 / release note / 里程碑各不相同），算出来不可复核。
 
-> ⚠️ 60 / 120 天是**默认值，非实测**。项目 `AGENTS.md` 可写 `devdocs.needs_review_aging: {warn: N, block: M}` 覆盖。
+> ⚠️ 60 / 120 天是**默认值，非实测**。项目 `AGENTS.md` 可写 `devdocs.needs_review_aging: {warn: N, close: M}` 覆盖（两档都只是提示，⛔ 不阻塞流程）。
 
 ## 修复建议
 

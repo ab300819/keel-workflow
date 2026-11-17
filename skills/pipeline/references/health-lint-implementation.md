@@ -524,7 +524,7 @@ Phase B：扫描引用 + 范围编号展开
 
 - 文档拆分模式（02-system-design-api.md / -data.md）：跨多文件 commit 时聚合判定（任一文件含正文修改即视为"有正文同期更新"）。
 - 初始设计模式（首次创建 02-system-design.md，整文件新建）→ 跳过（不区分 ADR vs 正文）。
-- ADR 章节位置识别基于 SKILL.md § 文档结构 第 16 章定义；项目使用其他章节号时，rule 通过 markdown heading 内"设计变更记录" / "ADR" 关键字识别。
+- ADR 章节无编号（system-design 模板的「设计变更记录（ADR 格式）」节）；rule 通过 markdown heading 内"设计变更记录" / "ADR" 关键字识别。
 - 用户主动豁免：在 commit message 加 `[adr-only-ok]` 或 `[skip-revision-check]` 标记 → 跳过该 commit。
 
 **与 verify --docs 层 2 的关系**：

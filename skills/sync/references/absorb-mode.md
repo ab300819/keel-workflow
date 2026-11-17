@@ -39,11 +39,12 @@
 | 任务状态 | 文件存在 + 测试通过 | 04-dev-tasks.md | ⏳ → ✅；⛔ `review_pending` 的任务不翻——它只能经 `/verify --review-drain` 转已完成（见 [constraints.md § review_profile 与 review_pending](../../shared/constraints.md)）|
 | 测试结果 | 测试运行结果 | 04-dev-tasks.md | 更新"测试结果"字段 |
 | 追溯矩阵状态 | 测试文件存在 | 03-test-cases.md | ⏳ → ✅ |
+| 追溯矩阵「变更来源」 | 任务台账的 `commits` | 03-test-cases.md | trace 阶段报告为空的行，按该任务「关联需求」里的 AC，把台账里的 `<repository>@<sha>` + 描述照抄过来；⛔ 只从台账抄，不从代码或 git log 推断 |
 | 执行检查清单 | 文件 + 测试 + 提交 | 04-dev-tasks.md | 自动勾选 |
 
 **自动吸收条件**：
-- 仅更新**状态字段**（✅/⏳/❌）
-- 不新增内容，不删除内容
+- 仅更新**状态字段**（✅/⏳/❌），或照抄任务台账里已登记的事实（变更来源）
+- 不新增其它内容，不删除内容
 - 不修改描述性文字
 
 ### 高风险（需确认）
