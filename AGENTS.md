@@ -11,9 +11,8 @@ keel 是以插件形式分发的通用开发 harness，为 AI 辅助开发提供
 - **默认路径**：本仓元开发没有 process owner skill，本文件就是流程。遵循 ROI 判据、外科式改动和下述验证要求，不为定点修改启动头脑风暴、计划编写、计划执行或分支收尾类 skill。
 - **ROI 判据**：新增通用机制、流程或抽象前，单个项目的摩擦优先给绕法（见 [docs/workflows.md](docs/workflows.md)），等第二个项目遇到同一问题再推广；已确认的错误或协议矛盾按最小范围修复。每轮审查都冒出新耦合是过拟合信号，不是继续加固的理由；封存案例见 [模式 B 调研](docs/superpowers/specs/2026-09-14-mode-b-chg-design.md)。
 - **例外：走 superpowers 完整流程**。新建整个 skill、跨 skill 协议改动或推翻既有架构决策时，依次执行 `brainstorming` → `writing-plans` → `executing-plans`，先出设计稿再动手。
-- 执行上述例外前检查所需技能是否可用；缺失时说明缺失项及受阻步骤，提出替代路径供用户决定，不声称已执行缺失技能。无依赖的资料核对可继续。
 - 除上述例外，不启动外部端到端流程 skill 的流程门，可采用其产物约定；`agent-memory`、环境管理等专项技能可按需使用。设计稿统一放在 `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`。
-- **独立审查**：需要第二意见时用 codex（`/adversarial-review` 或直接 `codex exec`）；规格改动审查规则与协议，脚本和 hooks 改动审查代码行为，不另套外部 review 流程门。
+- **独立审查**：需要第二意见时用 codex（`/adversarial-review` 或直接 `codex exec`）；规格改动审查规则与协议，脚本和 hooks 改动审查代码行为，不另套外部 review 流程门。任务写在命令行参数里时必须关闭标准输入（`codex exec … "<任务>" < /dev/null`），否则一直等输入。
 
 ## 架构与分发
 
@@ -28,9 +27,10 @@ keel 是以插件形式分发的通用开发 harness，为 AI 辅助开发提供
   | Codex | 根 `plugin.json`（Agent Plugins 可移植格式 + `extensions.com.openai`）、`.agents/plugins/marketplace.json` | 可用 `/keel:<name>` |
   | OpenCode（仅 v2） | 根 `package.json`（`main` → `hooks/opencode-plugin.js`，由插件注册 skill 并挂 hooks），`opencode plugin add github:…` 安装 | 无命名空间，只能裸名 |
 
+- 分发按版本号键控：改了 skill 或 hook 要发布时，同步升各 manifest 的 `version`，否则已安装的项目更新后拿不到改动。
 - 不使用 `.codex-plugin/` 兼容回退；根 `plugin.json` 带 `extensions.com.openai` 时该回退整体失效。
 - skill 名不带前缀；执行路径中的委托一律用裸名（如 `Task: /agent-memory`），`keel:` 前缀只用于给人看的文档。
-- 编排层通过子代理调度原子 skill；`Task` 是规范中的委托接口，执行前核对当前工具能力，不能把文件中的工具名当作已安装能力。
+- 编排层通过子代理调度原子 skill；`Task` 是规范中的委托接口，执行前核对当前工具与技能是否可用，缺失时说明受阻步骤并给替代路径，不声称已执行。
 
 ## 修改约束
 
