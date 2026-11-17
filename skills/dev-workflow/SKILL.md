@@ -364,14 +364,13 @@ Tests: <实际执行过的精确命令>
 
 ## 任务台账（流程状态的唯一载体）
 
-原先挂在 Commit 1 尾注的 7 个流程字段全部迁到 `04-dev-tasks.md` 的任务条目。
+原先挂在 Commit 1 尾注的流程字段全部迁到 `04-dev-tasks.md` 的任务条目。
 它们的语义本来就是「**T-07 这个任务**的外审还欠着」——主体是任务不是 commit。
 
 | 字段 | 何时填 | 语义 |
 |---|---|---|
-| `commits` | Commit 1 落盘后由 Commit 2 写入 | `<repository>@<full-sha>` + `patch_id` + 一句话描述，可多条。**与追溯矩阵 `changed_by` 同形状**，共用 §2.4 三级降级链 |
-| `review_state` | fast/guarded 延后时 | `pending` / `done` |
-| `batch` / `due` | 同上 | 批次 ID / `sprint:<id>` 或 `YYYY-MM-DD` |
+| `commits` | Commit 1 落盘后由 Commit 2 写入 | `<repository>@<full-sha>` + 一句话描述，可多条。**与追溯矩阵「变更来源」同形状** |
+| `batch` / `due` | fast/guarded 延后时 | 批次 ID / `sprint:<id>` 或 `YYYY-MM-DD` |
 | `pending_reason` | 同上 | `deferred-fast` / `deferred-guarded` |
 | `ext_review_state` | audit Phase 4 | `EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED` |
 | `profile_downgrade_reason` | 显式降档时 | 降档理由（升档不需要）|
@@ -379,19 +378,18 @@ Tests: <实际执行过的精确命令>
 | `exploration_mode` | 探索模式 | `true` + 证据/豁免原因 |
 
 ⛔ **绑任务编号，不绑 commit hash。** squash / rebase 改 hash 时，`commits` 字段
-的考古索引会失效，但**门控状态（`review_state` / `batch` / `due`）不受影响**——
+的考古索引会失效，但**门控状态（任务状态 `review_pending` / `batch` / `due`）不受影响**——
 这是分开绑的理由。
 
-**`commits` 失效时的降级链**（与追溯矩阵同一套，见 sync `trace-mode.md`）：
+**`commits` 失效时的处理**（与追溯矩阵同一套，见 sync `trace-mode.md`）：
 
 | 情形 | drain 怎么做 |
 |---|---|
 | sha 可解析 | 取该 commit 的 diff 送外审 |
-| sha 不可解析 + 有 `patch_id` | 在当前历史中找等价提交，找到则更新 `commits` 并继续 |
-| 都找不到 | ⚠️ 报 `drain.commit_not_found`，保持 `review_pending`；**Recovery**：人工按描述定位提交后回填 `commits`，或显式改用当前代码状态重审（须在报告单列）|
+| sha 不可解析 | ⚠️ 报 `drain.commit_not_found`，保持 `review_pending`；**Recovery**：人工按描述定位提交后回填 `commits`，或显式改用当前代码状态重审（须在报告单列）|
 
 ⛔ **不得因为定位不到就判 `EXT_REVIEWED`**——无审查即无证据。但也 ⛔ 不得让任务
-永久卡死：上表第三行的 Recovery 是明确出路，必须给出，不能只报错。
+永久卡死：上表第二行的 Recovery 是明确出路，必须给出，不能只报错。
 
 **合法 `ext_review_state` 枚举**：`EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED`。
 禁用 `CONVERGED` / `DEGRADED` / `SKIPPED` 等非 canonical 词汇。
