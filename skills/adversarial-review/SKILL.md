@@ -49,7 +49,7 @@ metadata:
 
 审查对象可以是：工作区 diff（默认）、指定文件、方案文本、或当前对话中的方案描述。
 
-**独立出方案 / 独立调研**：用户要第三方从问题出发独立给答案（而非审查已有产物）时，⛔ 不走下文 S1–S6，改按 [references/independent-work.md](references/independent-work.md) 执行——brief 只给用户原话与硬约束、不给我方方案；复用 S3 调度与截断规则；消费时只核实事实断言与分歧，不算健康分、不熔断。
+**独立出方案 / 独立调研**：用户要第三方从问题出发独立给答案（而非审查已有产物）时，⛔ 不走下文 S1–S6，改按 [references/independent-work.md](references/independent-work.md) 执行——brief 只给用户原话与硬约束、不给我方方案；复用 S2.5 询问、S3 调度与截断规则；消费时只核实事实断言与分歧，不算健康分、不熔断。
 
 ## 核心工作流
 
@@ -114,7 +114,7 @@ S1 上下文收集 → S2 构建审查 brief → S2.5 询问审查方式（双�
 
 ### S2.5 询问审查方式
 
-调度前问用户一次：双方共同审查、只用 codex、还是只用 agy。何时不问、选项怎么写、无法提问时的默认值，见 [cross-validation.md § 询问审查方式](references/cross-validation.md)。
+先探测两方是否可用，再问用户一次：双方共同审查、只用 codex、还是只用 agy。何时不问、选项怎么写、无法提问时的默认值，见 [cross-validation.md § 询问审查方式](references/cross-validation.md)。
 
 ### S3 外部审查调度
 
@@ -143,7 +143,7 @@ S1 上下文收集 → S2 构建审查 brief → S2.5 询问审查方式（双�
 3. 轮询 → `mcp__codex-mcp__check-task` 直到完成
 
 **T3 Task 子 Agent**（兜底）：
-- 触发条件：T1 / T1b / T2 均失败
+- 触发条件：所选的外部审查方全部未成功且用户同意，见 [cross-validation.md § 一方失败](references/cross-validation.md)；无法提问的调用沿用旧行为（T1 / T1b / T2 均失败）
 - 子 Agent 使用独立审查员角色 prompt（见 [`references/external-reviewer-integration.md`](references/external-reviewer-integration.md)）
 - ⚠️ **必须标注检出率折损**：T3 与被审对象同模型、同盲区。降到 T3 时结论里标明「本轮降级审查」，⛔ 不得让「审过了」掩盖「审得更浅了」
 
@@ -374,13 +374,13 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 - [ ] 审查对象必须明确（diff / 文件路径 / 方案文本）
 
 ### 审查调度约束
-- [ ] 首选探测按 **T1→T2→T3**；⛔ **T1b 不参与首选探测**（它只是 T1 的另一个计费出口，由「额度耗尽」这一类失败在运行期触发）
+- [ ] codex 一侧首选探测按 **T1→T2**（交互调用到 T2 为止，T3 的触发见 cross-validation.md § 一方失败；无法提问的调用才延伸到 T3）；⛔ **T1b 不参与首选探测**（它只是 T1 的另一个计费出口，由「额度耗尽」这一类失败在运行期触发）
 - [ ] 首选通道探测仅做一次（首次调用时）；记录 primary_method 和 review_method
 - [ ] **冒烟调用必须含一次真实工具调用**（纯问答通过不算可用——实测存在"纯问答通、工具调用全败"的后端）
 - [ ] T1 代码审查使用 `--output-schema` 获取结构化 JSON；JSON 校验按 § T1 第 5 步分流（截断 ⛔ 不回落文本；仅「完整但格式异常」才降级文本解析）
 - [ ] **失败必须先分类再决定路由**（见 § 失败分类）；⛔ 额度类不得降 T2（共用订阅）
 - [ ] **⛔ 有输出但无裁决 = 截断，不得当审查结果消费**；标 `truncated: true`
-- [ ] 额度耗尽且 T1b 不可用 → **报告并停下等用户决定**，⛔ 不自动降 T3
+- [ ] 额度耗尽且 T1b 不可用 → **报告并停下等用户决定**，⛔ 不自动降 T3（双方模式下 agy 已成功时不停，按单方继续并如实标注）
 - [ ] 降到 T3 时结论必须标注检出率折损
 - [ ] 交互调用先问审查方式（S2.5）；双方模式同一份 brief 并行发两方，⛔ agy 的模型不得与宿主或 codex 同族
 - [ ] ⛔ 一方失败或截断不得静默：结论首行写明本轮只有哪一方、另一方为何未完成
@@ -441,7 +441,7 @@ summary:
     review_target: "工作区 diff / 文件路径 / 方案描述"
     review_type: "代码审查 / 方案评审 / 文档审查 / 独立方案 / 独立调研"
     review_method: cross | codex-cli | codex-cli-alt | codex-mcp | agy-cli | task-subagent  # 两方都成功填 cross，否则填实际生效的通道
-    primary_method: codex-cli | codex-mcp | task-subagent  # 首次探测锁定；⛔ 不含 codex-cli-alt（T1b 不参与首选探测）
+    primary_method: codex-cli | codex-mcp | task-subagent | null  # 首次探测锁定，未启用 codex 填 null；⛔ 不含 codex-cli-alt（T1b 不参与首选探测）
     fallback_events: []          # 降级事件列表，如 ["R2: codex-cli→codex-cli-alt (quota)"]
     truncated: false             # ⛔ true = 本轮有输出但无裁决，findings 不可信
     quota_exhausted: false       # 本轮是否遇到额度/限流耗尽

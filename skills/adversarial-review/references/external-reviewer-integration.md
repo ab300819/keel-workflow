@@ -63,6 +63,8 @@ T2 尝试 codex-mcp 首次调用 → 成功则 T2 为首选
 T3 使用 Task 子 Agent 为首选（无条件可用）
 ```
 
+> ⛔ **交互调用（S2.5 会询问审查方式）时，探测只到 T2 为止**：T1、T2 都不可用即判「codex 不可用」，⛔ 不把 T3 锁成首选。T3 何时能用以 [cross-validation.md § 一方失败](cross-validation.md) 为准。上图最后一行只适用于无法提问、沿用改造前行为的调用。
+
 > **T1b 不参与首选探测。** 它只在运行期被「额度/限流耗尽」这一类失败触发（见 SKILL.md § 失败分类），
 > 因为它与 T1 是同一通道的不同计费后端，正常情况下没有理由用它。
 
@@ -446,7 +448,7 @@ CODEX_HOME=<绝对路径> codex exec --sandbox read-only --output-schema <schema
 
 ### 触发条件
 
-T1 和 T2 均失败时使用。
+所选的外部审查方全部未成功，且用户同意降级时使用，判据见 [cross-validation.md § 一方失败](cross-validation.md)。无法提问的调用沿用改造前行为：T1 和 T2 均失败时使用。
 
 ### 子 Agent 审查员 Prompt
 
@@ -502,20 +504,23 @@ T1 和 T2 均失败时使用。
 
 > 2026-11 本机 `agy` 1.5.7 实测。只在 skill multi-turn 模式使用；没有备用通道，失败即该方失败（处置见 [cross-validation.md § 一方失败](cross-validation.md)）。
 
+### 模型选取
+
+`agy models` 列出 `<id>\t<显示名>`。⛔ 不得选与宿主 Agent 同族或与 codex 同族的模型——那会让交叉验证退化成自审。默认取剩余模型里的最高档；用户口头指定时以用户为准。
+
 ### 检测
 
 `which agy`，再做一次**含真实工具调用**的冒烟（理由同 T1）：
 
 ```bash
-agy -p "读取当前目录下任意一个文件的第一行并原样输出，然后输出 OK" \
-    --mode plan --sandbox --model <模型 id> --print-timeout 120s < /dev/null
+SENTINEL="agy-smoke-$$"; SMOKE=$(mktemp); OUT=$(mktemp)
+echo "$SENTINEL" > "$SMOKE"
+agy -p "读取文件 $SMOKE 并原样输出其内容，不要解释。" --mode plan --sandbox \
+    --add-dir "$(dirname "$SMOKE")" --model <模型 id> --print-timeout 120s < /dev/null > "$OUT"
+RC=$?
 ```
 
-退出码 0 且输出含 `OK` 才算可用。⛔ 同样不得接 `| grep -q`。
-
-### 模型选取
-
-`agy models` 列出 `<id>\t<显示名>`。⛔ 不得选与宿主 Agent 同族或与 codex 同族的模型——那会让交叉验证退化成自审。默认取剩余模型里的最高档；用户口头指定时以用户为准。
+判据与 T1 相同，三条同时成立才算可用：退出码 0 **且** 输出非空 **且** 输出含哨兵。⛔ 不得只看退出码——实测 agy 在工具被拒时**退出码仍是 0、输出为空**。
 
 ### 调用
 
@@ -525,17 +530,21 @@ agy -p "<brief>" --mode plan --sandbox --model <id> --print-timeout 600s < /dev/
 
 # 代码审查（结构化）
 agy -p "<brief>" --mode plan --sandbox --model <id> --print-timeout 600s \
-    --output-format json --json-schema references/review-output.schema.json < /dev/null
+    --output-format json --json-schema "$SCHEMA_ABS" < /dev/null   # SCHEMA_ABS = 本 skill 目录下 references/review-output.schema.json 的绝对路径
 ```
 
 - ⛔ `--print-timeout` 必须带单位（`600s` / `10m`），纯数字会被拒绝并打印用法（退出码 2）。
 - ⛔ 必须 `< /dev/null`：brief 走命令行参数，标准输入不关会一直等。
 - `--mode plan --sandbox` 下不写工作区（实测后 `git status` 干净）。
-- brief 过长放不进命令行参数时，先写到临时文件，再让 brief 正文只说「读取 <路径> 并按其中要求执行」。
+- ⛔ **agy 在此模式下不能执行命令**（`git diff` / `git show` 都会被拒，见下方失败信号）。brief 与 diff 先写成临时文件，命令行只说「读取 <路径> 并按其中要求执行」，并用 `--add-dir <临时目录>` 放行该目录；仓库内的文件它可以直接读。
+- 结构化代码审查的 schema 与 T1 是同一个文件（`skills/adversarial-review/references/review-output.schema.json`），先解析成**绝对路径**再传；提示词用 § Adversarial Prompt 模板，与 codex 一致。
+- 联网能力未实测。需要联网的独立调研，agy 一侧先按「只能读本地文件」对待，并在结论里写明。
 
 ### 解析
 
-结构化输出是一个外层 JSON，审查结果在它的 `response` 字段里，且该字段在 JSON 之前**带有过程叙述文字**。取 `response` 中**最后一个完整的顶层 JSON 对象**，再按 schema 校验；取不到或缺 `verdict` → 判截断，其余分流同 SKILL.md § T1 第 5 步。文本类输出的截断判定同样看尾标记。
+**先判失败，再判截断**：退出码非 0，或输出为空 → 按下方失败信号归类为失败，⛔ 不按截断重跑。输出非空时才往下解析。
+
+结构化输出是一个外层 JSON，审查结果在它的 `response` 字段里，且该字段在 JSON 之前**带有过程叙述文字**。取 `response` 中**最后一个完整的顶层 JSON 对象**，再按 schema 校验；取不到或缺 `verdict` → 判截断，其余分流同 SKILL.md § T1 第 5 步。严重程度映射与 F-XXX 合成沿用上方 § 输出解析。文本类输出的截断判定同样看尾标记。
 
 ### 失败信号
 
@@ -543,6 +552,7 @@ agy -p "<brief>" --mode plan --sandbox --model <id> --print-timeout 600s \
 |---|---|---|
 | 模型不可用 | 退出码 1，stderr `invalid model selection … is not recognized as a known model` | ✅ |
 | 参数错误 | 退出码 2，stderr 打印用法 | ✅ |
+| 工具权限被拒 | **退出码 0、输出为空**，stderr `no output produced — a tool required the "command" permission` | ✅（brief 让它跑 `git show` 时出现）|
 | 超时 | 超过 `--print-timeout` 无完整输出 | 未实测 |
 | 额度 / 限流、鉴权失效 | 信号文本未知 | 未实测——遇到时原文照抄进结论，并补进本表 |
 
