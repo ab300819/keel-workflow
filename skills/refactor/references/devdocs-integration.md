@@ -36,7 +36,7 @@ keel 工作流（含重构）:
     │                    ├── /system-design
     │                    └── /test-cases
     │
-    ├── 测试编写 → /test-cases (测试策略参考)
+    ├── 测试编写 → /testing-guide（测试质量约束；需要用例文档时再用 /test-cases）
     │
     └── 重构完成 → /code-self-describe --update (更新模块自描述)
 ```

@@ -220,7 +220,7 @@ Q3（feature/bugfix 追加，可选）:
 - **Deep 模式**：跨模块 / 架构 / 安全变更时，dev-workflow 所有任务强制 `--review`，feature 完成后额外执行 `verify --docs`，并展示影响面摘要。
 - **Sprint Contract 协调**：`test-cases` 产出的可执行验收契约作为 `dev-workflow` 输入；pipeline 只传摘要、文件路径、新增编号，不内联测试全文。
 - **design 主动推送**：详细协议见 [../prd/references/design-context.md](../prd/references/design-context.md)；pipeline 不写文档，no-prd 不阻塞，且不中断当前 dev-workflow。
-- **发布状态提问（init 首步，源头治理）**：`init` 开始时 AskUserQuestion **问一次**「这个项目发布过吗」。未发布 → ⛔ 不套 semver，用 Sprint / 阶段代号 / 待办池表达进度（⛔ 这里不要写「里程碑」——`M-XXX` 是 01 §2.5 的需求分段概念，同名会误读）；已发布 → semver 是真契约，正常使用。结论由 `agent-memory --update` 写进 AGENTS.md「约定」节，后续 skill 据此决定怎么表达进度。
+- **发布状态提问（init 首步，源头治理）**：`init` 开始时 AskUserQuestion **问一次**「这个项目发布过吗」。未发布 → ⛔ 不套 semver，用 Sprint / 阶段代号 / 待办池表达进度（⛔ 这里不要写「里程碑」——`M-XXX` 是 01 §2.5 的需求分段概念，同名会误读）；已发布 → semver 是真契约，正常使用。结论经握手 `inputs.release_status`（`unreleased` / `released`）传给 `agent-memory --update`，由它写进 AGENTS.md「约定」节，后续 skill 据此决定怎么表达进度。
   - 只问这一个问题，⛔ 不追问具体用哪种约定——那可以后面按需定，开工时多打断一次不值。
   - 理由：版本号和进度是**自己造的现状**，代码里读不出来，天然需要有人定。没有真实发布节点可依时，版本号只能当占位符用，被大量引用后回潮难防；在源头问一次的成本远低于事后清理。
   - 接手既有项目走 `retrofit`，同一个问题在 `00-baseline.md` §2.1 问，两条路径结论都落 AGENTS.md。

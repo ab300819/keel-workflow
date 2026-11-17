@@ -375,7 +375,7 @@ docs/devdocs/
 ### 文件命名规则
 
 - 普通重构：`05-refactor-*.md`
-- 如果是针对特定模块：`05-refactor-<module>-*.md`
+- 针对特定模块时文件名不变，在文档标题和正文里写明模块（布局清单只登记了 `05-refactor-{audit,plan,report,rewrite}.md`，带模块名的文件会被判为待分类路径）
 
 ---
 
