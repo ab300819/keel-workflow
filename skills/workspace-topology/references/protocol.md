@@ -40,8 +40,6 @@ spec_version: workspace-topology.v2
 workspace:
   mode: shell                  # 枚举 inline|shell|linked；无此块时问用户，不缺省
   code_roots: [web, api]       # shell / linked 时必填，≥1 项；shell 元素为 submodule name，linked 须给 path
-devdocs:                       # keel 项目才有；非 keel 项目只有 workspace: 块
-  initialized_at: "2026-08-05"
 ---
 ```
 

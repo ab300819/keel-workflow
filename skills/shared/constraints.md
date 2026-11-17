@@ -322,8 +322,8 @@ expected_output: yaml-summary-v1
 
 ### 升级入口统一
 
-- `realign/single-entry`：所有文档体系升级与健康度审查动作统一通过 `/pipeline realign [--scope=<spec|prd-mapping|health>]` 入口，不再以散落 flag 形式暴露给用户。
-- `realign/scope-enum-authority`：scope 枚举白名单与执行接口指针位于 `skills/pipeline/references/realign.md` § scope 专用执行接口；新增 scope 需 bump `realign.md` 的 `spec_version` 并同步 Migration Matrix。当前白名单：`spec` / `prd-mapping` / `health`。
+- `realign/single-entry`：所有文档体系升级与健康度审查动作统一通过 `/pipeline realign [--scope=<spec|health>]` 入口，不再以散落 flag 形式暴露给用户。
+- `realign/scope-enum-authority`：scope 枚举白名单与执行接口指针位于 `skills/pipeline/references/realign.md` § scope 专用执行接口；新增 scope 需 bump `realign.md` 的 `spec_version` 并同步 Migration Matrix。当前白名单：`spec` / `health`。
 - `realign/no-direct-user-call`：各 skill 内部 `--realign` 子动作（如 `/system-design --realign=layer3`）属编排实现细节，不作为用户面命令暴露；用户面只承认 `/pipeline realign` 入口。
 - `realign/deprecated-alias-one-version`:已存在的旧入口保留一个版本作为 deprecated alias，并在 SKILL.md 文档与运行时输出标注 deprecated；下一版本移除。
 

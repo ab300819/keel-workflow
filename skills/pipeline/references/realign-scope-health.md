@@ -19,7 +19,7 @@
 
 本文件定义 `--scope=health` 的执行接口，让 LLM 能按统一入口对 keel 文档体系做**主动健康度审查**，覆盖三大维度并把分散在 verify / sync 的检查能力收敛为单一报告。
 
-与 `--scope=spec`（spec_version 差距补齐）/ `--scope=prd-mapping`（PRD ↔ keel 映射）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
+与 `--scope=spec`（spec_version 差距补齐）正交：health 关注**当前规范下产物是否健康**，不做规范升级、不做目录迁移、不做 PRD 映射重组。
 
 > **推/拉两个触发点**（解决"规则实装但没人跑"的断层）：
 > - **拉（全量）**：用户显式 `/pipeline realign --scope=health` —— 本文件定义的完整 3 维扫描。
@@ -142,7 +142,7 @@ dimensions:
         actual: <value>
         threshold: <value>
         severity: blocker | warning
-        route_to_scope: health | spec | prd-mapping  # health scope 是否能直接修复
+        route_to_scope: health | spec | manual  # health scope 是否能直接修复
         route_recommended: <next 命令字符串，如 "/pipeline realign --scope=health --apply">
         route_note: <可选；解释为何跨 scope，如 "归档减量走 /sync --archive">
 
@@ -172,7 +172,7 @@ manual_decisions:
 |----|----|----|
 | health-lint 全部 rule（清单见 [health-lint-implementation.md](health-lint-implementation.md) Rule 集表；`submodule/pointer-drift` 仅 shell 拓扑适用）| `health` | health scope `--apply` 直接处理（`health/dead-link` 手动修复；`submodule/pointer-drift` 不可自动修复，分叉情形需 AskUserQuestion）|
 | `schema_drift_count > 0` | `spec` | 补 frontmatter 走 spec scope |
-| PRD↔keel 死链 | `prd-mapping` | `prd-mapping` scope 尚未落地（`[FUTURE]`）：目前仅报告，由人工按 [prd-devdocs-mapping.md](../../prd/references/governance/prd-devdocs-mapping.md) 修复映射 |
+| PRD↔keel 死链 | `manual` | 没有自动修复：仅报告，由人工按 [prd-devdocs-mapping.md](../../prd/references/governance/prd-devdocs-mapping.md) 修复映射 |
 
 ### 评分契约
 
@@ -285,10 +285,10 @@ next_recommended:
 |---|---|
 | 仅 health 路由违规 | `"realign --scope=health --apply"` |
 | 仅跨 scope 违规（无 health 路由） | 取占比最高的 scope，如 `"realign --scope=spec --apply"` |
-| 混杂 health + 跨 scope | 数组形式：`["realign --scope=health --apply", "realign --scope=<跨 scope> --apply"]`，按拓扑顺序（spec → prd-mapping → health）排序 |
+| 混杂 health + 跨 scope | 数组形式：`["realign --scope=health --apply", "realign --scope=<跨 scope> --apply"]`，按拓扑顺序（spec → health）排序 |
 | 0 违规 | `null` |
 
-⛔ 尚未落地的 scope（`[FUTURE]`，当前为 `prd-mapping`）不生成推荐命令：它的违规只在报告里列为人工修复项，上表按「不计入跨 scope」处理。
+⛔ `route_to_scope: manual` 的违规不生成推荐命令：只在报告里列为人工修复项，上表按「不计入跨 scope」处理。
 
 状态语义：
 
@@ -303,7 +303,7 @@ next_recommended:
 
 - 维度 a 的 spec_version 差距 → 仅报告，**不补齐**；补齐走 `--scope=spec`（沿用现有 realign 主流程）。
 - 维度 c 中单文件 > 96 KiB（`layout/size-cap`）→ 仅报告，**不拆分**；历史内容归档走 `/sync --archive`，活跃内容走各 skill 拆分规则，四类双形态资源的集中文件建议转资源目录。
-- 维度 b 的死链涉及 PRD ↔ keel 编号映射 → 仅报告、人工修复（`--scope=prd-mapping` 为 `[FUTURE]`，尚未落地）。
+- 维度 b 的死链涉及 PRD ↔ keel 编号映射 → 仅报告、人工修复。
 - 本 scope 自身只负责：可逆的小范围修复（state 修剪、引用替换、死链标注）。
 
 ## 幂等性

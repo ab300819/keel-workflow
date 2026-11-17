@@ -48,7 +48,6 @@
 | scope | 入口 | 执行接口文件 | 定位 |
 |-------|------|-------------|------|
 | `spec` | `/pipeline realign --scope=spec` | 沿用本文 § "编排层职责" + 各 skill `references/realign.md` | spec_version 差距补齐 |
-| `prd-mapping` `[FUTURE]` | `/pipeline realign --scope=prd-mapping` | 沿用 `skills/prd/references/governance/prd-devdocs-mapping.md` | PRD ↔ keel 映射对齐 |
 | `health` | `/pipeline realign --scope=health` | [realign-scope-health.md](realign-scope-health.md) | 文档健康度主动审查（结构 / 索引 / 过大）|
 
 ## 编排层职责（`pipeline realign`）

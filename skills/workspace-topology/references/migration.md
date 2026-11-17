@@ -71,11 +71,9 @@
    ---
    ```
 
-   **`devdocs:` 块不碰**——三层版本号、`initialized_at` 都不在本 skill 的写入范围内，它们归 `agent-memory` 与 layout 元数据机制。⛔ 不代写、不伪造：三层版本号没有可靠来源，伪造比缺失更糟。
+   **存量 `devdocs:` 块不碰**——它不在本 skill 的写入范围内，⛔ 不代写、不伪造。
 
    `AGENTS.md` 已有 frontmatter → 在其中新增/更新 `workspace:` 块，其余 key 原样保留（含键序）。无 frontmatter（首行是 HTML 注释等正文）→ 在**文件最前面**插入，原有内容整体下移，不改写原内容一个字符。`AGENTS.md` 不存在 → 只创建含该块的 frontmatter，不生成正文（正文归 `agent-memory`）。
-
-   **非 keel 项目只有 `workspace:` 块，没有 `devdocs:` 块**——这是合法的正常状态，消费方不得当异常处理。
 
 4. 写入后立即跑一次校验（`workspace/fail-closed` 全表，见 [protocol.md](protocol.md#3-校验规则fail-closed)），任一 ⛔ 则**回滚本次写入**并报告。
 

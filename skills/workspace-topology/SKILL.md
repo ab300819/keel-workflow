@@ -150,7 +150,6 @@ capabilities:                     # 写入策略，由 mode 派生；消费方�
 workspace:
   mode: shell
   code_roots: [web, api]      # mode=shell / mode=linked 时必填。shell 下元素为 .gitmodules 的 submodule name；linked 下须给 path，见下方 linked 示例
-devdocs:                      # keel 项目才有；非 keel 项目只有 workspace: 块
 ---
 ```
 
@@ -179,7 +178,7 @@ workspace:
 | 谁 | 拥有什么 |
 |---|---|
 | `workspace-topology` | `workspace:` 块 |
-| `agent-memory` | 正文 + `devdocs:` 块；⛔ 对 `workspace:` 块**原样保留**，不覆写不删除 |
+| `agent-memory` | 正文；⛔ 对 frontmatter **原样保留**，不覆写不删除 |
 
 ### legacy 兼容
 
