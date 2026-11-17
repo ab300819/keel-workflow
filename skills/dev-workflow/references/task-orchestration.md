@@ -163,7 +163,7 @@ Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判
         ├── [D1] 对抗式验证 Phase 1~3 证据：**audit 任务**须有 Phase 1~3 综合报告；缺失 → `INT_UNRESOLVED`。fast/guarded 的延后内审由 [F] review_pending + drain 覆盖，不在 [D1] 判定。
         ├── [D2] Phase 4 外部对抗审查证据：**audit 任务**必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 台账字段由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；fast/guarded 不在 [D2] 判定（其延后外审经 [F] review_pending + drain 闭合）。
         ├── [E] 后置测试证据（任一即可）：单任务为 `/test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/test-run --trace` 执行记录；若台账有 `skip_trace_reason` 且补跑未完成 → `postcheck_pending`
-        ├── [F] review_pending 检测:台账 `pending_reason: deferred-*` 且无对应 drain verdict → 任务为 `review_pending`,**非"已完成"**,不得跳过;须经 `/verify --review-drain` 转 `已完成`
+        ├── [F] review_pending 检测:台账 `pending_reason: deferred-*` 且无对应 drain verdict → 任务仍是 `review_pending`,不得跳过
         ├── A~F 全部可复核(含 [F] 无未清 review_pending)（[D1] `INT_REVIEWED` ∧ [D2] `EXT_REVIEWED` 或均未触发）→ 跳过该任务
         └── 任一不可复核 → 进入"复核续做"（续做信号表对应 pending/state 之一）
             └── 旧任务迁移（前版本完成，A/D1/D2/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
@@ -229,7 +229,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 
 ### Phase 4 状态在批量编排中的处理
 
-批量编排器在每 audit 任务完成 inline Phase 4 后读取 `ext_review_state`，任一非 `EXT_REVIEWED` → 该 audit 任务进入 `Step 1.5 [D2]` 拦截。fast/guarded 任务不在此判定：它们 Commit 1 后为 `review_pending`，由 batch/sprint 边界 `/verify --review-drain` 统一补跑 Phase 4，drain 结果经 [F] 闭合。Phase 4 状态字段定义、真值表见 [verification-flow.md](verification-flow.md)。
+批量编排器在每 audit 任务完成 inline Phase 4 后读取 `ext_review_state`，任一非 `EXT_REVIEWED` → 该 audit 任务进入 `Step 1.5 [D2]` 拦截。fast/guarded 任务不在此判定，其延后外审经 [F] 闭合。Phase 4 状态字段定义、真值表见 [verification-flow.md](verification-flow.md)。
 
 ### Realign 与续做的边界（重要）
 
@@ -293,9 +293,9 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 │  6. 完成检查(S8)+ 质量地板 5 条 + 前置验证(guarded/audit 跑 /verify --impl)│
 │  6.5 独立审查分支(按 review_profile):                       │
 │     ├── audit → Phase 1~3 + Phase 4 inline fail-fast,审过才提交 │
-│     └── fast/guarded → 跳过 inline 独立审查,标 review_pending  │
+│     └── fast/guarded → 跳过 inline 独立审查(延后)             │
 │  6.9 Commit 1(纯代码)+ 台账记 batch/due/pending_reason(fast/guarded)      │
-│  7. 更新 04-dev-tasks*.md 状态:audit→已完成;fast/guarded→review_pending(drain 通过后才转已完成)│
+│  7. 更新 04-dev-tasks*.md 状态:audit→已完成;fast/guarded→review_pending│
 │  8. /sync                                │
 │  9. Commit 2: 文档提交（任务状态+追踪）         │
 │     └── git add [文档文件] && git commit        │
@@ -344,7 +344,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 ┌─ batch/sprint review drain ─────────────────────────────────┐
 │  触发:批量跑完编排器宣告完成前自动 drain;或传播闸跳闸强制 drain │
 │  执行:/verify --review-drain 收集本批 review_pending 集中清审 │
-│  结果:全通过→相关任务转已完成;有 Blocker→fix-forward+阻断 sprint close │
+│  结果:按 verification-flow.md 的 drain 失败矩阵处理           │
 │  headless:自动 drain(不"告警"等人);drain 失败→fail-fast 输出续做命令 │
 └──────────────────────────────────────────────────────────────┘
           │

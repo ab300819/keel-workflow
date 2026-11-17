@@ -122,7 +122,7 @@
 | S10 自描述 / S11 Commit 1 | ■ | ■ | ■ |
 | UI Phase 2-UI 自查(仅 UI 任务) | 按 ui-quality-checklist.md(不随 profile 变) | 同 | 同 |
 
-> ⏳ defer = 延后到 `/verify --review-drain`,任务期间标 `review_pending`。
+> ⏳ defer = 延后到 `/verify --review-drain`。
 >
 > **为什么 `S4/S5` 与 `S6/S7` 分两行**：上方 ■\* 规则允许 S4/S5 在「不产出测试」时退化，而 `S6 = 实现代码`——
 > 无论哪种 `TDD 模式`，**实现都不可跳过**。合成一行会让「不先写测试」被读成「可以不实现」。
@@ -197,7 +197,6 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
      due: <YYYY-MM-DD>
      pending_reason: deferred-fast | deferred-guarded
      ```
-     `/verify --review-drain` 通过后（无 Blocker）才转 `已完成`
    - 运行 /sync
    - Commit 2: `git add [文档文件] && git commit -m "docs: 更新任务状态并同步 trace"`（`shell` 拓扑的外壳仓 commit 按 [protocol.md §6.3](../../workspace-topology/references/protocol.md) 带 T-XX，其余不带）
 10. **更新 TodoWrite**：将任务标记为已完成（audit）或 review_pending（fast/guarded）
