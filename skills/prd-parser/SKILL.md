@@ -293,7 +293,7 @@ pending ──(PRD 更新，章节删除)──> removed
 
 - **document_fingerprint**：对原始文件字节计算 sha256（⛔ 不对转写后的文本算：PDF / 图片每次转写结果不稳定，会让「文档无变化」判定失灵）
 - **source_fingerprint**：对块的正文内容（不含 YAML 头）计算 sha256
-- 计算前统一处理：去除首尾空白、规范化换行符为 `\n`
+- `source_fingerprint` 计算前统一处理：去除首尾空白、规范化换行符为 `\n`；`document_fingerprint` 对字节原样计算，⛔ 不做任何预处理
 - 哈希格式：`sha256:<hex 前 16 位>`（截断以提高可读性，冲突概率可忽略）
 
 ## 约束
