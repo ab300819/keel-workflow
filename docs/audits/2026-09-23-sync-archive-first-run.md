@@ -1,6 +1,6 @@
 # `/sync --archive` 首次真实执行记录
 
-> **销账记录（2026-11-16 清点）**：「size-cap 引用归档出口时应加限定」已结（`skills/shared/devdocs-layout.md` 已加注）。F1~F8 八条 `archive.md` 规格缺陷仍未修，F1 的读法待裁定。
+> **销账记录（2026-11-16 清点）**：「size-cap 引用归档出口时应加限定」已结（`skills/shared/devdocs-layout.md` 已加注）。F1~F8 八条 `archive.md` 规格缺陷已于 2026-11-17 补进规格（F1 采用首跑时的读法：行数与数量为「或」，状态条件只决定可归档条目）；补后规格未再真跑。
 
 > 2026-09-23 登记。任务来源：`.superpowers/sdd/2026-09-21-devdocs-layout-clause-and-rules/task-7-brief.md`。
 >
