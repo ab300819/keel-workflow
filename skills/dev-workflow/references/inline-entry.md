@@ -103,10 +103,10 @@ generated_at: <日期>
 
 | 消费者 | inline 分支下行为 | 承载 |
 |--------|------------------|------|
-| 指定符解析 | `--inline` 显式分支,物化后转 T-XX 单任务路径 | [task-orchestration.md §1](task-orchestration.md) |
+| 指定符解析 | 无指定符的任务定义(或等价的 `--inline`)进入本分支,物化后转 T-XX 单任务路径;批量意图(「把剩下的都跑完」)不进本分支,按 `--all` 处理 | [task-orchestration.md §1](task-orchestration.md) |
 | `verify --impl`(guarded 必跑) | **正常工作**:B1 从 01 读 AC,stub 条目可读 | 无需改动 |
 | `requirements`(后续正式化) | **正常工作**:01 已存在 → 增量模式,全文件扫号续编 | 无需改动 |
 | Test Agent(S2~S4) | **受限分支**:输入表 02/03 字段传 `—(inline)`,测试输入约束 = S1.5 Sprint Contract(AC + 当前代码) | [task-orchestration.md 子 Agent 协议](task-orchestration.md) |
-| `sync --trace` | **受限**:无 03 且 AC 标 inline → 跳过 trace 写入并提示待回填 | [trace-mode.md](../../sync/references/trace-mode.md) |
+| `sync` 的 trace 阶段 | **受限**:无 03 且 AC 标 inline → 跳过 trace 写入并提示待回填 | [trace-mode.md](../../sync/references/trace-mode.md) |
 | health-lint `dead-link` | **正常工作**:01 stub 的 AC heading 是规则已识别的定义位置模式(落地实测项) | — |
 | 里程碑分段 | **不参与**:inline AC 无 F 因而无 M,⛔ 不构成段边界、不触发段末停点;被某段依赖闭包捞进去则随该段执行。回填(见上方手动回填协议)随 F 归属自然获得 M | [task-orchestration.md §1.5](task-orchestration.md) |

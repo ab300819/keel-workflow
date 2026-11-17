@@ -33,8 +33,9 @@
    ├── T-XX,T-YY,... → 拆分为任务 ID 列表
    ├── F-XXX         → 扫描所有任务的 关联需求 字段，匹配 F-XXX
    ├── US-XXX        → 扫描所有任务的 关联需求 字段，匹配 US-XXX
-   ├── --all         → 收集所有 状态∈{待开发,进行中} 的任务（dev 执行跳过 review_pending，不重跑；review_pending 由 /verify --review-drain 专门收集）
-   └── 无指定符的任务描述 / --inline → 不读 04 指定符;按 [inline-entry.md](inline-entry.md) 物化 01 AC 条目 + 04 任务条目
+   ├── --all / 批量意图（「把剩下的都跑完」「全部跑完」这类不含具体任务定义的说法）
+   │                 → 收集所有 状态∈{待开发,进行中} 的任务（dev 执行跳过 review_pending，不重跑；review_pending 由 /verify --review-drain 专门收集）
+   └── 无指定符、且给出了具体任务定义的描述 / --inline → 不读 04 指定符;按 [inline-entry.md](inline-entry.md) 物化 01 AC 条目 + 04 任务条目
                        (缺验收标准 ⚠️ 必须确认:补验收标准或转 /dev-flow),物化得到 T-XX 后转单任务路径(与现有 T-XX 行为一致)
 3. 返回去重后的任务 ID 列表
 ```

@@ -1,7 +1,7 @@
 ---
 name: verify
 description: 验证 keel 的文档一致性、实现正确性、UI 对齐或开发就绪状态。更新文档与任务进度用 sync。
-allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion
+allowed-tools: Read, Glob, Grep, Bash, Write, Edit, AskUserQuestion
 metadata:
   patterns: [reviewer]
   interaction: multi-turn
@@ -416,8 +416,8 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 
 ### 安全约束
 
-- [ ] **只读：不修改代码、不修改 keel 文档、不修改设计稿——仅生成报告**
-- [ ] **唯一写例外：`--review-drain`** 把清审结论写回 `04-dev-tasks*.md` 的任务台账（状态 `review_pending` → `已完成` 及审查字段）。清审结论不落盘，任务会永远停在 `review_pending`；除此之外 ⛔ 不写任何文档
+- [ ] **只读：不修改代码、不修改 keel 文档、不修改设计稿——仅生成报告文件（`verify-report.md` / `readiness-report.md`）**
+- [ ] **唯一写例外：`--review-drain`** 把清审结论写回 `04-dev-tasks*.md` 的任务台账（状态 `review_pending` → `已完成` 及审查字段）。清审结论不落盘，任务会永远停在 `review_pending`；除此之外与报告文件之外 ⛔ 不写任何文档
 
 ## Skill 协作
 

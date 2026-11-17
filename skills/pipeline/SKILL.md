@@ -161,7 +161,7 @@ user-invocable: true
 
 | 档位 | 特征 | 流程深度 | 路由 |
 |------|------|----------|------|
-| **Lite** | 单文件改动、无新接口、配置变更、UI 微调 | requirements(增量) → dev-tasks → dev-workflow | `/feature "<描述>"`（说明是小改动） 或 `/pipeline bugfix` |
+| **Lite** | 单文件改动、无新接口、配置变更、UI 微调 | feature 轻量模式：01 追加 AC + 03 最小用例 + 04 少量任务 → readiness → dev-workflow | `/feature "<描述>"`（说明是小改动） 或 `/pipeline bugfix` |
 | **Standard** | 多文件改动、新接口、新模块 | 全流程（requirements → design → tests → tasks → dev） | `/pipeline feature` |
 | **Deep** | 跨模块架构变更、安全相关、核心数据模型变更 | 全流程 + 强制独立审查 + 强制文档对齐验证 | `/pipeline feature`（说明是架构级变更） |
 

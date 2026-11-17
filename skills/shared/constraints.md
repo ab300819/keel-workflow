@@ -7,7 +7,7 @@ related:
   - skills/prd/references/governance/prd-revision-policy.md（PRD 修订边界）
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v13
+spec_version: shared-constraints.v14
 ---
 
 # 共享约束 SSOT
