@@ -66,7 +66,7 @@ CLAUDE.md 通过 `@AGENTS.md` 导入通用信息，并可追加 Claude Code 专�
 > 本项目由 keel 管理(存在 `docs/devdocs/`)。依"用户指令(AGENTS.md/CLAUDE.md)优先于 skill 默认行为"的通用优先级,以下路由**覆盖**任何外部通用流程 skill 的默认触发:
 
 - 需求/功能/bug/开发/验证/同步:一律走 `/pipeline` 或对应 keel 流程 skill;外部端到端通用流程 skill(头脑风暴/计划编写/计划执行/调试流程/分支收尾类)**不得接管**这些工作。
-- 轻量通道(keel 体系内):一句话任务+验收标准 → `/dev-workflow --inline "<任务>" --ac "<AC>"`;bug → `/bugfix`。
+- 轻量通道(keel 体系内):一句话任务+验收标准 → 直接对 `/dev-workflow` 说任务和验收标准;bug → `/bugfix`。
 - 外部通用流程 skill 仅用于:keel 体系外杂项(一次性脚本、非交付实验、文档体系自身的元改造)。
 - 收尾纪律:提交遵循 dev-workflow 协议(原子提交、绝不推送远程),不使用外部 skill 的 merge/push 选项。
 - 执行开发任务(含委托给子代理或队友)走 `/dev-workflow`,不另建派单台账、验收门或纪律表;改了产品代码或测试即算开发任务,不分大小,小任务走上面的轻量通道。
