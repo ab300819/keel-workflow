@@ -547,13 +547,13 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 | 字段 | 适用 | 语义 |
 |---------|------|------|
-| `commits` | Commit 1 落盘后 | `<repository>@<full-sha>`，可多条；考古索引，⛔ 不作门控依据 |
+| `commits` | Commit 1 落盘后由 Commit 2 写入 | `<repository>@<full-sha>` + 一句话描述，可多条，与追溯矩阵「变更来源」同形状；考古索引，⛔ 不作门控依据 |
 | `batch` / `due` / `pending_reason` | fast/guarded 延后必填 | 见上方 review_pending |
 | `ext_review_state` | audit Phase 4 必填 | 由 L2 yaml 派生 |
 | `skip_trace_reason` | 单任务 `--skip-trace` | 跳过后置 trace 校验的原因 |
 | `exploration_mode` | 探索模式 | `true` + 证据/豁免原因登记 |
 | `profile_downgrade_reason` | 带理由降档时 | 降档理由（升档不需要） |
 
-> 字段呈现与填写时机见 [dev-workflow SKILL.md §任务台账](../dev-workflow/SKILL.md)；消费方：`/verify --review-drain`（按 `batch`/`due` 清算）、断点续做 Step 1.5 证据复核。
+> `commits` 失效时的处理见 [dev-workflow SKILL.md §任务台账](../dev-workflow/SKILL.md)；消费方：`/verify --review-drain`（按 `batch`/`due` 清算）、断点续做 Step 1.5 证据复核。
 >
 > ⛔ **门控状态绑任务编号，考古索引绑 commit。** squash / rebase 改 hash 时 `commits` 失效（回到代码事实重建），门控不受影响。
