@@ -10,6 +10,7 @@
 - T1b：codex CLI · 备用计费后端
 - T2：codex-mcp
 - T3：Task 子 Agent
+- agy CLI（第二个外部审查方）
 
 ## 两种使用模式
 
@@ -32,7 +33,7 @@
 
 ## 概述
 
-对抗审查使用外部 LLM 作为独立审查者。三级降级链：codex CLI → codex-mcp → Task 子 Agent。
+对抗审查使用外部 LLM 作为独立审查者。外部审查方有两个：**codex**（三级降级链：codex CLI → codex-mcp → Task 子 Agent）与 **agy**（见文末 § agy CLI）。两方怎么并用、怎么对齐见 [cross-validation.md](cross-validation.md)；同模型子 Agent 只在两方都不可用时兜底。embedded-headless 模式不变，仍只用 codex 的 T1/T2，⛔ 不调 agy。
 
 > **适用范围限定**：以下三级链仅适用于 adversarial-review skill 的 **multi-turn 模式**。`dev-workflow` S9 Phase 4 embedded-headless 模式**只消费 T1/T2 子集，不执行 T3 分支**——T3 Task 子 Agent 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺。本文档"降级探测流程"和"T3"相关段落仅在 skill multi-turn 模式下生效。
 
@@ -122,6 +123,8 @@ rm -f "$SMOKE" "$OUT"
 
 > **非交互前提**：所有 `codex exec` 调用使用 `--sandbox read-only`（无危险操作，不触发审批）。
 > 如果用户环境配置了交互审批策略，可能需要额外传递 `--full-auto` 或确保 profile 为非交互模式。
+>
+> ⛔ **brief 写在命令行参数里时必须关闭标准输入**：`codex exec … "<brief>" < /dev/null`。本仓实测漏关一次，进程挂起 18 分钟没开始工作。用标准输入传 brief 的路径（见下方 § 方案/设计/文档审查）读完自然收到结束信号，⛔ 不得给它加 `< /dev/null`。
 
 ### 代码审查（结构化输出）
 
@@ -492,3 +495,55 @@ T1 和 T2 均失败时使用。
 | `rework-task` | 启动新 Task，包含修复后内容 + 上一轮审查上下文 |
 | `accept-task` | 无需操作，直接继续 |
 | `retry-task` | 重新启动 Task（同样的 prompt） |
+
+---
+
+## agy CLI（第二个外部审查方）
+
+> 2026-11 本机 `agy` 1.5.7 实测。只在 skill multi-turn 模式使用；没有备用通道，失败即该方失败（处置见 [cross-validation.md § 一方失败](cross-validation.md)）。
+
+### 检测
+
+`which agy`，再做一次**含真实工具调用**的冒烟（理由同 T1）：
+
+```bash
+agy -p "读取当前目录下任意一个文件的第一行并原样输出，然后输出 OK" \
+    --mode plan --sandbox --model <模型 id> --print-timeout 120s < /dev/null
+```
+
+退出码 0 且输出含 `OK` 才算可用。⛔ 同样不得接 `| grep -q`。
+
+### 模型选取
+
+`agy models` 列出 `<id>\t<显示名>`。⛔ 不得选与宿主 Agent 同族或与 codex 同族的模型——那会让交叉验证退化成自审。默认取剩余模型里的最高档；用户口头指定时以用户为准。
+
+### 调用
+
+```bash
+# 文本类（方案/文档审查、独立方案、独立调研）——brief 末尾同样强制尾标记
+agy -p "<brief>" --mode plan --sandbox --model <id> --print-timeout 600s < /dev/null
+
+# 代码审查（结构化）
+agy -p "<brief>" --mode plan --sandbox --model <id> --print-timeout 600s \
+    --output-format json --json-schema references/review-output.schema.json < /dev/null
+```
+
+- ⛔ `--print-timeout` 必须带单位（`600s` / `10m`），纯数字会被拒绝并打印用法（退出码 2）。
+- ⛔ 必须 `< /dev/null`：brief 走命令行参数，标准输入不关会一直等。
+- `--mode plan --sandbox` 下不写工作区（实测后 `git status` 干净）。
+- brief 过长放不进命令行参数时，先写到临时文件，再让 brief 正文只说「读取 <路径> 并按其中要求执行」。
+
+### 解析
+
+结构化输出是一个外层 JSON，审查结果在它的 `response` 字段里，且该字段在 JSON 之前**带有过程叙述文字**。取 `response` 中**最后一个完整的顶层 JSON 对象**，再按 schema 校验；取不到或缺 `verdict` → 判截断，其余分流同 SKILL.md § T1 第 5 步。文本类输出的截断判定同样看尾标记。
+
+### 失败信号
+
+| 失败类 | 识别信号 | 是否实测 |
+|---|---|---|
+| 模型不可用 | 退出码 1，stderr `invalid model selection … is not recognized as a known model` | ✅ |
+| 参数错误 | 退出码 2，stderr 打印用法 | ✅ |
+| 超时 | 超过 `--print-timeout` 无完整输出 | 未实测 |
+| 额度 / 限流、鉴权失效 | 信号文本未知 | 未实测——遇到时原文照抄进结论，并补进本表 |
+
+失败后的处置不在本表，见 [cross-validation.md § 一方失败](cross-validation.md)。
