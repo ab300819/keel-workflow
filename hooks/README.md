@@ -22,7 +22,7 @@ opencode plugin add github:ab300819/keel-workflow
 
 | hook | 作用域 | 触发 | 干什么 |
 |---|---|---|---|
-| `devdocs-drift` | **用户 keel 项目** | PostToolUse `Edit\|Write\|NotebookEdit\|Bash` | 改了代码但 `docs/devdocs/` 没动 → 一行提示。5 分钟冷却 |
+| `devdocs-drift` | **用户 keel 项目** | PostToolUse `Edit\|Write\|NotebookEdit\|Bash` | 改了代码但 `docs/devdocs/` 没动 → 一行提示。5 分钟冷却。改路径解析后跑固定用例 `bash hooks/test-devdocs-drift.sh` |
 | `skill-flag-lint` | **skill 库自身** | PostToolUse `Edit\|Write\|NotebookEdit`，且编辑的是 `skills/**/*.md` | 跑 `health-lint.py --skills-dir`（`flag/dangling-reference` + `skill/dead-link` / `skill/name-mismatch` / `skill/size-cap`）。2 分钟冷却 |
 | `devdocs-layout` | **用户 keel 项目** | SessionStart（⛔ 无 matcher） | 跑 `health-lint.py --target` 取 `layout/*` 三条 → 一行提示。⛔ 无冷却（SessionStart 天然低频）|
 

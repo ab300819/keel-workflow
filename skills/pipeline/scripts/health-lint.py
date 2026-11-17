@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""health-lint —— health-lint-implementation.md 的可执行实现（v1，13/15 条）。
+"""health-lint —— health-lint-implementation.md 的可执行实现（v1，14/16 条）。
 
 零依赖，仅 stdlib。规格见同级 ../references/health-lint-implementation.md。
 ⚠️ 条数改了这里、argparse description、规格 Rule 集表三处必须同改
@@ -9,7 +9,8 @@ project scope（--target）：state/total-size-cap · state/line-length-cap
          state/forbidden-content · state/max-id-stale · health/dead-link · id/unknown-prefix
          layout/unknown-path · layout/unregistered-split · layout/size-cap
 skill 库 scope（--skills-dir，扫描对象是 **skill 库本身**，⛔ 不与 project scope 混用同一
-target）：flag/dangling-reference · skill/dead-link · skill/name-mismatch · skill/size-cap
+target）：flag/dangling-reference · skill/dead-link · skill/name-mismatch · skill/size-cap ·
+skill/retired-term
 v1 未实现（如实报 not_implemented，⛔ 不要当成 pass）：
          design/adr-only-revision（需 git diff 行范围 × heading map）
          submodule/pointer-drift（仅 shell 拓扑）
@@ -364,6 +365,16 @@ def emit(findings):
 
 SKILL_LINE_CAP = 500
 REL_LINK_RE = re.compile(r"\]\((\.{1,2}/[^)\s]*)\)")
+# 已删除机制的说法。⛔ 只收「仓内已无任何出现」的词——还留着墓碑说明的（如 @satisfies）不收，
+# 否则要给每处墓碑加豁免。删一个机制时把它的专有词加进来，防止被后续改动写回去。
+RETIRED_TERMS = [
+    (r"devdocs_frontmatter|initialized_at", "agent-memory 的 devdocs frontmatter 写入已删除"),
+    (r"backlog_candidates", "backlog 候选输出接口已删除，入池只走显式 backlog --park"),
+    (r"scope=prd-mapping", "realign 的 prd-mapping scope 已删除"),
+    (r"layer3-only", "system-design realign 的取值是 layer3"),
+    (r"patch_id|(?<![a-z_])review_state", "任务台账已无该字段，见 constraints.md § 任务台账协议"),
+]
+RETIRED_RE = [(re.compile(p), why) for p, why in RETIRED_TERMS]
 
 
 def scan_skill_repo(skills_dir):
@@ -372,6 +383,7 @@ def scan_skill_repo(skills_dir):
     skill/size-cap      SKILL.md ≤ 500 行（AGENTS.md 硬约束）
     skill/name-mismatch 目录名 ≡ frontmatter name（安装按 name 复制整个目录）
     skill/dead-link     仓内相对链接目标存在
+    skill/retired-term  已删除机制的说法没有被写回来（词表见 RETIRED_TERMS）
     """
     fs = []
     for d in sorted(os.scandir(skills_dir), key=lambda e: e.name):
@@ -404,6 +416,20 @@ def scan_skill_repo(skills_dir):
     # `docs/prd/requirements/index.md` 后正好解析到 `docs/codebase-insight.md`，
     # 完全正确。按仓内文件系统校验模板 = 必然误报。
     # 这是 repo-governance 1.2 明确警告过的那一类。
+    for root, dirs, files in os.walk(skills_dir):
+        dirs[:] = [x for x in dirs if not x.startswith(".")]
+        for fn in sorted(f for f in files if f.endswith(".md")):
+            path = os.path.join(root, fn)
+            for i, ln in enumerate(open(path, encoding="utf-8", errors="replace").read().split("\n")):
+                if "health-lint-disable-line skill/retired-term" in ln:
+                    continue
+                for rx, why in RETIRED_RE:
+                    m = rx.search(ln)
+                    if m:
+                        fs.append(find("skill/retired-term", "warning",
+                                       os.path.relpath(path, skills_dir), i + 1,
+                                       f"已删除的说法 {m.group(0)!r}：{why}", ctx=ln.strip()[:100],
+                                       fix="删掉这句或改成现役说法"))
     for root, dirs, files in os.walk(skills_dir):
         dirs[:] = [x for x in dirs if not x.startswith(".") and x != "templates"]
         for fn in sorted(f for f in files if f.endswith(".md")):
@@ -828,7 +854,7 @@ def selftest():
         # --- skills scope 夹具 ---
         sk = os.path.join(t, "sk"); os.makedirs(os.path.join(sk, "good"))
         os.makedirs(os.path.join(sk, "bad")); os.makedirs(os.path.join(sk, "empty"))
-        open(os.path.join(sk, "good", "SKILL.md"), "w").write("---\nname: good\n---\n引用 [x](../bad/SKILL.md)\n")
+        open(os.path.join(sk, "good", "SKILL.md"), "w").write("---\nname: good\n---\n引用 [x](../bad/SKILL.md)\n台账写 ext_review_state 和 patch_id\n")
         os.makedirs(os.path.join(sk, "edge"))
         open(os.path.join(sk, "edge", "SKILL.md"), "w").write(
             "---\nname: edge\n---\n" + "行\n" * 497)     # 恰好 500 行 == 上限，合规
@@ -844,6 +870,7 @@ def selftest():
             "skill/name-mismatch": 2,     # bad 名不符 + empty 无 SKILL.md
             "skill/size-cap": 1,
             "skill/dead-link": 1,
+            "skill/retired-term": 1,      # patch_id 命中；同行的 ext_review_state 不算
             "flag/dangling-reference": 1,
             "layout/unknown-path": 4,     # 99-mystery.md + 04-dev-tasks.md 不在清单（清单第三
                                            # 行模式是 `04-dev-tasks-p<N>.md`，不含 04-dev-tasks.md
@@ -950,7 +977,7 @@ def main():
     ap.add_argument("--baseline-init", action="store_true", help="写 baseline 快照，不报告违规")
     ap.add_argument("--since-baseline", action="store_true", help="只报告 baseline 之后新增的违规")
     ap.add_argument("--skills-dir", metavar="DIR",
-                    help="改扫 skill 库，跑 flag/dangling-reference 与 skill/* 三条（⛔ 与 --target 的 project-scope rule 互斥）")
+                    help="改扫 skill 库，跑 flag/dangling-reference 与 skill/* 四条（⛔ 与 --target 的 project-scope rule 互斥）")
     args = ap.parse_args()
 
     if args.selftest:
