@@ -58,7 +58,7 @@ metadata:
 
 ```bash
 /feature "功能描述"             → 自动检测模式（Lite/Standard/Deep）
-/feature F-XX realign           → 只对齐 F-XX 关联产物（调度 system-design/test-cases/dev-tasks/dev-workflow --realign=F-XX）；共享契约见 [../pipeline/references/realign.md](../pipeline/references/realign.md)
+/feature F-XX realign           → 只对齐 F-XX 关联产物（调度 `system-design` / `test-cases` / `dev-tasks` 各自的 `--realign`，握手里说明只处理与 F-XX 关联的内容，scope 取值以各自 `references/realign.md` 为准；任务侧用 `/dev-workflow F-XX --realign`）；共享契约见 [../pipeline/references/realign.md](../pipeline/references/realign.md)
 ```
 
 ### 模式对比
