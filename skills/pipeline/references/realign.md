@@ -41,7 +41,7 @@
 /bugfix BUG-05 realign                # 只对齐 BUG-05 关联产物
 ```
 
-底层 `--realign` 仅用于调试或编排层内部调用：`/system-design --realign=layer3-only`、`/dev-workflow T-03 --realign`。
+底层 `--realign` 仅用于调试或编排层内部调用：`/system-design --realign=layer3`、`/dev-workflow T-03 --realign`。
 
 ### scope 专用执行接口
 

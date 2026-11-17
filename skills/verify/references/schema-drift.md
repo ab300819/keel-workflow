@@ -27,7 +27,7 @@ realign **不得改写**其带 `用户确认` / `已有文档` / `推导待确�
 [retrofit/references/realign.md](../../retrofit/references/realign.md)。
 
 **独立扫描（在主报告独立章节呈现，不并入 A/B 类产物主统计）**：
-- `docs/codebase-insight.md` — 按其自有 `schema_version + commit_hash` 字段扫描（codebase-insight 独立机制；判据：`schema_version` 不匹配 skill 常量或 `commit_hash` 与 git HEAD 不一致 = 需要重扫，由 codebase-insight 自身处理，**不**纳入 realign 编排）
+- `docs/codebase-insight.md` — 按其自有 `schema_version + commit_hash` 字段扫描（codebase-insight 独立机制；判据：`schema_version` 不匹配 skill 常量或自 `commit_hash` 以来扫描范围内的代码有变更（判法见 codebase-insight「缓存设计原则」，⛔ 不直接比 HEAD）= 需要重扫，由 codebase-insight 自身处理，**不**纳入 realign 编排）
 
 **特殊检测：dev-workflow（无文档产物的证据链 drift）**：
 

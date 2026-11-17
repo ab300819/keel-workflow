@@ -39,8 +39,8 @@
 
 - 现有 `docs/devdocs/02-system-design*.md`（拆分文件全扫）
 - 产物 frontmatter 的 `spec_version`（详见共享契约"向后兼容"章节）：
-  - **阶段 1**（当前，尚无 frontmatter 元数据）：无字段 → 用户显式 `--realign` 视为对 legacy 全量扫描（按当前规范差距补齐）
-  - **阶段 2**（加 frontmatter 之后）：无字段 → 标 `spec_version: legacy` → 由 retrofit 首次迁移；已有 frontmatter 且落后 → 走 realign
+  - 无字段 → 视为 `spec_version: legacy` → 归 retrofit 迁移，本 skill 不直接补齐
+  - 已有 frontmatter 且落后 → 走 realign
 - 可选 scope：`layer1` / `layer2` / `layer3` / `layer4` / `<section-name>`
 
 ### 流程

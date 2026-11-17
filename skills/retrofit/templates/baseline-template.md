@@ -120,7 +120,7 @@ adoption_commit: "<git rev-parse HEAD 输出>"
 
 | 想知道 | 信谁 |
 |---|---|
-| 代码现在是什么 | 当前代码；`docs/codebase-insight.md`（其 `commit_hash` 与 HEAD 一致时） |
+| 代码现在是什么 | 当前代码；`docs/codebase-insight.md`（自其 `commit_hash` 以来扫描范围内的代码没有变更时） |
 | 当前在做什么、下一步 | `docs/devdocs/00-context.md` |
 | 项目边界、外部约束、护栏、未知项 | **本文** |
 | 新需求该怎么做 | `docs/devdocs/01-requirements.md` 等 keel 正式产物 |
