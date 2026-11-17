@@ -20,6 +20,7 @@ last=$(stat -f %m "$STAMP" 2>/dev/null || stat -c %Y "$STAMP" 2>/dev/null || ech
 
 # 用 -z：各条目以 NUL 分隔、路径不加引号不转义，⛔ 不靠拆 " -> " 或去引号猜边界（文件名里可以有箭头和空格）。
 # 重命名/复制条目是「XY 新路径」后面紧跟一条「旧路径」，取新的、跳过旧的。
+# shortcut: 文件名里带换行符时 NUL 转换行会切错条目（可能漏提示或多提示一次）；本 hook 只是不阻塞的提醒，真有项目用这种文件名再改成全程按 NUL 处理
 CHANGED=$(git -C "$ROOT" status --porcelain -z --ignore-submodules=untracked 2>/dev/null | tr '\0' '\n' \
   | awk 'skip{skip=0; next} {print substr($0,4); if (substr($0,1,2) ~ /[RC]/) skip=1}')
 [ -n "$CHANGED" ] || exit 0
