@@ -116,14 +116,10 @@
 | S6/S7 实现 + 重构 | ■ | ■ | ■ |
 | 质量地板 5 条 | ■ | ■ | ■ |
 | S8 完成检查(AC 完备表) | ■(证据摘要) | ■ | ■(完整矩阵) |
-| S9 前置验证 `/verify --impl` | ○ | ■ | ■ |
-| S9 Phase 1~3 内审 | ⏳ defer | ⏳ defer(风险触发则 ■) | ■ inline |
-| S9 Phase 4 外审 | ⏳ defer | ⏳ defer | ■ inline |
+| S9 前置验证 / Phase 1~3 内审 / Phase 4 外审 | 按 [constraints.md § review_profile 三档](../../shared/constraints.md) | 同 | 同 |
 | S10 自描述 / S11 Commit 1 | ■ | ■ | ■ |
 | UI Phase 2-UI 自查(仅 UI 任务) | 按 ui-quality-checklist.md(不随 profile 变) | 同 | 同 |
 
-> ⏳ defer = 延后到 `/verify --review-drain`。
->
 > **为什么 `S4/S5` 与 `S6/S7` 分两行**：上方 ■\* 规则允许 S4/S5 在「不产出测试」时退化，而 `S6 = 实现代码`——
 > 无论哪种 `TDD 模式`，**实现都不可跳过**。合成一行会让「不先写测试」被读成「可以不实现」。
 

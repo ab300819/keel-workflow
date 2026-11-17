@@ -104,7 +104,7 @@ spec_version_notes: |
 | S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0`；注释遵循 [`/code-quality` 注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式/来源记录式注释，含修复循环），日志遵循 [日志规范](../code-quality/SKILL.md#日志规范)（安全红线/级别纪律/禁 log-and-throw）|
 | S8 完成检查 | 质量地板 5 条 + AC 完备性表（fast 证据摘要 / audit 完整 AC 类型×证据矩阵）+ 声称 vs 实际 diff 交叉验证；缺证据或未关联大块 diff → ⛔ 禁止继续 |
 | S9 前置验证 | guarded/audit `/verify --impl`；fast 仅质量地板（不跑前置验证）；🟢 UI 任务有设计稿时另跑 `/verify --ui --impl` 对齐设计稿（不随 profile 变） |
-| S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：时机按 review_profile（见下方分层 TDD 表）；`--review` 可临时叠加 inline |
+| S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：时机按 review_profile（见 constraints.md § review_profile 三档）；`--review` 可临时叠加 inline |
 | S9 Phase 4 | 外部对抗审查 embedded-headless（独立审查）：时机同上；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态 `EXT_REVIEWED`/`EXT_UNRESOLVED`/`EXT_BLOCKED` |
 | S10 自描述 | `/code-self-describe --update`（`workspace_context.capabilities.code_metadata_write_policy` 为 `explicit_opt_in` 时**默认跳过**——自描述产物写在代码目录内，违反零污染红线。跳过须在 yaml 摘要里以 ℹ️ 记录 `skipped: code_metadata_write_policy=explicit_opt_in`。用户显式 `--force-code-docs` 才执行） |
 | S11 Commit 1 | 代码提交，遵循「提交信息格式」；Phase 4 触发时把 `ext_review_state` 写进任务台账 |
@@ -138,13 +138,15 @@ spec_version_notes: |
 
 所有任务遵循统一 11 步执行流程 + 5 条质量地板(恒定 inline);`review_profile` 只决定**独立审查(Phase 1~3 + Phase 4)的时机**:
 
-| review_profile | 触发 | 双 Agent | 质量地板 | 前置验证 | Phase 1~3 | Phase 4 | 提交状态 |
-|------|------|:---:|:---:|:---:|------|------|------|
-| **fast**(默认) | 低风险(见风险分类器) | ✓ | ✓ | — | 延后 drain | 延后 drain | `review_pending` |
-| **guarded** | 中风险 | ✓ | ✓ | `/verify --impl` inline | 风险触发 inline 否则延后 | 延后 drain | `review_pending` |
-| **audit** | 高风险 | ✓ | ✓ | `/verify --impl` inline | **inline fail-fast** | **inline fail-fast** | 审过才提交 |
+三档各自的质量地板、前置验证与独立审查时机见 [constraints.md § review_profile 三档](../shared/constraints.md)，⛔ 本文件不复述。本 skill 自己的两件事：
 
-> 详细判据见 [verification-flow.md](references/verification-flow.md);风险分类器信号判据 → /dev-tasks(初始提议);执行期复核(只升不降)→ [task-orchestration.md](references/task-orchestration.md);共享定义见 [../shared/constraints.md](../shared/constraints.md)。
+| review_profile | 触发 | Commit 1 后任务状态 |
+|------|------|------|
+| **fast**(默认) | 低风险(见风险分类器) | `review_pending` |
+| **guarded** | 中风险 | `review_pending` |
+| **audit** | 高风险 | `已完成`（审过才提交）|
+
+> 详细判据见 [verification-flow.md](references/verification-flow.md);风险分类器信号判据 → /dev-tasks(初始提议);执行期复核(只升不降)→ [task-orchestration.md](references/task-orchestration.md)。
 > 旧 🔴🟡🟢⚪ 层级标签**降级为风险分类器的输入信号之一**,不再独立决定流程强度。
 
 > 各 review_profile 的 S1~S11 强制程度差异详见 [execution-flow.md](references/execution-flow.md)。UI 任务的 Phase 2-UI 自查仍按 [ui-quality-checklist.md](references/ui-quality-checklist.md)。
@@ -257,7 +259,7 @@ spec_version_notes: |
 ### 对抗式验证约束
 
 - [ ] **Blocker 必须修复后才能提交**；每个 Phase 声明审查角色；结果分级（Blocker/Suggestion）
-- [ ] **独立审查时机按 review_profile**（见上方分层 TDD 表）；修复 Blocker 后重新运行验证
+- [ ] **独立审查时机按 review_profile**（见 constraints.md § review_profile 三档）；修复 Blocker 后重新运行验证
 - [ ] **drain 侧外审必须用 Commit 1 的提交 diff**，⛔ 不得用工作区 diff（否则收到空 diff，等于未审）；见 [verification-flow.md § diff 源](references/verification-flow.md)
 
 ### 依赖解析约束
@@ -366,22 +368,7 @@ Tests: <实际执行过的精确命令>
 
 ## 任务台账（流程状态的唯一载体）
 
-原先挂在 Commit 1 尾注的流程字段全部迁到 `04-dev-tasks.md` 的任务条目。
-它们的语义本来就是「**T-07 这个任务**的外审还欠着」——主体是任务不是 commit。
-
-| 字段 | 何时填 | 语义 |
-|---|---|---|
-| `commits` | Commit 1 落盘后由 Commit 2 写入 | `<repository>@<full-sha>` + 一句话描述，可多条。**与追溯矩阵「变更来源」同形状** |
-| `batch` / `due` | fast/guarded 延后时 | 批次 ID / `sprint:<id>` 或 `YYYY-MM-DD` |
-| `pending_reason` | 同上 | `deferred-fast` / `deferred-guarded` |
-| `ext_review_state` | audit Phase 4 | `EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED` |
-| `profile_downgrade_reason` | 显式降档时 | 降档理由（升档不需要）|
-| `skip_trace_reason` | `--skip-trace` 时 | 跳过后置 trace 校验的原因 |
-| `exploration_mode` | 探索模式 | `true` + 证据/豁免原因 |
-
-⛔ **绑任务编号，不绑 commit hash。** squash / rebase 改 hash 时，`commits` 字段
-的考古索引会失效，但**门控状态（任务状态 `review_pending` / `batch` / `due`）不受影响**——
-这是分开绑的理由。
+字段、适用时机、语义与「绑任务不绑 commit」的理由见 [constraints.md § 任务台账协议](../shared/constraints.md)；`ext_review_state` 值域见同文件 § 独立审查状态机枚举。⛔ 本文件不复述，只写本 skill 自己的处理。
 
 **`commits` 失效时的处理**（与追溯矩阵同一套，见 sync `trace-mode.md`）：
 
@@ -392,9 +379,6 @@ Tests: <实际执行过的精确命令>
 
 ⛔ **不得因为定位不到就判 `EXT_REVIEWED`**——无审查即无证据。但也 ⛔ 不得让任务
 永久卡死：上表第二行的 Recovery 是明确出路，必须给出，不能只报错。
-
-**合法 `ext_review_state` 枚举**：`EXT_REVIEWED` / `EXT_UNRESOLVED` / `EXT_BLOCKED`。
-禁用 `CONVERGED` / `DEGRADED` / `SKIPPED` 等非 canonical 词汇。
 
 ## 子 Agent 摘要格式
 
