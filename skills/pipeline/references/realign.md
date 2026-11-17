@@ -53,7 +53,7 @@
 
 ## 编排层职责（`pipeline realign`）
 
-1. **扫描**：读取 `docs/devdocs/` 所有产物 frontmatter 的 `spec_version`（阶段 2 后生效）；阶段 1 无元数据时视为"用户显式触发即视为需对齐"。
+1. **扫描**：读取 `docs/devdocs/` 所有产物 frontmatter 的 `spec_version`；无该字段的产物视为 legacy，归 retrofit（见「与 retrofit 的边界」）。
 2. **分组**：按 A 类（keel 主链路产物）与 B 类（PRD 流程 / insights / onboard）分别分组差距项，总览报告两段呈现。
 3. **调度**：按三段式顺序依次调用底层 `--realign`（上游 → 主链路 → 旁路）：
    ```
@@ -74,7 +74,7 @@
 
 ```
 1. 加载本 skill 的 spec_version 当前常量（见各 skill references/realign.md 顶部"当前 spec_version"小节）
-2. 对照产物 frontmatter.spec_version（阶段 1 无 frontmatter → 显式 --realign 时按 legacy 全量扫描；阶段 2 起无字段 → legacy 归 retrofit）
+2. 对照产物 frontmatter.spec_version（无字段 → legacy 归 retrofit）
 3. 按 skill 自身的 diff matrix（references/realign.md 维护）定位差距
 4. 输出差距清单，分两级：
      - additive     → 规范新增的必填章节/字段，可直接补齐追加
