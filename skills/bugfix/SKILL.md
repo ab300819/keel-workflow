@@ -182,7 +182,7 @@ should [预期行为] when [触发条件]
 ### 测试结构
 
 ```typescript
-describe('Bug fix: BUG-XXX <Bug 描述>', () => {
+describe('<Bug 描述>', () => {   // ⛔ 测试名不带 BUG 编号
   it('should <预期行为> when <条件>', () => {
     // Arrange - 构造触发 Bug 的条件
     // Act - 执行操作
@@ -240,6 +240,7 @@ npm test
 | **Issue** | #123（如有）|
 | **严重程度** | P0 / P1 / P2 |
 | **修复日期** | YYYY-MM-DD |
+| **修复提交** | `<repository>@<full-sha>`（提交后回填，可多条）|
 | **状态** | ✅ 已修复 |
 
 ### 问题描述
@@ -284,7 +285,7 @@ npm test
 
 ## Step 7: 提交
 
-> `workspace_context.mode` 不是 `inline` 时（即代码不在本仓）提交走 N+1 仓协议（含 detached HEAD 前置门与跨仓 Recovery），见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根路径取自 握手 `workspace_context`（[shared/constraints.md](../shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。修复代码提交进对应子模块（commit message 沿用该仓风格、**不带 BUG-XX 编号**），bugfix 日志提交进外壳仓。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
+> `workspace_context.mode` 不是 `inline` 时（即代码不在本仓）提交走 N+1 仓协议（含 detached HEAD 前置门与跨仓 Recovery），见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根路径取自 握手 `workspace_context`（[shared/constraints.md](../shared/constraints.md) §3 `task/workspace-context`；未传入时按 `inline` 缺省）。修复代码提交进对应子模块（commit message 沿用该仓风格），bugfix 日志提交进外壳仓。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
 
 ### 提交前检查
 
@@ -299,11 +300,12 @@ fix(<scope>): <简述问题>
 
 - 根因：<问题原因>
 - 修复：<解决方案>
-- 测试：<新增测试编号>
+- 测试：<新增了什么测试，一句话>
 
-BUG-XXX
 Fixes #<issue-number>
 ```
+
+⛔ 提交信息不带 `BUG-XXX` / `UT-XXX` 等 keel 编号（任何拓扑都一样）。追溯方向反过来：在 `05-bugfix-log.md` 的该条记录里登记修复提交 `<repository>@<full-sha>`。
 
 **示例**：
 
@@ -312,9 +314,8 @@ fix(auth): handle empty username in login
 
 - 根因：login() 未校验空用户名，直接查询数据库导致异常
 - 修复：添加用户名非空校验，返回明确错误信息
-- 测试：UT-025
+- 测试：新增空用户名登录的回归用例
 
-BUG-003
 Fixes #123
 ```
 
@@ -398,7 +399,7 @@ Fixes #123
 
 ### 提交约束
 
-- [ ] 提交信息包含 BUG-XXX 编号
+- [ ] 提交信息不带 keel 编号；修复提交的 `<repository>@<full-sha>` 已登记进 `05-bugfix-log.md` 的对应记录
 
 ## 子 Agent 摘要格式
 

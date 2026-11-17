@@ -43,7 +43,8 @@ T-02 ─┘           │
 | 状态 | 说明 | 流转 |
 |------|------|------|
 | 待开发 | 初始状态 | → 进行中 |
-| 进行中 | 开发工作流执行中 | → 已完成 / → 待开发（回退） |
+| 进行中 | 开发工作流执行中 | → 已完成 / → review_pending / → 待开发（回退） |
+| review_pending | 代码已提交，独立审查延后（fast/guarded 档）| → 已完成（`/verify --review-drain` 通过后）|
 | 已完成 | 代码已提交 + 文档已同步 | 终态 |
 
 > 状态由 `/dev-workflow` 自动更新，不建议手动修改。
@@ -66,7 +67,7 @@ T-02 ─┘           │
 | **关联需求** | F-001, AC-001 |
 | **涉及文件** | `src/db/schema.ts` |
 | **commits** | `<repository>@<full-sha>`（Commit 2 写入；可多条）|
-| **审查状态** | `review_state` / `batch` / `due` / `pending_reason` / `ext_review_state`（按需填，见 [dev-workflow §任务台账](../../dev-workflow/SKILL.md)）|
+| **审查状态** | `batch` / `due` / `pending_reason` / `ext_review_state`（按需填，见 [dev-workflow §任务台账](../../dev-workflow/SKILL.md)）|
 
 **执行步骤**：
 1. [ ] 实现基础设施
