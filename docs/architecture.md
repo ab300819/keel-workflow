@@ -104,13 +104,12 @@ PRD 流程（prd / prd-brainstorm / prd-parser）承担**部分相同**的耦合
 所有文档体系升级 + 健康度审查动作统一通过单一入口，不再以散落 flag 形式暴露：
 
 ```bash
-/pipeline realign [--scope=<spec|prd-mapping|health>] [--target=<path>] [--dry-run|--apply]
+/pipeline realign [--scope=<spec|health>] [--target=<path>] [--dry-run|--apply]
 ```
 
 | scope | 用途 | 状态 |
 |-------|------|------|
 | `spec`（默认）| 产物 `spec_version` drift（schema 维度）| ✅ 部分可用 |
-| `prd-mapping` | PRD mapping_status 扫描 + 报告 | [FUTURE] |
 | `health` | 文档健康度主动审查（3 维度 / health-lint rule，清单见 [health-lint-implementation.md](../skills/pipeline/references/health-lint-implementation.md) Rule 集表）| ✅ **执行接口已落地**（详见 [realign-scope-health.md](../skills/pipeline/references/realign-scope-health.md)）|
 
 apply 的阶段划分各 scope 自定：health 见 [realign-scope-health.md](../skills/pipeline/references/realign-scope-health.md)，spec 见 [realign.md](../skills/pipeline/references/realign.md)。（原 layout scope 的六阶段 apply 已随 layout.v2 删除。）

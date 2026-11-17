@@ -79,14 +79,13 @@ user-invocable: true
 ### realign 参数语法
 
 ```bash
-/pipeline realign [--scope=<spec|prd-mapping|health>] [--target=<path>] [--dry-run|--apply] [--fix=<rule_id>]
+/pipeline realign [--scope=<spec|health>] [--target=<path>] [--dry-run|--apply] [--fix=<rule_id>]
 /pipeline realign --no-realign
 ```
 
 | 参数 | 说明 |
 |------|------|
 | `--scope=spec` | 默认值；处理 spec_version 维度 |
-| `--scope=prd-mapping` | `[FUTURE]` 处理 PRD 映射维度（尚未落地，当前调用只提示未实现）|
 | `--scope=health` | 文档健康度主动审查（3 维度 / health-lint rule，清单见 [references/health-lint-implementation.md](references/health-lint-implementation.md)），执行接口见 [references/realign-scope-health.md](references/realign-scope-health.md) |
 | `--target=<path>` | 限定回扫目标路径 |
 | `--dry-run` | 只出差距报告，**业务产物零写入**；scope=health 允许写 `.health-report.md` 作报告载体 |
@@ -228,7 +227,7 @@ Q3（feature/bugfix 追加，可选）:
   - 接手既有项目走 `retrofit`，同一个问题在 `00-baseline.md` §2.1 问，两条路径结论都落 AGENTS.md。
 - **close 脚手架清理**：close 末步委托 `prd clear` 清理 `docs/prd/` 一次性脚手架；先 dry-run 出范围 + 影响（孤儿 / 未同步项默认不删），⚠️ 必须确认后 `--apply` 删除；无 `docs/prd/` 时静默跳过。pipeline 只委托不自己删文件（见 prd [清理脚手架](../prd/SKILL.md#清理脚手架close-收尾)）。
 - **realign 协调机制**：realign 非续做信号；restructuring 差距必须 `⚠️ 必须确认`；additive 可直接补齐；二次运行幂等；无法向用户提问的运行环境下，调用方必须显式给 `/pipeline realign` 或 `--no-realign` 之一。
-- **工作区拓扑（`init`）**：`requirements` 完成后（首次产生 `docs/devdocs/`）执行 `Task: /workspace-topology reconcile`。该 skill 自己写 `AGENTS.md` 的 `workspace:` 块，**不经 `agent-memory` 代写**——`devdocs_frontmatter` 入参不再传 workspace 字段。无声明时它问一次 mode 与代码根并落声明，此后不再问。另在流程开头调一次 `/workspace-topology inspect`，把结果经握手的 `workspace_context` 下传给各原子 skill（见 [shared/constraints.md §3](../shared/constraints.md) `task/workspace-context`）。retrofit 场景的路径由 [retrofit/SKILL.md](../retrofit/SKILL.md) 自己承载。
+- **工作区拓扑（`init`）**：`requirements` 完成后（首次产生 `docs/devdocs/`）执行 `Task: /workspace-topology reconcile`。该 skill 自己写 `AGENTS.md` 的 `workspace:` 块，**不经 `agent-memory` 代写**。无声明时它问一次 mode 与代码根并落声明，此后不再问。另在流程开头调一次 `/workspace-topology inspect`，把结果经握手的 `workspace_context` 下传给各原子 skill（见 [shared/constraints.md §3](../shared/constraints.md) `task/workspace-context`）。retrofit 场景的路径由 [retrofit/SKILL.md](../retrofit/SKILL.md) 自己承载。
 
 ### Sprint Contract 握手
 

@@ -144,28 +144,9 @@ stateDiagram-v2
 
 ## 生产侧衔接
 
-其他 skill 产生“暂缓不阻塞”项时，优先通过 `yaml-summary-v1` 向编排层声明，编排层再调用 `backlog --park` 写入。原因：保持来源 skill 单一职责，避免多个 skill 直接改同一 SSOT 造成并发和 schema 漂移。
+入池只有一条路：用户或编排层显式调用 `backlog --park`。⛔ 其他 skill 不直接改 backlog 文件，也不输出候选字段——保持单一写入方，避免并发和 schema 漂移。
 
-候选接口：
-
-| 方案 | 行为 | 取舍 |
-|---|---|---|
-| A 推荐 `[FUTURE]` | 来源 skill 在 `summary.details.backlog_candidates` 输出候选（尚无 skill 输出该字段）；pipeline 或用户显式调用 `backlog --park` 写入 | 职责清晰、便于 dry-run、避免双写 |
-| B 可选 | 来源 skill 直接调用 `backlog --park` 子 Agent | 自动化更强，但需要严格传 allowed paths 与写入锁 |
-
-候选项最小结构：
-
-```yaml
-summary:
-  details:
-    backlog_candidates:
-      - source_id: AC-05
-        note: "P3 边界 case 待优化"
-        created_by_skill: verify
-        related_ids: [F-01, AC-07]
-```
-
-触发场景（`[FUTURE]`：下表除 `dev-workflow` 一行外，来源 skill 尚未实现候选输出，目前入池只能由用户或编排层显式调用本 skill）：
+适合入池的场景（由用户或编排层判断后调用）：
 
 | 来源 skill | 入池场景 |
 |---|---|
