@@ -123,3 +123,9 @@ git mv docs/devdocs/03-test-plan.md docs/devdocs/03-test-cases.md
 | F-001 | US-001 | AC-002 | UT-002 | - | E2E-001 |
 | F-001 | US-002 | AC-003 | UT-003 | IT-001 | - |
 ```
+
+### 补元数据（迁移的最后一步，⛔ 不可省）
+
+给每份迁移后的产物补上 YAML frontmatter：`generated_by` 填该产物的 owner skill，`spec_version` 填该 skill 当前常量（见其 `references/realign.md` 顶部），字段形态照该 skill 的模板。
+
+不补的后果：realign 以「有无 `spec_version`」判断归属，缺这个字段的产物会被再次判成 legacy 推回 retrofit，两边互相推诿。补上之后，后续规范升级才归 realign 处理。
