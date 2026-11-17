@@ -89,17 +89,16 @@ baseline-ui              ui-ux-pro-max              frontend-design
 
 ### 检测方法
 
-```bash
-# 检查 skills 目录（Claude Code / Codex / OpenCode）
-for dir in ~/.claude/skills ~/.agents/skills; do
-    ls -la "$dir" 2>/dev/null | grep -E "(baseline-ui|ui-ux-pro-max|frontend-design|swiftui-expert)"
-done
+1. **先看当前会话的可用 skill 列表**（客户端在会话里给出的那份）。列表里有目标 skill 即视为已安装，包括带插件命名空间的形式（如 `ui-ux-pro-max:ui-ux-pro-max`、`frontend-design:frontend-design`）。这是唯一能覆盖「以插件形式安装」的办法——插件装在客户端自己的缓存目录里，不在下面这些 skills 目录中。
+2. **客户端不提供列表时**才退回查目录，任一命中即可：
 
-# 检查项目本地 skills
-for dir in .claude/skills .agents/skills; do
-    ls -la "$dir" 2>/dev/null | grep -E "(baseline-ui|ui-ux-pro-max|frontend-design|swiftui-expert)"
+```bash
+for dir in ~/.claude/skills ~/.agents/skills ~/.config/opencode/skills .claude/skills .agents/skills; do
+    ls "$dir" 2>/dev/null | grep -E "(baseline-ui|ui-ux-pro-max|frontend-design|swiftui-expert)"
 done
 ```
+
+⛔ 目录里没找到 ≠ 未安装。两步都没命中才按下面的模板提示。
 
 ### 未安装提示模板
 

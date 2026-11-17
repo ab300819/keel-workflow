@@ -145,6 +145,10 @@ python3 <keel>/skills/pipeline/scripts/health-lint.py --target <项目根> --bas
 
 设计意图：避免 mic-en 等存量项目（245k）立即被 ⛔ 卡死；首次 bypass 锚定 baseline，之后只阻断"新增膨胀"。
 
+### 发布状态写入(可选)
+
+调用方可在握手 `inputs.release_status`（`unreleased` / `released`）传入用户对「项目发布过吗」的回答。传入时写进「约定」节的「发布状态」一行，来源是用户当面确认。未传入时不问、不猜：文件里已有该行就保留，没有就不写。
+
 ### devdocs frontmatter 写入(可选)
 
 **触发条件**:调用方随 `Task: /agent-memory --update` 传入 `devdocs_frontmatter`,嵌在 [constraints.md](../shared/constraints.md) §3 最小握手协议的 `inputs` 里:

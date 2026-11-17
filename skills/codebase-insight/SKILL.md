@@ -29,7 +29,7 @@ user-invocable: true
 |-------|------|------------------------|
 | retrofit | 建立项目基线（`00-baseline.md`：目的边界 / 外部硬约束 / 护栏 / 已知未知） | 问人、判断意图、给不确定性定安全默认动作 |
 | onboard | 项目上下文 + 进度 + 待办 | 进度追踪、待办汇总 |
-| code-self-describe | 模块级 CLAUDE.md + 依赖图 | 文件级描述、依赖图生成 |
+| code-self-describe | 模块级 CLAUDE.md | 文件级描述、依赖图生成 |
 | verify `--schema-drift` | 扫描 A/B 类 keel 产物的 `spec_version` 元数据 | 本 skill 的 `schema_version + commit_hash` 独立机制**被 `--schema-drift` 读取并在主报告独立章节呈现**（不并入 A/B 类主统计，不纳入 realign 编排；失效后由本 skill 自身 `--force` 处理，见 [../pipeline/references/realign.md](../pipeline/references/realign.md) § 与 codebase-insight 的关系） |
 
 ## 运行模式
@@ -52,11 +52,13 @@ Step 0: 缓存检查
     |
     +-- 读取 frontmatter：
         ├── schema_version 不匹配 → 全量重新扫描
-        ├── commit_hash != git rev-parse HEAD → 全量重新扫描
+        ├── 自 commit_hash 以来扫描范围内的代码有变更 → 全量重新扫描
         └── 全部匹配 → 缓存命中（status: success, cache_hit: true）
 ```
 
-**缓存设计原则**：只检查已提交变更（commit hash）和 schema 版本。未提交变更属于临时状态，需要时用 `--force` 强制重扫。
+**缓存设计原则**：只检查已提交变更和 schema 版本。未提交变更属于临时状态，需要时用 `--force` 强制重扫。
+
+「有变更」的判法是 `git diff --quiet <commit_hash> HEAD -- <scan_scope>`（排除文档目录），⛔ 不是直接比较 `commit_hash` 与 HEAD：那样提交本报告或任何纯文档改动都会让缓存失效，等于永不命中。多代码根时 `commit_hash` 逐根记录（`<label>@<sha>`），逐根比较，任一有变更即重扫。
 
 ## 工作流程
 
@@ -144,7 +146,7 @@ schema_version: "1.0"
 
 ### schema 约束
 
-- 章节标题和顺序固定，不可增删或重排
+- 章节标题和顺序固定，不可增删或重排（唯一例外：多代码根时在末尾追加「仓间关系」小节，见下）
 - frontmatter 必须包含 `generated_at`、`commit_hash`、`scan_scope`、`schema_version`
 - 未确定项使用 `- [ ]` checkbox 格式
 - 表格列数固定，可为空但不可省略列

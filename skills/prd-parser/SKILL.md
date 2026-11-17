@@ -74,11 +74,10 @@ metadata:
    v
 2. 归集原始文件到 source/
    |
-   +-- 项目内文件 → 移动到 docs/prd/source/（git mv 保留历史）
-   +-- 项目外文件 → 复制到 docs/prd/source/
+   +-- 所有文件（项目内外、各种格式）→ 复制到 docs/prd/source/，原文件不动
    +-- 若源文档为 Markdown → 扫描内嵌图片引用（`![...](相对路径)`），将引用的本地文件一并归集到 source/，保持相对路径结构
-   +-- 记录 source/manifest.md（原始路径、归集方式 copy/move、哈希、类型）
-   +-- 计算 document_fingerprint（对转换后的全文计算 sha256）
+   +-- 记录 source/manifest.md（原始路径、哈希、类型）
+   +-- 计算 document_fingerprint（对原始文件字节计算 sha256）
    |
    v
 3. 识别文档结构
@@ -207,7 +206,7 @@ generated_at: 2026-04-23T10:30:00+08:00
 id: FR-09
 title: 用户认证
 type: FR
-source_file: /absolute/path/to/original-prd.pdf  # 原始文件路径（二进制文件为原始位置，文本文件为 source/ 副本）
+source_file: docs/prd/source/original-prd.pdf  # source/ 下的副本；原始位置记在 source/manifest.md
 source_anchor: "2.1 用户认证"
 source_pages: "5-8"
 source_fingerprint: "sha256:abc123..."
@@ -231,7 +230,7 @@ status: pending
 | `id` | 是 | FR-XX 或 NFR-XX |
 | `title` | 是 | 块主题名称 |
 | `type` | 是 | FR 或 NFR |
-| `source_file` | 是 | 原始文件路径（文本文件指向 source/ 副本，二进制文件指向原始位置，详见 source/manifest.md） |
+| `source_file` | 是 | `source/` 下的副本路径（所有格式一致）；原始位置见 source/manifest.md |
 | `source_anchor` | 是 | 原文章节标题或位置描述 |
 | `source_pages` | 否 | PDF 页码或行范围 |
 | `source_fingerprint` | 是 | 本块内容的 sha256 哈希 |
@@ -246,10 +245,9 @@ status: pending
 ### 原始文件归集
 
 - 路径：`docs/prd/source/`
-- **项目内文件**（路径在当前 git 仓库内）→ **移动**到 source/（使用 `git mv` 保留版本历史）
-- **项目外文件**（路径在仓库外或非 git 管理）→ **复制**到 source/
-- 所有格式均自动归集（md/PDF/图片），不再需要用户手动复制
-- `source/manifest.md` 记录每个文件的：原始路径、归集方式（`move` / `copy`）、sha256 哈希、文件类型
+- 所有文件一律**复制**到 source/（项目内外、md/PDF/图片都一样），原文件不动，不需要用户手动复制
+- ⛔ 不用移动或 `git mv`：本目录不入库，把已被 git 跟踪的文件移进来等于从仓库里删掉它
+- `source/manifest.md` 记录每个文件的：原始路径、sha256 哈希、文件类型
 - 此目录在 `.gitignore` 中排除，不提交仓库（避免二进制膨胀和敏感信息入库）
 
 ## 变更追踪机制
@@ -293,7 +291,7 @@ pending ──(PRD 更新，章节删除)──> removed
 
 ## 指纹计算规则
 
-- **document_fingerprint**：对原始文件（或转换后全文）计算 sha256
+- **document_fingerprint**：对原始文件字节计算 sha256（⛔ 不对转写后的文本算：PDF / 图片每次转写结果不稳定，会让「文档无变化」判定失灵）
 - **source_fingerprint**：对块的正文内容（不含 YAML 头）计算 sha256
 - 计算前统一处理：去除首尾空白、规范化换行符为 `\n`
 - 哈希格式：`sha256:<hex 前 16 位>`（截断以提高可读性，冲突概率可忽略）
