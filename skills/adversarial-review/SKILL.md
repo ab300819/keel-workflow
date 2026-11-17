@@ -25,7 +25,7 @@ metadata:
 
 # 对抗性审查（Adversarial Review）
 
-调用外部 LLM 充当第三方：审查当前工作并逐条验证结论、通过审查循环达成共识；或独立出方案、独立调研，再与我方对照。
+调用外部 LLM 充当第三方：审查当前工作并逐条验证结论、通过审查循环达成共识；或独立出方案、独立调研，再与我方对照。外部审查方有 codex 与 agy 两个，可以单用一方，也可以两方并行做交叉验证（规则见 [references/cross-validation.md](references/cross-validation.md)）。
 
 ## 角色
 
@@ -54,8 +54,9 @@ metadata:
 ## 核心工作流
 
 ```
-S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
-    → S4 展示审查结论 → S5 逐条验证（含跨轮追踪 + 快照生成）
+S1 上下文收集 → S2 构建审查 brief → S2.5 询问审查方式（双方 / 只 codex / 只 agy）
+    → S3 外部审查调度（选双方时并行）→ S4 展示审查结论（两方分别展示）
+    → S4.5 对齐两方意见（仅双方）→ S5 逐条验证（含跨轮追踪 + 快照生成）
         → S6 用户确认
             ├── 接受建议 → 输出修复方案 → 重新提交审查（→ S3）
             ├── 全部驳回 → 生成最终报告 → 结束
@@ -111,9 +112,15 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 - suggestion：修复建议
 ```
 
+### S2.5 询问审查方式
+
+调度前问用户一次：双方共同审查、只用 codex、还是只用 agy。何时不问、选项怎么写、无法提问时的默认值，见 [cross-validation.md § 询问审查方式](references/cross-validation.md)。
+
 ### S3 外部审查调度
 
 调用外部 LLM 执行审查。详见 [`references/external-reviewer-integration.md`](references/external-reviewer-integration.md)。
+
+**选双方时**：同一份 brief 并行发给 codex 与 agy，互相不可见；各自独立套用本节的失败分类与截断判定；一方失败的处置见 [cross-validation.md § 一方失败](references/cross-validation.md)。agy 的检测、命令与解析见 [集成文档 § agy CLI](references/external-reviewer-integration.md)。下面的四级降级链只描述 **codex 一侧**。
 
 **四级降级链**（首次探测确定首选通道，每轮允许临时降级）：
 
@@ -168,7 +175,7 @@ S1 上下文收集 → S2 构建审查 brief → S3 外部审查调度
 
 ### 额度耗尽的默认行为：报告并停下
 
-T1 额度耗尽且 T1b 不可用时，⛔ **不自动降级到 T3，不自行决定"就这样吧"**。必须报三项由用户决定：**已耗尽的通道** / **重置时间**（原文照抄，如 `try again at 7:48 PM`）/ 可选项（等待 · 降 T3 附折损说明 · 换后端）。
+T1 额度耗尽且 T1b 不可用时（双方模式下还须 agy 也未成功，见 [cross-validation.md § 一方失败](references/cross-validation.md)），⛔ **不自动降级到 T3，不自行决定"就这样吧"**。必须报三项由用户决定：**已耗尽的通道** / **重置时间**（原文照抄，如 `try again at 7:48 PM`）/ 可选项（等待 · 降 T3 附折损说明 · 换后端）。
 
 理由：降 T3 是**真实的检出率损失**，不应静默发生。
 
@@ -188,7 +195,7 @@ T1 额度耗尽且 T1b 不可用时，⛔ **不自动降级到 T3，不自行决
 ```
 ## 外部审查结论（原始）
 
-审查方式：codex CLI / codex-mcp / 独立子 Agent
+审查方式：codex CLI / codex-mcp / agy CLI / 独立子 Agent
 发现数量：X 条
 
 ---
@@ -198,7 +205,11 @@ T1 额度耗尽且 T1b 不可用时，⛔ **不自动降级到 T3，不自行决
 <完整的审查结论>
 ```
 
-这一步的意义：让用户和当前 Agent 都先完整看到外部视角，避免选择性呈现。
+这一步的意义：让用户和当前 Agent 都先完整看到外部视角，避免选择性呈现。双方模式下两方的原始输出**各展示一份**，⛔ 不合并。
+
+### S4.5 对齐两方意见（仅双方）
+
+把两方发现合并成一份列表，每条标来源（`both` / `codex` / `agy` / `conflict`），再进入 S5。判定同一问题的标准、各来源的处置、冲突核不清时交用户裁定，见 [cross-validation.md § 对齐](references/cross-validation.md)。⛔ 来源不降低验证要求：两方都提的发现照样逐条验证。
 
 ### S5 逐条验证
 
@@ -289,7 +300,7 @@ by_severity:
 预警不阻塞流程，用户仍可选择继续。
 
 用 AskUserQuestion 询问用户：
-- **接受修复方案**：输出修复建议详情（skill 不直接修改文件），然后重新收集变更、提交审查（→ S3，新一轮）
+- **接受修复方案**：输出修复建议详情。本 skill 自始至终只读——修改由宿主 Agent 在本 skill 之外实施，改完再重新收集变更、提交审查（→ S3，新一轮，沿用首轮选定的审查方式）
 - **部分接受**：选择性确认，其余驳回
 - **全部驳回**：记录驳回理由，生成最终报告，结束
 - **结束审查**：不再继续循环，生成最终报告
@@ -371,13 +382,16 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 - [ ] **⛔ 有输出但无裁决 = 截断，不得当审查结果消费**；标 `truncated: true`
 - [ ] 额度耗尽且 T1b 不可用 → **报告并停下等用户决定**，⛔ 不自动降 T3
 - [ ] 降到 T3 时结论必须标注检出率折损
+- [ ] 交互调用先问审查方式（S2.5）；双方模式同一份 brief 并行发两方，⛔ agy 的模型不得与宿主或 codex 同族
+- [ ] ⛔ 一方失败或截断不得静默：结论首行写明本轮只有哪一方、另一方为何未完成
 - [ ] 连续 2 轮 primary_method 失败时永久降级；**额度类失败不计入该计数**
 
 ### 结论展示约束
 - [ ] ⛔ 必须先原样展示外部审查结论，再进行验证分析
 
 ### 验证约束
-- [ ] 每条发现必须独立验证，引用具体代码/文档作为证据
+- [ ] 每条发现必须独立验证，引用具体代码/文档作为证据；⛔ 两方都提（`both`）不免除验证
+- [ ] 两方冲突且核不清的 ⛔ 不得自行拍板，交用户裁定
 - [ ] 驳回必须提供具体反驳（不可仅说"不同意"）
 - [ ] 确认必须说明成因和修复方案
 
@@ -426,13 +440,17 @@ summary:
   details:
     review_target: "工作区 diff / 文件路径 / 方案描述"
     review_type: "代码审查 / 方案评审 / 文档审查 / 独立方案 / 独立调研"
-    review_method: codex-cli | codex-cli-alt | codex-mcp | task-subagent  # 最后一轮实际生效的通道
+    review_method: cross | codex-cli | codex-cli-alt | codex-mcp | agy-cli | task-subagent  # 两方都成功填 cross，否则填实际生效的通道
     primary_method: codex-cli | codex-mcp | task-subagent  # 首次探测锁定；⛔ 不含 codex-cli-alt（T1b 不参与首选探测）
     fallback_events: []          # 降级事件列表，如 ["R2: codex-cli→codex-cli-alt (quota)"]
     truncated: false             # ⛔ true = 本轮有输出但无裁决，findings 不可信
     quota_exhausted: false       # 本轮是否遇到额度/限流耗尽
     reset_hint: null             # 额度重置时间（原文照抄，如 "7:48 PM"）；无则 null
     degraded_detection: false    # true = 实际走了 T3，检出率低于外部审查
+    reviewers: []                # 每个审查方的 name / method / status / reason
+    single_reviewer: false       # true = 本轮实际只有一方
+    agreement: {both: 0, single_source: 0, conflict: 0, unresolved_conflict: 0}
+    # ↑ 三个字段及 truncated 等在双方模式下的含义见 references/cross-validation.md § 摘要字段
     rounds: 1
     health_scores: [22]          # 各轮健康分
     breaker_reason: null         # convergence | safety_limit | null

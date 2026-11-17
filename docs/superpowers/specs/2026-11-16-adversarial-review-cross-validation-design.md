@@ -1,6 +1,6 @@
 # adversarial-review 改为交叉验证（codex + agy）
 
-> 2026-11-16。状态：待用户批准。
+> 2026-11-16。状态：已实施（2026-11-17，用户批准；计划见 `docs/superpowers/plans/2026-11-17-adversarial-review-cross-validation.md`）。实施时修正一处：`--print-timeout` 必须带单位（`600s`），下文命令里的 `<秒>` 以集成文档为准。
 
 ## 1. 意图
 
