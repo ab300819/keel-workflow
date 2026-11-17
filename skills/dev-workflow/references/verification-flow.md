@@ -24,7 +24,7 @@
 1. **Phase 1~3（内置角色演绎）**：编排器切换到不同视角（/code-quality / /testing-guide / ui-quality-checklist），在**同进程**内审查。成本低、响应快，但本质仍是"同一个 agent 切视角自审"。
 2. **Phase 4（外部独立审查）**：调用**不同进程、不同模型**的外部审查者（codex CLI / codex-mcp），对 git diff 做真正的第三方审查。成本较高但独立性强，audit 默认 inline 触发；fast/guarded 延后到 `/verify --review-drain`。
 
-两类机制并行运行、各自判定：Phase 1~3 产出 `INT_*` canonical state（`INT_REVIEWED` / `INT_UNRESOLVED`），Phase 4 产出 `EXT_*` canonical state（见下方真值表）。**进入 Commit 1 的放行条件按 review_profile 分**：**audit** 任务需 `INT_*` 与 `EXT_*` 同时为"放行态"才能 Commit 1（独立审查 inline）；**fast/guarded** 任务独立审查延后,Commit 1 不等 INT/EXT 放行,提交后落 `review_pending`,经 `/verify --review-drain` 通过才转 `已完成`（质量地板与 `/verify --impl` 前置验证仍 inline 阻塞,不在延后范围）。
+两类机制并行运行、各自判定：Phase 1~3 产出 `INT_*` canonical state（`INT_REVIEWED` / `INT_UNRESOLVED`），Phase 4 产出 `EXT_*` canonical state（见下方真值表）。**进入 Commit 1 的放行条件按 review_profile 分**：**audit** 任务需 `INT_*` 与 `EXT_*` 同时为"放行态"才能 Commit 1（独立审查 inline）；**fast/guarded** 任务独立审查延后,Commit 1 不等 INT/EXT 放行（质量地板与 `/verify --impl` 前置验证仍 inline 阻塞,不在延后范围）。
 
 ### 核心原则
 
@@ -38,7 +38,7 @@
 
 ---
 
-> **延后语义**:Phase 1~3(内置角色演绎)+ Phase 4(外部对抗)是**独立审查**,在 `review_profile=fast/guarded` 时延后到 `/verify --review-drain` 集中执行,任务期间任务标 `review_pending`。`audit` 档 inline fail-fast(同今天 🔴)。质量地板与 `/verify --impl` 前置验证**不延后,始终 inline**。
+> **延后语义**:Phase 1~3 + Phase 4 是**独立审查**,哪些档延后、延后期间的任务状态见 [constraints.md § review_profile 与 review_pending](../../shared/constraints.md)。
 
 ## Phase 1: 代码质量审查
 
@@ -381,7 +381,7 @@ drain 侧定位规则（读任务台账，⛔ 不 grep git log）：
 | `T1` | codex CLI | 真正外部独立审查（不同进程/不同模型），首选 |
 | `T2` | codex-mcp | 真正外部独立审查，T1 不可用时降级 |
 
-audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 提交后标 `review_pending`，drain 达 `EXT_REVIEWED` 才转已完成。T1/T2 全失败 → `EXT_UNRESOLVED`。
+audit 任务必须 `EXT_REVIEWED` 才能 Commit 1；fast/guarded 的外审在 drain 时跑，判定同下表。T1/T2 全失败 → `EXT_UNRESOLVED`。
 
 ### `EXT_*` 状态执行判定表
 
@@ -456,10 +456,7 @@ fallback_events: []                                                           # 
 
 ## 延后审查与 review_pending(fast/guarded)
 
-### review_pending 状态
-- fast/guarded 任务 Commit 1 落盘后,独立审查(Phase 1~3 + Phase 4)未做 → 任务标 `review_pending`(**独立状态**——含义是"已提交待集中审",区别于 `EXT_UNRESOLVED` 的"审过但未通过")。
-- 任务台账字段:`batch` / `due`(格式 `sprint:<id>` 或 `YYYY-MM-DD`,默认落盘日+3 工作会话)/ `pending_reason: deferred-fast|deferred-guarded`。⛔ 不写 commit 尾注。
-- 转移:`review_pending` --(drain 无 Blocker)--> `已完成`;有 Blocker → fix-forward(见下)。
+状态含义、台账字段与出口见 [constraints.md § review_profile 与 review_pending](../../shared/constraints.md)；本节只写 drain 怎么执行。
 
 ### `/verify --review-drain` 集中清审
 收集所有 `review_pending` 任务,按延后档位补跑 Phase 1~3 + Phase 4(复用 embedded-headless T1→T2 通道),逐任务出 verdict。

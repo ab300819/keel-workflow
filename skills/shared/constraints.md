@@ -526,8 +526,8 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 ### review_pending(任务状态)
 - 含义:fast/guarded 任务代码已提交(Commit 1 已落盘),但延后的独立审查尚未做,**状态 ≠ 已完成**。
 - 与 `INT_UNRESOLVED`/`EXT_UNRESOLVED`/`postcheck_pending` 独立:后者是"审过但未通过 / 未放行阻塞态",`review_pending` 是"尚未审,已提交待集中审"。
-- 任务台账字段(`04-dev-tasks.md` 条目):`batch: <id>` / `due: <sprint:ID | YYYY-MM-DD>` / `pending_reason: deferred-fast | deferred-guarded`。⛔ 不写 commit 尾注——主体是任务不是 commit。
-- 清算入口:`/verify --review-drain`(批/sprint 边界集中跑延后审查)。
+- 任务台账字段(`04-dev-tasks.md` 条目):`batch: <id>` / `due: <sprint:ID | YYYY-MM-DD>`(默认落盘日+3 工作会话) / `pending_reason: deferred-fast | deferred-guarded`。⛔ 不写 commit 尾注——主体是任务不是 commit。
+- 清算入口:`/verify --review-drain`(批/sprint 边界集中跑延后审查);无 Blocker 才转 `已完成`,其余情形见 [drain 失败矩阵](../dev-workflow/references/verification-flow.md)。
 
 ### 独立审查状态机枚举（canonical 值域；跨 skill 协议）
 

@@ -31,7 +31,7 @@ metadata:
 | `--impl` | 代码是否做对 AC / 设计 / 追溯 | 原 review；在对抗式验证之前 |
 | `--ui` | UI 设计和实现是否对齐 | 原 ui-alignment |
 | `--readiness` | 能否进入开发 | pipeline 关卡 |
-| `--review-drain` | 收集所有 `review_pending` 任务,集中补跑延后的独立审查(Phase 1~3 + Phase 4),按 [dev-workflow verification-flow drain 失败矩阵](../dev-workflow/references/verification-flow.md) 出 verdict 并更新任务状态;全通过转已完成,有 Blocker 走 fix-forward 并阻断 sprint close |
+| `--review-drain` | 收集所有 `review_pending` 任务,集中补跑延后的独立审查(Phase 1~3 + Phase 4),按 [dev-workflow verification-flow drain 失败矩阵](../dev-workflow/references/verification-flow.md) 出 verdict 并更新任务状态 |
 | 对抗式验证 | 代码质量是否合格 | dev-workflow 内置，互补而非替代 |
 
 > `--review-drain` 复用 dev-workflow S9 Phase 1~3/Phase 4 的 embedded-headless 通道,是 fast/guarded 延后审查的清算入口;单任务 inline 审查仍由 dev-workflow 内部触发。
