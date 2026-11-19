@@ -6,12 +6,13 @@
 
 **Architecture:** `skills/shared/scripts/keel.py` 是唯一入口（argparse 分发），业务逻辑在同目录 `keellib/` 包里按职责分文件。状态存 `docs/devdocs/state/**.json`，人看的台账区与 `backlog.md` 由工具生成。hook 只是薄壳：bash 包装调用 `keel.py hook pre|post`，OpenCode 插件调同一命令。完整性判据用 git blob sha1：工作区内容等于 HEAD 的 blob 或等于本地 manifest 登记的 blob 即合法。
 
-**Tech Stack:** Python 3.9 标准库（`argparse` `json` `hashlib` `fcntl` `subprocess` `unittest`）；bash；Node（仅 `hooks/opencode-plugin.js`）；git。
+**Tech Stack:** Python 3.9 标准库（`argparse` `json` `hashlib` `fcntl` `subprocess` `unittest`）；bash；Node（仅 `hooks/opencode-plugin.js`）；git。开发期：`uvx ruff`、`uvx mypy`、mise 提供的 Python 3.9。
 
 **Spec:** `docs/superpowers/specs/2026-11-19-keel-mechanized-gates-design.md`
 
 ## Global Constraints
 
+- **开发期质量门禁**（用户 2026-11-19 定）：`keellib/` 与 `keel.py` 全部写类型标注，过 `mypy --strict --python-version 3.9`；`keellib/`、`keel.py`、`health-lint.py` 过 `ruff check --target-version py39 --select E4,E7,E9,F,B,UP`；自测在真实 Python 3.9 下跑一遍。ruff、mypy 用 `uvx` 临时拉取，只在本仓开发时用，⛔ 不进运行时依赖。3.9 由 `mise install python@3.9` 提供，⛔ 不放宽 `UV_PYTHON_DOWNLOADS=never`。`health-lint.py` 只过 ruff，不补类型。
 - Python 只用标准库，兼容 3.9；不依赖 jq。运行时要求 `python3`（≥3.9）+ `bash`；原生 Windows 第 1 段不支持（`fcntl` 也只在 POSIX 上有），README 写明。
 - 阈值只在 `keellib/gates.py` 写一处：`LINE_CAP = 500`（按字符计，`len(str)`）、`SIZE_CAP = 98304`（96 KiB，按字节）。`health-lint.py` 改为导入它们。
 - 文本上限：任务 `title` ≤ 80 字；`skip_trace_reason`、`profile_downgrade_reason`、backlog `note`、commit `note` ≤ 200 字。
@@ -54,6 +55,8 @@ skills/shared/scripts/
 └── tests/                   # unittest；keel.py --self-test 跑 discover
     ├── helpers.py           # 建临时 git 项目的夹具
     └── test_<模块>.py
+scripts/
+└── check-python.sh          # 开发期门禁：ruff + mypy + 3.9 下自测（不随插件分发）
 hooks/
 ├── keel-gate                # bash 薄壳：pre|post → keel.py hook
 ├── keel-shim                # SessionStart：keel.py install-shim
@@ -99,7 +102,8 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 ### Task 1: store —— 项目根、锁、原子写、manifest、完整性
 
 **Files:**
-- Create: `skills/shared/scripts/keel.py`、`skills/shared/scripts/keellib/__init__.py`、`skills/shared/scripts/keellib/store.py`
+- Create: `skills/shared/scripts/keel.py`、`skills/shared/scripts/keellib/__init__.py`、`skills/shared/scripts/keellib/store.py`、`scripts/check-python.sh`
+- Modify: `skills/pipeline/scripts/health-lint.py`（只修 ruff 报出的问题，不改行为）、`AGENTS.md` § 验证与交付（加一行：改 `*.py` 后跑 `bash scripts/check-python.sh`，本地 pre-commit 会自动跑）
 - Test: `skills/shared/scripts/tests/helpers.py`、`skills/shared/scripts/tests/test_store.py`
 
 **Interfaces:**
@@ -117,6 +121,12 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - `cleanup_tmp(project)`：删除 `state/` 下残留的 `.*.keel-tmp`。
   - `keel init`：建 `state/tasks/`、`state/backlog/`、`state/meta.json`，写 manifest。
 
+- [ ] **Step 0: 开发期门禁 `scripts/check-python.sh`**：依次执行，任一失败即非零退出，并打印失败的是哪一步：
+  1. `uvx ruff check --target-version py39 --select E4,E7,E9,F,B,UP skills/shared/scripts skills/pipeline/scripts`
+  2. `uvx mypy --strict --python-version 3.9 skills/shared/scripts/keel.py skills/shared/scripts/keellib`（keellib 尚不存在时跳过并提示）
+  3. `PY39=$(mise where python@3.9 2>/dev/null)/bin/python3`；不存在 → 失败并提示 `mise install python@3.9`（⛔ 不改用别的版本凑数）；存在 → `$PY39 skills/shared/scripts/keel.py --self-test`（keel.py 尚不存在时跳过）与 `$PY39 skills/pipeline/scripts/health-lint.py --selftest`
+  然后 `mise install python@3.9`，修掉 `health-lint.py` 的 ruff 报错，跑 `bash scripts/check-python.sh` 至全绿。再写本地 `.git/hooks/pre-commit`：暂存区有 `*.py` 时跑 `bash scripts/check-python.sh`，已有 hook 时串接不覆盖。单独提交：`git commit -m "chore: Python 开发期门禁（ruff + mypy + 3.9 自测）"`。
+
 - [ ] **Step 1: 写测试夹具 `tests/helpers.py`**：`make_project(tmp, git=True, commit=True) -> str` 建 `docs/devdocs/01-requirements.md`，可选 `git init` 并提交；`run_keel(root, *args, stdin=None) -> (code, out, err)` 用 `subprocess` 跑 `keel.py`。
 
 - [ ] **Step 2: 写失败测试 `tests/test_store.py`**
@@ -133,7 +143,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 
 - [ ] **Step 4: 实现 `store.py` 与 `keel.py` 骨架**（`init` 子命令、`--self-test` 跑 `unittest discover`、`KeelError` 退出码处理、`--root` 可选参数默认 `Project.find(os.getcwd())`）。
 
-- [ ] **Step 5: 跑测试确认通过**：同 Step 3 → 全部 PASS。
+- [ ] **Step 5: 跑测试确认通过**：同 Step 3 → 全部 PASS；再跑 `bash scripts/check-python.sh` 全绿（含 mypy 与 3.9）。
 
 - [ ] **Step 6: Commit**：`git commit -m "feat(keel): 状态存储、锁、原子写与完整性校验"`
 
@@ -163,7 +173,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 
 - [ ] **Step 3: 实现 `schema.py`**；`keel.py` 增加 `schema` 子命令。
 
-- [ ] **Step 4: 跑测试确认通过**。
+- [ ] **Step 4: 跑测试确认通过**：`bash scripts/check-python.sh` 全绿。
 
 - [ ] **Step 5: Commit**：`git commit -m "feat(keel): 任务与 backlog 字段校验（K5）"`
 
@@ -183,7 +193,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - `keel task set <id> [--status …] [--profile …] [--depends …] [--milestone …] [--layer …] [--title …] [--batch …] [--due …] [--pending-reason …] [--ext-review-state …] [--skip-trace-reason …] [--exploration-mode true|false] [--profile-downgrade-reason …] [--record …]`：一次调用里的多个字段原子生效；校验失败原文件不动、退出码 1。
   - `keel task commit <id> <repo@sha> --note <n>`：追加一条 commit。
   - `keel task archive <id>`：状态改 `已归档`。
-  - `keel task get <id> [--fields a,b] [--format json|text]`、`keel task list [--status s[,s]] [--fields a,b] [--format json|text]`：JSON 为 `{"items": [...], "coverage": {"scanned": N, "unreadable": [路径...]}}`；text 每条一行 `T-12 · 进行中 · 标题`，末行 `# 扫描 N 个文件，无法识别 M 个：<路径>`（M=0 时也打印）。
+  - `keel task get <id>`：打印该条完整 JSON。`keel task list [--status s[,s]] [--fields a,b]`：只输出文本，每条一行 `T-12 · 进行中 · 标题`（`--fields` 指定时按所列字段以 ` · ` 连接），末行 `# 扫描 N 个文件，无法识别 M 个：<路径>`（M=0 时也打印）。不提供 JSON 列表格式（用户 2026-11-19 削减）。
   - 每个写命令结束前调用 Task 5 的 `render_all(project)`。Task 5 完成前该调用是空函数。
   - `tasks.load_all(project) -> (dict[str, dict], list[str])`：返回 (id→任务, 无法解析的文件)。
 
@@ -192,15 +202,15 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - `test_add_requires_source`：缺 `--source` 退出码 2。
   - `test_set_multiple_fields_atomic`：一次设 `--status review_pending --batch b1 --due 2026-11-30 --pending-reason deferred-fast` 成功；只设 `--status review_pending` 退出码 1 且文件未变。
   - `test_concurrent_set_keeps_both`：两个子进程同时对 `T-1` 分别 `set --milestone M-1` 与 `set --layer core`，结束后两个字段都在（Spec §9 并发）。
-  - `test_list_reports_unreadable`：放一个坏 JSON 到 `state/tasks/` → `list --format json` 的 `coverage.unreadable` 含它，退出码 0。
-  - `test_get_fields_subset`：`get T-1 --fields status,title --format json` 只含这两个键加 `id`。
+  - `test_list_reports_unreadable`：放一个坏 JSON 到 `state/tasks/` → `list` 末行含「无法识别 1 个」与该路径，退出码 0。
+  - `test_list_fields`：`list --fields id,status` 每行恰为 `T-1 · 待开发` 形式。
   - `test_write_refused_when_tampered`：手改一个状态文件后 `task set` 退出码 3。
 
 - [ ] **Step 2: 跑测试确认失败**：`python3 -m unittest discover -s skills/shared/scripts/tests -p 'test_tasks.py' -v`
 
 - [ ] **Step 3: 实现 `tasks.py` 并接入 `keel.py`**。写命令流程固定为：`require_writable` → `lock` → `cleanup_tmp` → `require_intact` → 读 → 改 → `validate_task` → `write_atomic` → `render_all`。
 
-- [ ] **Step 4: 跑测试确认通过**。
+- [ ] **Step 4: 跑测试确认通过**：`bash scripts/check-python.sh` 全绿。
 
 - [ ] **Step 5: Commit**：`git commit -m "feat(keel): task 增改、归档与查询命令"`
 
@@ -218,7 +228,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 - Produces：
   - `keel backlog park <source_id> --note <n> --by <skill> [--related AC-1,AC-2]` → 打印锚点 `F-01#2`。同一 `source_id` 下 `entry_no` 递增。已有 `parked` 条目时：`M-` 前缀直接追加；其他前缀要求 `--append` 才写，否则退出码 1，提示「`F-01` 已有 parked 条目 F-01#1；确认追加加 `--append`，要更新原条目用 `keel backlog note F-01#1`」。
   - `keel backlog note <anchor> --note <n>`、`keel backlog reactivate <anchor> --target-flow <f> --target-id <id>`、`keel backlog close <anchor> --reason <r>`、`keel backlog supersede <anchor> --by-id <x>`：只允许从 `parked` 迁出。
-  - `keel backlog get <anchor>`、`keel backlog list [--status s] [--fields …] [--format json|text]`：覆盖情况同 task list。
+  - `keel backlog get <anchor>`（完整 JSON）、`keel backlog list [--status s] [--fields …]`（文本，覆盖情况同 task list）。
   - `backlog.load_all(project) -> (dict[str, dict], list[str])`，键为锚点。
 
 - [ ] **Step 1: 写失败测试**：`park` 编号递增；`B-001` 被拒；非 M 来源重复入池无 `--append` 被拒、有则追加；`M-003` 重复入池直接追加；`closed` 后再 `reactivate` 被拒；`list --status parked` 只返回 parked；note 201 字被拒。
@@ -227,7 +237,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 
 - [ ] **Step 3: 实现 `backlog.py` 并接入 `keel.py`**，写命令流程同 Task 3 Step 3。
 
-- [ ] **Step 4: 跑测试确认通过**。
+- [ ] **Step 4: 跑测试确认通过**：`bash scripts/check-python.sh` 全绿。
 
 - [ ] **Step 5: Commit**：`git commit -m "feat(keel): backlog 入池、迁移与查询命令"`
 
@@ -255,7 +265,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 
 - [ ] **Step 3: 实现 `render.py`**，接入 task/backlog 写命令和 `store.integrity_violations`。
 
-- [ ] **Step 4: 跑全部测试确认通过**：`python3 skills/shared/scripts/keel.py --self-test`
+- [ ] **Step 4: 跑全部测试确认通过**：`bash scripts/check-python.sh` 全绿。
 
 - [ ] **Step 5: Commit**：`git commit -m "feat(keel): 生成台账区与 backlog 索引"`
 
@@ -279,7 +289,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - `log_hit(project, gate, level, result, client, tool, path, detail)`：追加 `.keel/gate-log.jsonl`。
   - `apply_levels(project, findings, client, tool) -> (blocks: list[Finding], warns: list[Finding])`：按档位分流，每条都 `log_hit`（`off` 记 `skip`）。
   - `format_findings(findings) -> str`：每条一行「Kx `<路径>`[:行]：<问题>；<怎么改>」。各门的「怎么改」：K1「用 `keel task|backlog` 命令改，或人工确认后 `! .keel/bin/keel state accept`」；K2「生成区只由 keel 写，改回后跑 `keel render`」；K3「超长内容移到 `audit/T-xxx/` 或 `backlog/<id>.md`，此处留链接」；K4「先归档或拆分（`/sync --archive`），本文件只能改小」。
-  - 命令：`keel check [--staged] [--paths p1 p2 …]`（`--staged` 时用 index 内容：K1/K2 比 `git ls-files -s` 的 blob，K3/K4 读 `git show :<path>`；无 `--paths` 时检查所有与 HEAD 不同的载体文件），有 block 退出码 1；`keel gate set <K1..K4> <block|warn|off> --reason <r>`（写 `state/gates.json` 走 `write_atomic`，并记 `gate-set`）；`keel gate report [--since YYYY-MM-DD]`（按门汇总次数与涉及文件，附「每卡派生数」：按 `derived_from` 计数，列出前 10）；`keel state accept`（打开 `/dev/tty` 读入 `accept` 才执行：把当前所有状态文件与生成区 blob 写入 manifest，记 `accept`；打不开就退出码 3 并提示 `! .keel/bin/keel state accept`）。
+  - 命令：`keel check [--staged] [--paths p1 p2 …]`（`--staged` 时只检查 `git diff --cached --name-only` 列出的文件，读的是它们在**工作区**的内容。shortcut: 部分暂存时检查内容与提交内容可能不同，最后一道兜底可接受；真遇到漏放再改读 index。无 `--paths` 时检查所有与 HEAD 不同的载体文件），有 block 退出码 1；`keel gate set <K1..K4> <block|warn|off> --reason <r>`（写 `state/gates.json` 走 `write_atomic`，并记 `gate-set`）；`keel gate report [--since YYYY-MM-DD]`（按门汇总次数与涉及文件，附「每卡派生数」：按 `derived_from` 计数，列出前 10）；`keel state accept`（打开 `/dev/tty` 读入 `accept` 才执行：把当前所有状态文件与生成区 blob 写入 manifest，记 `accept`；打不开就退出码 3 并提示 `! .keel/bin/keel state accept`）。
 
 - [ ] **Step 1: 写失败测试**
   - K3：HEAD 已有 600 字符行，改其他行 → 无命中；新增 501 字中文行 → 命中（按字符计）；新增 500 字 → 不命中；改动已有超长行使其仍超长 → 命中；非载体文件（`audit/T-1/x.md`）新增 900 字 → 不命中；无提交的仓库里 501 字行 → 命中。
@@ -295,7 +305,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 
 - [ ] **Step 4: `health-lint.py` 改为导入阈值**：在文件头 `sys.path.insert(0, <本文件>/../../shared/scripts)` 后 `from keellib.gates import LINE_CAP, SIZE_CAP, line_too_long`；删除本地 `LINE_CAP` 与 `SIZE_CAP_BYTES` 定义，`scan_state` / `scan_layout` 用导入值。`SIZE_WARN` / `SIZE_BLOCK`（devdocs-state.md 专用的 10/40 KiB）保持原样。
 
-- [ ] **Step 5: 跑测试确认通过**：`python3 skills/shared/scripts/keel.py --self-test` 与 `python3 skills/pipeline/scripts/health-lint.py --selftest` 均通过。
+- [ ] **Step 5: 跑测试确认通过**：`bash scripts/check-python.sh` 全绿（含 health-lint 自测）。
 
 - [ ] **Step 6: Commit**：`git commit -m "feat(keel): K1–K4 门禁、档位、命中记录与 state accept"`
 
@@ -314,7 +324,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - `keel migrate [--dry-run | --apply] [--map-status "<原值>=<目标值>" …] [--allow-partial]`，默认 `--dry-run`；两种模式都写 `.keel/migration-report.md`。
   - `COLUMN_ALIASES`：`ID|编号|任务` → id；`描述|标题|任务名称` → title；`状态|status` → status；`profile|review_profile|档` → review_profile；`依赖` → depends_on；`来源` → source；`层|层级` → layer；`commits|已提交？` → commits；`ext_review_state` → ext_review_state；`备注` → 只进长文本记录。
   - `STATUS_ALIASES`：`待开发|todo|⬜` → 待开发；`进行中|🔄` → 进行中；`review_pending` → review_pending；`已完成|✅|done` → 已完成；`已归档` → 已归档。其余值进报告，须 `--map-status` 指定，⛔ 不猜。
-  - 识别来源：①`#### T-<n>: <名称>` 后的属性表（`| **状态** | … |`）；②首列表头命中 id 别名、单元格匹配 `T-\d+` 的汇总表；③分册的 `## T-<n> · <标题>` 节（只取标题）。同一编号多处出现时，状态以主文件汇总表为准，不一致的写进报告。
+  - 只认下列实际出现过的形态，⛔ 不写通用 markdown 表格解析（用户 2026-11-19 削减）；其余一律进报告「未识别」。识别来源：①`#### T-<n>: <名称>` 后的属性表（`| **状态** | … |`）；②首列表头命中 id 别名、单元格匹配 `T-\d+` 的汇总表；③分册的 `## T-<n> · <标题>` 节（只取标题）。同一编号多处出现时，状态以主文件汇总表为准，不一致的写进报告。
   - 超上限文本（标题 >80、备注、非 `repo@sha` 形状的 commits 文本）：追加到 `audit/T-<n>/ledger-record.md`，段首 `## 迁移自 <文件>（<日期>）`；该文件已含同一段文本则不重复追加；`record` 指向 `audit/T-<n>/`；标题截到 79 字加 `…`。
   - backlog 识别：集中形态 `### <锚点>` + 其后第一个 yaml 围栏块；目录形态 `backlog/*.md` 的第一个 yaml 围栏块。键 `id` 视同 `source_id`（ai-code 样本 54 条用 `id`）；锚点形如 `T-26#1` 时从中拆出 `entry_no`。`detail` 指向原 `backlog/<file>.md`。
   - `--apply`：先 `keel init`；写全部状态；`04-dev-tasks.md` 中被解析的汇总表整体替换为生成区标记（插在第一张表的位置），属性表里删去 状态 / commits / ext_review_state 三行；各文档 frontmatter `spec_version` 改为 `tasks.v3` / `backlog.v3`；`backlog.md` 重新生成。有未识别任务或未映射状态且无 `--allow-partial` 时，拒绝执行、退出码 1。
@@ -328,14 +338,14 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 
 - [ ] **Step 4: 实现 `migrate.py`、登记布局**。
 
-- [ ] **Step 5: 跑测试确认通过**：`python3 skills/shared/scripts/keel.py --self-test`
+- [ ] **Step 5: 跑测试确认通过**：`bash scripts/check-python.sh` 全绿。
 
 - [ ] **Step 6: ai-code 副本实测**：
   ```bash
   S=$(mktemp -d); cp -R ~/Projects/Workspace/ai-code/docs "$S/"; git -C "$S" init -q && git -C "$S" add -A && git -C "$S" -c user.name=t -c user.email=t@t commit -qm snap
   python3 skills/shared/scripts/keel.py --root "$S" migrate --dry-run; cat "$S/.keel/migration-report.md" | head -80
   ```
-  预期：报告给出已迁移、未识别、待映射计数，不抛异常。按报告补 `--map-status` 后 `--apply --allow-partial` 成功，`task list --format text` 末行的扫描数与报告一致。把报告摘要（计数 + 未识别类别）记进本计划末尾「实测记录」。⛔ 不动 ai-code 原目录。
+  预期：报告给出已迁移、未识别、待映射计数，不抛异常。按报告补 `--map-status` 后 `--apply --allow-partial` 成功，`task list` 末行的扫描数与报告一致。把报告摘要（计数 + 未识别类别）记进本计划末尾「实测记录」。⛔ 不动 ai-code 原目录。
 
 - [ ] **Step 7: Commit**：`git commit -m "feat(keel): tasks.v2/backlog.v2 迁移与布局登记"`
 
@@ -372,7 +382,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 
 - [ ] **Step 4: 实现上述文件**。
 
-- [ ] **Step 5: 跑测试确认通过**：两条命令全过；`bash hooks/test-devdocs-drift.sh` 仍通过；`node --check hooks/opencode-plugin.js`。
+- [ ] **Step 5: 跑测试确认通过**：`bash scripts/check-python.sh` 与 `bash hooks/test-keel-gate.sh` 全过；`bash hooks/test-devdocs-drift.sh` 仍通过；`node --check hooks/opencode-plugin.js`。
 
 - [ ] **Step 6: 性能**：在 Task 7 Step 6 的 ai-code 迁移副本上 `time (echo '{"tool_name":"Edit","tool_input":{"file_path":"'$S'/docs/devdocs/04-dev-tasks.md"}}' | CLAUDE_PROJECT_DIR=$S bash hooks/keel-gate post)` 三次取中位数，预期 < 300ms；超出时先查 git 调用次数（应为常数次：一次 `ls-tree`、一次 `diff --name-only`、按需 `show`）。
 
@@ -415,7 +425,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 
 - [ ] **Step 3: Codex、OpenCode 能测则测**：同样的 ②③④；另测 Codex 是否触发 SessionStart、`"shell": "bash"` 字段是否被接受、hook 名 `apply_patch` / `shell` 是否匹配。测不了的逐项写进交付说明。
 
-- [ ] **Step 4: 全量检查**：`python3 skills/shared/scripts/keel.py --self-test`；`python3 skills/pipeline/scripts/health-lint.py --selftest`；`bash hooks/test-keel-gate.sh`；`bash hooks/test-devdocs-drift.sh`；`node --check hooks/opencode-plugin.js`；`git diff --check`。
+- [ ] **Step 4: 全量检查**：`bash scripts/check-python.sh`；`bash hooks/test-keel-gate.sh`；`bash hooks/test-devdocs-drift.sh`；`node --check hooks/opencode-plugin.js`；`git diff --check`。
 
 - [ ] **Step 5: 独立审查**：按 AGENTS.md 用 codex 审查脚本与 hook 的代码行为（`/adversarial-review --code`）。
 
