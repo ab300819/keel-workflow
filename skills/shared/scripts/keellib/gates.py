@@ -133,6 +133,14 @@ def run_check(project: Project, staged: bool, paths: list[str] | None, client: s
         scope = {p for p in out.decode("utf-8", "replace").split("\0") if p}
     elif paths:
         scope = {os.path.relpath(os.path.join(project.root, p), project.root) for p in paths}
+    blocks, warns = apply_levels(project, collect(project, scope), client, tool)
+    if blocks or warns:
+        print(format_findings(blocks + warns), file=sys.stderr)
+    return 1 if blocks else 0
+
+
+def collect(project: Project, scope: set[str] | None) -> list[Finding]:
+    """scope 为 None 时查全部与 HEAD 不同的载体文件和全部 K1/K2。"""
     files = [p for p in (sorted(scope) if scope is not None else _changed_carriers(project)) if is_carrier(p)]
     findings: list[Finding] = []
     for rel in files:
@@ -144,10 +152,7 @@ def run_check(project: Project, staged: bool, paths: list[str] | None, client: s
         findings += check_k3(project, rel, data.decode("utf-8", "replace")) + check_k4(project, rel, len(data))
     if project.is_migrated():
         findings += [f for f in check_k1k2(project) if scope is None or f.path.split("#")[0] in scope]
-    blocks, warns = apply_levels(project, findings, client, tool)
-    if blocks or warns:
-        print(format_findings(blocks + warns), file=sys.stderr)
-    return 1 if blocks else 0
+    return findings
 
 
 def gate_set(project: Project, gate: str, lv: str, reason: str) -> None:

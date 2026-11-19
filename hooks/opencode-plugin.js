@@ -1,7 +1,9 @@
 /**
- * keel OpenCode 适配层（仅 v2，v1 插件 API 不再支持）—— 做两件事：
+ * keel OpenCode 适配层（仅 v2，v1 插件 API 不再支持）—— 做三件事：
  *   1. 把包内 skills/<name>/SKILL.md 注册进 OpenCode（ctx.skill.transform），免软链；
- *   2. 把 hooks/ 下的公共检查脚本接到 OpenCode 的 tool.hook("execute.after")。
+ *   2. 把 hooks/ 下的公共检查脚本接到 OpenCode 的 tool.hook("execute.after")；
+ *   3. keel 门禁：setup 写垫片，execute.before / execute.after 调 `keel.py hook pre|post`
+ *      （原始 event.input 原样传入，路径解析只在 keellib/hookio.py 一处）。
  *
  * 检查逻辑一份不动（`devdocs-drift` / `skill-flag-lint`，它们按 Claude Code / Codex 的
  * hook 输出契约打印 JSON）；本文件只做两件事：喂输入、把 additionalContext 追加到
@@ -21,12 +23,13 @@
  */
 
 import { execFile } from "node:child_process"
-import { readFileSync, readdirSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const HOOK_DIR = dirname(fileURLToPath(import.meta.url))
 const SKILLS_DIR = join(HOOK_DIR, "..", "skills")
+const KEEL = join(HOOK_DIR, "..", "skills", "shared", "scripts", "keel.py")
 const EDIT_TOOLS = new Set(["edit", "write", "patch"])
 // devdocs-drift 看 git status,与改动用的是哪个工具无关 → shell 改文件也要跑。
 // skill-flag-lint 依赖 tool_input.file_path,shell 调用没有该字段,跑了也是空转。
@@ -43,6 +46,28 @@ function runCheck(name, cwd, payload) {
     )
     child.stdin.end(payload)
   })
+}
+
+/** 跑 keel.py；非 keel 项目或出错一律返回空串（放行，靠工具自检与 pre-commit 兜底）。 */
+function runKeel(args, cwd, payload = "") {
+  if (!existsSync(join(cwd, "docs", "devdocs"))) return Promise.resolve("")
+  return new Promise((resolve) => {
+    const child = execFile(
+      "python3",
+      [KEEL, "--root", cwd, ...args],
+      { cwd, env: { ...process.env, KEEL_CLIENT: "opencode" }, timeout: 10_000 },
+      (err, stdout) => resolve(err ? "" : (stdout || "").trim()),
+    )
+    child.stdin.end(payload)
+  })
+}
+
+function parseJson(stdout) {
+  try {
+    return stdout ? JSON.parse(stdout) : {}
+  } catch {
+    return {}
+  }
 }
 
 /** 脚本按 Claude/Codex 契约输出；这里只取出人话那一段。 */
@@ -93,6 +118,13 @@ export default {
     await ctx.skill.transform((editor) => {
       for (const skill of skills) editor.add(skill)
     })
+    await runKeel(["install-shim", "--plugin-root", join(HOOK_DIR, "..")], cwd)
+    const keelPayload = (event) => JSON.stringify({ tool_name: event.tool, tool_input: event.input || {}, cwd })
+    await ctx.tool.hook("execute.before", async (event) => {
+      if (!EDIT_TOOLS.has(event.tool) && event.tool !== "shell") return
+      const out = parseJson(await runKeel(["hook", "pre"], cwd, keelPayload(event))).hookSpecificOutput || {}
+      if (out.permissionDecision === "deny") throw new Error(out.permissionDecisionReason)
+    })
     await ctx.tool.hook("execute.after", async (event) => {
       if (event.status !== "completed") return
       const checks = EDIT_TOOLS.has(event.tool)
@@ -101,14 +133,15 @@ export default {
           ? CHECKS_SHELL
           : null
       if (!checks) return
+      const gate = parseJson(await runKeel(["hook", "post"], cwd, keelPayload(event)))
       const payload = JSON.stringify({
         hook_event_name: "PostToolUse",
         tool_name: event.tool,
         tool_input: { ...(event.input || {}), file_path: filePathOf(event.input, cwd) },
         cwd,
       })
-      const msgs = (await Promise.all(checks.map((c) => runCheck(c, cwd, payload))))
-        .map(extractContext)
+      const msgs = [gate.reason || gate.hookSpecificOutput?.additionalContext || ""]
+        .concat((await Promise.all(checks.map((c) => runCheck(c, cwd, payload)))).map(extractContext))
         .filter(Boolean)
       if (!msgs.length) return
       // OpenCode 无 additionalContext 通道：追加进工具结果，这是模型唯一会读到的位置

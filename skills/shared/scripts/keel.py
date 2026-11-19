@@ -11,7 +11,7 @@ from typing import Any
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from keellib import backlog, gates, migrate, schema, store, tasks  # noqa: E402
+from keellib import backlog, gates, hookio, install, migrate, schema, store, tasks  # noqa: E402
 from keellib.common import write_session  # noqa: E402
 
 
@@ -143,6 +143,9 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--apply", action="store_true")
     p.add_argument("--map-status", action="append", default=[], metavar="原值=目标值")
     p.add_argument("--allow-partial", action="store_true")
+    sub.add_parser("hook", help="客户端 hook 入口，stdin 读 payload").add_argument("event", choices=["pre", "post", "paths"])
+    sub.add_parser("install-shim", help="写 .keel/bin/keel 垫片").add_argument("--plugin-root", required=True)
+    sub.add_parser("git-hook", help="git pre-commit 串接").add_subparsers(dest="git_hook_cmd", required=True).add_parser("install")
     sub.add_parser("state", help="状态确认").add_subparsers(dest="state_cmd", required=True).add_parser("accept")
     args = ap.parse_args(argv)
     if args.self_test:
@@ -153,8 +156,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "schema":
         print(schema.describe(args.kind))
         return 0
+    if args.cmd == "hook":
+        return hookio.main(args.root, args.event)
     try:
         project = store.Project.find(args.root or os.getcwd())
+        if args.cmd in ("install-shim", "git-hook"):
+            out = install.install_shim(project, args.plugin_root) if args.cmd == "install-shim" \
+                else install.git_hook_install(project)
+            if out:
+                print(out)
+            return 0
         if args.cmd == "task":
             return cmd_task(project, args)
         if args.cmd == "check":

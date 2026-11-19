@@ -19,6 +19,11 @@ EDITED=$(printf '%s' "$PAYLOAD" | python3 -c \
   'import json,sys
 try: print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))
 except Exception: print("")' 2>/dev/null)
+if [ -z "$EDITED" ]; then                                   # Codex apply_patch 无 file_path：从补丁头取路径
+  EDITED=$(printf '%s' "$PAYLOAD" | python3 "$ROOT/skills/shared/scripts/keel.py" --root "$ROOT" hook paths 2>/dev/null \
+    | grep -m1 -E '^skills/.*\.md$')
+  [ -n "$EDITED" ] && EDITED="$ROOT/$EDITED"
+fi
 case "$EDITED" in *"/skills/"*.md) ;; *) exit 0 ;; esac     # 只关心 skills/ 下的 .md
 
 GITDIR=$(git -C "$ROOT" rev-parse --absolute-git-dir 2>/dev/null) || exit 0   # worktree 下 .git 是文件
