@@ -450,3 +450,20 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 - `--apply` 无 `--allow-partial`：退出码 1，未写入。`--apply --allow-partial`：成功；`task list` 末行「扫描 0 个文件」、`backlog list` 末行「扫描 204 个文件」，与报告一致；`keel check` 无 K1/K2；第二次 `--apply` 不重复写入。
 - 文档改动：`04-dev-tasks*.md` 与 `24-master-merge-20261104.md` 的 `spec_version` 升到 v3；主文件在外审台账表前插入生成区（该表各行未迁移，原样保留在区外）；`backlog.md` 重新生成，原文另存为 `backlog/index.md`。
 - 结论：按削减后的识别范围，ai-code 的任务状态一张都迁不过来。要迁 ai-code 的任务，至少还要认「`#` 首列表头」和「编号单元格后缀里的状态」两种形态，需用户决定是否扩大范围。
+
+#### 修订 1 后重跑（A1–A5，2026-11-19）
+
+识别范围补了 ai-code 的三种实际形态：`#` 首列表头、编号单元格后缀里的状态、分册节下的 `> **状态**` 引用块。重跑使用新的 mktemp 副本，原目录未动。
+
+- 不带 `--map-status` 的 dry-run：任务 61、backlog 204，未识别 213，待映射状态 23 种。待映射里次数最多的是 `🔍 待审查` 37、`关闭` 15、`→ M-004` 7、`关闭（作废）` 6；其余多是一次性的自由文本，例如「M-002 内关闭·余下交 M-003 测试」。
+- 示例映射：`🔍 待审查=review_pending`、`关闭=已完成`、`关闭（作废）=已归档`、`已提交`/`已提交·外审过=已完成`、`→ M-004`/`→ 第 2 批`/`→ M-003=待开发`。这只是测量用的示例，正式映射由用户定。
+- 示例映射下 `--apply --allow-partial` 的结果：
+  - 迁出任务 117（其中 36 张补成 review_pending），backlog 204；`task list` / `backlog list` 的扫描数与报告一致；
+  - 无 K1/K2；health-lint 对 `state/`、`ledger-record.md`、`migration-v3.md` 没有 unknown-path；
+  - docs 未提交时再跑 apply 被拒；提交后再跑，迁出 0，不重复写入。
+- 剩余未识别（示例映射下 240 条）：
+  - 138 条缺状态来源：这些任务的状态在任务文档里没有任何结构化写法，只出现在 `00-context.md` 的叙述里（如 T-15），工具无从识别，不猜；
+  - 23 条任务校验失败：16 条 audit 档已完成但缺 `ext_review_state`，7 条 profile 列里填了层图标或长文本（列错位）；
+  - 6 条依赖指向未迁移任务；3 条缺标题（阻塞任务块的行）；
+  - backlog 23 条校验失败、9 张索引卡没有 yaml，情况同首轮。
+- 结论：大约 117 / 280 张任务能迁出。剩下的主要缺口是任务文档里本来就没写状态，要由用户补写，或在迁移后用 `keel task add` / `set` 补录。

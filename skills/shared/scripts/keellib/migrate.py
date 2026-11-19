@@ -14,7 +14,7 @@ from .common import dump
 from .store import BEGIN, END, KeelError, Project
 
 COLUMN_ALIASES = {
-    "id": "id", "编号": "id", "任务": "id", "描述": "title", "标题": "title", "任务名称": "title",
+    "#": "id", "id": "id", "编号": "id", "任务": "id", "描述": "title", "标题": "title", "任务名称": "title",
     "状态": "status", "status": "status", "profile": "review_profile", "review_profile": "review_profile",
     "档": "review_profile", "依赖": "depends_on", "来源": "source", "层": "layer", "层级": "layer",
     "commits": "commits", "已提交？": "commits", "ext_review_state": "ext_review_state", "备注": "note",
@@ -26,12 +26,17 @@ STATUS_ALIASES = {
 PROP_DROP = ("status", "commits", "ext_review_state")
 EMPTY = ("", "—", "-", "无", "n/a")
 REPORT = ".keel/migration-report.md"
+ARCHIVE = "docs/devdocs/audit/migration-v3.md"
+ROLLBACK = "git checkout -- docs/devdocs && git clean -fd docs/devdocs && rm -rf docs/devdocs/state .keel/manifest.json"
+RP_REASON = {"fast": "deferred-fast", "guarded": "deferred-guarded"}
 MAIN = "04-dev-tasks.md"
 _H4 = re.compile(r"####\s+(T-[A-Za-z0-9-]*)\s*[:：]\s*(.*)")
 _H2 = re.compile(r"##\s+(T-[A-Za-z0-9-]*)\s*·\s*(.*)")
 _PROP = re.compile(r"\|\s*\*\*(.+?)\*\*\s*\|(.*)\|\s*$")
 _TOKEN = re.compile(r"T-[A-Za-z0-9-]+")
 _DEP = re.compile(r"\bT-\d+(?![A-Za-z0-9-])")
+_BQ = re.compile(r">\s*\*\*状态[^*]*\*\*\s*[：:]?\s*(.*)")
+_DATE_PAREN = re.compile(r"[（(]\d{4}-\d{2}-\d{2}[）)]")
 _SEP = re.compile(r"\|[\s|:-]+")
 _BL_HEAD = re.compile(r"###\s+([A-Z]+-\d+[a-z]?)(?:#(\d+))?(?:\s+-\s+(.*))?\s*$")
 _YAML = re.compile(r"^```ya?ml\n(.*?)^```", re.S | re.M)
@@ -82,6 +87,11 @@ def _yaml(text: str) -> dict[str, Any]:
     return d
 
 
+def _status_text(v: str) -> str:
+    """状态自由文本取到第一个括号 / 冒号 / 句读之前，如「关闭（用户裁定 …）：…」→「关闭」。"""
+    return re.split(r"[（(：:。，,；;]", _bare(v))[0].strip()
+
+
 class _Task:
     def __init__(self, where: str) -> None:
         self.where = where
@@ -105,6 +115,7 @@ class Migration:
         self.unknown: list[str] = []
         self.pending: Counter[str] = Counter()
         self.conflicts: list[str] = []
+        self.rp_filled: list[str] = []
         self.prop_rows: list[tuple[str, int, str]] = []
         self.tables: list[tuple[int, int, list[tuple[int, str | None]]]] = []  # 主文件汇总表 (起, 止, 行)
         self.texts: dict[str, str] = {}
@@ -149,7 +160,7 @@ class Migration:
 
     def _scan(self, rel: str, lines: list[str]) -> None:
         fence = region = False
-        cur: str | None = None
+        cur = sec = None  # 当前 #### 任务卡 / ## T-n · 节（节内只取第一条状态引用）
         i = 0
         while i < len(lines):
             s, where = lines[i].strip(), f"{rel}:{i + 1}"
@@ -160,11 +171,14 @@ class Migration:
             elif fence or region:
                 pass
             elif s.startswith("#"):
-                cur = None
+                cur = sec = None
                 m = _H4.fullmatch(s) or _H2.fullmatch(s)
                 if m and (tid := self._tid(m.group(1), where, s)):
                     self._put(tid, "title", m.group(2), rel, where)
-                    cur = tid if s.startswith("####") else None
+                    cur, sec = (tid, None) if s.startswith("####") else (None, tid)
+            elif sec and (q := _BQ.match(s)):
+                self._put(sec, "status", _status_text(q.group(1)), rel, where)
+                sec = None
             elif s.startswith("|"):
                 j = i
                 while j < len(lines) and lines[j].strip().startswith("|"):
@@ -184,7 +198,9 @@ class Migration:
                     if key in PROP_DROP:
                         self.prop_rows.append((rel, k, cur))
             return
-        cols = [COLUMN_ALIASES.get(_bare(h).lower()) for h in _cells(lines[a])]
+        head = [_bare(h).lower() for h in _cells(lines[a])]
+        cols = [COLUMN_ALIASES.get(h) for h in head]
+        cols[1:] = ["title" if c == "id" else c for c in cols[1:]]  # `# | 任务 | …`：首列是编号，「任务」是标题
         if not any(c not in (None, "id", "note") for c in cols[1:]):
             return
         start = a + 2 if a + 1 < b and _SEP.fullmatch(lines[a + 1].strip()) else a + 1
@@ -200,6 +216,8 @@ class Migration:
             tid = self._tid(tok.group(0), where, lines[k]) if tok else None
             if not tok:
                 self._unk(where, "首列没有任务编号", lines[k])
+            elif tid and head[0] == "#":  # `#` 表的状态写在编号后缀：`T-168 ✅`
+                self._put(tid, "status", _DATE_PAREN.sub("", _bare(cells[0])[tok.end():]), rel, where, rel == MAIN)
             rows.append((k, tid))
             for c, key in enumerate(cols[1:], 1):
                 if tid and key and key != "id" and c < len(cells):
@@ -218,7 +236,11 @@ class Migration:
         return s
 
     def _norm(self, v: str) -> str | None:
-        return self.map.get(v) or STATUS_ALIASES.get(v) or STATUS_ALIASES.get(v.lower())
+        hit = self.map.get(v) or STATUS_ALIASES.get(v) or STATUS_ALIASES.get(v.lower())
+        if hit:
+            return hit
+        each = {STATUS_ALIASES.get(x) or STATUS_ALIASES.get(x.lower()) for x in v.split()}
+        return each.pop() if len(each) == 1 and None not in each else None  # 「✅ 已完成」各词同指一个状态
 
     def _build(self) -> dict[str, dict[str, Any]]:
         out: dict[str, dict[str, Any]] = {}
@@ -248,6 +270,13 @@ class Migration:
                 d["ext_review_state"] = _bare(f["ext_review_state"][0])
             if "depends_on" in f:
                 d["depends_on"] = list(dict.fromkeys(_DEP.findall(_bare(f["depends_on"][0]))))
+            if status == "review_pending":  # 迁移来的 review_pending 补齐必填字段；audit / 缺档位不猜
+                reason = RP_REASON.get(d["review_profile"] if "review_profile" in f else "")
+                if not reason:
+                    self.pending[f"{pick[0][0]}（review_pending，档位 {d['review_profile'] if 'review_profile' in f else '缺失'}）"] += 1
+                    continue
+                d.update(batch="migrated-v3", due=self.today, pending_reason=reason)
+                self.rp_filled.append(f"- {tid}：batch=migrated-v3，due={self.today}，pending_reason={reason}")
             if "commits" in f:
                 raw, rel = f["commits"]
                 refs = [x for x in re.split(r"[\s,，;；]+", _bare(raw)) if x]
@@ -376,6 +405,14 @@ class Migration:
                     cur += f"## 迁移自 {rel}（{self.today}）\n\n" + "".join(f"- **{lb}**：{tx}\n" for lb, tx in add)
             if cur != old:
                 self._write(rec, cur)
+        arch = old_arch = self._read(ARCHIVE)
+        for a, b, rows in self.tables:  # 被删的汇总表整表原样存档
+            block = "\n".join(self.texts[MAIN].split("\n")[a:b])
+            if any(tid in done for _k, tid in rows) and block not in arch:
+                arch += ("" if not arch or arch.endswith("\n") else "\n") + ("\n" if arch else "")
+                arch += f"## 迁移自 {MAIN}:{a + 1}（{self.today}）\n\n{block}\n"
+        if arch != old_arch:
+            self._write(ARCHIVE, arch)
         for rel, text in self.texts.items():
             lines = text.split("\n")
             drop = {k for r, k, tid in self.prop_rows if r == rel and tid in done}
@@ -412,10 +449,15 @@ class Migration:
                           *sec("未识别", [f"- {u}" for u in self.unknown]),
                           *sec("待映射状态", [f"- `{v}` → {n}" for v, n in self.pending.most_common()]),
                           *sec("状态冲突", [f"- {c}" for c in self.conflicts]),
-                          *sec("搬出的长文本", moved + self.bl_note)])
+                          *sec("review_pending 补字段", self.rp_filled),
+                          *sec("搬出的长文本", moved + self.bl_note),
+                          "## 回滚", "", f"迁移前 docs/devdocs 已提交；撤销本次迁移：`{ROLLBACK}`"])
 
 
 def run(project: Project, apply: bool, maps: list[str], allow_partial: bool) -> int:
+    if apply and store._git(project.root, "rev-parse", "--git-dir") is not None \
+            and store._git(project.root, "status", "--porcelain", "--", "docs/devdocs"):
+        raise KeelError("docs/devdocs 有未提交改动，先提交或暂存再迁移", 1)
     with project.lock():
         m = Migration(project, maps)
         refuse = apply and bool(m.unknown or m.pending) and not allow_partial

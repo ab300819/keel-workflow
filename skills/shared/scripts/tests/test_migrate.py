@@ -12,6 +12,7 @@ LINT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(SCRIPTS))), 
                     "health-lint.py")
 REPORT = ".keel/migration-report.md"
 MAP = ["--map-status", "🔍 待审查=review_pending"]
+ROLLBACK = "git checkout -- docs/devdocs && git clean -fd docs/devdocs && rm -rf docs/devdocs/state .keel/manifest.json"
 
 
 def section(report: str, name: str) -> str:
@@ -41,6 +42,10 @@ class MigrateTest(unittest.TestCase):
                 with open(p, "rb") as fh:
                     out[os.path.relpath(p, self.root)] = fh.read()
         return out
+
+    def commit(self) -> None:
+        git(self.root, "add", "-A")
+        git(self.root, "commit", "-qm", "c")
 
     def migrate(self, *args: str) -> "tuple[int, str]":
         rc, out, err = run_keel(self.root, "migrate", *args)
@@ -86,10 +91,15 @@ class MigrateTest(unittest.TestCase):
         self.load("aicode-shape")
         rc, rep = self.migrate("--dry-run")
         self.assertEqual(rc, 0, rep)
-        self.assertIn("`🔍 待审查` → 1", section(rep, "待映射状态"))
+        pend = section(rep, "待映射状态")
+        self.assertIn("`🔍 待审查` → 3", pend)
+        self.assertIn("`关闭` → 1", pend)  # 编号单元格后缀里的状态，日期括号去掉
         unk = section(rep, "未识别")
-        for s in ("backlog/M-003-9.md:1", "T-12a", "T-RF-1", "T-20", "T-14"):
+        for s in ("backlog/M-003-9.md:1", "T-12a", "T-RF-1", "T-14"):
             self.assertIn(s, unk)
+        for s in ("T-20", "T-22", "T-23"):
+            self.assertNotIn(s, unk)
+        self.assertIn("T-13", section(rep, "状态冲突"))
 
     def test_apply_refused_without_map(self) -> None:
         self.load("aicode-shape")
@@ -120,6 +130,25 @@ class MigrateTest(unittest.TestCase):
         self.assertIn('"status": "已完成"', out)
         text = self.read("docs/devdocs/04-dev-tasks.md")
         self.assertIn("| T-12a | 带字母后缀的编号 |", text)  # 未识别的行原样留在生成区外
+        self.assertIn("| T-24 🔍 待审查 | 待审查的 audit 任务 |", text)
+        self.assertNotIn("| T-20 ✅ |", text)
+        for tid, st in (("T-20", "已完成"), ("T-22", "已完成"), ("T-13", "待开发")):
+            self.assertIn(f'"status": "{st}"', run_keel(self.root, "task", "get", tid)[1], tid)
+        self.assertIn('"title": "旧口径表里的任务"', run_keel(self.root, "task", "get", "T-20")[1])
+        for tid, why in (("T-12", "deferred-fast"), ("T-23", "deferred-guarded")):
+            out = run_keel(self.root, "task", "get", tid)[1]
+            self.assertIn('"status": "review_pending"', out)
+            self.assertIn('"batch": "migrated-v3"', out)
+            self.assertIn(f'"pending_reason": "{why}"', out)
+        self.assertEqual(run_keel(self.root, "task", "get", "T-24")[0], 1)
+        rp = section(rep, "review_pending 补字段")
+        self.assertIn("T-12", rp)
+        self.assertIn("T-23", rp)
+        self.assertIn("audit", section(rep, "待映射状态"))
+        arch = self.read("docs/devdocs/audit/migration-v3.md")
+        for s in ("| ID | 描述 | 状态 |", "| # | 任务 | 层 |", "| T-20 ✅ |", "合成长备注：本段文字"):
+            self.assertIn(s, arch)
+        self.assertTrue(rep.rstrip().endswith(ROLLBACK + "`"))
         self.assertNotIn("| T-13 | 分册任务 | 待开发 |", text)
         self.assertIn("人写的正文保留。", text)
         self.assertIn("spec_version: backlog.v3", self.read("docs/devdocs/backlog.md"))
@@ -131,13 +160,18 @@ class MigrateTest(unittest.TestCase):
         rc, out, err = run_keel(self.root, "check")
         self.assertNotIn("K1", out + err)
         self.assertNotIn("K2", out + err)
+        with open(os.path.join(self.root, "docs/devdocs/99-unregistered.md"), "w", encoding="utf-8") as f:
+            f.write("x\n")
         p = subprocess.run([sys.executable, LINT, "--target", self.root], capture_output=True, text=True, env=CLEAN_ENV)
-        self.assertIn("layout/unknown-path", p.stdout)  # ledger-record 等未登记路径照常报，证明规则在跑
+        self.assertIn("docs/devdocs/99-unregistered.md", p.stdout)  # 未登记路径照常报，证明规则在跑
         unknown = [b for b in p.stdout.split("- rule_id:") if b.strip().startswith("layout/unknown-path")]
-        self.assertFalse([b for b in unknown if "docs/devdocs/state/" in b])
+        self.assertFalse([b for b in unknown if "docs/devdocs/state/" in b or "docs/devdocs/audit/" in b])
+        os.remove(os.path.join(self.root, "docs/devdocs/99-unregistered.md"))
+        self.commit()
         rc, rep = self.migrate("--apply", "--allow-partial", *MAP)
         self.assertEqual(rc, 0, rep)
         self.assertEqual(self.read("docs/devdocs/audit/T-10/ledger-record.md"), rec)
+        self.assertEqual(self.read("docs/devdocs/audit/migration-v3.md"), arch)
         self.assertEqual(self.task_count(), n)
 
     def test_existing_ledger_text_not_appended(self) -> None:
@@ -148,6 +182,7 @@ class MigrateTest(unittest.TestCase):
         note = next(c for c in text.split("|") if "合成长备注" in c).strip()
         with open(rec, "w", encoding="utf-8") as f:
             f.write("# 手工搬过\n\n" + note + "\n")
+        self.commit()
         rc, rep = self.migrate("--apply", "--allow-partial", *MAP)
         self.assertEqual(rc, 0, rep)
         self.assertEqual(self.read("docs/devdocs/audit/T-10/ledger-record.md").count(note), 1)
@@ -159,6 +194,7 @@ class MigrateTest(unittest.TestCase):
             f.write("# 任务\n\n| ID | 状态 | 备注 |\n|---|---|---|\n| T-1 | 待开发 | 旧备注 |\n\n"
                     "#### T-1: 已有\n\n| 属性 | 内容 |\n|---|---|\n| **状态** | 待开发 |\n")
         self.assertEqual(run_keel(self.root, "render")[0], 3)
+        self.commit()
         rc, rep = self.migrate("--apply")
         self.assertEqual(rc, 0, rep)
         self.assertEqual(run_keel(self.root, "render")[0], 0)
@@ -166,6 +202,40 @@ class MigrateTest(unittest.TestCase):
         self.assertEqual(self.task_count(), 1)
         self.assertIn("旧备注", self.read("docs/devdocs/audit/T-1/ledger-record.md"))
         self.assertNotIn("| T-1 | 待开发 | 旧备注 |", self.read("docs/devdocs/04-dev-tasks.md"))
+
+    def test_dirty_docs_refused(self) -> None:
+        self.load("aicode-shape")
+        with open(os.path.join(self.root, "docs/devdocs/99-draft.md"), "w", encoding="utf-8") as f:
+            f.write("未提交\n")
+        rc, _, err = run_keel(self.root, "migrate", "--apply", "--allow-partial", *MAP)
+        self.assertEqual(rc, 1)
+        self.assertIn("docs/devdocs 有未提交改动，先提交或暂存再迁移", err)
+        self.assertFalse(os.path.exists(os.path.join(self.root, "docs/devdocs/state")))
+
+    def test_rollback_recipe(self) -> None:
+        self.load("aicode-shape")
+        before = self.snapshot()
+        self.assertEqual(self.migrate("--apply", "--allow-partial", *MAP)[0], 0)
+        subprocess.run(["bash", "-c", ROLLBACK], cwd=self.root, check=True, env=CLEAN_ENV, capture_output=True)
+        self.assertEqual(self.snapshot(), before)
+        rc, rep = self.migrate("--apply", "--allow-partial", *MAP)
+        self.assertEqual(rc, 0, rep)
+        rc, out, err = run_keel(self.root, "check")
+        self.assertNotIn("K1", out + err)
+
+    def test_saved_tables_not_duplicated(self) -> None:
+        self.load("aicode-shape")
+        lines = self.read("docs/devdocs/04-dev-tasks.md").split("\n")
+        a = next(i for i, x in enumerate(lines) if x.startswith("| ID | 描述"))
+        b = next(i for i, x in enumerate(lines) if x.startswith("| T-RF-1"))
+        table = "\n".join(lines[a:b + 1])
+        path = os.path.join(self.root, "docs/devdocs/audit/migration-v3.md")
+        os.makedirs(os.path.dirname(path))
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("# 已存\n\n" + table + "\n")
+        self.commit()
+        self.assertEqual(self.migrate("--apply", "--allow-partial", *MAP)[0], 0)
+        self.assertEqual(self.read("docs/devdocs/audit/migration-v3.md").count(table), 1)
 
     def test_bad_map_status(self) -> None:
         self.load("aicode-shape")

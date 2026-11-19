@@ -71,6 +71,8 @@
 | `state/backlog/<slug>.json` | keel | — |
 | `state/meta.json` | keel | — |
 | `state/gates.json` | keel | — |
+| `audit/T-<N>/ledger-record.md` | keel | — |
+| `audit/migration-v3.md` | keel | — |
 
 ## 双形态存储：集中文件 vs 资源目录
 
