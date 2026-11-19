@@ -8,7 +8,7 @@ from datetime import date
 from typing import Any
 
 from . import schema, store
-from .common import dump, write_session
+from .common import check_anchor, dump, write_session
 from .store import KeelError, Project
 
 BACKLOG_REL = store.STATE_REL + "/backlog"
@@ -34,6 +34,8 @@ def load_all(project: Project) -> tuple[dict[str, dict[str, Any]], list[str]]:
                 e = json.load(f)
             if not isinstance(e, dict) or not isinstance(e.get("source_id"), str) or not isinstance(e.get("entry_no"), int):
                 raise ValueError
+            if name != _anchor(e).replace("#", "-") + ".json":
+                raise ValueError
             entries[_anchor(e)] = e
         except (ValueError, OSError):
             bad.append(BACKLOG_REL + "/" + name)
@@ -52,6 +54,7 @@ def _today() -> str:
 
 
 def park(project: Project, source_id: str, note: str, by: str, related: str | None, append: bool) -> str:
+    check_anchor(source_id + "#1")
     with write_session(project):
         entries, _ = load_all(project)
         mine = [e for e in entries.values() if e["source_id"] == source_id]
@@ -69,6 +72,7 @@ def park(project: Project, source_id: str, note: str, by: str, related: str | No
 
 
 def transition(project: Project, anchor: str, fn: Callable[[dict[str, Any]], None]) -> None:
+    check_anchor(anchor)
     with write_session(project):
         entries, _ = load_all(project)
         if anchor not in entries:
@@ -82,6 +86,7 @@ def transition(project: Project, anchor: str, fn: Callable[[dict[str, Any]], Non
 
 
 def get(project: Project, anchor: str) -> str:
+    check_anchor(anchor)
     entries, _ = load_all(project)
     if anchor not in entries:
         raise KeelError(f"backlog 条目 {anchor} 不存在", 1)

@@ -12,9 +12,10 @@ BACKLOG_STATUSES = ("parked", "reactivated", "closed", "superseded")
 SOURCE_PREFIXES = ("F", "US", "AC", "T", "INS", "BUG", "FR", "NFR", "M")
 TEXT_CAPS = {"title": 80, "skip_trace_reason": 200, "profile_downgrade_reason": 200, "note": 200}
 
-COMMIT_REF = re.compile(r"^[^@\s]+@[0-9a-f]{7,40}$")
-SOURCE_ID = re.compile(r"^(" + "|".join(SOURCE_PREFIXES) + r")-\d+[a-z]?$")
-DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+TASK_ID = re.compile(r"T-\d+")
+COMMIT_REF = re.compile(r"[^@\s]+@[0-9a-f]{7,40}")
+SOURCE_ID = re.compile(r"(" + "|".join(SOURCE_PREFIXES) + r")-\d+[a-z]?")
+DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 _TASK_DEFAULTS: dict[str, Any] = {
     "schema": "keel.task.v1", "id": None, "title": None, "status": "待开发", "source": None,
@@ -83,6 +84,8 @@ def validate_task(task: dict[str, Any], known_ids: set[str]) -> list[str]:
     _check_common(task, _TASK_DEFAULTS, "keel.task.v1", errs)
     for f in ("id", "title", "source"):
         _text(task, f, errs, required=True)
+    if not (isinstance(task.get("id"), str) and TASK_ID.fullmatch(task["id"])):
+        errs.append(_err("id", f"{task.get('id')!r} 格式不对", "改为 T-<数字>"))
     for f in ("skip_trace_reason", "profile_downgrade_reason"):
         _text(task, f, errs)
     _enum(task, "status", TASK_STATUSES, errs)
@@ -109,7 +112,7 @@ def validate_task(task: dict[str, Any], known_ids: set[str]) -> list[str]:
     commits = task.get("commits") or []
     for c in commits if isinstance(commits, list) else []:
         ref = c.get("ref") if isinstance(c, dict) else None
-        if not isinstance(ref, str) or not COMMIT_REF.match(ref):
+        if not isinstance(ref, str) or not COMMIT_REF.fullmatch(ref):
             errs.append(_err("commits[].ref", f"{ref!r} 格式不对", "写成 <仓库>@<7-40位小写十六进制sha>"))
         note = c.get("note") if isinstance(c, dict) else None
         if isinstance(note, str) and len(note) > TEXT_CAPS["note"]:
@@ -125,14 +128,14 @@ def validate_backlog(entry: dict[str, Any]) -> list[str]:
     errs: list[str] = []
     _check_common(entry, _BACKLOG_DEFAULTS, "keel.backlog.v1", errs)
     sid = entry.get("source_id")
-    if not isinstance(sid, str) or not SOURCE_ID.match(sid):
+    if not isinstance(sid, str) or not SOURCE_ID.fullmatch(sid):
         errs.append(_err("source_id", f"{sid!r} 前缀或格式不对", "前缀限 " + "/".join(SOURCE_PREFIXES) + "，如 F-01、M-003"))
     n = entry.get("entry_no")
     if not isinstance(n, int) or isinstance(n, bool) or n < 1:
         errs.append(_err("entry_no", "应为 ≥1 的整数", "改为正整数"))
     for f in ("created_at", "updated_at"):
         v = entry.get(f)
-        if (v is None and f == "created_at") or (v is not None and not (isinstance(v, str) and DATE.match(v))):
+        if (v is None and f == "created_at") or (v is not None and not (isinstance(v, str) and DATE.fullmatch(v))):
             errs.append(_err(f, f"{v!r} 不是 YYYY-MM-DD", "改成日期"))
     _text(entry, "created_by_skill", errs, required=True)
     _text(entry, "note", errs, required=True)

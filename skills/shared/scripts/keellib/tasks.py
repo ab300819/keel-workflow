@@ -8,7 +8,7 @@ from collections.abc import Callable
 from typing import Any
 
 from . import schema, store
-from .common import dump, write_session
+from .common import check_task_id, dump, write_session
 from .store import KeelError, Project
 
 TASKS_REL = store.STATE_REL + "/tasks"
@@ -30,6 +30,8 @@ def load_all(project: Project) -> tuple[dict[str, dict[str, Any]], list[str]]:
             with open(os.path.join(d, name), encoding="utf-8") as f:
                 t = json.load(f)
             if not isinstance(t, dict) or not isinstance(t.get("id"), str):
+                raise ValueError
+            if name != t["id"] + ".json":
                 raise ValueError
             tasks[t["id"]] = t
         except (ValueError, OSError):
@@ -65,6 +67,7 @@ def add(project: Project, title: str, source: str, derived_from: str | None = No
 
 
 def _mutate(project: Project, tid: str, fn: Callable[[dict[str, Any]], None]) -> None:
+    check_task_id(tid)
     with write_session(project):
         tasks, _ = load_all(project)
         if tid not in tasks:
@@ -99,6 +102,7 @@ def archive(project: Project, tid: str) -> None:
 
 
 def get(project: Project, tid: str) -> str:
+    check_task_id(tid)
     tasks, _ = load_all(project)
     if tid not in tasks:
         raise KeelError(f"任务 {tid} 不存在", 1)

@@ -142,6 +142,9 @@ def write_atomic(project: Project, relpath: str, data: bytes) -> None:
     """调用方须已持有 project.lock()。"""
     project.check_links()
     path = os.path.join(project.root, relpath)
+    allowed = (os.path.realpath(project.state_dir), os.path.realpath(project.keel_dir))
+    if not any(os.path.realpath(path).startswith(a + os.sep) for a in allowed):
+        raise KeelError(f"拒绝写入 {relpath}：目标不在 state/ 或 .keel/ 内", 3)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     _replace_file(path, data)
     m = project.manifest()

@@ -99,6 +99,14 @@ class DescribeTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("review_profile", out)
 
+    def test_trailing_newline_rejected(self):
+        t = schema.new_task("T-1\n", "x", "dev-tasks")
+        self.assertTrue(schema.validate_task(t, set()))
+        t = schema.new_task("T-1", "x", "dev-tasks", commits=[{"ref": "r@abcdef1\n", "note": "n"}])
+        self.assertTrue(schema.validate_task(t, set()))
+        self.assertTrue(schema.validate_backlog(schema.new_backlog("F-01\n", 1, "v", "n", "2026-11-19")))
+        self.assertTrue(schema.validate_backlog(schema.new_backlog("F-01", 1, "v", "n", "2026-11-19\n")))
+
 
 if __name__ == "__main__":
     unittest.main()
