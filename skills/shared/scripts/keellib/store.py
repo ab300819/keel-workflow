@@ -20,7 +20,9 @@ TASKS_MD = "docs/devdocs/04-dev-tasks.md"
 BEGIN = "<!-- keel:begin ledger -->"
 END = "<!-- keel:end ledger -->"
 REGION_KEY = TASKS_MD + "#ledger"
-ACCEPT_HINT = "状态文件被非工具改动；用 keel 命令改回，或人工确认后执行 `! .keel/bin/keel state accept`"
+HUMAN_ONLY = "这一步只能由人在交互终端执行：另开一个终端，在项目根目录运行"
+ACCEPT_CMD = "`.keel/bin/keel state accept`"
+ACCEPT_HINT = f"状态文件被非工具改动；用 keel 命令改回，或人工确认。{HUMAN_ONLY} {ACCEPT_CMD}"
 
 
 class KeelError(Exception):
@@ -111,7 +113,7 @@ class Project:
         except FileNotFoundError:
             return {}
         except ValueError:
-            raise KeelError(".keel/manifest.json 损坏，人工确认状态文件后执行 `! .keel/bin/keel state accept` 重建", 3) from None
+            raise KeelError(f".keel/manifest.json 损坏，人工确认状态文件后重建。{HUMAN_ONLY} {ACCEPT_CMD}", 3) from None
 
     def save_manifest(self, m: dict[str, str]) -> None:
         os.makedirs(self.keel_dir, exist_ok=True)
@@ -252,7 +254,7 @@ def require_intact(project: Project) -> None:
                 json.loads(text)
             except ValueError:
                 if "<<<<<<<" in text:
-                    raise KeelError(f"{rel} 有合并冲突，手工解决后执行 `! .keel/bin/keel state accept`", 3) from None
+                    raise KeelError(f"{rel} 有合并冲突，手工解决后。{HUMAN_ONLY} {ACCEPT_CMD}", 3) from None
     raise KeelError("\n".join(bad) + "\n" + ACCEPT_HINT, 3)
 
 

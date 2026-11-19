@@ -23,7 +23,7 @@ _CARRIER_RE = re.compile(r"docs/devdocs/04-dev-tasks[^/]*\.md|docs/devdocs/backl
 GATES_REL = store.STATE_REL + "/gates.json"
 LOG_REL = ".keel/gate-log.jsonl"
 FIX = {
-    "K1": "用 `keel task|backlog` 命令改，或人工确认后 `! .keel/bin/keel state accept`",
+    "K1": f"用 `keel task|backlog` 命令改，或人工确认。{store.HUMAN_ONLY} {store.ACCEPT_CMD}",
     "K2": "生成区只由 keel 写，改回后跑 `keel render`",
     "K3": "超长内容移到 `audit/T-xxx/` 或 `backlog/<id>.md`，此处留链接",
     "K4": "先归档或拆分（`/sync --archive`），本文件只能改小",
@@ -211,7 +211,7 @@ def read_tty(prompt: str, cmd: str = ".keel/bin/keel state accept") -> str:
     try:
         fd = os.open("/dev/tty", os.O_RDWR)
     except OSError:
-        raise KeelError(f"打不开 /dev/tty，只能由人在终端确认；请输入 `! {cmd}`", 3) from None
+        raise KeelError(f"打不开 /dev/tty。{store.HUMAN_ONLY} `{cmd}`", 3) from None
     os.write(fd, prompt.encode())  # tty 不可 seek，不能用 "r+" 的 fdopen
     with open(fd, encoding="utf-8", errors="replace") as t:
         return t.readline().strip()

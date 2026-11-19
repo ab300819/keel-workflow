@@ -32,7 +32,7 @@ expect "Codex Pre 拒绝补丁改 backlog.md" pre \
   '{"tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: docs/devdocs/backlog.md\n@@\n-a\n+b\n*** End Patch"}}' \
   '"permissionDecision": "deny"'
 expect "Pre 拦模型代人 state accept" pre \
-  '{"tool_name":"Bash","tool_input":{"command":".keel/bin/keel state accept"}}' '! .keel/bin/keel'
+  '{"tool_name":"Bash","tool_input":{"command":".keel/bin/keel state accept"}}' '另开一个终端'
 new_proj bash; echo '{"hand":1}' > "$R/docs/devdocs/state/tasks/T-1.json"
 expect "Post 发现 Bash 改过的状态文件" post '{"tool_name":"Bash","tool_input":{"command":"echo"}}' '"decision": "block"'
 new_proj long; printf '%0600d\n' 0 >> "$R/docs/devdocs/04-dev-tasks.md"

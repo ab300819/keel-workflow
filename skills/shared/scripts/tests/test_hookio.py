@@ -101,7 +101,7 @@ class HookioTest(unittest.TestCase):
             rc, out = self.hook("pre", {"tool_name": "Bash", "tool_input": {"command": cmd}})
             d = json.loads(out)["hookSpecificOutput"]
             self.assertEqual(d["permissionDecision"], "deny", cmd)
-            self.assertIn("! .keel/bin/keel", d["permissionDecisionReason"])
+            self.assertIn("另开一个终端", d["permissionDecisionReason"])
         for cmd in (".keel/bin/keel gate set K3 block --reason y", ".keel/bin/keel task list", "echo state accept"):
             self.assertEqual(self.hook("pre", {"tool_name": "shell", "tool_input": {"command": ["bash", "-lc", cmd]}}),
                              (0, ""), cmd)

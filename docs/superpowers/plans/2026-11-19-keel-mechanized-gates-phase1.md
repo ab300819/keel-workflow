@@ -19,7 +19,7 @@
 - 任务状态枚举：`待开发` / `进行中` / `review_pending` / `已完成` / `已归档`。
 - 状态载体文件（K3/K4 范围）：`docs/devdocs/04-dev-tasks*.md`（仅 devdocs 根下）、`docs/devdocs/backlog.md`、`docs/devdocs/00-context.md`、`.claude/rules/devdocs-state.md`。`audit/**`、`backlog/<id>.md`、01–03 规格文档不在范围内。
 - 档位：`block` / `warn` / `off`；默认全部 `block`；K5 不可调。项目覆盖只经 `keel gate set`。第 1 段没有单次放行。
-- `keel state accept` 只能人执行：从 `/dev/tty` 读确认，打不开 `/dev/tty` 就拒绝，并提示用户输入 `! .keel/bin/keel state accept`。
+- `keel state accept` 只能人执行：从 `/dev/tty` 读确认，打不开 `/dev/tty` 就拒绝，并提示「这一步只能由人在交互终端执行：另开一个终端，在项目根目录运行 `.keel/bin/keel state accept`」（2026-11-19 实测 Claude Code 的 `!` 命令无 tty，故改为另开终端）。
 - 未迁移项目（devdocs 下有 `tasks.v2` / `backlog.v2` 文档且无 `state/meta.json`）：所有写状态的命令拒绝执行，提示先跑 `/pipeline realign`；只读命令照常可用。
 - 被拦提示一到两行：哪里违反、怎么改。
 - 本仓「一条规则只写一处」：被接管的规则从 spec 删除条文，只留一行「由 `keel` 的 Kx 保证，被拦时这样处理」。
@@ -467,3 +467,15 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - 6 条依赖指向未迁移任务；3 条缺标题（阻塞任务块的行）；
   - backlog 23 条校验失败、9 张索引卡没有 yaml，情况同首轮。
 - 结论：大约 117 / 280 张任务能迁出。剩下的主要缺口是任务文档里本来就没写状态，要由用户补写，或在迁移后用 `keel task add` / `set` 补录。
+
+### Task 10 Step 2：Claude Code 真实会话实测（2026-11-19）
+
+Claude Code headless `claude -p --plugin-dir`，ai-code devdocs 副本（已迁移 102 任务 / 204 backlog）。
+
+- ① 垫片 `.keel/bin/keel` 写出：✅
+- ② Edit 状态文件 → Pre 拒绝 K1：✅
+- ③ Bash `sed` 改状态文件 → Post 拦回 K1：✅
+- ④ 600 字一行 → Post 拦回 K3（并带 K4）：✅
+- ⑤ `!` 命令没有 tty → 改为另开终端执行：✅（已改，同步改设计稿 §5.3、Global Constraints、constraints.md、README、提示文案）
+- ⑥ 模型 Bash 调 `state accept` → Pre 拒绝（human）：✅
+- Task 10 Step 3（Codex / OpenCode）：本轮未测。
