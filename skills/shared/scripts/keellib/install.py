@@ -8,18 +8,28 @@ from . import store
 from .store import KeelError, Project
 
 MARK = "# keel pre-commit"
+NOT_READY = 4  # 垫片自检失败（缺 python3 或 keel.py）：pre-commit 只对它放行
 HOOK = f"""#!/bin/bash
 {MARK}：先跑 keel 门禁，再执行被串接的旧 hook
 K=./.keel/bin/keel
 if [ -x "$K" ]; then
   "$K" check --staged; rc=$?
-  [ $rc -eq 1 ] && exit 1                                   # 只有门禁拦下才拒绝提交
-  [ $rc -ne 0 ] && echo "keel 不可用（退出码 ${{rc}}），本次提交未检查；开新会话会重写垫片" >&2
+  case $rc in
+    0) ;;
+    {NOT_READY}|126|127) echo "keel 不可用（退出码 ${{rc}}），本次提交未检查；开新会话会重写垫片" >&2 ;;
+    *) exit 1 ;;  # 1 被门拦下；3 检查启动了却完成不了（状态读不出、manifest 损坏）：同样拒绝
+  esac
 else echo "keel：.keel/bin/keel 不存在，跳过状态检查（开一次装了 keel 插件的会话即可生成）" >&2
 fi
 C="$(dirname "$0")/pre-commit.keel-chained"
 if [ -x "$C" ]; then exec "$C" "$@"; fi
 exit 0
+"""
+SHIM = """#!/bin/bash
+T={target}
+command -v python3 >/dev/null 2>&1 || {{ echo "keel 工具未就绪：缺 python3" >&2; exit {rc}; }}
+[ -f "$T" ] || {{ echo "keel 工具未就绪：缺 ${{T}}（插件已升级或卸载；开一次装了 keel 插件的会话即可重写垫片）" >&2; exit {rc}; }}
+exec python3 "$T" "$@"
 """
 UNMIGRATED = ('{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":'
               '"keel 3.0：本项目台账尚未迁移，写台账和 backlog 的命令会拒绝执行；先跑 /pipeline realign"}}')
@@ -39,7 +49,7 @@ def install_shim(project: Project, plugin_root: str) -> str:
     os.makedirs(bindir, exist_ok=True)
     target = os.path.join(os.path.abspath(plugin_root), "skills", "shared", "scripts", "keel.py")
     shim = os.path.join(bindir, "keel")
-    store._replace_file(shim, f'#!/bin/bash\nexec python3 {shlex.quote(target)} "$@"\n'.encode())
+    store._replace_file(shim, SHIM.format(target=shlex.quote(target), rc=NOT_READY).encode())
     os.chmod(shim, 0o755)
     ex = git_path(project, "info/exclude")
     if ex is not None:

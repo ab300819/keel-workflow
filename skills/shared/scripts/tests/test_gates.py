@@ -86,8 +86,8 @@ class GatesTest(unittest.TestCase):
         self.assertEqual(run_keel(self.root, "gate", "set", "K5", "off", "--reason", "x")[0], 2)
         self.assertEqual(run_keel(self.root, "gate", "set", "K3", "bogus", "--reason", "x")[0], 2)
         self.assertEqual(self.main_accept("gate", "set", "K3", "warn", "--reason", "x"), 0)
-        self.assertEqual(gates.level(self.p, "K3"), "warn")
-        self.assertEqual(gates.level(self.p, "K1"), "block")
+        self.assertEqual(gates.levels(self.p)["K3"], "warn")
+        self.assertEqual(gates.levels(self.p)["K1"], "block")
         self.write(TASKS, "新" * 501 + "\n")
         rc, _, err = run_keel(self.root, "check", "--paths", TASKS)
         self.assertEqual(rc, 0)
@@ -114,6 +114,43 @@ class GatesTest(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("K1", err)
         self.assertIn(rel, err)
+
+    def test_levels_resolved_once(self) -> None:
+        """F-005：一次检查只做一次档位解析，不按发现条数重复完整性扫描。"""
+        self.assertEqual(run_keel(self.root, "init")[0], 0)
+        self.assertEqual(self.main_accept("gate", "set", "K3", "warn", "--reason", "x"), 0)
+        self.write(TASKS, ("新" * 501 + "\n") * 20)
+        with mock.patch.object(store, "integrity_violations", wraps=store.integrity_violations) as m:
+            findings, _ = gates.collect(self.p, None)
+            _, warns = gates.apply_levels(self.p, findings, "cli", "check")
+        self.assertEqual(len(warns), 20)
+        self.assertEqual(m.call_count, 2)  # collect 的 K1/K2 一次 + 档位一次
+
+    def test_check_skips_k1k2_while_writer_holds_lock(self) -> None:
+        """M3：写方持锁时，只读检查 1 秒拿不到共享锁就跳过 K1/K2 并说明，K3/K4 照常。"""
+        self.assertEqual(run_keel(self.root, "init")[0], 0)
+        self.write("docs/devdocs/state/tasks/T-1.json", "{}\n")
+        self.write(TASKS, "新" * 501 + "\n")
+        code = ("import sys, time; sys.path.insert(0, sys.argv[1])\n"
+                "from keellib.store import Project\n"
+                "with Project.find(sys.argv[2]).lock():\n"
+                "    print('held', flush=True); time.sleep(5)\n")
+        p = subprocess.Popen([sys.executable, "-c", code, os.path.dirname(KEEL), self.root],
+                             stdout=subprocess.PIPE, text=True, env=CLEAN_ENV)
+        assert p.stdout is not None
+        self.addCleanup(p.stdout.close)
+        self.addCleanup(p.wait)
+        self.addCleanup(p.kill)
+        self.assertEqual(p.stdout.readline().strip(), "held")
+        rc, _, err = run_keel(self.root, "check")
+        self.assertEqual(rc, 1)
+        self.assertIn("K3", err)
+        self.assertNotIn("K1 `", err)
+        self.assertIn(gates.SKIP_K12, err)
+        p.kill()
+        p.wait()
+        rc, _, err = run_keel(self.root, "check")
+        self.assertIn("K1 `", err)
 
     # state accept
     def test_accept_needs_tty(self) -> None:
@@ -186,7 +223,7 @@ class GatesTest(unittest.TestCase):
         self.assertEqual(run_keel(self.root, "init")[0], 0)
         self.assertEqual(self.main_accept("gate", "set", "K3", "warn", "--reason", "x"), 0)
         self.write(gates.GATES_REL, json.dumps({"K1": {"level": "off"}}))
-        self.assertEqual(gates.level(self.p, "K1"), "block")
+        self.assertEqual(gates.levels(self.p)["K1"], "block")
         rc, _, err = run_keel(self.root, "check")
         self.assertEqual(rc, 1)
         self.assertIn("K1", err)
@@ -212,9 +249,9 @@ class GatesTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(self.root, gates.GATES_REL)))
         self.assertEqual(self.main_accept("gate", "set", "K1", "off", "--reason", "x", answer="no"), 1)
         self.assertEqual(self.main_accept("gate", "set", "K1", "off", "--reason", "x"), 0)
-        self.assertEqual(gates.level(self.p, "K1"), "off")
+        self.assertEqual(gates.levels(self.p)["K1"], "off")
         self.assertEqual(self.notty("gate", "set", "K1", "warn", "--reason", "x").returncode, 0)  # 抬高不需 tty
-        self.assertEqual(gates.level(self.p, "K1"), "warn")
+        self.assertEqual(gates.levels(self.p)["K1"], "warn")
         self.assertEqual(self.notty("gate", "set", "K1", "warn", "--reason", "y").returncode, 0)  # 同档
 
     def test_accept_state_changed_during_prompt(self) -> None:

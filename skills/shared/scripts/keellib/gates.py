@@ -24,7 +24,7 @@ GATES_REL = store.STATE_REL + "/gates.json"
 LOG_REL = ".keel/gate-log.jsonl"
 FIX = {
     "K1": f"用 `keel task|backlog` 命令改，或人工确认。{store.HUMAN_ONLY} {store.ACCEPT_CMD}",
-    "K2": "生成区只由 keel 写，改回后跑 `keel render`",
+    "K2": store.RENDER_HINT,
     "K3": "超长内容移到 `audit/T-xxx/` 或 `backlog/<id>.md`，此处留链接",
     "K4": "先归档或拆分（`/sync --archive`），本文件只能改小",
 }
@@ -63,17 +63,24 @@ def check_k4(project: Project, relpath: str, size: int) -> list[Finding]:
     return []
 
 
-def level(project: Project, gate: str) -> str:
+def levels(project: Project) -> dict[str, str]:
+    """K1–K4 档位表；每次检查只算一次（完整性扫描一次），不按发现条数重复。"""
+    out = dict(DEFAULT_LEVELS)
     try:  # 手改过的 gates.json 不可信（可伪造 off 来静音自己的违规），退回默认档
-        if os.path.exists(os.path.join(project.root, GATES_REL)) and GATES_REL in store.integrity_violations(project):
-            return DEFAULT_LEVELS[gate]
+        if not os.path.exists(os.path.join(project.root, GATES_REL)) or GATES_REL in store.integrity_violations(project):
+            return out
         with open(os.path.join(project.root, GATES_REL), encoding="utf-8") as f:
-            lv = json.load(f)[gate]["level"]
+            cfg = json.load(f)
+    except (OSError, ValueError):
+        return out
+    for gate in out:
+        try:
+            lv = cfg[gate]["level"]
+        except (KeyError, TypeError):
+            continue
         if lv in ("block", "warn", "off"):
-            return str(lv)
-    except (OSError, ValueError, KeyError, TypeError):
-        pass
-    return DEFAULT_LEVELS[gate]
+            out[gate] = str(lv)
+    return out
 
 
 def log_hit(project: Project, gate: str, lv: str, result: str, client: str, tool: str, path: str, detail: str) -> None:
@@ -93,8 +100,9 @@ def log_hit(project: Project, gate: str, lv: str, result: str, client: str, tool
 def apply_levels(project: Project, findings: list[Finding], client: str, tool: str) -> tuple[list[Finding], list[Finding]]:
     blocks: list[Finding] = []
     warns: list[Finding] = []
+    lvs = levels(project) if findings else DEFAULT_LEVELS
     for f in findings:
-        lv = level(project, f.gate)
+        lv = lvs[f.gate]
         log_hit(project, f.gate, lv, "skip" if lv == "off" else lv, client, tool, f.path, f.detail)
         if lv == "block":
             blocks.append(f)
@@ -133,14 +141,21 @@ def run_check(project: Project, staged: bool, paths: list[str] | None, client: s
         scope = {p for p in out.decode("utf-8", "replace").split("\0") if p}
     elif paths:
         scope = {os.path.relpath(os.path.join(project.root, p), project.root) for p in paths}
-    blocks, warns = apply_levels(project, collect(project, scope), client, tool)
+    findings, note = collect(project, scope)
+    blocks, warns = apply_levels(project, findings, client, tool)
     if blocks or warns:
         print(format_findings(blocks + warns), file=sys.stderr)
+    if note:
+        print(note, file=sys.stderr)
     return 1 if blocks else 0
 
 
-def collect(project: Project, scope: set[str] | None) -> list[Finding]:
-    """scope 为 None 时查全部与 HEAD 不同的载体文件和全部 K1/K2。"""
+SKIP_K12 = "另一个 keel 进程正在写状态，本次跳过 K1/K2（K3/K4 照常检查）"
+
+
+def collect(project: Project, scope: set[str] | None) -> tuple[list[Finding], str]:
+    """scope 为 None 时查全部与 HEAD 不同的载体文件和全部 K1/K2。返回（发现，附注）：
+    K1/K2 在共享锁内读，避免看到别的会话写到一半的状态；1 秒内拿不到锁就跳过 K1/K2 并在附注说明。"""
     files = [p for p in (sorted(scope) if scope is not None else _changed_carriers(project)) if is_carrier(p)]
     findings: list[Finding] = []
     for rel in files:
@@ -150,9 +165,14 @@ def collect(project: Project, scope: set[str] | None) -> list[Finding]:
         except OSError:
             continue
         findings += check_k3(project, rel, data.decode("utf-8", "replace")) + check_k4(project, rel, len(data))
-    if project.is_migrated():
-        findings += [f for f in check_k1k2(project) if scope is None or f.path.split("#")[0] in scope]
-    return findings
+    if not project.guarded():
+        return findings, ""
+    try:
+        with project.lock(timeout=1.0, shared=True):
+            findings += [f for f in check_k1k2(project) if scope is None or f.path.split("#")[0] in scope]
+    except store.LockBusy:
+        return findings, SKIP_K12
+    return findings, ""
 
 
 def gate_set(project: Project, gate: str, lv: str, reason: str) -> None:
@@ -161,10 +181,10 @@ def gate_set(project: Project, gate: str, lv: str, reason: str) -> None:
     if lv not in ("block", "warn", "off"):
         raise KeelError(f"档位 {lv!r} 不对：只能是 block|warn|off", 2)
     project.require_writable()
-    old = level(project, gate)
+    old = levels(project)[gate]
     rank = {"off": 0, "warn": 1, "block": 2}
     if rank[lv] < rank[old]:  # 放宽门禁须人确认，抬高或同档不用
-        cmd = f'.keel/bin/keel gate set {gate} {lv} --reason "{reason}"'
+        cmd = f'`.keel/bin/keel gate set {gate} {lv} --reason "{reason}"`'
         if read_tty(f"将把 {gate} 由 {old} 放宽为 {lv}，原因：{reason}\n确认请输入 accept：", cmd) != "accept":
             raise KeelError("未输入 accept，档位未改动", 1)
     with write_session(project):
@@ -207,11 +227,11 @@ def report(project: Project, since: str | None) -> str:
     return "\n".join(lines + ["每卡派生数"] + [f"{k} {n}" for k, n in cnt.most_common(10)])
 
 
-def read_tty(prompt: str, cmd: str = ".keel/bin/keel state accept") -> str:
+def read_tty(prompt: str, cmd: str = store.ACCEPT_CMD) -> str:
     try:
         fd = os.open("/dev/tty", os.O_RDWR)
     except OSError:
-        raise KeelError(f"打不开 /dev/tty。{store.HUMAN_ONLY} `{cmd}`", 3) from None
+        raise KeelError(f"打不开 /dev/tty。{store.HUMAN_ONLY} {cmd}", 3) from None
     os.write(fd, prompt.encode())  # tty 不可 seek，不能用 "r+" 的 fdopen
     with open(fd, encoding="utf-8", errors="replace") as t:
         return t.readline().strip()
@@ -225,7 +245,8 @@ def _violations(project: Project) -> list[str]:
 
 
 def accept(project: Project) -> None:
-    project.require_writable()
+    if not project.guarded():  # meta.json 被删时 require_writable 会要求 init，而 init 又要求先 accept
+        project.require_writable()
     bad, snap = _violations(project), store._current_blobs(project)
     items = "\n".join("  " + b for b in bad) or "  （当前无违规项，将重建 manifest）"
     if read_tty(f"将把以下状态接受为当前基线：\n{items}\n确认请输入 accept：") != "accept":  # 提示期间不持锁
@@ -233,5 +254,13 @@ def accept(project: Project) -> None:
     with project.lock():  # 持锁后重算，确认期间状态变了就作废
         if (_violations(project), store._current_blobs(project)) != (bad, snap):
             raise KeelError("确认期间状态又变了，请重新执行", 1)
-        project.save_manifest(store._current_blobs(project))
+        # 读不出的文件不登记：接受后仍判违规，须先把文件修好；手写的 backlog.md 不登记，免得被当成生成文件
+        snap = {k: v for k, v in store._current_blobs(project).items() if v != store.UNREADABLE}
+        try:
+            man = project.manifest()
+        except KeelError:
+            man = {}
+        if not store.backlog_guarded(project, man):
+            snap.pop(store.BACKLOG_MD, None)
+        project.save_manifest(snap)
         log_hit(project, "state", "-", "accept", "cli", "state accept", store.STATE_REL, ";".join(bad))

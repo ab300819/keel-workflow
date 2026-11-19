@@ -220,6 +220,27 @@ class RenderTest(unittest.TestCase):
         self.assertEqual(run_keel(self.root, "render")[0], 0)
         self.assertIn(render.REGION_KEY, p.manifest())
 
+    def test_render_fixes_k2_only(self) -> None:
+        """I1：只有生成内容被手改（K2）时，写命令提示跑 render，render 从状态重新生成；K1 时 render 仍拒绝。"""
+        self.seed_ledger()
+        self.add("甲")
+        self.assertEqual(run_keel(self.root, "backlog", "park", "F-01", "--note", "n", "--by", "verify")[0], 0)
+        good_tasks, good_bl = self.read(TASKS_MD), self.read(BACKLOG_MD)
+        self.write(TASKS_MD, good_tasks.replace("甲", "乙"))
+        self.write(BACKLOG_MD, good_bl + "手改\n")
+        rc, _, err = run_keel(self.root, "task", "set", "T-1", "--status", "进行中")
+        self.assertEqual(rc, 3)
+        self.assertIn("生成内容被手改", err)
+        self.assertIn("keel render", err)
+        self.assertNotIn("state accept", err)
+        self.assertEqual(run_keel(self.root, "render")[0], 0)
+        self.assertEqual((self.read(TASKS_MD), self.read(BACKLOG_MD)), (good_tasks, good_bl))
+        self.assertEqual(self.violations(), [])
+        self.write("docs/devdocs/state/tasks/T-1.json", "{}\n")
+        rc, _, err = run_keel(self.root, "render")
+        self.assertEqual(rc, 3)
+        self.assertIn("状态文件被非工具改动", err)
+
     def test_render_cmd_refuses_unmigrated(self) -> None:
         root = make_project(tempfile.mkdtemp(dir=self._tmp.name))
         self.assertEqual(run_keel(root, "render")[0], 3)

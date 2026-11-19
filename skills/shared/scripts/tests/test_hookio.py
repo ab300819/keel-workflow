@@ -79,6 +79,8 @@ class HookioTest(unittest.TestCase):
         self.assertTrue(self.deny({"tool_name": "Write", "tool_input": {"file_path": "docs/link.json"}}))
         self.assertTrue(self.deny({"tool_name": "NotebookEdit", "tool_input": {
             "notebook_path": self.root + "/docs/devdocs/state/x.ipynb"}}))
+        self.assertFalse(self.deny({"tool_name": "Edit", "tool_input": {"file_path": "docs/devdocs/BACKLOG.md"}}))
+        self.assertEqual(run_keel(self.root, "backlog", "park", "F-01", "--note", "n", "--by", "dev-tasks")[0], 0)
         self.assertTrue(self.deny({"tool_name": "Edit", "tool_input": {"file_path": "docs/devdocs/BACKLOG.md"}}))
         self.assertFalse(self.deny({"tool_name": "Edit", "tool_input": {"file_path": "docs/devdocs/statex/a.md"}}))
 
@@ -102,6 +104,9 @@ class HookioTest(unittest.TestCase):
             d = json.loads(out)["hookSpecificOutput"]
             self.assertEqual(d["permissionDecision"], "deny", cmd)
             self.assertIn("另开一个终端", d["permissionDecisionReason"])
+            if "gate" in cmd:
+                self.assertIn('gate set K', d["permissionDecisionReason"])
+                self.assertIn('--reason "<原因>"`', d["permissionDecisionReason"])
         for cmd in (".keel/bin/keel gate set K3 block --reason y", ".keel/bin/keel task list", "echo state accept"):
             self.assertEqual(self.hook("pre", {"tool_name": "shell", "tool_input": {"command": ["bash", "-lc", cmd]}}),
                              (0, ""), cmd)
@@ -201,7 +206,19 @@ class HookioTest(unittest.TestCase):
         self.assertEqual(run_keel(self.root, "git-hook", "install")[0], 0)
         p = self.commit_empty()
         self.assertEqual(p.returncode, 0, p.stderr)
-        self.assertIn("keel 不可用（退出码 2）", p.stderr)
+        self.assertIn("keel 工具未就绪：缺 /nonexistent/keel/skills/shared/scripts/keel.py（", p.stderr)
+        self.assertIn("keel 不可用（退出码 4）", p.stderr)
+
+    def test_git_hook_rejects_when_check_cannot_finish(self) -> None:
+        """F-002：keel 跑起来了却完成不了检查（退出码 3）时拒绝提交，而不是放行。"""
+        self.migrated()
+        plugin = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPTS)))
+        self.assertEqual(run_keel(self.root, "install-shim", "--plugin-root", plugin)[0], 0)
+        self.assertEqual(run_keel(self.root, "git-hook", "install")[0], 0)
+        self.write(".keel/manifest.json", "{")
+        p = self.commit_empty()
+        self.assertEqual(p.returncode, 1, p.stderr)
+        self.assertIn("manifest.json 损坏", p.stderr)
 
     def test_git_hook_tracked_hooks_path_warns(self) -> None:
         git(self.root, "config", "core.hooksPath", ".githooks")
