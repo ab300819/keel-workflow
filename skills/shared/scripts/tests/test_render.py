@@ -116,6 +116,52 @@ class RenderTest(unittest.TestCase):
         self.assertEqual(rc, 3)
         self.assertIn("keel migrate", err)
         self.assertEqual(self.read(TASKS_MD), "# 没有标记\n")
+        self.assertEqual(os.listdir(self.path("docs/devdocs/state/tasks")), [])
+
+    def test_duplicate_markers_exit3_nothing_written(self) -> None:
+        self.write(TASKS_MD, render.BEGIN + render.BEGIN + render.END + "\n")
+        rc, _, err = run_keel(self.root, "task", "add", "--title", "x", "--source", "dev-tasks")
+        self.assertEqual(rc, 3)
+        self.assertIn("重复或顺序不对", err)
+        self.assertEqual(os.listdir(self.path("docs/devdocs/state/tasks")), [])
+        self.write(TASKS_MD, render.END + render.BEGIN + "\n")
+        self.assertEqual(run_keel(self.root, "render")[0], 3)
+
+    def test_injection_rejected(self) -> None:
+        self.seed_ledger()
+        for bad in ("a\nb", "a\rb", "x " + render.END):
+            rc, _, _ = run_keel(self.root, "task", "add", "--title", bad, "--source", "dev-tasks")
+            self.assertEqual(rc, 1, bad)
+        rc, _, _ = run_keel(self.root, "task", "add", "--title", "ok", "--source", "dev-tasks", "--milestone", "M\n1")
+        self.assertEqual(rc, 1)
+        rc, _, _ = run_keel(self.root, "backlog", "park", "F-01", "--note", "a\nb", "--by", "verify")
+        self.assertEqual(rc, 1)
+        self.assertEqual(os.listdir(self.path("docs/devdocs/state/tasks")), [])
+
+    def test_symlinked_targets_refused(self) -> None:
+        outside = os.path.join(self._tmp.name + "-out")
+        os.makedirs(outside, exist_ok=True)
+        self.addCleanup(lambda: __import__("shutil").rmtree(outside, ignore_errors=True))
+        target = os.path.join(outside, "victim.md")
+        with open(target, "w", encoding="utf-8") as f:
+            f.write("orig")
+        os.symlink(target, self.path(BACKLOG_MD))
+        rc, _, _ = run_keel(self.root, "backlog", "park", "F-01", "--note", "n", "--by", "verify")
+        self.assertEqual(rc, 3)
+        self.assertEqual(run_keel(self.root, "render")[0], 3)
+        self.assertEqual(os.listdir(self.path("docs/devdocs/state/backlog")), [])
+        with open(target, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "orig")
+        os.remove(self.path(BACKLOG_MD))
+        # devdocs 目录整体换成符号链接
+        real = self.path("docs/devdocs")
+        os.rename(real, real + ".bak")
+        os.symlink(outside, real)
+        p = Project.find(self.root)
+        with p.lock(), self.assertRaises(store.KeelError) as cm:
+            store.write_atomic(p, BACKLOG_MD, b"x")
+        self.assertEqual(cm.exception.code, 3)
+        self.assertFalse(os.path.exists(os.path.join(outside, "backlog.md")))
 
     def test_missing_tasks_md_skipped(self) -> None:
         self.add("甲")

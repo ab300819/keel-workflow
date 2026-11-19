@@ -144,19 +144,31 @@ def head_text(project: Project, relpath: str) -> str | None:
 
 
 def region_text(file_text: str) -> str | None:
-    """两个生成区标记之间的文本；缺标记或顺序不对返回 None。"""
+    """两个生成区标记之间的文本；标记缺失、重复或顺序不对返回 None。"""
     i, j = file_text.find(BEGIN), file_text.find(END)
-    return file_text[i + len(BEGIN):j] if 0 <= i < j else None
+    ok = 0 <= i < j and file_text.count(BEGIN) == 1 and file_text.count(END) == 1
+    return file_text[i + len(BEGIN):j] if ok else None
+
+
+def check_generated_links(project: Project, relpath: str) -> None:
+    chain = [os.path.join(project.root, "docs"), project.devdocs, os.path.join(project.root, relpath)]
+    if any(os.path.islink(c) for c in chain):
+        raise KeelError(f"拒绝写入 {relpath}：它或上级目录是符号链接", 3)
 
 
 def write_atomic(project: Project, relpath: str, data: bytes, *, record: bool = True) -> None:
     """调用方须已持有 project.lock()。record=False 用于只有部分内容归 keel 的文件（04-dev-tasks.md）。"""
     project.check_links()
-    path = os.path.realpath(os.path.join(project.root, relpath))
-    allowed = (os.path.realpath(project.state_dir), os.path.realpath(project.keel_dir))
-    files = {os.path.realpath(os.path.join(project.root, r)) for r in (BACKLOG_MD, TASKS_MD)}
-    if path not in files and not any(path.startswith(a + os.sep) for a in allowed):
-        raise KeelError(f"拒绝写入 {relpath}：目标不在 state/、.keel/ 或两个生成文件内", 3)
+    raw = os.path.normpath(os.path.join(project.root, relpath))
+    if raw in {os.path.join(project.root, r) for r in (BACKLOG_MD, TASKS_MD)}:
+        # 两个具名文件按字面路径比较；自身或上级是符号链接就会写到项目外，拒绝
+        check_generated_links(project, relpath)
+        path = raw
+    else:
+        path = os.path.realpath(raw)
+        allowed = (os.path.realpath(project.state_dir), os.path.realpath(project.keel_dir))
+        if not any(path.startswith(a + os.sep) for a in allowed):
+            raise KeelError(f"拒绝写入 {relpath}：目标不在 state/、.keel/ 或两个生成文件内", 3)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     _replace_file(path, data)
     if record:
@@ -206,6 +218,7 @@ def integrity_violations(project: Project) -> list[str]:
         c = cur.get(BACKLOG_MD)
         if c is None or c != man.get(BACKLOG_MD):
             hb = head_blobs(project, BACKLOG_MD).get(BACKLOG_MD)
+            # hb and head：新 clone 没有 manifest，但 HEAD 已含状态时，backlog.md 同样视为生成文件
             if (BACKLOG_MD in man or (hb and head)) and (c is None or c not in (hb, man.get(BACKLOG_MD))):
                 bad.append(BACKLOG_MD)
         c, mv = cur.get(REGION_KEY), man.get(REGION_KEY)

@@ -7,7 +7,7 @@ from typing import Any
 from . import store
 from .store import BACKLOG_MD, BEGIN, END, REGION_KEY, TASKS_MD, KeelError, Project, region_text
 
-__all__ = ["BEGIN", "END", "REGION_KEY", "region_text", "ledger_region", "backlog_md", "render_all"]
+__all__ = ["BEGIN", "END", "REGION_KEY", "region_text", "ledger_region", "backlog_md", "precheck", "render_all"]
 GROUPS = ("parked", "reactivated", "closed", "superseded")
 
 
@@ -16,7 +16,7 @@ def _num(tid: str) -> int:
 
 
 def _cell(v: Any) -> str:
-    return str(v).replace("|", "\\|") if v else "—"
+    return " ".join(str(v).split()).replace("|", "\\|") if v else "—"
 
 
 def ledger_region(tasks: dict[str, dict[str, Any]]) -> str:
@@ -58,15 +58,26 @@ def _read(path: str) -> str | None:
         return None
 
 
+def precheck(project: Project) -> None:
+    """04-dev-tasks.md 不存在，或恰有一对顺序正确的标记；写状态前调用，避免写完才失败。"""
+    for rel in (BACKLOG_MD, TASKS_MD):
+        store.check_generated_links(project, rel)
+    text = _read(os.path.join(project.root, TASKS_MD))
+    if text is None or region_text(text) is not None:
+        return
+    if BEGIN not in text and END not in text:
+        raise KeelError("04-dev-tasks.md 缺少 keel 生成区标记，先跑 `keel migrate`", 3)
+    raise KeelError("04-dev-tasks.md 里 keel 生成区标记重复或顺序不对", 3)
+
+
 def render_all(project: Project) -> None:
     """调用方须已持有 project.lock()。内容没变不重写。"""
     from . import backlog, tasks  # 延迟导入：它们经 common 依赖本模块
 
+    precheck(project)
     man = project.manifest()
     text = _read(os.path.join(project.root, TASKS_MD))
     if text is not None:
-        if region_text(text) is None:
-            raise KeelError("04-dev-tasks.md 缺少 keel 生成区标记，先跑 `keel migrate`", 3)
         region = ledger_region(tasks.load_all(project)[0])
         i, j = text.find(BEGIN) + len(BEGIN), text.find(END)
         new = text[:i] + region + text[j:]
