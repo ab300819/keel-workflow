@@ -232,6 +232,12 @@ docs/
 └── codebase-insight.md           # 代码盘点（/codebase-insight）
 ```
 
+### 门禁四层防线与 state 布局
+
+状态类规则按「能否被绕过」由强到弱分四层：① `keel` 命令自校验（`skills/shared/scripts/keel.py` + `keellib/`，经项目垫片 `.keel/bin/keel` 调用）；② 客户端 hook（`hooks/keel-gate pre|post`）；③ 可选 git `pre-commit`（`keel check --staged`）；④ spec 指引。
+`docs/devdocs/state/`（`tasks/*.json`、`backlog/*.json`、`gates.json`）由工具独占、入库；`04-dev-tasks*.md` 的 `keel:begin ledger` 生成区与 `backlog.md` 是由状态生成的视图；`.keel/`（垫片、`manifest.json`、`gate-log.jsonl`）本地且 git 忽略。
+设计与取舍见 [设计稿](superpowers/specs/2026-11-19-keel-mechanized-gates-design.md)；已知漏口见 [hooks/README.md § 已知漏口](../hooks/README.md#已知漏口)。
+
 `docs/devdocs/` 的完整产物清单（路径模式 / owner / 主从关系）见
 [skills/shared/devdocs-layout.md](../skills/shared/devdocs-layout.md)。
 

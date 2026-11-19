@@ -1,7 +1,35 @@
 # hooks
 
-⚠️ **只在插件安装路径下生效。** ⇒ hook 只能是**加速器**，规则本身必须仍写在 skill 正文里，
-⛔ 不得把门挪进 hook。
+⚠️ **只在插件安装路径下生效。**
+
+**决策（2026-11-19 改写）：门进工具，hook 是其中一层。** 原先的「门不进 hook、hook 只当加速器」已被
+[门禁机制化设计稿](../docs/superpowers/specs/2026-11-19-keel-mechanized-gates-design.md)推翻：状态类规则由 `keel.py`
+校验、`keel-gate` 拦截，skill 正文只写原因与用法。`devdocs-drift` / `skill-flag-lint` / `devdocs-layout`
+仍只做提示。
+
+## keel-gate、keel-shim 与 matcher
+
+| hook | 触发 | 干什么 |
+|---|---|---|
+| `keel-shim` | SessionStart | 在项目写垫片 `.keel/bin/keel`（指向当前插件版本的 `keel.py`），一律 exit 0 |
+| `keel-gate pre` | PreToolUse，matcher `Edit\|Write\|MultiEdit\|NotebookEdit\|apply_patch\|Bash\|shell` | 拒绝直接编辑 `state/`、`.keel/`，并按字面拒绝人工专属命令（`state accept`、降门档位）的普通调用 |
+| `keel-gate post` | PostToolUse，同上 matcher | 核对状态完整性、行长与体积棘轮；违规时 `decision: block` 拦回（每次工具调用都重报，直到改回） |
+
+两者都是 `keel-gate` / `keel-shim` 对 `keel.py hook` 的薄壳：非 keel 项目（无 `docs/devdocs/`）或取不到 `python3` 时静默放行，
+判定全在 `skills/shared/scripts/keel.py`（`keellib/hookio.py` 解析三端输入）。回归用 `bash hooks/test-keel-gate.sh`。
+
+## 已知漏口
+
+> 本节是已知漏口的唯一清单；[README.md](../README.md) 与 [docs/architecture.md](../docs/architecture.md) 只链接此处。
+> 三端差异与依据见设计稿 §6。
+
+1. 本地 `.keel/manifest.json` 可被 shell 伪造（Pre 拒绝 Edit/Write 写 `.keel/`，shell 写不拦）。兜底：pre-commit 与对 HEAD 的核对。
+2. `keel check --staged` 读工作区而非暂存区：暂存一次手改再还原工作区，可漏过一次 pre-commit（用户认可的取舍）。升级路径：改读 index blob。
+3. 人工专属步骤（`state accept`、降门档位）：`/dev/tty` 只是威慑（pty 可伪造）；Pre-Bash 按字面拦截普通调用，`sh -c`、变量、`eval`、脚本等变形调用拦不住。
+4. Codex：hook 出错或超时放行；改动 hook 脚本的插件更新后须在 `/hooks` 重新信任；SessionStart 与工具名（`apply_patch`、`shell`）、`"shell": "bash"` 字段未在真实客户端验证。
+5. OpenCode：`execute.before` 里 throw 拒绝，仅用 mock ctx 验证过。
+6. 不支持原生 Windows（依赖 bash 与 fcntl）；WSL / Git Bash 未测。
+7. Post 对未修复的违规每次工具调用都重新拦回（有意）；`keel gate report` 的头部数字按去重后的发现数计。
 
 ## 三端适配
 
@@ -76,7 +104,7 @@ cache/<mp>/<plugin>/<ver>/  ← 实际被加载的那份（Skill 工具报的 ba
 
 ## 状态
 
-三个 hook 都只做提示、不拦操作。`devdocs-drift` 与 `skill-flag-lint` 起初是试验件，Claude Code 真实会话触发验证通过后转正（2026-11）；未验证的端与事件见下表。背景见
+`devdocs-drift`、`skill-flag-lint`、`devdocs-layout` 只做提示、不拦操作（拦截的是 `keel-gate`，见上）。`devdocs-drift` 与 `skill-flag-lint` 起初是试验件，Claude Code 真实会话触发验证通过后转正（2026-11）；未验证的端与事件见下表。背景见
 [docs/audits/2026-08-28-skill-soft-trigger-miss-brief.md](../docs/audits/2026-08-28-skill-soft-trigger-miss-brief.md)。
 
 | 验证项 | 状态 |

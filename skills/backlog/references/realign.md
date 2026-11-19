@@ -14,7 +14,7 @@
 |---|---|---|---|
 | additive | `source_id` 白名单增加 `M-XXX`；`M-XXX` 来源同源第二条默认追加不再询问 | **无存量差距**——放宽值域不会让已有条目失效 | 不适用 |
 
-> **零迁移动作**：这是一次纯放宽。存量 `backlog.md` 无需改动，只需 frontmatter 的 `spec_version` 随下次写入自然更新。
+> **零迁移动作**：这是一次纯放宽。存量条目无需改动（`backlog.md` 现为工具生成，`spec_version` 随下次生成自然更新）。
 > 之所以仍要 bump：`source_id` 白名单是硬校验规则，改它命中 `realign/bump-required-structure`；不 bump 则消费方无从判断某个 `M-XXX` 条目是合法还是脏数据。
 
 ### v2 → v3
