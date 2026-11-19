@@ -67,6 +67,30 @@ class HookioTest(unittest.TestCase):
         with open(os.path.join(self.root, ".keel", "gate-log.jsonl"), encoding="utf-8") as f:
             self.assertEqual([json.loads(x)["client"] for x in f], ["claude", "claude"])
 
+    def deny(self, payload: dict) -> bool:
+        out = self.hook("pre", payload)[1]
+        return bool(out) and json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+    def test_pre_path_aliases_denied(self) -> None:
+        self.migrated()
+        self.assertTrue(self.deny({"tool_name": "Edit", "tool_input": {
+            "file_path": self.root + "/docs/devdocs/State/tasks/T-1.json"}}))
+        os.symlink(os.path.join(self.root, STATE_T1), os.path.join(self.root, "docs", "link.json"))
+        self.assertTrue(self.deny({"tool_name": "Write", "tool_input": {"file_path": "docs/link.json"}}))
+        self.assertTrue(self.deny({"tool_name": "NotebookEdit", "tool_input": {
+            "notebook_path": self.root + "/docs/devdocs/state/x.ipynb"}}))
+        self.assertTrue(self.deny({"tool_name": "Edit", "tool_input": {"file_path": "docs/devdocs/BACKLOG.md"}}))
+        self.assertFalse(self.deny({"tool_name": "Edit", "tool_input": {"file_path": "docs/devdocs/statex/a.md"}}))
+
+    def test_pre_human_rule_anchored_to_command(self) -> None:
+        for cmd in ('grep -rn "keel state accept" docs/', 'git commit -m "说明 keel state accept 的用法"',
+                    "cat .keel/bin/keel | grep 'gate set K3 off'"):
+            self.assertFalse(self.deny({"tool_name": "Bash", "tool_input": {"command": cmd}}), cmd)
+        for cmd in (".keel/bin/keel state accept", "python3 x/keel.py gate set K1 off --reason r",
+                    "cd a && .keel/bin/keel state accept", "X=1 bash .keel/bin/keel state accept",
+                    "echo $(keel state accept)", "ls\nkeel gate set K2 warn --reason r"):
+            self.assertTrue(self.deny({"tool_name": "Bash", "tool_input": {"command": cmd}}), cmd)
+
     def test_pre_unmigrated_allows_backlog(self) -> None:
         self.assertEqual(self.hook("pre", {"tool_name": "apply_patch", "tool_input": {
             "command": "*** Update File: docs/devdocs/backlog.md\n"}}), (0, ""))
@@ -167,6 +191,24 @@ class HookioTest(unittest.TestCase):
                             "-q", "--allow-empty", "-m", "x"], capture_output=True, text=True, env=CLEAN_ENV)
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertIn("old-hook", p.stdout + p.stderr)
+
+    def commit_empty(self) -> "subprocess.CompletedProcess[str]":
+        return subprocess.run(["git", "-C", self.root, "-c", "user.email=t@t", "-c", "user.name=t", "commit",
+                               "-q", "--allow-empty", "-m", "x"], capture_output=True, text=True, env=CLEAN_ENV)
+
+    def test_git_hook_keel_unavailable_allows_commit(self) -> None:
+        self.assertEqual(run_keel(self.root, "install-shim", "--plugin-root", "/nonexistent/keel")[0], 0)
+        self.assertEqual(run_keel(self.root, "git-hook", "install")[0], 0)
+        p = self.commit_empty()
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("keel 不可用（退出码 2）", p.stderr)
+
+    def test_git_hook_tracked_hooks_path_warns(self) -> None:
+        git(self.root, "config", "core.hooksPath", ".githooks")
+        rc, out, _ = run_keel(self.root, "git-hook", "install")
+        self.assertEqual(rc, 0)
+        self.assertTrue(os.path.isfile(os.path.join(self.root, ".githooks", "pre-commit")))
+        self.assertIn("团队", out)
 
     def test_git_hook_blocks_hand_edited_state(self) -> None:
         self.migrated()

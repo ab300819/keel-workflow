@@ -11,7 +11,10 @@ MARK = "# keel pre-commit"
 HOOK = f"""#!/bin/bash
 {MARK}：先跑 keel 门禁，再执行被串接的旧 hook
 K=./.keel/bin/keel
-if [ -x "$K" ]; then "$K" check --staged || exit 1
+if [ -x "$K" ]; then
+  "$K" check --staged; rc=$?
+  [ $rc -eq 1 ] && exit 1                                   # 只有门禁拦下才拒绝提交
+  [ $rc -ne 0 ] && echo "keel 不可用（退出码 ${{rc}}），本次提交未检查；开新会话会重写垫片" >&2
 else echo "keel：.keel/bin/keel 不存在，跳过状态检查（开一次装了 keel 插件的会话即可生成）" >&2
 fi
 C="$(dirname "$0")/pre-commit.keel-chained"
@@ -58,10 +61,16 @@ def git_hook_install(project: Project) -> str:
         raise KeelError("不是 git 仓库，无法安装 pre-commit", 3)
     hook, chained = os.path.join(d, "pre-commit"), os.path.join(d, "pre-commit.keel-chained")
     msgs = []
+    rel = os.path.relpath(os.path.realpath(d), project.root)
+    if not rel.startswith("..") and rel.split(os.sep)[0] != ".git":
+        msgs.append(f"注意：hooks 目录 {rel} 在工作区内（core.hooksPath），本次改动的是与团队共享的受控文件")
+    old = None
     if os.path.lexists(hook):
         with open(hook, encoding="utf-8", errors="replace") as f:
-            if MARK in f.read():
-                return f"{hook} 已是 keel hook，未改动"
+            old = f.read()
+    if old == HOOK:
+        return "\n".join(msgs + [f"{hook} 已是 keel hook，未改动"])
+    if old is not None and MARK not in old:  # 旧版 keel hook 直接覆盖升级；别人的 hook 串接
         if os.path.lexists(chained):
             raise KeelError(f"{chained} 已存在，先人工合并两个 hook 再重试", 3)
         os.rename(hook, chained)
