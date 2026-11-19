@@ -1,6 +1,6 @@
 # adversarial-review 审查方改为 hcom 实例优先
 
-> 2026-11-19。状态：待用户审阅。前置设计：[交叉验证](2026-11-16-adversarial-review-cross-validation-design.md)（已实施）。
+> 2026-11-19。状态：已实施（2026-11-19，用户批准）；规则以 `skills/adversarial-review/references/hcom-instances.md` 为准。前置设计：[交叉验证](2026-11-16-adversarial-review-cross-validation-design.md)（已实施）。
 
 ## 1. 意图
 

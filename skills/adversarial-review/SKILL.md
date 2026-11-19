@@ -114,13 +114,15 @@ S1 上下文收集 → S2 构建审查 brief → S2.5 询问审查方式（双�
 
 ### S2.5 询问审查方式
 
-先探测两方是否可用，再问用户一次：双方共同审查、只用 codex、还是只用 agy。何时不问、选项怎么写、无法提问时的默认值，见 [cross-validation.md § 询问审查方式](references/cross-validation.md)。
+先探测两方是否可用（窗口实例与命令行两层，任一可用即可，见 [hcom-instances.md](references/hcom-instances.md)），再问用户一次：双方共同审查、只用 codex、还是只用 agy。何时不问、选项怎么写、无法提问时的默认值，见 [cross-validation.md § 询问审查方式](references/cross-validation.md)。
 
 ### S3 外部审查调度
 
 调用外部 LLM 执行审查。详见 [`references/external-reviewer-integration.md`](references/external-reviewer-integration.md)。
 
-**选双方时**：同一份 brief 并行发给 codex 与 agy，互相不可见；各自独立套用本节的失败分类与截断判定；一方失败的处置见 [cross-validation.md § 一方失败](references/cross-validation.md)。agy 的检测、命令与解析见 [集成文档 § agy CLI](references/external-reviewer-integration.md)。下面的四级降级链只描述 **codex 一侧**。
+**选双方时**：同一份 brief 并行发给 codex 与 agy，互相不可见；各自独立套用本节的失败分类与截断判定；一方失败的处置见 [cross-validation.md § 一方失败](references/cross-validation.md)。agy 的检测、命令与解析见 [集成文档 § agy CLI](references/external-reviewer-integration.md)。
+
+**送达方式**：协调方在 tmux 里且 hcom 可用时，两方都优先在各自的 hcom 窗口实例里连续对话（首轮与复审发给同一个实例），不可用或卡住才落回下面的命令行通道；启动、推一下、落回、每轮的只读与独立性检查、审完关闭，全部按 [hcom-instances.md](references/hcom-instances.md)。下面的四级降级链只描述 **codex 一侧**。
 
 **四级降级链**（首次探测确定首选通道，每轮允许临时降级）：
 
@@ -195,7 +197,7 @@ T1 额度耗尽且 T1b 不可用时（双方模式下还须 agy 也未成功，�
 ```
 ## 外部审查结论（原始）
 
-审查方式：codex CLI / codex-mcp / agy CLI / 独立子 Agent
+审查方式：hcom 窗口实例 / codex CLI / codex-mcp / agy CLI / 独立子 Agent
 发现数量：X 条
 
 ---
@@ -382,6 +384,7 @@ verdict ∈ {confirmed, partial}    # rejected 不计分
 - [ ] **⛔ 有输出但无裁决 = 截断，不得当审查结果消费**；标 `truncated: true`
 - [ ] 额度耗尽且 T1b 不可用 → **报告并停下等用户决定**，⛔ 不自动降 T3（双方模式下 agy 已成功时不停，按单方继续并如实标注）
 - [ ] 降到 T3 时结论必须标注检出率折损
+- [ ] 窗口实例：只认本次会话的标签；每轮回复后做只读与独立性检查；会话结束（含失败、中止）必须关实例与窗口；⛔ 不替用户按弹框、不碰用户自己的实例
 - [ ] 交互调用先问审查方式（S2.5）；双方模式同一份 brief 并行发两方，⛔ agy 的模型不得与宿主或 codex 同族
 - [ ] ⛔ 一方失败或截断不得静默：结论首行写明本轮只有哪一方、另一方为何未完成
 - [ ] 连续 2 轮 primary_method 失败时永久降级；**额度类失败不计入该计数**
@@ -440,8 +443,8 @@ summary:
   details:
     review_target: "工作区 diff / 文件路径 / 方案描述"
     review_type: "代码审查 / 方案评审 / 文档审查 / 独立方案 / 独立调研"
-    review_method: cross | codex-cli | codex-cli-alt | codex-mcp | agy-cli | task-subagent  # 两方都成功填 cross，否则填实际生效的通道
-    primary_method: codex-cli | codex-mcp | task-subagent | null  # 首次探测锁定，未启用 codex 填 null；⛔ 不含 codex-cli-alt（T1b 不参与首选探测）
+    review_method: cross | codex-hcom | codex-cli | codex-cli-alt | codex-mcp | agy-hcom | agy-cli | task-subagent  # 两方都成功填 cross，否则填实际生效的通道
+    primary_method: codex-hcom | codex-cli | codex-mcp | task-subagent | null  # 首次探测锁定，未启用 codex 填 null；⛔ 不含 codex-cli-alt（T1b 不参与首选探测）
     fallback_events: []          # 降级事件列表，如 ["R2: codex-cli→codex-cli-alt (quota)"]
     truncated: false             # ⛔ true = 本轮有输出但无裁决，findings 不可信
     quota_exhausted: false       # 本轮是否遇到额度/限流耗尽
