@@ -1,0 +1,8 @@
+#!/bin/bash
+# keel-shim — SessionStart：写项目垫片 .keel/bin/keel，指向当前插件版本的 keel.py。
+# ⛔ 本目录禁用 timeout(1)：见 README.md
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+[ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 keel 项目，静默
+command -v python3 >/dev/null 2>&1 || exit 0
+PLUGIN="${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}"
+exec python3 "$PLUGIN/skills/shared/scripts/keel.py" --root "$ROOT" install-shim --plugin-root "$PLUGIN"

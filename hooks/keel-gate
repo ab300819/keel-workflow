@@ -1,0 +1,7 @@
+#!/bin/bash
+# keel-gate <pre|post> — PreToolUse / PostToolUse：keel 门禁薄壳，判定全在 keel.py hook。
+# ⛔ 本目录禁用 timeout(1)：macOS 默认没有，失败会静默吞掉输入。见 README.md
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+[ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 keel 项目，静默
+command -v python3 >/dev/null 2>&1 || exit 0                # 取不到 python3：放行，靠 pre-commit 兜底
+exec python3 "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/shared/scripts/keel.py" --root "$ROOT" hook "$1"
