@@ -31,7 +31,7 @@ metadata:
 | `--impl` | 代码是否做对 AC / 设计 / 追溯 | 原 review；在对抗式验证之前 |
 | `--ui` | UI 设计和实现是否对齐 | 原 ui-alignment |
 | `--readiness` | 能否进入开发 | pipeline 关卡 |
-| `--review-drain` | 收集所有 `review_pending` 任务,集中补跑延后的独立审查(Phase 1~3 + Phase 4),按 [dev-workflow verification-flow drain 失败矩阵](../dev-workflow/references/verification-flow.md) 出 verdict 并更新任务状态 |
+| `--review-drain` | 收集所有 `review_pending` 任务,集中补跑延后的独立审查(Phase 1~3 + Phase 4),按 [dev-workflow verification-flow drain 失败矩阵](../dev-workflow/references/verification-flow.md) 出 verdict 并经 keel 命令更新任务状态（见 § 安全约束） |
 | 对抗式验证 | 代码质量是否合格 | dev-workflow 内置，互补而非替代 |
 
 > `--review-drain` 复用 dev-workflow S9 Phase 1~3/Phase 4 的 embedded-headless 通道,是 fast/guarded 延后审查的清算入口;单任务 inline 审查仍由 dev-workflow 内部触发。
@@ -279,6 +279,8 @@ metadata:
 
 **与 --docs 的区别**：`--docs` 检查文档层间对齐（漂移检测），`--readiness` 检查任务级开发就绪条件（具体性、一致性、可执行性）。
 
+**台账版本**：`04-dev-tasks.md` 为 `tasks.v3` 时，状态、依赖读生成区或 `.keel/bin/keel task list`；仍为 `tasks.v2` → 报 P1「台账未迁移」，路由 `/pipeline realign`（`keel migrate`），D3/D5 不继续。
+
 ### D1：AC ↔ 测试用例对齐
 
 检查每条 AC 是否有对应的测试用例设计：
@@ -302,7 +304,7 @@ metadata:
 
 检查任务依赖关系是否存在循环：
 
-1. 从 `04-dev-tasks*.md` 提取所有任务依赖关系
+1. 读所有任务依赖关系：`.keel/bin/keel task list --fields id,depends_on`（依赖指向不存在的编号或自身，写入时已被 K5 拒绝，本维度只查环）
 2. 构建有向图，执行拓扑排序
 3. 若存在环路 → 报告环路路径
 
@@ -417,7 +419,7 @@ P1/P2/P3 判定标准详见 [references/p-severity-rubric.md](references/p-sever
 ### 安全约束
 
 - [ ] **只读：不修改代码、不修改 keel 文档、不修改设计稿——仅生成报告文件（`verify-report.md` / `readiness-report.md`）**
-- [ ] **唯一写例外：`--review-drain`** 把清审结论写回 `04-dev-tasks*.md` 的任务台账（状态 `review_pending` → `已完成` 及审查字段）。清审结论不落盘，任务会永远停在 `review_pending`；除此之外与报告文件之外 ⛔ 不写任何文档
+- [ ] **唯一写例外：`--review-drain`** 经 `.keel/bin/keel task set` 写回清审结论：通过 → `task set <id> --status 已完成 --ext-review-state EXT_REVIEWED`；未通过按 [drain 失败矩阵](../dev-workflow/references/verification-flow.md) 保持 `review_pending`，有外审结论时写 `--ext-review-state <值>`。工具未就绪或被拦见 [constraints.md § keel 工具](../shared/constraints.md#keel-工具)，⛔ 不手改 `04-dev-tasks*.md` 生成区与 `state/`。清审结论不落盘，任务会永远停在 `review_pending`；除此之外与报告文件之外 ⛔ 不写任何文档
 
 ## Skill 协作
 
