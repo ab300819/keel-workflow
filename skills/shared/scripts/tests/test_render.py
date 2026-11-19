@@ -189,6 +189,15 @@ class RenderTest(unittest.TestCase):
         self.assertIn("- F-01#1 · n · [详情](backlog/F-01-1.md)", b)
         self.assertIn("- F-01#2 · m\n", b)
 
+    def test_detail_file_created_after_park_linked_on_render(self) -> None:
+        run_keel(self.root, "backlog", "park", "F-01", "--note", "n", "--by", "verify")
+        self.assertNotIn("[详情]", self.read(BACKLOG_MD))
+        os.makedirs(self.path("docs/devdocs/backlog"), exist_ok=True)
+        self.write("docs/devdocs/backlog/F-01-1.md", "# F-01#1\n")
+        self.assertEqual(run_keel(self.root, "render")[0], 0)
+        self.assertIn("- F-01#1 · n · [详情](backlog/F-01-1.md)", self.read(BACKLOG_MD))
+        self.assertEqual(self.violations(), [])
+
     def test_no_backlog_entries_no_file(self) -> None:
         self.add("甲")
         self.assertFalse(os.path.exists(self.path(BACKLOG_MD)))

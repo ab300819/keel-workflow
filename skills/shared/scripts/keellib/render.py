@@ -33,7 +33,8 @@ def ledger_region(tasks: dict[str, dict[str, Any]]) -> str:
     return "\n" + "\n".join(rows) + "\n"
 
 
-def backlog_md(entries: dict[str, dict[str, Any]]) -> str:
+def backlog_md(entries: dict[str, dict[str, Any]], devdocs: str | None = None) -> str:
+    """detail 为空但 devdocs/backlog/<锚点 # 换 ->.md 已存在时也挂链接（park 后才写详情的情形）。"""
     out = ["---", "generated_by: keel", "spec_version: backlog.v3", "---", "", "# Backlog", "",
            "本文件由 keel 生成，改状态用 `keel backlog …`", "", "## Index"]
     for g in GROUPS:
@@ -44,8 +45,12 @@ def backlog_md(entries: dict[str, dict[str, Any]]) -> str:
         out += ["", f"### {g}", ""]
         for e in items:
             line = f"- {e['source_id']}#{e['entry_no']} · " + " ".join(str(e.get("note") or "").split())
-            if e.get("detail"):
-                line += f" · [详情]({e['detail']})"
+            detail = e.get("detail")
+            if not detail and devdocs:
+                rel = f"backlog/{e['source_id']}-{e['entry_no']}.md"
+                detail = rel if os.path.isfile(os.path.join(devdocs, rel)) else None
+            if detail:
+                line += f" · [详情]({detail})"
             out.append(line)
     return "\n".join(out) + "\n"
 
@@ -87,7 +92,7 @@ def render_all(project: Project) -> None:
             store.record_region(project, REGION_KEY, region)
     entries = backlog.load_all(project)[0]
     if entries:
-        data = backlog_md(entries).encode("utf-8")
+        data = backlog_md(entries, project.devdocs).encode("utf-8")
         cur = _read(os.path.join(project.root, BACKLOG_MD))
         if cur is None or cur.encode("utf-8") != data or man.get(BACKLOG_MD) != store.blob_sha(data):
             store.write_atomic(project, BACKLOG_MD, data)
