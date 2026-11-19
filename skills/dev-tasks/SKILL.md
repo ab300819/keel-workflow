@@ -92,7 +92,7 @@ metadata:
 
 ## 输出文件
 
-**主文件**：`docs/devdocs/04-dev-tasks.md`
+**主文件**：`docs/devdocs/04-dev-tasks.md`。其「任务状态」节是 keel 生成区，汇总全部分册的任务，分册不设生成区。本 skill 只写任务定义，状态字段不进定义块（见 [§ 任务台账协议](../shared/constraints.md)）。
 
 ### 文档拆分规则
 
@@ -170,7 +170,7 @@ docs/devdocs/
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /dev-workflow 执行编码）
 - [ ] 产出文档遵守 [`gate/marker-scope`](../shared/constraints.md)：正文不用门控标记与装饰性 emoji，禁令直接写成文字（如「不得…」）；本文件写给 agent 的指令原句不抄进产出文档
-- [ ] Bash 工具仅用于只读操作（如查看目录结构），不得执行代码修改
+- [ ] Bash 工具仅用于只读操作（如查看目录结构）与 `.keel/bin/keel` 命令，不得执行代码修改
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/task-template.md](templates/task-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）
 
 ### 基础约束
@@ -180,7 +180,7 @@ docs/devdocs/
 - [ ] **文件路径必须具体，不能写"相关文件"**
 - [ ] **必须提供依赖关系图**
 - [ ] 优先级：P0（阻塞）、P1（重要）、P2（次要）
-- [ ] 任务编号格式：`T-XX`（顺序编号）；取当前最大值按 [`id/scan-word-boundary`](../shared/constraints.md)——⛔ 裸 `grep -o 'T-[0-9]+'` 会把 `UT-001` 里的 `T-001` 当成任务编号
+- [ ] 任务编号格式：`T-XX`，由工具分配：每张新任务先执行 `.keel/bin/keel task add --title "<标题>" --source dev-tasks [--depends <编号,…>] [--profile <档>] [--milestone M-XXX] [--layer <层>]`，用它输出的编号写定义块，依赖与 review_profile 与定义块属性表一致。⛔ 不自行扫描最大编号。首次生成时先按模板写出带生成区标记的 `04-dev-tasks.md`；工具未就绪、未初始化或被拦时见 [§ keel 工具](../shared/constraints.md#keel-工具)
 - [ ] 后批次任务详细程度不低于首批次（TAR 完整性、路径具体性、粒度一致性）
 
 ### 需求追溯约束
@@ -239,10 +239,10 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 
 ### 增量操作
 
-- **新增任务**：追加到任务列表末尾，重新编号
+- **新增任务**：先 `keel task add` 拿编号，再把定义块追加到任务列表末尾；已有编号不重排
 - **插入任务**：高优先级任务插入合适位置
-- **更新依赖**：调整受影响任务的依赖关系
-- **更新状态**：标记任务完成/进行中
+- **更新依赖**：改定义块，同时执行 `.keel/bin/keel task set <id> --depends <编号,…>`
+- **状态**：本 skill 不写；由 `/dev-workflow`、`/sync` 经 keel 命令推进
 - **回填 design_ref**：当 design_context 新增/更新后，由编排器触发扫描已有 🟢 UI 任务，按 D-XX 匹配补标 design_ref 和组件库映射
 
 ### design_ref 回填规则

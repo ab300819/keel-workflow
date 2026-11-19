@@ -67,6 +67,19 @@
 4. **汇总**：yaml-summary-v1 信封汇总各子 skill 的 `summary.details`，向用户呈现"N 个产物、M 个任务、K 处差距补齐"。
 5. **幂等**：二次运行无新差距即 no-op。
 
+### 台账迁移
+
+扫描时发现 `04-dev-tasks*.md` 为 `tasks.v2`，或 `backlog.md` / `backlog/*.md` 为 `backlog.v2`，且没有 `docs/devdocs/state/meta.json`：先做本节，再进 Phase 1~3。未迁移项目的所有写状态命令都会拒绝执行。
+
+1. 执行 `.keel/bin/keel migrate --dry-run`，把 `.keel/migration-report.md` 呈给用户：迁了什么、没认出什么、搬了哪些长文本。
+2. restructuring 级，按 `confirm/restructuring` 逐项确认：
+   - 无法映射的状态值，由用户指定后加 `--map-status "<原值>=<目标值>"`（可多次），⛔ 不猜。
+   - 有未认出的任务时 `--apply` 会拒绝；用户同意让它们原样留在生成区外，才加 `--allow-partial`。
+3. 执行 `.keel/bin/keel migrate --apply`（带上确认过的参数）。要求 `docs/devdocs` 没有未提交改动；回滚命令写在报告的「回滚」节。
+4. 完成后询问用户是否安装 git pre-commit hook：`.keel/bin/keel git-hook install`（已有 hook 时串接，不覆盖）。
+
+垫片缺失与非 0 退出码见 [constraints.md § keel 工具](../../shared/constraints.md#keel-工具)。
+
 ## A/B 类 skill 的 realign 子流程骨架
 
 所有支持 realign 的 skill 按同一骨架运行（由各 skill 的 `references/realign.md` 实例化）：

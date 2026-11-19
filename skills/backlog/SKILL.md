@@ -1,13 +1,13 @@
 ---
 name: backlog
 description: 管理 keel 中暂缓但需追踪的事项：登记、查询、重新激活或关闭。不用于 Jira/Linear 或 Sprint 容量管理。
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash
 metadata:
   patterns: [registry, workflow-bridge]
   interaction: command-driven
   handoff: yaml-summary-v1
 user-invocable: true
-writes_backlog: backlog.v2
+writes_backlog: backlog.v3
 ---
 
 # Backlog 暂缓任务池
@@ -20,7 +20,7 @@ writes_backlog: backlog.v2
 
 `backlog` 是 keel 的**暂缓任务池**：记录已经有来源编号、暂时不进入当前开发闭环、但未来需要追溯的项。
 
-它只维护 `docs/devdocs/backlog.md` 这一集中索引，不创建新编号体系，不修改原编号文件。条目通过 `source_id + entry_no` 做局部锚点，允许同一来源产生多条暂缓项。
+条目状态存于 `docs/devdocs/state/backlog/`，只经 `.keel/bin/keel backlog …` 写入；`docs/devdocs/backlog.md` 是工具生成的索引，⛔ 不手工编辑。每条的长说明写在可编辑的 `docs/devdocs/backlog/<source_id>-<entry_no>.md`。不创建新编号体系，不修改原编号文件。条目通过 `source_id + entry_no` 做局部锚点（如 `F-01#1`），允许同一来源产生多条暂缓项。
 
 边界：
 
@@ -32,14 +32,19 @@ writes_backlog: backlog.v2
 
 ### CLI 入口
 
-```bash
-/backlog --park <source_id>       # 写入 parked 条目
-/backlog --reactivate <source_id> # parked → reactivated
-/backlog --close <source_id>      # parked → closed
-/backlog --supersede <source_id>  # parked → superseded（可选）
-/backlog --list[=status]          # 列出条目，默认全部
-/backlog --init                   # 初始化 docs/devdocs/backlog.md（使用 templates/backlog-template.md）
-```
+每个动作对应一条 keel 命令（垫片缺失、退出码与被拦处理见 [§ keel 工具](../shared/constraints.md#keel-工具)）：
+
+| 动作 | 命令 |
+|---|---|
+| `--park <source_id>` | `.keel/bin/keel backlog park <source_id> --note "<一句话>" --by <来源 skill> [--related <编号,…>] [--append]` |
+| `--note <锚点>` | `.keel/bin/keel backlog note <锚点> --note "<一句话>"`（改既有条目的摘要） |
+| `--reactivate <锚点>` | `.keel/bin/keel backlog reactivate <锚点> --target-flow <skill> --target-id <编号>` |
+| `--close <锚点>` | `.keel/bin/keel backlog close <锚点> --reason "<原因>"` |
+| `--supersede <锚点>` | `.keel/bin/keel backlog supersede <锚点> --by-id <编号或锚点>`（可选终态） |
+| `--list[=status]` | `.keel/bin/keel backlog list [--status <status>]`；单条用 `backlog get <锚点>` |
+
+- 需要长说明（Context / Reactivation Criteria）时，park 前先按 [templates/backlog-template.md](templates/backlog-template.md) 写 `docs/devdocs/backlog/<source_id>-<entry_no>.md`（`entry_no` = 该来源已有条目数 + 1，见 `backlog list`）；park 时该文件存在才会挂上详情链接。
+- `backlog.md` 在首条入池后由工具生成。
 
 ### 编排入口
 
@@ -49,7 +54,7 @@ writes_backlog: backlog.v2
 skill: backlog
 mode: read | dry-run | apply
 inputs:
-  command: park | reactivate | close | supersede | list
+  command: park | note | reactivate | close | supersede | list
   source_id: F-01
 expected_output: yaml-summary-v1
 ```
@@ -65,86 +70,25 @@ expected_output: yaml-summary-v1
 | “这个 P3 先记下 / 暂时不做 / 放 backlog” | `backlog` |
 | “列出 backlog / 重新激活 F-01 的暂缓项” | `backlog` |
 
-## backlog.md Schema
+## 条目字段
 
-`docs/devdocs/backlog.md` 是唯一 SSOT。状态只在该文件维护，原 `F/US/AC/T/INS/BUG/FR/NFR` 文件不加状态字段。
+字段与取值见 `.keel/bin/keel schema backlog`；`source_id` 前缀白名单（禁 `B-XXX` 等新编号体系）、按状态的条件必填、`note` 长度由 K5 保证，被拦时按提示处理。原 `F/US/AC/T/INS/BUG/FR/NFR` 文件不加状态字段。
 
-### 文件 frontmatter
+工具不判定的语义：
 
-```yaml
----
-generated_by: backlog
-spec_version: backlog.v2
-generated_at: 2026-05-19T10:30:00+08:00
-updated_at: 2026-05-19T10:30:00+08:00
----
-```
-
-### 文件结构
-
-1. `## Index`：按 status 分组，包含 `parked` / `reactivated` / `closed` / `superseded`。
-2. `## Entries`：每个条目一个块，标题推荐 `### F-01#1 - <短标题>`。
-3. `## Change Log`：可选，记录状态迁移时间、操作者 skill 与原因。
-
-### 条目 frontmatter
-
-每条 backlog 项必须包含 YAML frontmatter 块。
-
-```yaml
-source_id: F-01
-entry_no: 1
-status: parked
-created_at: 2026-05-19
-created_by_skill: verify
-note: "P3 边界 case 待优化"
-related_ids: [AC-05, AC-07]
-```
-
-必填字段：
-
-| 字段 | 规则 |
-|---|---|
-| `source_id` | 复用已有编号：`F-XX` / `US-XX` / `AC-XX` / `T-XX` / `INS-XX` / `BUG-XX` / `FR-XX` / `NFR-XX` / `M-XXX`；禁止 `B-XXX` |
-| `source_id`（`M-XXX` 例外）| `M-XXX` 是**唯一允许承接「尚无任何编号」的来源**：开发过程中冒出的新需求挂到「它是在哪一段冒出来的」上。⛔ 仅此一个例外，不得推广到其他前缀 |
-| `entry_no` | 同一 `source_id` 下从 1 开始递增 |
-| `status` | `parked` / `reactivated` / `closed` / `superseded` |
-| `created_at` | ISO 日期，写入条目创建日 |
-| `created_by_skill` | 产生来源 skill，如 `verify` |
-
-状态条件字段：
-
-| status | 必填字段 | 含义 |
-|---|---|---|
-| `reactivated` | `target_flow` / `target_id` | 已转入目标流程，如 `dev-tasks` + `T-08` |
-| `closed` | `reason` | 不再处理的原因 |
-| `superseded` | `superseded_by` | 被哪个来源或条目替代 |
-
-可选字段：`note`、`related_ids`、`created_from`、`updated_at`、`updated_by_skill`、`decision_log`。
+- `M-XXX` 是**唯一允许承接「尚无任何编号」的来源**：开发过程中冒出的新需求挂到「它是在哪一段冒出来的」上。⛔ 仅此一个例外；挂得上已有编号的按对应编号入池。
+- `reactivated` 的 `target_flow` / `target_id` 指已转入的目标流程与编号，如 `dev-tasks` + `T-08`；`closed` 的 `reason` 写不再处理的原因；`superseded` 的 `superseded_by` 写替代它的来源或条目。
 
 ## 状态机
 
-```mermaid
-stateDiagram-v2
-  [*] --> parked
-  parked --> reactivated: target_flow + target_id
-  parked --> closed: reason
-  parked --> superseded: superseded_by
-  reactivated --> [*]
-  closed --> [*]
-  superseded --> [*]
-```
+`parked` 是唯一初始状态，只能迁到 `reactivated` / `closed` / `superseded` 三个终态之一（由命令保证）。
 
-规则：
-
-- 初始状态只能是 `parked`。
 - `reactivated` 表示已消费到目标流程，不等于 done。
-- `closed` 表示明确不再处理，必须说明 `reason`。
-- `superseded` 是可选终态，用于记录被其他编号或条目取代。
-- 禁止 `done` 状态；完成度应由目标流程自身记录。
+- 没有 `done` 状态；完成度由目标流程自身记录。
 
 ## 生产侧衔接
 
-入池只有一条路：用户或编排层显式调用 `backlog --park`。⛔ 其他 skill 不直接改 backlog 文件，也不输出候选字段——保持单一写入方，避免并发和 schema 漂移。
+入池只有一条路：用户或编排层显式调用 `backlog --park`（即 `keel backlog park`）。⛔ 其他 skill 不输出候选字段，也不自行拼命令写 backlog——保持单一入口。
 
 适合入池的场景（由用户或编排层判断后调用）：
 
@@ -169,28 +113,20 @@ stateDiagram-v2
 | `FR-XX` / `NFR-XX` | `prd` |
 | `M-XXX` | 按条目**形态**定，⛔ 无固定去向：新需求 → `requirements`；缺陷 → `bugfix`；已足够明确可直接排期 → `dev-tasks` |
 
-`reactivate` 必须写回 `target_flow` 和 `target_id`。若目标流程尚未生成编号，保持 `parked` 并返回 `partial`，提示先运行目标 skill。
+若目标流程尚未生成编号，保持 `parked` 并返回 `partial`，提示先运行目标 skill。
 
 ## 门控
 
-⛔ 禁止继续：`--reactivate` 缺少 `target_flow` 或 `target_id`。
-恢复方式：先运行目标流程生成目标编号，或由用户明确提供 `target_flow` + `target_id` 后再迁移状态。
+缺必填字段、非法前缀、非 `parked` 条目再迁移，由命令当场拒绝，按提示处理。
 
-⛔ 禁止继续：`--close` 缺少 `reason`。
-恢复方式：用户补充关闭原因；未提供前保持 `parked`。
-
-⛔ 禁止继续：尝试创建 `B-XXX` 或其他新编号体系。
-恢复方式：改用已有 `source_id`，或先通过对应 skill 生成合法来源编号。
-
-⚠️ 必须确认：同一 `source_id` 已有 active `parked` 条目时再次入池。
-恢复方式：用户确认是追加新 `entry_no`，还是更新既有条目；无确认时不写入。
-**`M-XXX` 来源例外**：默认**追加**新 `entry_no`，⛔ 不问。理由——一个里程碑段内冒出多个想法是常态，每条都问会把「记一笔」变成打断，而打断正是本机制要消除的东西。其余来源行为不变。
+⚠️ 必须确认：`park` 报出同一 `source_id` 已有 `parked` 条目。
+恢复方式：问用户是追加新条目（重跑并加 `--append`）还是更新既有条目（`backlog note <锚点>`）；无确认时不写入。`M-XXX` 来源默认追加，工具不拦，⛔ 不问——段内冒出多个想法是常态，每条都问会把「记一笔」变成打断。
 
 ## 追溯能力
 
 - 主锚点：`source_id + entry_no`，例如 `F-01#1`。
 - `related_ids` 用于记录辅助关联，不改变主锚点。
-- `Change Log` 记录状态迁移，保留 `from_status` / `to_status` / `changed_at` / `changed_by_skill`。
+- 状态迁移历史看 `docs/devdocs/state/backlog/` 的 git 历史。
 
 ## 不做什么
 
@@ -203,10 +139,10 @@ stateDiagram-v2
 
 ## 模板与 Realign
 
-- 初始化模板：[templates/backlog-template.md](templates/backlog-template.md)
+- 详情文件模板：[templates/backlog-template.md](templates/backlog-template.md)
 - 结构演进：[references/realign.md](references/realign.md)
 
-`backlog.v2` 是当前 spec 版本。修改模板必填章节、字段、状态枚举或硬校验规则时，必须同步更新 [`references/realign.md`](references/realign.md) 的当前版本与 Migration Matrix。
+`backlog.v3` 是当前 spec 版本。修改模板必填章节、字段、状态枚举或硬校验规则时，必须同步更新 [`references/realign.md`](references/realign.md) 的当前版本与 Migration Matrix。
 
 ## 子 Agent 摘要格式
 
@@ -216,7 +152,7 @@ stateDiagram-v2
 
 | 字段 | 值域 / 示例 |
 |---|---|
-| `mode` | `park` / `reactivate` / `close` / `supersede` / `list` / `init` / `realign` |
+| `mode` | `park` / `note` / `reactivate` / `close` / `supersede` / `list` / `realign` |
 | `backlog_path` | `docs/devdocs/backlog.md` |
 | `entries_added` / `entries_updated` | 本次新增或更新条目数 |
 | `status_counts` | `{parked: 3, reactivated: 1, closed: 2, superseded: 0}` |
@@ -224,4 +160,4 @@ stateDiagram-v2
 | `target_flow` / `target_id` | reactivated 时写入目标 |
 | `pending_confirmation` | 同源 active parked 冲突等待确认 |
 
-**产物字段**：`output_files` 仅列出 `docs/devdocs/backlog.md`；`new_ids.backlog_entries` 记录局部锚点（如 `F-01#1`），不记录 `B-XXX`。
+**产物字段**：`output_files` 列出 `docs/devdocs/backlog.md` 与本次写的详情文件；`new_ids.backlog_entries` 记录局部锚点（如 `F-01#1`），不记录 `B-XXX`。
