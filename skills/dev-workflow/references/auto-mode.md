@@ -63,7 +63,7 @@
   │
   ├── 4. 逐任务循环：
   │     │
-  │     ├── 4a. 断点检测（编排器自行执行，轻量）
+  │     ├── 4a. 断点检测 + 认领（编排器自行执行，轻量）
   │     │
   │     ├── 4b. 启动子 Agent 执行单任务 ← Task tool
   │     │     子 Agent 获得：任务定义、关联编号、涉及文件
@@ -71,7 +71,7 @@
   │     │     子 Agent 返回：{status, commit_hash, test_results, blockers}
   │     │
   │     ├── 4c. 编排器处理子 Agent 结果：
-  │     │     ├── 成功 → 更新任务状态 + sync + commit 2
+  │     │     ├── 成功 → keel 写状态/commits + sync + commit 2（命令见 SKILL.md § 任务台账）
   │     │     └── 失败 → fail-fast（输出续做命令）
   │     │
   │     ├── 4d. 工作区洁净校验 + 写检查点文件
