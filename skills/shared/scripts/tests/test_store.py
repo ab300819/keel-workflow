@@ -6,7 +6,7 @@ import tempfile
 import time
 import unittest
 
-from helpers import git, make_project, run_keel
+from helpers import CLEAN_ENV, git, make_project, run_keel
 from keellib import store
 from keellib.store import KeelError, Project
 
@@ -90,7 +90,7 @@ class StoreTest(unittest.TestCase):
                 "    print('held', flush=True); time.sleep(5)\n")
         scripts = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         p = subprocess.Popen([sys.executable, "-c", code, scripts, root],
-                             stdout=subprocess.PIPE, text=True)
+                             stdout=subprocess.PIPE, text=True, env=CLEAN_ENV)
         assert p.stdout is not None
         self.addCleanup(p.stdout.close)
         self.addCleanup(p.wait)
@@ -111,6 +111,41 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(code, 3)
         self.assertIn("/pipeline realign", err)
         self.assertFalse(os.path.exists(os.path.join(root, "docs/devdocs/state")))
+
+    def test_internal_error_exits_3(self) -> None:
+        import contextlib
+        import io
+        from unittest import mock
+
+        import keel
+        err = io.StringIO()
+        with mock.patch.object(Project, "find", side_effect=RuntimeError("boom")), \
+                contextlib.redirect_stderr(err):
+            code = keel.main(["init"])
+        self.assertEqual(code, 3)
+        self.assertEqual(err.getvalue().strip(), "keel 内部错误：boom")
+
+    def test_symlinked_lock_not_truncated(self) -> None:
+        root = self.init_project()
+        victim = os.path.join(self.tmp + "-victim")
+        with open(victim, "w") as f:
+            f.write("keep")
+        self.addCleanup(os.remove, victim)
+        lock = os.path.join(root, ".keel/lock")
+        os.remove(lock)
+        os.symlink(victim, lock)
+        self.assertEqual(run_keel(root, "init")[0], 3)
+        with open(victim) as f:
+            self.assertEqual(f.read(), "keep")
+
+    def test_symlinked_state_dir_refused(self) -> None:
+        root = self.init_project()
+        state = os.path.join(root, "docs/devdocs/state")
+        os.rename(state, state + "-real")
+        os.symlink(state + "-real", state)
+        code, _, err = run_keel(root, "init")
+        self.assertEqual(code, 3)
+        self.assertIn("符号链接", err)
 
     def test_cleanup_tmp(self) -> None:
         root = self.init_project()

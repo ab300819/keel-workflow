@@ -51,6 +51,9 @@ def main(argv: list[str] | None = None) -> int:
     except store.KeelError as e:
         print(str(e), file=sys.stderr)
         return e.code
+    except Exception as e:  # 退出码 3 = 内部错误，不与 1（被门拦下）混淆
+        print(f"keel 内部错误：{e}", file=sys.stderr)
+        return 3
 
 
 if __name__ == "__main__":
