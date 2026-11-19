@@ -4,8 +4,10 @@
 
 | 审查方 | 通道 | 备用 |
 |---|---|---|
-| codex | T1（CLI）| T1b（备用计费后端）、T2（codex-mcp），规则不变 |
-| agy | `agy` CLI 非交互模式 | 无 |
+| codex | hcom 窗口实例 → T1（CLI）| T1b（备用计费后端）、T2（codex-mcp），规则不变 |
+| agy | hcom 窗口实例 → `agy` CLI 非交互模式 | 无 |
+
+窗口实例是首选送达方式（同一实例里连续对话，审查方能自己跑命令），不可用或中途卡住才落回命令行；启动、发消息、落回与事后检查见 [hcom-instances.md](hcom-instances.md)。
 
 T3（同模型子 Agent）的触发条件以本文件 § 一方失败为准：**所选的外部审查方全部未成功**且用户同意时才用，折损标注规则不变。集成文档与 SKILL.md 里「T1/T2 失败 → T3」描述的是 codex 一侧通道用尽——此时 codex 记 `failed`，⛔ 不直接落到 T3。
 
@@ -13,7 +15,7 @@ T3（同模型子 Agent）的触发条件以本文件 § 一方失败为准：**
 
 ## 询问审查方式
 
-**先探测再问**：S2.5 开头先探测两方是否可用——codex 按集成文档 § 首选通道探测只测 T1、T2（⛔ 探测阶段不落到 T3），agy 按集成文档 § agy CLI 的检测。然后用 AskUserQuestion 问一次，三个选项各带后果：
+**先探测再问**：S2.5 开头先探测两方是否可用——窗口实例的前置条件按 [hcom-instances.md § 通道顺序与探测](hcom-instances.md)；命令行一层 codex 按集成文档 § 首选通道探测只测 T1、T2（⛔ 探测阶段不落到 T3），agy 按集成文档 § agy CLI 的检测。两层任一可用，该方就算可用。然后用 AskUserQuestion 问一次，三个选项各带后果：
 
 | 选项 | 后果 |
 |---|---|
@@ -30,7 +32,7 @@ T3（同模型子 Agent）的触发条件以本文件 § 一方失败为准：**
 ## 并行调度
 
 - 选双方时，**同一份 brief** 并行发给两方，互相不可见。并行的写法按宿主能力选（后台任务或并发工具调用）。结构化代码审查两方都用集成文档 § Adversarial Prompt 模板 + 同一个 schema。
-- 「同一份」指提示词与材料内容相同，送达方式可以不同：codex 能自己跑 `git diff`，agy 不能执行命令，diff 须先存成文件让它读（见集成文档 § agy CLI）。
+- 「同一份」指提示词与材料内容相同，送达方式可以不同：窗口实例里两方都能自己跑 `git diff`；命令行方式下 agy 不能执行命令，diff 须先存成文件让它读（见集成文档 § agy CLI）。
 - 每个审查方独立套用自己的通道、失败分类与截断判定。
 - ⛔ agy 用的模型不得与宿主 Agent 同族，也不得与 codex 同族，否则「交叉」退化成自审。
 - S4 展示时两方的完整原始输出**分别**展示，不合并、不过滤。
@@ -68,7 +70,7 @@ T3（同模型子 Agent）的触发条件以本文件 § 一方失败为准：**
 ```yaml
 reviewers:                    # 每个审查方一项
   - name: codex | agy
-    method: codex-cli | codex-cli-alt | codex-mcp | agy-cli | null   # 未启用该方填 null
+    method: codex-hcom | codex-cli | codex-cli-alt | codex-mcp | agy-hcom | agy-cli | null   # 未启用该方填 null；中途落回的填最后实际产出结果的通道
     status: ok | failed | truncated | skipped
     reason: null              # 失败 / 跳过原因
 single_reviewer: false        # true = 本轮实际只有一方（含用户指定）
