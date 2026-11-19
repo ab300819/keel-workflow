@@ -209,8 +209,8 @@ Q3（feature/bugfix 追加，可选）:
 | `close` | 开发周期结束收尾（上线后需求终结） | `sync`（trace + audit）→ `compound`（知识沉淀）→ `onboard --update` → `prd clear`（清理当前需求脚手架，末步执行确保 why 记忆已沉淀）；health 探针命中 blocker 级时，二级强化：建议顺带 `realign --scope=health` 全量扫描 | 同步结果、沉淀文件、更新后的上下文摘要、脚手架清理结果 |
 | `insights` | 外部洞察吸收<br>⚠️ dev-workflow 返回 `partial` 时停在该步 | `insights`（收集 + 用户确认 + 追加 01）→ 有架构变更则 `system-design` → `test-cases` → `dev-tasks` → `verify --readiness` → `dev-workflow` → `verify` → `sync`；简单改进则 `dev-tasks` → `dev-workflow` → `verify` → `sync` | 洞察确认结果、架构影响判定、变更链路 |
 | `design` | 用户主动推送设计资产；pipeline 只做阶段检测和收集 | no-prd → 收集并提示先 `/prd` 或 `/requirements`；prd-ready → `requirements --update-design --target prd-index`；post-requirements/post-design → `requirements --update-design`; in-dev → `requirements --update-design` + 提示 `verify --ui`; post-tasks → `requirements --update-design` → `dev-tasks --backfill-design` | `design_context`、目标阶段、委托目标、UI 验证提示 |
-| `backlog` | 暂缓任务池维护（park / reactivate / close / supersede / list / init）| 委托 `backlog`，传入 `source_id` 与动作 | 条目状态迁移结果、当前池内清单 |
-| `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | 扫描 frontmatter → 比对各 skill 当前常量 → Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1 | drift 数量、Phase 结果、确认项 |
+| `backlog` | 暂缓任务池维护（park / note / reactivate / close / supersede / list）| 委托 `backlog`，传入 `source_id` 与动作 | 条目状态迁移结果、当前池内清单 |
+| `realign` | 规范升级后回扫已完成产物；不破坏原完成证据，仅追加差距补齐 | 扫描 frontmatter → 比对各 skill 当前常量 → 有 `tasks.v2` / `backlog.v2` 时先做台账迁移（`.keel/bin/keel migrate`，见 [references/realign.md § 台账迁移](references/realign.md#台账迁移)）→ Phase 1 B 类上游 → Phase 2 A 类主链路 → Phase 3 B 类旁路 → 汇总 yaml-summary-v1 | drift 数量、Phase 结果、确认项 |
 
 ### 入口私有约束
 

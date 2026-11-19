@@ -36,7 +36,7 @@
 | 01-requirements.md | 无编号 | 为用户故事添加 US-001, US-002... |
 | 01-requirements.md | 无编号 | 为验收标准添加 AC-001, AC-002... |
 | 03-test-*.md | 无编号 | 为测试用例添加 UT/IT/E2E-XXX |
-| 04-dev-tasks.md | 无编号 | 为任务添加 T-01, T-02... |
+| 04-dev-tasks.md | 无编号 | 为任务添加 T-01, T-02...（新任务经 `.keel/bin/keel task add` 分配编号） |
 
 ### 文件结构
 

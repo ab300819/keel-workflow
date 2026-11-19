@@ -67,6 +67,13 @@
 | `.realign-plan.md` | pipeline（已废弃：产出它的 layout scope 已随 layout.v2 删除，存量文件可删）| — |
 | `.batch-checkpoint.json` | dev-workflow | — |
 | `.runlog.yaml` | 编排层（已废弃：runlog 规则 2026-11 按自带死期删除，存量文件可删）| — |
+| `state/tasks/T-<N>.json` | keel | — |
+| `state/backlog/<slug>.json` | keel | — |
+| `state/meta.json` | keel | — |
+| `state/gates.json` | keel | — |
+| `audit/T-<N>/ledger-record.md` | keel | — |
+| `audit/migration-v3.md` | keel | — |
+| `audit/migration-v3-backlog.md` | keel | — |
 
 ## 双形态存储：集中文件 vs 资源目录
 

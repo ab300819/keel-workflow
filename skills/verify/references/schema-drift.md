@@ -21,6 +21,8 @@
 | `docs/prd/requirements/*.md` | prd-brainstorm | `skills/prd-brainstorm/references/realign.md` |
 | `docs/devdocs/backlog.md` | backlog | `skills/backlog/references/realign.md` |
 
+**台账（`tasks` / `backlog`）**：`tasks.v3` / `backlog.v3` 为当前；仍为 `tasks.v2` / `backlog.v2` → drift，建议动作固定为 `/pipeline realign`（台账迁移 `.keel/bin/keel migrate`），⛔ 不建议 `/dev-tasks --realign` 或手工改；迁移前所有写状态的 keel 命令都会拒绝执行。`backlog.md` 由工具生成，自带 `spec_version`。
+
 ⛔ **`00-baseline.md` 只做结构性 drift 检测**（缺失章节 / frontmatter 字段），
 realign **不得改写**其带 `用户确认` / `已有文档` / `推导待确认` 标注的正文——
 那些内容问人和挖证据才得来，重生成产不出来。详见
@@ -34,7 +36,7 @@ realign **不得改写**其带 `用户确认` / `已有文档` / `推导待确�
 dev-workflow 的产物是代码 + 证据链（AC 表、内审/外审记录、测试代码）而非 markdown 文档，**无 frontmatter 可扫**。其 spec drift 通过间接证据检测：
 
 - 读取 `skills/dev-workflow/references/realign.md` 顶部当前 `spec_version`（如 `devflow.v1`）
-- 扫描 `04-dev-tasks*.md` 中"状态=已完成"任务是否含 `Realigned-From: <old_spec>` 尾注
+- 取已完成任务（`.keel/bin/keel task list --status 已完成`，或读生成区），检查其在 `04-dev-tasks*.md` 的定义块是否含 `Realigned-From: <old_spec>` 尾注
 - 若当前 `spec_version` 有效且任务无 `Realigned-From` 尾注 → 视为"可能需要 realign"（态：`drift`，详因由 dev-workflow 自身 Step 1.5 + Migration Matrix 最终判定）
 - 若当前 `spec_version` 是 `devflow.v1`（首版，无前置版本）→ 所有已完成任务视为 `current`（无历史可 drift）
 

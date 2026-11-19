@@ -55,7 +55,7 @@ compound：提取经验、沉淀模式          → 知识层面的复利
 ```text
 1. 回顾本次开发
    ├── 读取 verify-report.md（若存在）
-   ├── 读取 04-dev-tasks*.md 了解完成的任务
+   ├── 读取 04-dev-tasks*.md 了解完成的任务（状态读生成区或 `.keel/bin/keel task list`）
    ├── 读取 git log 了解提交历史
    └── 回顾对话中的关键决策点
    │

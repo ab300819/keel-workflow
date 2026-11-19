@@ -56,7 +56,7 @@ spec_version_notes: |
 | **标准** | 新功能、需求变更 | → 完整 Requirements→Design→Tests→Tasks→Dev |
 | **探索** | 原型、技术调研 | → 允许跳过部分验证，事后由用户确认目标行为后补建 AC |
 
-> **探索模式最小行为验证**：可跳过文档强制（AC/追溯矩阵/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；写入任务台账 `exploration_mode: true`，便于事后由用户确认目标行为后补建真实 AC。无证据 ⛔ 阻止提交。
+> **探索模式最小行为验证**：可跳过文档强制（AC/追溯矩阵/完整 TDD）和对抗式验证，但**不得跳过** S6 绿验（skipped/todo=0）和至少 1 条"目标行为证据"（AC / UT/IT 断言 / `--ui --live` 截图 / 显式豁免）；经 `task set <id> --exploration-mode true` 登记（见 [§ 任务台账](#任务台账流程状态的唯一载体)），便于事后由用户确认目标行为后补建真实 AC。无证据 ⛔ 阻止提交。
 
 ## 触发条件
 
@@ -98,7 +98,7 @@ spec_version_notes: |
 
 | 步骤 | 质量门 |
 |------|--------|
-| S1 读取任务定义 | 从 `04-dev-tasks.md` 获取任务、F/AC/UT/IT/E2E 关联 |
+| S1 读取任务定义 | 从 `04-dev-tasks.md` 获取任务定义、F/AC/UT/IT/E2E 关联；状态、依赖、review_profile 读生成区或 `task get <id>` |
 | S1.5 Sprint Contract | Test Agent 基于 AC + 当前代码上下文生成可执行验收契约（函数签名、返回值类型、边界条件、异常场景）；编排器裁剪过度契约、补足遗漏契约，确认后作为测试输入约束 |
 | S2-S3 骨架 | 接口骨架 + 测试骨架；⛔ 代码内不写任何 keel 编号，追溯由 Commit 2 写入文档 |
 | S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0`；注释遵循 [`/code-quality` 注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式/来源记录式注释，含修复循环），日志遵循 [日志规范](../code-quality/SKILL.md#日志规范)（安全红线/级别纪律/禁 log-and-throw）|
@@ -107,7 +107,7 @@ spec_version_notes: |
 | S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：时机按 review_profile（见 constraints.md § review_profile 三档）；`--review` 可临时叠加 inline |
 | S9 Phase 4 | 外部对抗审查 embedded-headless（独立审查）：时机同上；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态 `EXT_REVIEWED`/`EXT_UNRESOLVED`/`EXT_BLOCKED` |
 | S10 自描述 | `/code-self-describe --update`（`workspace_context.capabilities.code_metadata_write_policy` 为 `explicit_opt_in` 时**默认跳过**——自描述产物写在代码目录内，违反零污染红线。跳过须在 yaml 摘要里以 ℹ️ 记录 `skipped: code_metadata_write_policy=explicit_opt_in`。用户显式 `--force-code-docs` 才执行） |
-| S11 Commit 1 | 代码提交，遵循「提交信息格式」；Phase 4 触发时把 `ext_review_state` 写进任务台账 |
+| S11 Commit 1 | 代码提交，遵循「提交信息格式」；Phase 4 结果与提交按 [§ 任务台账](#任务台账流程状态的唯一载体) 经 keel 命令登记 |
 | Commit 2 后置 | `/sync` 更新 trace + 文档提交；若有 AGENTS.md 仅更新“当前状态”；批量默认 `/compound` |
 
 步骤状态（S1~S11 + S1.5）用于断点恢复；详细矩阵、S12 后置同步和状态标记见 [execution-flow.md](references/execution-flow.md)。
@@ -214,7 +214,7 @@ spec_version_notes: |
 | 完成检查 | `/code-self-describe` | 更新模块自描述（--update） |
 | 代码提交 | `/git-safety` | 使用 git mv/rm 处理文件 |
 | 提交信息 | `/commit-convention` | 遵循项目提交规范 |
-| 依赖解析 | `/dev-tasks` | 读取任务依赖关系和状态 |
+| 依赖解析 | `/dev-tasks` | 依赖关系和状态读生成区或 `task list --fields id,status,depends_on` |
 | 任务完成 | `/sync` | 后续：更新追溯矩阵（追溯同步） |
 | 知识沉淀 | `/compound` | 推荐：sync 后提取经验模式（批量模式默认执行） |
 | 全量测试 | `/test-run` | 批量完成后 `--trace`（全量+追溯）；单任务完成后 `--affected`（受变更影响测试），affected 无匹配时回退 `--trace` |
@@ -228,7 +228,7 @@ spec_version_notes: |
 - [ ] **Test Agent 先写测试，Impl Agent 后写实现**（物理隔离）
 - [ ] **Test Agent 断言来自行为契约 + 03-test-\*.md，Impl Agent 禁止读取 03-test-\*.md**
 - [ ] **Impl Agent 严禁修改 Test Agent 产出的测试代码**（疑似缺陷须 AskUserQuestion 确认）
-- [ ] □/○ 步骤跳过时必须在任务台账条目记录原因（⛔ 不写进提交信息）
+- [ ] □/○ 步骤跳过时必须记录原因：写进 `audit/<id>/`，经 `task set <id> --record audit/<id>/` 挂链接（⛔ 不写进提交信息）
 
 ### 完成检查约束
 
@@ -282,7 +282,7 @@ spec_version_notes: |
 
 - [ ] **每个任务独立提交**，不跨任务合并
 - [ ] **代码提交和文档提交分离**（Commit 1: 代码，Commit 2: 文档状态 + trace 同步结果）
-- [ ] 提交后更新状态：**audit → 已完成**；**fast/guarded → `review_pending`**（定义与出口见 [constraints.md § review_profile 与 review_pending](../shared/constraints.md)）
+- [ ] 提交后更新状态：**audit → 已完成**；**fast/guarded → `review_pending`**（定义与出口见 [constraints.md § review_profile 与 review_pending](../shared/constraints.md)；命令见 [§ 任务台账](#任务台账流程状态的唯一载体)）
 - [ ] **`mode` 不是 `inline` 时展开为 N+1 仓提交**：Commit 1 拆成每个有变更的代码根一个 commit，Commit 2 是外壳仓一次 commit（文档 + 所有变更子模块的指针 bump；`linked` 下无指针，仅文档）。协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根取自握手 `workspace_context.code_roots`（`inline` 时为单项，`path` = 仓库根绝对路径，退化为今天的 Commit 1 + Commit 2）。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
 - [ ] **提交前必过 detached HEAD 门**：每个变更的子模块代码根 `git -C <path> symbolic-ref -q HEAD` 失败即 ⛔ 阻塞，处置见 [workspace-topology/references/migration.md § detached HEAD 处置](../workspace-topology/references/migration.md#detached-head-处置)
 - [ ] **`mode` 不是 `inline` 时 `--single-commit` 不可用**：跨仓无法合并为单 commit，⚠️ 忽略该 flag 并提示
@@ -325,7 +325,7 @@ spec_version_notes: |
 - [ ] **单任务模式完成后必须调用 `/test-run --affected`**（受变更影响的测试，基于 git diff，见 `/test-run` SKILL）
    - `--affected` 无匹配时（test-run 返回"建议运行全量"）→ 回退 `/test-run --trace`
    - 单任务不得完全跳过该校验，除非显式 `--skip-trace="<原因>"` 并登记
-- [ ] **`--skip-trace` 收紧**：理由必须写入任务台账 `skip_trace_reason`，批量交付报告单列（便于事后补跑）
+- [ ] **`--skip-trace` 收紧**：理由必须经 `task set <id> --skip-trace-reason "<原因>"` 登记，批量交付报告单列（便于事后补跑）
 - [ ] **使用 `--skip-trace` 的任务自动标 `postcheck_pending`**，不得进入"已完成可跳过"态（恢复方式：补跑 `/test-run --affected` 或 `--trace`，Step 1.5 [E] 才放行）
 - [ ] 全量/受影响测试失败不回滚已提交任务（原子提交已落盘）
 - [ ] --headless / --auto-commit 模式：记录警告到交付报告，不中断
@@ -381,12 +381,28 @@ Tests: <实际执行过的精确命令>
 
 字段、适用时机、语义与「绑任务不绑 commit」的理由见 [constraints.md § 任务台账协议](../shared/constraints.md)；`ext_review_state` 值域见同文件 § 独立审查状态机枚举。⛔ 本文件不复述，只写本 skill 自己的处理。
 
+**本 skill 的写入**（命令均为 `.keel/bin/keel …`，取值与条件必填由 K5 校验；工具未就绪或被拦见 [§ keel 工具](../shared/constraints.md#keel-工具)；⛔ 不手改生成区与 `state/`）：
+
+| 时机 | 命令 |
+|---|---|
+| 开工（认领） | `task set <id> --status 进行中` |
+| Phase 4 出结果 | `task set <id> --ext-review-state <值>`（由 L2 yaml 派生，见 [verification-flow.md](references/verification-flow.md)） |
+| Commit 1 落盘后（每个代码仓一条，随 Commit 2 提交） | `task commit <id> <repository>@<full-sha> --note "<一句话>"` |
+| 提交后：audit | `task set <id> --status 已完成` |
+| 提交后：fast/guarded | `task set <id> --status review_pending --batch … --due … --pending-reason …`（见 [constraints.md § review_pending](../shared/constraints.md)） |
+| `--skip-trace` / 探索模式 / 带理由降档 | `--skip-trace-reason "<原因>"` / `--exploration-mode true` / `--profile <档> --profile-downgrade-reason "<理由>"` |
+| 执行记录、跳过原因等长文本 | 写 `audit/<id>/`，`task set <id> --record audit/<id>/` |
+| 执行中派生的新任务 | `task add --title "<标题>" --source dev-workflow --derived-from <id>`，再由 `/dev-tasks` 补定义块 |
+| 范围外的发现（不阻断本任务） | 优先登记一行：`backlog park <源编号> --note "<一句话>" --by dev-workflow`，比开新任务省事 |
+
+读状态、依赖、档位：`04-dev-tasks.md` 生成区，或 `task get <id>` / `task list [--status …] [--fields …]`。
+
 **`commits` 失效时的处理**（与追溯矩阵同一套，见 sync `trace-mode.md`）：
 
 | 情形 | drain 怎么做 |
 |---|---|
 | sha 可解析 | 取该 commit 的 diff 送外审 |
-| sha 不可解析 | ⚠️ 报 `drain.commit_not_found`，保持 `review_pending`；**Recovery**：人工按描述定位提交后回填 `commits`，或显式改用当前代码状态重审（须在报告单列）|
+| sha 不可解析 | ⚠️ 报 `drain.commit_not_found`，保持 `review_pending`；**Recovery**：人工按描述定位提交后用 `task commit` 补登，或显式改用当前代码状态重审（须在报告单列）|
 
 ⛔ **不得因为定位不到就判 `EXT_REVIEWED`**——无审查即无证据。但也 ⛔ 不得让任务
 永久卡死：上表第二行的 Recovery 是明确出路，必须给出，不能只报错。
