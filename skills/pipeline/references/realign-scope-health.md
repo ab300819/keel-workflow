@@ -227,7 +227,7 @@ manual_decisions:
 
 #### Phase 2：维度 c 自动归档（state-size / size-cap）
 
-- 对 `state/total-size-cap` 违规：将超长行按 task ID 拆出，明细落到 `04-dev-tasks-pNN.md` 或 ADR 对应文件（依据 manual_decision），主文件保留 ≤200 字符占位。
+- 对 `state/total-size-cap` 违规：将超长行按 task ID 拆出，明细落到 `audit/T-xxx/` 或 ADR 对应文件（依据 manual_decision），主文件保留 ≤200 字符占位。⛔ 不手改 `04-dev-tasks.md` 生成区与 `backlog.md`（由 keel 生成，见 [constraints.md § keel 工具](../../shared/constraints.md#keel-工具)）。
 - `state/line-length-cap` 违规：换行重排，不删除内容。
 
 #### Phase 3：维度 b 死链处理
