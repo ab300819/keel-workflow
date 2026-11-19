@@ -7,6 +7,7 @@ import unittest
 
 from helpers import CLEAN_ENV, KEEL, make_project, run_keel
 from keellib import schema, store, tasks
+from keellib.common import dump
 
 
 class TaskTest(unittest.TestCase):
@@ -21,7 +22,7 @@ class TaskTest(unittest.TestCase):
         with self.p.lock():
             for n in nums:
                 t = schema.new_task(f"T-{n}", f"任务{n}", "dev-tasks")
-                store.write_atomic(self.p, f"{tasks.TASKS_REL}/T-{n}.json", tasks._dump(t))
+                store.write_atomic(self.p, f"{tasks.TASKS_REL}/T-{n}.json", dump(t))
 
     def path(self, tid: str) -> str:
         return os.path.join(self.root, tasks.TASKS_REL, tid + ".json")

@@ -4,12 +4,11 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from collections.abc import Callable
 from typing import Any
 
 from . import schema, store
-from .render import render_all
+from .common import dump, write_session
 from .store import KeelError, Project
 
 TASKS_REL = store.STATE_REL + "/tasks"
@@ -17,10 +16,6 @@ _ID_RE = re.compile(r"^T-(\d+)\.json$")
 # CLI 选项 -> 字段；depends 与 exploration-mode 另行转换
 SET_FIELDS = ("status", "profile", "depends", "milestone", "layer", "title", "batch", "due", "pending_reason",
               "ext_review_state", "skip_trace_reason", "exploration_mode", "profile_downgrade_reason", "record")
-
-
-def _dump(task: dict[str, Any]) -> bytes:
-    return (json.dumps(task, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
 def load_all(project: Project) -> tuple[dict[str, dict[str, Any]], list[str]]:
@@ -42,21 +37,11 @@ def load_all(project: Project) -> tuple[dict[str, dict[str, Any]], list[str]]:
     return tasks, bad
 
 
-@contextmanager
-def _write_session(project: Project) -> Iterator[None]:
-    project.require_writable()
-    with project.lock():
-        store.cleanup_tmp(project)
-        store.require_intact(project)
-        yield
-        render_all(project)
-
-
 def _save(project: Project, task: dict[str, Any], known: set[str]) -> None:
     errs = schema.validate_task(task, known)
     if errs:
         raise KeelError(f"{task['id']} 校验失败，未写入：\n" + "\n".join(errs), 1)
-    store.write_atomic(project, f"{TASKS_REL}/{task['id']}.json", _dump(task))
+    store.write_atomic(project, f"{TASKS_REL}/{task['id']}.json", dump(task))
 
 
 def _csv(v: str) -> list[str]:
@@ -65,7 +50,7 @@ def _csv(v: str) -> list[str]:
 
 def add(project: Project, title: str, source: str, derived_from: str | None = None, profile: str | None = None,
         depends: str | None = None, milestone: str | None = None, layer: str | None = None) -> str:
-    with _write_session(project):
+    with write_session(project):
         tasks, _ = load_all(project)
         d = os.path.join(project.root, TASKS_REL)
         nums = [int(m.group(1)) for n in (os.listdir(d) if os.path.isdir(d) else []) if (m := _ID_RE.match(n))]
@@ -80,7 +65,7 @@ def add(project: Project, title: str, source: str, derived_from: str | None = No
 
 
 def _mutate(project: Project, tid: str, fn: Callable[[dict[str, Any]], None]) -> None:
-    with _write_session(project):
+    with write_session(project):
         tasks, _ = load_all(project)
         if tid not in tasks:
             raise KeelError(f"任务 {tid} 不存在", 1)
@@ -117,7 +102,7 @@ def get(project: Project, tid: str) -> str:
     tasks, _ = load_all(project)
     if tid not in tasks:
         raise KeelError(f"任务 {tid} 不存在", 1)
-    return _dump(tasks[tid]).decode("utf-8").rstrip("\n")
+    return dump(tasks[tid]).decode("utf-8").rstrip("\n")
 
 
 def list_lines(project: Project, status: str | None, fields: str | None) -> list[str]:

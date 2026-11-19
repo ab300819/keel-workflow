@@ -6,11 +6,12 @@ import argparse
 import os
 import sys
 import unittest
+from typing import Any
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from keellib import schema, store, tasks  # noqa: E402
+from keellib import backlog, schema, store, tasks  # noqa: E402
 
 
 def cmd_init(project: store.Project) -> int:
@@ -45,6 +46,28 @@ def cmd_task(project: store.Project, a: argparse.Namespace) -> int:
         print(tasks.get(project, a.id))
     else:
         print("\n".join(tasks.list_lines(project, a.status, a.fields)))
+    return 0
+
+
+def cmd_backlog(project: store.Project, a: argparse.Namespace) -> int:
+    k = a.backlog_cmd
+    if k == "park":
+        print(backlog.park(project, a.source_id, a.note, a.by, a.related, a.append))
+    elif k == "get":
+        print(backlog.get(project, a.anchor))
+    elif k == "list":
+        print("\n".join(backlog.list_lines(project, a.status, a.fields)))
+    else:
+        def fn(e: dict[str, Any]) -> None:
+            if k == "note":
+                e["note"] = a.note
+            elif k == "reactivate":
+                e.update(status="reactivated", target_flow=a.target_flow, target_id=a.target_id)
+            elif k == "close":
+                e.update(status="closed", reason=a.reason)
+            else:
+                e.update(status="superseded", superseded_by=a.by_id)
+        backlog.transition(project, a.anchor, fn)
     return 0
 
 
@@ -83,6 +106,23 @@ def main(argv: list[str] | None = None) -> int:
     p = tp.add_parser("list")
     p.add_argument("--status")
     p.add_argument("--fields")
+    bp = sub.add_parser("backlog", help="backlog 入池、迁移与查询").add_subparsers(dest="backlog_cmd", required=True)
+    p = bp.add_parser("park")
+    p.add_argument("source_id")
+    p.add_argument("--note", required=True)
+    p.add_argument("--by", required=True)
+    p.add_argument("--related")
+    p.add_argument("--append", action="store_true")
+    for name, opts in (("note", ["--note"]), ("reactivate", ["--target-flow", "--target-id"]),
+                       ("close", ["--reason"]), ("supersede", ["--by-id"])):
+        p = bp.add_parser(name)
+        p.add_argument("anchor")
+        for o in opts:
+            p.add_argument(o, required=True)
+    bp.add_parser("get").add_argument("anchor")
+    p = bp.add_parser("list")
+    p.add_argument("--status")
+    p.add_argument("--fields")
     args = ap.parse_args(argv)
     if args.self_test:
         return self_test()
@@ -94,7 +134,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     try:
         project = store.Project.find(args.root or os.getcwd())
-        return cmd_task(project, args) if args.cmd == "task" else cmd_init(project)
+        if args.cmd == "task":
+            return cmd_task(project, args)
+        return cmd_backlog(project, args) if args.cmd == "backlog" else cmd_init(project)
     except store.KeelError as e:
         print(str(e), file=sys.stderr)
         return e.code
