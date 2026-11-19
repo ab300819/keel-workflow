@@ -88,7 +88,7 @@ class Project:
         if self.is_migrated():
             return
         if self.needs_migration():
-            raise KeelError("项目仍是 tasks.v2 / backlog.v2 文档，先执行 /pipeline realign 迁移后再写状态", 3)
+            raise KeelError("项目台账还是 tasks.v2 / backlog.v2 格式，要先迁移到 keel 3.x：告诉用户需要迁移，经同意后走 pipeline 的规范升级流程（先预览，再确认执行），迁移后再写状态", 3)
         raise KeelError("项目未初始化，先执行 keel init", 3)
 
     def check_links(self) -> None:

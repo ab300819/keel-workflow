@@ -17,7 +17,7 @@ from keellib.common import write_session  # noqa: E402
 
 def cmd_init(project: store.Project) -> int:
     if project.needs_migration():
-        raise store.KeelError("项目仍是 tasks.v2 / backlog.v2 文档，先执行 /pipeline realign 迁移", 3)
+        raise store.KeelError("项目台账还是 tasks.v2 / backlog.v2 格式，要先迁移到 keel 3.x：告诉用户需要迁移，经同意后走 pipeline 的规范升级流程（先预览，再确认执行）", 3)
     with project.lock():
         store.require_intact(project)
         store.cleanup_tmp(project)
