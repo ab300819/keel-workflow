@@ -10,7 +10,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from keellib import schema, store  # noqa: E402
+from keellib import schema, store, tasks  # noqa: E402
 
 
 def cmd_init(project: store.Project) -> int:
@@ -28,6 +28,26 @@ def cmd_init(project: store.Project) -> int:
     return 0
 
 
+def cmd_task(project: store.Project, a: argparse.Namespace) -> int:
+    k = a.task_cmd
+    if k == "add":
+        print(tasks.add(project, a.title, a.source, a.derived_from, a.profile, a.depends, a.milestone, a.layer))
+    elif k == "set":
+        opts = {f: getattr(a, f) for f in tasks.SET_FIELDS if getattr(a, f) is not None}
+        if not opts:
+            raise store.KeelError("至少给一个要改的字段，如 --status", 2)
+        tasks.set_fields(project, a.id, opts)
+    elif k == "commit":
+        tasks.commit(project, a.id, a.ref, a.note)
+    elif k == "archive":
+        tasks.archive(project, a.id)
+    elif k == "get":
+        print(tasks.get(project, a.id))
+    else:
+        print("\n".join(tasks.list_lines(project, a.status, a.fields)))
+    return 0
+
+
 def self_test() -> int:
     suite = unittest.defaultTestLoader.discover(os.path.join(HERE, "tests"), top_level_dir=os.path.join(HERE, "tests"))
     return 0 if unittest.TextTestRunner(verbosity=1).run(suite).wasSuccessful() else 1
@@ -41,6 +61,28 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("init", help="初始化 state/ 与 manifest")
     sp = sub.add_parser("schema", help="打印任务 / backlog 字段定义")
     sp.add_argument("kind", choices=["task", "backlog"])
+    tp = sub.add_parser("task", help="任务增改归档查询").add_subparsers(dest="task_cmd", required=True)
+    p = tp.add_parser("add")
+    p.add_argument("--title", required=True)
+    p.add_argument("--source", required=True)
+    p.add_argument("--derived-from")
+    p.add_argument("--profile")
+    p.add_argument("--depends")
+    p.add_argument("--milestone")
+    p.add_argument("--layer")
+    p = tp.add_parser("set")
+    p.add_argument("id")
+    for f in tasks.SET_FIELDS:
+        p.add_argument("--" + f.replace("_", "-"), dest=f)
+    p = tp.add_parser("commit")
+    p.add_argument("id")
+    p.add_argument("ref")
+    p.add_argument("--note", required=True)
+    tp.add_parser("archive").add_argument("id")
+    tp.add_parser("get").add_argument("id")
+    p = tp.add_parser("list")
+    p.add_argument("--status")
+    p.add_argument("--fields")
     args = ap.parse_args(argv)
     if args.self_test:
         return self_test()
@@ -52,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     try:
         project = store.Project.find(args.root or os.getcwd())
-        return cmd_init(project)
+        return cmd_task(project, args) if args.cmd == "task" else cmd_init(project)
     except store.KeelError as e:
         print(str(e), file=sys.stderr)
         return e.code
