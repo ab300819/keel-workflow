@@ -7,12 +7,13 @@ KEEL="$(dirname "$HOOK")/../skills/shared/scripts/keel.py"
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 fail=0
 
-# new_proj <名字>：已初始化 keel 状态、含任务 T-1 并已提交的项目
+# new_proj <名字>：已初始化 keel 状态、含任务 T-1 与 backlog F-01#1 并已提交的项目
 new_proj() {
   R="$TMP/$1"; mkdir -p "$R/docs/devdocs"
   git -C "$R" init -q; git -C "$R" config user.email t@t; git -C "$R" config user.name t
   echo x > "$R/docs/devdocs/01-requirements.md"
   python3 "$KEEL" --root "$R" init >/dev/null && python3 "$KEEL" --root "$R" task add --title x --source dev-tasks >/dev/null
+  python3 "$KEEL" --root "$R" backlog park F-01 --note n --by dev-tasks >/dev/null
   git -C "$R" add -A; git -C "$R" commit -qm init
 }
 # expect <用例名> <pre|post> <payload> <应出现的子串；空串 = 应静默>

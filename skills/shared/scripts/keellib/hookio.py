@@ -63,7 +63,7 @@ def pre(project: Project, payload: dict[str, Any]) -> str:
         m = next((m for m in map(_HUMAN_RE.search, _strings(payload)) if m), None)
         if m is None:
             return ""
-        cmd = ".keel/bin/keel " + " ".join(m.group(1).split()) + ("" if m.group(1).startswith("state") else " …")
+        cmd = ".keel/bin/keel " + " ".join(m.group(1).split()) + ("" if m.group(1).startswith("state") else ' --reason "<原因>"')
         gates.log_hit(project, "human", "block", "block", cl, tool, "", m.group(0))
         return _deny(f"{store.HUMAN_ONLY} `{cmd}`")
     findings: list[Finding] = []
@@ -71,8 +71,9 @@ def pre(project: Project, payload: dict[str, Any]) -> str:
         key = _key(os.path.join(project.root, rel))
         if any(key == d or key.startswith(d + os.sep) for d in (_key(project.state_dir), _key(project.keel_dir))):
             findings.append(Finding("K1", rel, None, "状态文件只能由 keel 写"))
-        elif key == _key(os.path.join(project.root, store.BACKLOG_MD)) and project.is_migrated():
-            findings.append(Finding("K2", rel, None, "backlog.md 是生成文件"))  # 未迁移项目的 backlog.md 仍是手写文档
+        elif key == _key(os.path.join(project.root, store.BACKLOG_MD)) and project.guarded() \
+                and store.backlog_guarded(project, project.manifest()):  # 与 K2 完整性判据同一前提；手写的仍可编辑
+            findings.append(Finding("K2", rel, None, "backlog.md 是生成文件"))
     blocks, warns = gates.apply_levels(project, findings, cl, tool)
     if blocks:
         return _deny(gates.format_findings(blocks))
@@ -81,10 +82,12 @@ def pre(project: Project, payload: dict[str, Any]) -> str:
 
 def post(project: Project, payload: dict[str, Any]) -> str:
     tool = str(payload.get("tool_name") or "")
-    blocks, warns = gates.apply_levels(project, gates.collect(project, None), client(payload), tool)
+    findings, note = gates.collect(project, None)
+    blocks, warns = gates.apply_levels(project, findings, client(payload), tool)
+    msg = "\n".join(x for x in (gates.format_findings(blocks + warns), note) if x)
     if blocks:
-        return json.dumps({"decision": "block", "reason": gates.format_findings(blocks + warns)}, ensure_ascii=False)
-    return _out("PostToolUse", additionalContext=gates.format_findings(warns)) if warns else ""
+        return json.dumps({"decision": "block", "reason": msg}, ensure_ascii=False)
+    return _out("PostToolUse", additionalContext=msg) if msg else ""
 
 
 def main(root: str | None, event: str) -> int:

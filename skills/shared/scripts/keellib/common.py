@@ -16,11 +16,13 @@ def dump(obj: dict[str, Any]) -> bytes:
 
 
 @contextmanager
-def write_session(project: store.Project) -> Iterator[None]:
+def write_session(project: store.Project, regen: bool = False) -> Iterator[None]:
+    """regen=True 只给 render：生成内容被手改（K2）时也放行，结束时从状态重新生成。"""
     project.require_writable()
     with project.lock():
         store.cleanup_tmp(project)
-        store.require_intact(project)
+        store.require_intact(project, only_state=regen)
+        store.prune_manifest(project)
         precheck(project)
         yield
         render_all(project)

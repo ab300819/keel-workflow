@@ -19,8 +19,7 @@ def cmd_init(project: store.Project) -> int:
     if project.needs_migration():
         raise store.KeelError("项目仍是 tasks.v2 / backlog.v2 文档，先执行 /pipeline realign 迁移", 3)
     with project.lock():
-        if project.is_migrated():
-            store.require_intact(project)
+        store.require_intact(project)
         store.cleanup_tmp(project)
         store.init_state(project)
     print("keel 状态已初始化：" + store.STATE_REL)
@@ -28,7 +27,7 @@ def cmd_init(project: store.Project) -> int:
 
 
 def cmd_render(project: store.Project) -> int:
-    with write_session(project):
+    with write_session(project, regen=True):
         pass  # 会话结束时 render_all 重新生成
     return 0
 
