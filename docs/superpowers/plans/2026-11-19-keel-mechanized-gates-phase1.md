@@ -436,3 +436,17 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
 ## 实测记录
 
 （Task 7 Step 6、Task 8 Step 6、Task 10 Step 2–3 的结果写在这里。）
+
+### Task 7 Step 6：ai-code 副本迁移（2026-11-19）
+
+在 `mktemp -d` 下的 `ai-code/docs` 副本上跑（新 `git init`，清掉 `GIT_*`），原目录未动。
+
+- `--dry-run`：任务 0、backlog 204，未识别 444，待映射状态 1（`⚪` 1 次，2.13 表一行列错位，状态列里填的是层）；无异常。
+- 未识别类别：
+  - 256 条：汇总表首列表头是 `#`，不是 ID / 编号 / 任务（2.1–2.12 各段总表）。按削减后的范围不认。
+  - 156 条：缺状态来源。ai-code 的状态写在编号单元格后缀（`T-168 ✅`、`T-302 🔍 待审查`）和分册节里的 `> **状态（日期）**` 引用块，这两种形态都不在识别范围内。外审台账、执行检查清单两张表都没有状态列。
+  - 23 条：backlog 校验失败，其中 11 条 `source_id` 前缀为 `CON`（不在 schema 前缀表），11 条 `status: closed` 缺 `reason`，1 条缺 `created_at`。
+  - 9 条：`backlog/*.md` 没有 yaml 块（索引卡）。
+- `--apply` 无 `--allow-partial`：退出码 1，未写入。`--apply --allow-partial`：成功；`task list` 末行「扫描 0 个文件」、`backlog list` 末行「扫描 204 个文件」，与报告一致；`keel check` 无 K1/K2；第二次 `--apply` 不重复写入。
+- 文档改动：`04-dev-tasks*.md` 与 `24-master-merge-20261104.md` 的 `spec_version` 升到 v3；主文件在外审台账表前插入生成区（该表各行未迁移，原样保留在区外）；`backlog.md` 重新生成，原文另存为 `backlog/index.md`。
+- 结论：按削减后的识别范围，ai-code 的任务状态一张都迁不过来。要迁 ai-code 的任务，至少还要认「`#` 首列表头」和「编号单元格后缀里的状态」两种形态，需用户决定是否扩大范围。

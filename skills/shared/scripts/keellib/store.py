@@ -177,6 +177,14 @@ def write_atomic(project: Project, relpath: str, data: bytes, *, record: bool = 
         project.save_manifest(m)
 
 
+def init_state(project: Project) -> None:
+    """调用方须已持有 project.lock()。"""
+    for d in ("tasks", "backlog"):
+        os.makedirs(os.path.join(project.state_dir, d), exist_ok=True)
+    if not project.is_migrated():
+        write_atomic(project, STATE_REL + "/meta.json", b'{\n  "schema": "keel.state.v1"\n}\n')
+
+
 def record_region(project: Project, key: str, text: str) -> None:
     m = project.manifest()
     m[key] = blob_sha(text.encode("utf-8"))
