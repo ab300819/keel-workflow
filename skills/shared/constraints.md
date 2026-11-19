@@ -573,6 +573,6 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
   - K3 / K4：状态载体文件（`04-dev-tasks*.md`、`backlog.md`、`00-context.md`、`.claude/rules/devdocs-state.md`）里新增或改动的超长行、超体积后继续变大，都会被拦。长文本写到 `audit/T-xxx/` 或 `backlog/<id>.md`，状态里只存链接。
   - K5：字段取值、条件必填、文本上限、依赖编号由工具校验，不可调。
 - `keel/read`：读状态用 `04-dev-tasks.md` 生成区，或 `.keel/bin/keel task get <id>` / `task list [--status …] [--fields …]` / `backlog get <锚点>` / `backlog list [--status …]`。`list` 末尾附覆盖情况，有无法识别的条目时如实报告，⛔ 不静默漏计。
-- `keel/human-only`：以下命令只能由用户执行，⛔ 模型不自行调用（hook 也会拒绝）。遇到时把命令原样交给用户，让他在会话里输入：
-  - 手工解决状态文件的合并冲突，或用户确认工具报出的非工具改动合法：`! .keel/bin/keel state accept`
-  - 调低门档位：`! .keel/bin/keel gate set <门> <warn|off> --reason "<原因>"`（K5 不可调）
+- `keel/human-only`：以下命令只能由用户执行，⛔ 模型不自行调用（hook 也会拒绝）。遇到时把命令原样交给用户，并说明：这一步只能由人在交互终端执行，另开一个终端，在项目根目录运行（Claude Code 的 `!` 命令没有控制终端，不可用）：
+  - 手工解决状态文件的合并冲突，或用户确认工具报出的非工具改动合法：`.keel/bin/keel state accept`
+  - 调低门档位：`.keel/bin/keel gate set <门> <warn|off> --reason "<原因>"`（K5 不可调）

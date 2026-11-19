@@ -63,9 +63,9 @@ def pre(project: Project, payload: dict[str, Any]) -> str:
         m = next((m for m in map(_HUMAN_RE.search, _strings(payload)) if m), None)
         if m is None:
             return ""
-        cmd = "! .keel/bin/keel " + " ".join(m.group(1).split()) + ("" if m.group(1).startswith("state") else " …")
+        cmd = ".keel/bin/keel " + " ".join(m.group(1).split()) + ("" if m.group(1).startswith("state") else " …")
         gates.log_hit(project, "human", "block", "block", cl, tool, "", m.group(0))
-        return _deny(f"这一步只能由人在会话里执行：{cmd}")
+        return _deny(f"{store.HUMAN_ONLY} `{cmd}`")
     findings: list[Finding] = []
     for rel in edited_paths(payload, project.root):
         key = _key(os.path.join(project.root, rel))

@@ -121,7 +121,8 @@ class GatesTest(unittest.TestCase):
         p = subprocess.run([sys.executable, KEEL, "--root", self.root, "state", "accept"], capture_output=True,
                            text=True, env=CLEAN_ENV, start_new_session=True, stdin=subprocess.DEVNULL)
         self.assertEqual(p.returncode, 3)
-        self.assertIn("! .keel/bin/keel state accept", p.stderr)
+        self.assertIn("另开一个终端", p.stderr)
+        self.assertIn(".keel/bin/keel state accept", p.stderr)
 
     def test_accept_success_and_refusal(self) -> None:
         self.assertEqual(run_keel(self.root, "init")[0], 0)
@@ -206,7 +207,8 @@ class GatesTest(unittest.TestCase):
         self.assertEqual(run_keel(self.root, "init")[0], 0)
         p = self.notty("gate", "set", "K1", "off", "--reason", "x")
         self.assertEqual(p.returncode, 3)
-        self.assertIn("! .keel/bin/keel gate set", p.stderr)
+        self.assertIn("另开一个终端", p.stderr)
+        self.assertIn(".keel/bin/keel gate set", p.stderr)
         self.assertFalse(os.path.exists(os.path.join(self.root, gates.GATES_REL)))
         self.assertEqual(self.main_accept("gate", "set", "K1", "off", "--reason", "x", answer="no"), 1)
         self.assertEqual(self.main_accept("gate", "set", "K1", "off", "--reason", "x"), 0)
