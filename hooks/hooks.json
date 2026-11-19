@@ -48,7 +48,7 @@
         ]
       },
       {
-        "matcher": "Edit|Write|NotebookEdit",
+        "matcher": "Edit|Write|NotebookEdit|apply_patch",
         "hooks": [
           {
             "type": "command",

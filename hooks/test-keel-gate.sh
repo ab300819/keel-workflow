@@ -43,5 +43,9 @@ new_proj nopy
 ENVX="env PATH=/nonexistent" expect "PATH 里无 python3 时静默" pre \
   '{"tool_name":"Edit","tool_input":{"file_path":"'"$R"'/docs/devdocs/state/tasks/T-1.json"}}' ""
 
-[ $fail -eq 0 ] && echo "keel-gate: 7 个用例全部通过"
+new_proj shimerr; rm -rf "$R/.keel"; mkdir -p "$TMP/elsewhere"; ln -s "$TMP/elsewhere" "$R/.keel"
+out=$(CLAUDE_PROJECT_DIR="$R" bash "$(dirname "$HOOK")/keel-shim" 2>&1); rc=$?
+[ -z "$out" ] && [ $rc -eq 0 ] || { echo "FAIL keel-shim 出错须静默: rc=$rc 输出 $out"; fail=1; }
+
+[ $fail -eq 0 ] && echo "keel-gate: 8 个用例全部通过"
 exit $fail

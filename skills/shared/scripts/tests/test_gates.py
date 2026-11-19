@@ -144,8 +144,8 @@ class GatesTest(unittest.TestCase):
             gates.log_hit(self.p, g, "block", "block", "cli", "check", path, "d")
         rc, out, _ = run_keel(self.root, "gate", "report")
         self.assertEqual(rc, 0)
-        self.assertRegex(out, r"K3\s+3")
-        self.assertRegex(out, r"K1\s+1")
+        self.assertIn("K3 2（共命中 3 次）", out)
+        self.assertIn("K1 1（共命中 1 次）", out)
         self.assertIn("每卡派生数", out)
         rc, out, _ = run_keel(self.root, "gate", "report", "--since", "2999-01-01")
         self.assertNotIn("K3", out.split("每卡派生数")[0])
@@ -237,6 +237,13 @@ class GatesTest(unittest.TestCase):
         rc, _, err = run_keel(os.path.join(self.root, "docs"), "check", "--staged")
         self.assertEqual(rc, 1)
         self.assertIn("K1", err)
+
+    def test_report_counts_distinct_findings(self) -> None:
+        for _ in range(5):
+            gates.log_hit(self.p, "K3", "block", "block", "claude", "Bash", "a.md", "同一条")
+        rc, out, _ = run_keel(self.root, "gate", "report")
+        self.assertEqual(rc, 0)
+        self.assertIn("K3 1（共命中 5 次）  a.md", out)
 
     def test_report_skips_malformed_lines(self) -> None:
         gates.log_hit(self.p, "K3", "block", "block", "cli", "check", "a.md", "d")

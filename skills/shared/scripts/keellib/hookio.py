@@ -12,8 +12,10 @@ from .gates import Finding
 from .store import Project
 
 _PATCH_RE = re.compile(r"^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+?)\s*$", re.M)
-# 只能人执行：state accept 与把档位放宽到 warn|off。shortcut: 只认字面调用，变量拼接、eval 等混淆写法拦不住，靠 /dev/tty 与 pre-commit 兜底
-_HUMAN_RE = re.compile(r"\bkeel(?:\.py)?\b[^;&|\n]*?\b(state\s+accept|gate\s+set\s+\S+\s+(?:warn|off))\b")
+# 只能人执行：state accept 与把档位放宽到 warn|off。只认命令位置上的 keel / keel.py（可带环境变量赋值、python3/bash 前缀），
+# grep、commit -m 里提到不算。shortcut: 变量拼接、eval、sh -c "…" 等混淆写法拦不住，靠 /dev/tty 与 pre-commit 兜底
+_HUMAN_RE = re.compile(r"(?:^|[;&|`\n]|\$\()\s*(?:\w+=\S*\s+)*(?:(?:\S*/)?(?:python3?|bash|sh)\s+)?"
+                       r"(?:\S*/)?keel(?:\.py)?\s+(?:--root\s+\S+\s+)?(state\s+accept|gate\s+set\s+\S+\s+(?:warn|off))\b")
 SHELL_TOOLS = ("Bash", "shell")
 
 
@@ -26,7 +28,7 @@ def _strings(payload: dict[str, Any]) -> list[str]:
 def edited_paths(payload: dict[str, Any], root: str) -> list[str]:
     ti = payload.get("tool_input")
     ti = ti if isinstance(ti, dict) else {}
-    raw = [ti[k] for k in ("file_path", "filePath", "path") if isinstance(ti.get(k), str) and ti[k]][:1]
+    raw = [ti[k] for k in ("file_path", "filePath", "path", "notebook_path") if isinstance(ti.get(k), str) and ti[k]][:1]
     if not raw:  # Codex apply_patch / OpenCode patchText：从补丁头取路径
         raw = [m for s in _strings(payload) for m in _PATCH_RE.findall(s)]
     out: list[str] = []
@@ -40,6 +42,11 @@ def edited_paths(payload: dict[str, Any], root: str) -> list[str]:
 
 def client(payload: dict[str, Any]) -> str:
     return os.environ.get("KEEL_CLIENT") or ("codex" if payload.get("tool_name") in ("apply_patch", "shell") else "claude")
+
+
+def _key(path: str) -> str:
+    """比较用：解开符号链接（含末级），并按大小写不敏感比较（macOS 默认文件系统 State/ 与 state/ 是同一目录）。"""
+    return os.path.normcase(os.path.realpath(path)).casefold()
 
 
 def _out(event: str, **kw: str) -> str:
@@ -61,10 +68,11 @@ def pre(project: Project, payload: dict[str, Any]) -> str:
         return _deny(f"这一步只能由人在会话里执行：{cmd}")
     findings: list[Finding] = []
     for rel in edited_paths(payload, project.root):
-        if rel.startswith((store.STATE_REL + "/", ".keel/")):
+        key = _key(os.path.join(project.root, rel))
+        if any(key == d or key.startswith(d + os.sep) for d in (_key(project.state_dir), _key(project.keel_dir))):
             findings.append(Finding("K1", rel, None, "状态文件只能由 keel 写"))
-        elif rel == store.BACKLOG_MD and project.is_migrated():  # 未迁移项目的 backlog.md 仍是手写文档
-            findings.append(Finding("K2", rel, None, "backlog.md 是生成文件"))
+        elif key == _key(os.path.join(project.root, store.BACKLOG_MD)) and project.is_migrated():
+            findings.append(Finding("K2", rel, None, "backlog.md 是生成文件"))  # 未迁移项目的 backlog.md 仍是手写文档
     blocks, warns = gates.apply_levels(project, findings, cl, tool)
     if blocks:
         return _deny(gates.format_findings(blocks))
@@ -92,9 +100,13 @@ def main(root: str | None, event: str) -> int:
         if out:
             print(out)
     except Exception as e:  # hook 层绝不能让客户端崩
-        try:
-            if project is not None:
-                gates.log_hit(project, "hook-error", "-", "hook-error", client({}), event, "", repr(e)[:200])
-        except Exception:
-            pass
+        log_error(project, event, e)
     return 0
+
+
+def log_error(project: Project | None, event: str, e: BaseException) -> None:
+    try:
+        if project is not None:
+            gates.log_hit(project, "hook-error", "-", "hook-error", client({}), event, "", repr(e)[:200])
+    except Exception:
+        pass

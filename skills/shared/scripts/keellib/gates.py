@@ -179,7 +179,7 @@ def gate_set(project: Project, gate: str, lv: str, reason: str) -> None:
 
 
 def report(project: Project, since: str | None) -> str:
-    hits: dict[str, list[str]] = {}
+    hits: dict[str, list[tuple[str, str]]] = {}
     recs: list[Any] = []
     try:
         fd = os.open(os.path.join(project.root, LOG_REL), os.O_RDONLY | os.O_NOFOLLOW)
@@ -197,10 +197,12 @@ def report(project: Project, since: str | None) -> str:
         try:
             if r["result"] in ("gate-set", "accept") or (since and r["ts"][:10] < since):
                 continue
-            hits.setdefault(r["gate"], []).append(r["path"])
+            hits.setdefault(r["gate"], []).append((r["path"], r["detail"]))
         except (KeyError, TypeError):
             continue
-    lines = [f"{g} {len(ps)}  {' '.join(sorted(set(ps)))}" for g, ps in sorted(hits.items())]
+    # 未修好的同一条违规每次 Post 都会再记一行：标题数按 (path, detail) 去重，原始次数附后
+    lines = [f"{g} {len(set(hs))}（共命中 {len(hs)} 次）  {' '.join(sorted({p for p, _ in hs}))}"
+             for g, hs in sorted(hits.items())]
     cnt = Counter(t["derived_from"] for t in tasks.load_all(project)[0].values() if t.get("derived_from"))
     return "\n".join(lines + ["每卡派生数"] + [f"{k} {n}" for k, n in cnt.most_common(10)])
 

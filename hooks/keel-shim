@@ -5,4 +5,5 @@ ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 [ -d "$ROOT/docs/devdocs" ] || exit 0                       # 非 keel 项目，静默
 command -v python3 >/dev/null 2>&1 || exit 0
 PLUGIN="${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}"
-exec python3 "$PLUGIN/skills/shared/scripts/keel.py" --root "$ROOT" install-shim --plugin-root "$PLUGIN"
+# 出错不能打断会话开始：stderr 丢弃、一律 exit 0（keel.py 已尽量记 hook-error）
+python3 "$PLUGIN/skills/shared/scripts/keel.py" --root "$ROOT" install-shim --plugin-root "$PLUGIN" 2>/dev/null || exit 0

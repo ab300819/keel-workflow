@@ -161,8 +161,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         project = store.Project.find(args.root or os.getcwd())
         if args.cmd in ("install-shim", "git-hook"):
-            out = install.install_shim(project, args.plugin_root) if args.cmd == "install-shim" \
-                else install.git_hook_install(project)
+            try:
+                out = install.install_shim(project, args.plugin_root) if args.cmd == "install-shim" \
+                    else install.git_hook_install(project)
+            except Exception as e:
+                if args.cmd == "install-shim":  # SessionStart 里由 keel-shim 静默，这里留一行日志
+                    hookio.log_error(project, "install-shim", e)
+                raise
             if out:
                 print(out)
             return 0
