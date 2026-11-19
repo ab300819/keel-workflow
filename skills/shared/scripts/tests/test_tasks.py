@@ -93,6 +93,17 @@ class TaskTest(unittest.TestCase):
             f.write(" ")
         self.assertEqual(run_keel(self.root, "task", "set", "T-1", "--layer", "x")[0], 3)
 
+    def test_traversal_id_rejected(self) -> None:
+        rc = run_keel(self.root, "task", "set", "../../x", "--title", "y")[0]
+        self.assertEqual(rc, 2)
+        self.assertFalse(os.path.exists(os.path.join(self.root, "x.json")))
+        self.assertEqual(run_keel(self.root, "task", "get", "T-1\n")[0], 2)
+
+    def test_mismatched_filename_unreadable(self) -> None:
+        self.seed(1)
+        os.rename(self.path("T-1"), self.path("T-2"))
+        self.assertIn("无法识别 1 个", run_keel(self.root, "task", "list")[1])
+
 
 if __name__ == "__main__":
     unittest.main()

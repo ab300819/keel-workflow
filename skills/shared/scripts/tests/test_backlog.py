@@ -25,7 +25,7 @@ class BacklogTest(unittest.TestCase):
         self.assertIsNone(e["detail"])
 
     def test_bad_prefix_rejected(self) -> None:
-        self.assertEqual(self.park("B-001")[0], 1)
+        self.assertEqual(self.park("B-001")[0], 2)
 
     def test_duplicate_needs_append_except_milestone(self) -> None:
         self.park("F-01")
@@ -65,6 +65,19 @@ class BacklogTest(unittest.TestCase):
         self.park("F-01")
         self.assertEqual(run_keel(self.root, "backlog", "note", "F-01#1", "--note", "字" * 201)[0], 1)
         self.assertEqual(run_keel(self.root, "backlog", "note", "F-01#1", "--note", "字" * 200)[0], 0)
+
+    def test_traversal_anchor_rejected(self) -> None:
+        self.park("F-01")
+        rc = run_keel(self.root, "backlog", "close", "../F-01#1", "--reason", "r")[0]
+        self.assertEqual(rc, 2)
+        self.assertEqual(run_keel(self.root, "backlog", "get", "F-01#1\n")[0], 2)
+
+    def test_mismatched_filename_unreadable(self) -> None:
+        self.park("F-01")
+        d = os.path.join(self.root, backlog.BACKLOG_REL)
+        os.rename(os.path.join(d, "F-01-1.json"), os.path.join(d, "F-09-1.json"))
+        out = run_keel(self.root, "backlog", "list")[1]
+        self.assertIn("无法识别 1 个", out)
 
 
 if __name__ == "__main__":

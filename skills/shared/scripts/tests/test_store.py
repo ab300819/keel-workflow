@@ -35,6 +35,15 @@ class StoreTest(unittest.TestCase):
         with open(os.path.join(root, ".keel/manifest.json"), encoding="utf-8") as f:
             self.assertIn(META, json.load(f))
 
+    def test_write_atomic_outside_state_refused(self) -> None:
+        p = Project.find(self.init_project())
+        with p.lock():
+            for rel in ("../escape.json", "docs/devdocs/04-dev-tasks.md"):
+                with self.assertRaises(store.KeelError) as cm:
+                    store.write_atomic(p, rel, b"x")
+                self.assertEqual(cm.exception.code, 3)
+        self.assertFalse(os.path.exists(os.path.join(os.path.dirname(p.root), "escape.json")))
+
     def test_tool_write_is_intact(self) -> None:
         self.assertEqual(self.violations(self.init_project()), [])
 
