@@ -210,7 +210,7 @@ T-2 ─┘          │
 
 > 层级为风险输入，执行强度由 `review_profile` 决定；S1~S11 完整矩阵见 dev-workflow execution-flow。
 
-> 状态、依赖、review_profile 与提交记录看上方生成区（`keel task get <id>` 看 commits），本表不重复。
+> 状态、依赖、review_profile 与提交记录看上方生成区（`.keel/bin/keel task get <id>` 看 commits），本表不重复。
 
 | 任务 | 层级 | 测试 | 验收 | Review |
 |------|------|------|------|--------|
