@@ -52,6 +52,7 @@ keel 现有 756 处 ⛔ 规则，全部靠模型读了 spec 后自觉遵守；�
 
 - 三端（Claude Code / Codex / OpenCode v2）共用一份 `skills/`；hook 适配层沿用现有两份文件（`hooks/hooks.json`、`hooks/opencode-plugin.js`）。
 - 工具用 Python，只用标准库，兼容 3.9（macOS 自带）。与 `health-lint.py` 同一路子，不引入依赖。
+- **运行时契约**：需要 `python3`（≥3.9）和 `bash`，与现有 hook 的依赖相同（`hooks/hooks.json` 已用 bash 调 Python）。不依赖 jq。缺运行时时垫片报「keel 工具未就绪」并说明缺什么，⛔ 不退回手写状态。原生 Windows（无 bash）第 1 段不支持，在 README 写明；WSL / Git Bash 视同 Linux，能测则测。
 - 本仓「一条规则只写一处」：规则真源从 spec 正文移到检查代码；spec 只留名字和处理办法。
 - SKILL.md ≤ 500 行。
 - 分发按版本键控：这是破坏性改动，插件版本升到 3.0.0，各 manifest 同步。
@@ -85,6 +86,8 @@ keel 现有 756 处 ⛔ 规则，全部靠模型读了 spec 后自觉遵守；�
 - 代码：`skills/shared/scripts/keel.py`（单文件起步；超过约 1500 行再拆包）。带 `--self-test`，沿用 `health-lint.py` 的自测夹具写法。
 - **调用入口问题**：skill 正文拿不到插件根路径（`external-reviewer-integration.md` 已记录 `CLAUDE_PLUGIN_ROOT` 在 skill 上下文不可用；`agent-memory` 现在写的是 `<keel>/skills/...` 占位，靠模型自己找）。
 - **解决**：SessionStart hook 在项目里写一个垫片 `.keel/bin/keel`（`exec python3 <插件根>/skills/shared/scripts/keel.py "$@"`），并把 `.keel/` 写进 `.git/info/exclude`（不改用户的 `.gitignore`）。skill 一律调用 `.keel/bin/keel`。OpenCode 在插件 `setup` 里做同样的事。垫片每次会话开始重写，插件升级后自动指向新路径。
+- **入口只做 CLI**（用户 2026-11-19 定）：hook、git pre-commit、人和模型共用同一个命令。不做 MCP：它唯一的好处是参数结构化，而 keel 的写命令参数很短；强制力也不来自 MCP（模型仍可绕开它直接改文件，兜底靠 hook 和校验和）。只有实际使用中出现 CLI 调用的具体问题时再评估。
+- **查询入口**：模型查状态用 `keel task get <id>` / `keel task list --status … --fields …` / `keel backlog list --status …`，输出 JSON 或一行一条的文本，只返回请求的字段。结果必须附带覆盖情况（扫描了多少文件、有多少条目无法识别），⛔ 不静默漏计。正文检索仍用 grep / rg。
 - 垫片不存在时（hook 未运行、Codex 未信任）：skill 指引让模型告诉用户「keel 工具未就绪」并给出原因清单，⛔ 不退回手写状态文件。
 
 ### 5.3 状态文件与生成视图
@@ -115,6 +118,12 @@ docs/devdocs/
   - manifest 只在本地，不入库，所以不会产生合并冲突。
   - 任何不经工具的工作区改动（编辑器、shell、别的客户端）都会在下次 hook 或命令运行时被发现。不必逐个去堵 shell 的写法。
   - 剩下的合法例外只有手工解决合并冲突，需要 `keel state accept`。**只能人执行**（用户 2026-11-19 定）：命令要求在交互终端里输入确认，没有交互终端（模型的 shell 调用）时拒绝执行，并提示用户在会话里输入 `! .keel/bin/keel state accept`。每次认可都写入命中记录。
+
+**写入的并发与落盘**：
+
+- 写命令都是字段级操作（改状态、加提交、挂起原因等），⛔ 不提供整条记录覆盖写。
+- 每次写入在项目级锁（`.keel/lock`）内完成「读取 → 校验 → 写临时文件 → `os.replace` 原子替换 → 更新 manifest」，两个会话同时写同一条不会互相覆盖；拿不到锁时等待数秒后报错，不静默跳过。
+- 校验失败时原文件不动；中途崩溃最多留下临时文件，下次运行时清理。
 
 **任务状态字段**（第 1 段；具体键名由实施者定）：编号、标题（≤80 字）、状态（待开发 / 进行中 / review_pending / 已完成 / 已归档）、review_profile、依赖、里程碑、层级、来源（`derived_from`：由哪张卡在执行中派生，可空）、commits（`<repo>@<sha>` + 一句描述）、batch / due / pending_reason、ext_review_state、skip_trace_reason（≤200 字）、exploration_mode、profile_downgrade_reason（≤200 字）、record（`audit/T-xxx/` 链接）。
 
@@ -224,6 +233,8 @@ docs/devdocs/
 - `keel.py --self-test`：字段校验、棘轮判定（新增行、改动行、改小）、校验和、迁移解析（keel 模板 + ai-code 四种表头 + 目录形态 backlog）。
 - hook 夹具脚本（同 `test-devdocs-drift.sh`）：Claude Code 与 Codex 两种输入形状各一组，覆盖 Pre 拒绝、Post 拦回、Bash 改状态文件被发现。
 - 迁移实测：把 ai-code 的 `docs/devdocs/` **复制到临时目录**跑 `--dry-run` 和 `--apply`，⛔ 不动原项目。
+- 并发：两个进程同时对同一条状态做不同字段的修改，两处修改都保留；锁超时报错。
+- 查询：`task list` 在 ai-code 迁移副本上返回的条目数与迁移报告一致，未识别条目计数非零时如实输出。
 - 性能：Post hook 在 ai-code 规模（约 120 个 devdocs 文件）下 < 300ms。
 - 真实客户端：Claude Code 实测 K1–K4；Codex、OpenCode 能测则测，测不了在交付说明里写明。
 
@@ -236,7 +247,9 @@ docs/devdocs/
 
 ## 11. 决定记录
 
-**用户定的**：方案 B，分段上线（4）；该拦的从一开始就拦，阈值可放松，记录必须有（5.4、5.5）；`keel state accept` 只能人执行（5.3）；未迁移项目先迁移再继续（5.7）；keel 只负责插件本身，ai-code 由用户升级并反馈。
+**用户定的**：方案 B，分段上线（4）；该拦的从一开始就拦，阈值可放松，记录必须有（5.4、5.5）；`keel state accept` 只能人执行（5.3）；未迁移项目先迁移再继续（5.7）；keel 只负责插件本身，ai-code 由用户升级并反馈；入口只做 CLI，不做 MCP（5.2）；第 1 段 backlog 和任务状态一起做（7）。
+
+**评估后放弃的方向**：把全部文档改成 JSON、用 jq 查询（用户提出，2026-11-19 交 codex 独立调研后放弃）。原因：需求、设计、测试理由、任务验收标准是长篇正文，塞进 JSON 字符串既不好查也不好读；jq 不是各平台默认安装，不能作为发行依赖；按字段查询的收益由 `keel` 自带的查询命令提供（5.2）。工具独写的范围保持在状态字段。调研同时补出的三处缺口已写入：运行时契约（3）、查询入口（5.2）、并发与原子写（5.3）。
 
 **Claude 替用户定的（请审阅）**：
 
