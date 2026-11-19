@@ -191,7 +191,7 @@ class HookioTest(unittest.TestCase):
         self.write("docs/devdocs/04-dev-tasks.md", "---\nspec_version: tasks.v2\n---\n")
         rc, out, _ = run_keel(self.root, "install-shim", "--plugin-root", "/p")
         self.assertEqual(rc, 0)
-        self.assertIn("/pipeline realign", json.loads(out)["hookSpecificOutput"]["additionalContext"])
+        self.assertIn("规范升级", json.loads(out)["hookSpecificOutput"]["additionalContext"])
 
     def test_git_hook_install_chains_once(self) -> None:
         hooks = os.path.join(self.root, ".git", "hooks")

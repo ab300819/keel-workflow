@@ -32,7 +32,7 @@ command -v python3 >/dev/null 2>&1 || {{ echo "keel 工具未就绪：缺 python
 exec python3 "$T" "$@"
 """
 UNMIGRATED = ('{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":'
-              '"keel 3.0：本项目台账尚未迁移，写台账和 backlog 的命令会拒绝执行；先跑 /pipeline realign"}}')
+              '"keel 3.0：本项目台账尚未迁移，写台账和 backlog 的命令会拒绝执行；向用户说明后，经同意走 pipeline 的规范升级流程迁移（用户只需说「迁移 keel 台账」）"}}')
 
 
 def git_path(project: Project, rel: str) -> str | None:

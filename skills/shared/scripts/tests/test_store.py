@@ -206,7 +206,7 @@ class StoreTest(unittest.TestCase):
             f.write("---\nspec_version: tasks.v2\n---\n# 任务\n")
         code, _, err = run_keel(root, "init")
         self.assertEqual(code, 3)
-        self.assertIn("/pipeline realign", err)
+        self.assertIn("规范升级", err)
         self.assertFalse(os.path.exists(os.path.join(root, "docs/devdocs/state")))
 
     def test_internal_error_exits_3(self) -> None:
