@@ -10,7 +10,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from keellib import store  # noqa: E402
+from keellib import schema, store  # noqa: E402
 
 
 def cmd_init(project: store.Project) -> int:
@@ -39,12 +39,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--self-test", action="store_true")
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("init", help="初始化 state/ 与 manifest")
+    sp = sub.add_parser("schema", help="打印任务 / backlog 字段定义")
+    sp.add_argument("kind", choices=["task", "backlog"])
     args = ap.parse_args(argv)
     if args.self_test:
         return self_test()
     if not args.cmd:
         ap.print_usage(sys.stderr)
         return 2
+    if args.cmd == "schema":
+        print(schema.describe(args.kind))
+        return 0
     try:
         project = store.Project.find(args.root or os.getcwd())
         return cmd_init(project)
