@@ -11,7 +11,7 @@ from typing import Any
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from keellib import backlog, gates, schema, store, tasks  # noqa: E402
+from keellib import backlog, gates, migrate, schema, store, tasks  # noqa: E402
 from keellib.common import write_session  # noqa: E402
 
 
@@ -22,10 +22,7 @@ def cmd_init(project: store.Project) -> int:
         if project.is_migrated():
             store.require_intact(project)
         store.cleanup_tmp(project)
-        for d in ("tasks", "backlog"):
-            os.makedirs(os.path.join(project.state_dir, d), exist_ok=True)
-        if not project.is_migrated():
-            store.write_atomic(project, store.STATE_REL + "/meta.json", b'{\n  "schema": "keel.state.v1"\n}\n')
+        store.init_state(project)
     print("keel 状态已初始化：" + store.STATE_REL)
     return 0
 
@@ -140,6 +137,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("level")
     p.add_argument("--reason", required=True)
     gp.add_parser("report").add_argument("--since")
+    p = sub.add_parser("migrate", help="tasks.v2 / backlog.v2 迁移到 state/（默认 --dry-run）")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--dry-run", action="store_true")
+    g.add_argument("--apply", action="store_true")
+    p.add_argument("--map-status", action="append", default=[], metavar="原值=目标值")
+    p.add_argument("--allow-partial", action="store_true")
     sub.add_parser("state", help="状态确认").add_subparsers(dest="state_cmd", required=True).add_parser("accept")
     args = ap.parse_args(argv)
     if args.self_test:
@@ -165,6 +168,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "state":
             gates.accept(project)
             return 0
+        if args.cmd == "migrate":
+            return migrate.run(project, args.apply, args.map_status, args.allow_partial)
         if args.cmd == "render":
             return cmd_render(project)
         return cmd_backlog(project, args) if args.cmd == "backlog" else cmd_init(project)
