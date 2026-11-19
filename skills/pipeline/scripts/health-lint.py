@@ -26,6 +26,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "shared", "scripts"))
+from keellib.gates import LINE_CAP, SIZE_CAP, line_too_long  # noqa: E402
+
 WHITELIST = ["T-RF", "Journey", "ADR", "BUG", "CON", "E2E", "INS", "AC", "US", "IT", "UT", "F", "T"]
 ID_RE = re.compile(r"(?<![\w-])(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)(?![\w-])")
 RANGE_RE = re.compile(r"(?<![\w-])(" + "|".join(WHITELIST) + r")-(\d+)~(?:(?:" + "|".join(WHITELIST) + r")-)?(\d+)(?![\w-])")
@@ -130,7 +133,7 @@ FORBIDDEN = {
     "submodule-ref": re.compile(r"\b[a-z][\w-]*@[0-9a-f]{7,40}\b"),
 }
 URLPATH_RE = re.compile(r"https?://\S+|`[^`]*/[^`]*`")
-SIZE_WARN, SIZE_BLOCK, LINE_CAP = 10240, 40960, 500
+SIZE_WARN, SIZE_BLOCK = 10240, 40960
 
 
 def strip_code_blocks(lines):
@@ -230,7 +233,7 @@ def scan_state(state_path, rel, derived_caps):
         if "health-lint-disable-line state/line-length-cap" in ln:
             continue
         n = len(ln)
-        if n > LINE_CAP:
+        if line_too_long(ln):
             for anchor in ("；", "**T-RF-", "**T-", "; "):
                 if anchor in ln:
                     hint = f"拆分锚点: {anchor}"
@@ -573,8 +576,6 @@ def apply_baseline(findings, bl):
     return out
 
 
-SIZE_CAP_BYTES = 98304          # 96 KiB，spec §P3
-
 # 四类双形态资源的集中文件 → 超阈值建议转资源目录（devdocs-layout.md「双形态存储」）
 DUAL_FORM_CENTRAL = {
     "05-bugfix-log.md": "bugs/BUG-<N>.md",
@@ -619,7 +620,7 @@ def scan_layout(root, devdocs, layout_rows):
                 size = os.path.getsize(path)
             except OSError:
                 size = 0
-            if size > SIZE_CAP_BYTES:
+            if size > SIZE_CAP:
                 target = DUAL_FORM_CENTRAL.get(rel_dd)
                 if target:
                     sug = f"建议转资源目录 {target} + 索引；⛔ 转换是内容迁移，需用户确认后手动执行"
@@ -628,8 +629,8 @@ def scan_layout(root, devdocs, layout_rows):
                            "⛔ 本 scope 不减量")
                 findings.append(find(
                     "layout/size-cap", "warning", rel, None,
-                    f"{rel_dd} 已 {size} bytes（阈值 {SIZE_CAP_BYTES}）",
-                    actual=size, threshold=SIZE_CAP_BYTES, fix=sug))
+                    f"{rel_dd} 已 {size} bytes（阈值 {SIZE_CAP}）",
+                    actual=size, threshold=SIZE_CAP, fix=sug))
     return findings
 
 

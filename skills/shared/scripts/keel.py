@@ -11,7 +11,7 @@ from typing import Any
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from keellib import backlog, schema, store, tasks  # noqa: E402
+from keellib import backlog, gates, schema, store, tasks  # noqa: E402
 from keellib.common import write_session  # noqa: E402
 
 
@@ -131,6 +131,16 @@ def main(argv: list[str] | None = None) -> int:
     p = bp.add_parser("list")
     p.add_argument("--status")
     p.add_argument("--fields")
+    p = sub.add_parser("check", help="K1–K4 门禁检查")
+    p.add_argument("--staged", action="store_true")
+    p.add_argument("--paths", nargs="+")
+    gp = sub.add_parser("gate", help="档位与命中报告").add_subparsers(dest="gate_cmd", required=True)
+    p = gp.add_parser("set")
+    p.add_argument("gate")
+    p.add_argument("level")
+    p.add_argument("--reason", required=True)
+    gp.add_parser("report").add_argument("--since")
+    sub.add_parser("state", help="状态确认").add_subparsers(dest="state_cmd", required=True).add_parser("accept")
     args = ap.parse_args(argv)
     if args.self_test:
         return self_test()
@@ -144,6 +154,17 @@ def main(argv: list[str] | None = None) -> int:
         project = store.Project.find(args.root or os.getcwd())
         if args.cmd == "task":
             return cmd_task(project, args)
+        if args.cmd == "check":
+            return gates.run_check(project, args.staged, args.paths)
+        if args.cmd == "gate":
+            if args.gate_cmd == "set":
+                gates.gate_set(project, args.gate, args.level, args.reason)
+            else:
+                print(gates.report(project, args.since))
+            return 0
+        if args.cmd == "state":
+            gates.accept(project)
+            return 0
         if args.cmd == "render":
             return cmd_render(project)
         return cmd_backlog(project, args) if args.cmd == "backlog" else cmd_init(project)
