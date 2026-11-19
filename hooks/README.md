@@ -32,8 +32,9 @@
 7. Post 对未修复的违规每次工具调用都重新拦回（有意）；`keel gate report` 的头部数字按去重后的发现数计。
 8. pre-commit 可跳过：`git commit --no-verify` 或删掉 hook 即不检查；垫片自检失败（退出码 4：缺 python3 或插件里的 `keel.py`；或 126/127）时只警告、不检查。keel 已运行但完成不了检查（退出码 3，如状态读不出、manifest 损坏）时拒绝提交。
 9. 替换状态文件与更新 manifest 之间若崩溃或被杀，manifest 仍是旧值，之后工具自己写入的内容会被判为 K1 并拦下所有写命令。恢复：人另开终端执行 `.keel/bin/keel state accept`。
-10. manifest 登记过、HEAD 与工作区都没有的状态文件按「切分支带走」处理，不算违规：未提交的工具写入被 shell 删掉时查不出（已提交的被删照常拦）。
-11. 另一个会话持写锁超过 1 秒时，Post 与 pre-commit 跳过本次 K1/K2，并在输出里说明；K3/K4 照常。
+10. manifest 登记过、HEAD 与工作区都没有的状态文件按「切分支带走」处理，不算违规：与第 1 条同类，模型用 shell 删掉一个未提交的工具写入即可不被发现（已提交的被删照常拦）。
+11. 合并、cherry-pick、rebase 进行中时，`MERGE_HEAD` / `CHERRY_PICK_HEAD` / `REBASE_HEAD` 指向的提交里的版本算合法。与第 1 条同类可伪造：模型可以自己写 `.git/MERGE_HEAD` 指向一个含伪造状态的提交。兜底同样只有提交时审阅 `state/` 的 diff。
+12. 另一个会话持写锁超过 1 秒时，Post 跳过本次 K1/K2 并在输出里说明（K3/K4 照常）；`keel check` 与 pre-commit 则以退出码 3 失败，不放行。
 
 ## 三端适配
 

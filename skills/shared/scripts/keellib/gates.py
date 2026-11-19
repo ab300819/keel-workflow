@@ -141,21 +141,20 @@ def run_check(project: Project, staged: bool, paths: list[str] | None, client: s
         scope = {p for p in out.decode("utf-8", "replace").split("\0") if p}
     elif paths:
         scope = {os.path.relpath(os.path.join(project.root, p), project.root) for p in paths}
-    findings, note = collect(project, scope)
+    findings, _ = collect(project, scope)
     blocks, warns = apply_levels(project, findings, client, tool)
     if blocks or warns:
         print(format_findings(blocks + warns), file=sys.stderr)
-    if note:
-        print(note, file=sys.stderr)
     return 1 if blocks else 0
 
 
 SKIP_K12 = "另一个 keel 进程正在写状态，本次跳过 K1/K2（K3/K4 照常检查）"
 
 
-def collect(project: Project, scope: set[str] | None) -> tuple[list[Finding], str]:
+def collect(project: Project, scope: set[str] | None, skip_busy: bool = False) -> tuple[list[Finding], str]:
     """scope 为 None 时查全部与 HEAD 不同的载体文件和全部 K1/K2。返回（发现，附注）：
-    K1/K2 在共享锁内读，避免看到别的会话写到一半的状态；1 秒内拿不到锁就跳过 K1/K2 并在附注说明。"""
+    K1/K2 在共享锁内读，避免看到别的会话写到一半的状态。1 秒内拿不到锁：skip_busy（仅 Post）跳过 K1/K2
+    并在附注说明；check / pre-commit 抛 LockBusy（退出码 3），⛔ 不放行，否则占住锁就能绕过 K1/K2。"""
     files = [p for p in (sorted(scope) if scope is not None else _changed_carriers(project)) if is_carrier(p)]
     findings: list[Finding] = []
     for rel in files:
@@ -171,6 +170,8 @@ def collect(project: Project, scope: set[str] | None) -> tuple[list[Finding], st
         with project.lock(timeout=1.0, shared=True):
             findings += [f for f in check_k1k2(project) if scope is None or f.path.split("#")[0] in scope]
     except store.LockBusy:
+        if not skip_busy:
+            raise
         return findings, SKIP_K12
     return findings, ""
 

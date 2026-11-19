@@ -127,7 +127,7 @@ class GatesTest(unittest.TestCase):
         self.assertEqual(m.call_count, 2)  # collect 的 K1/K2 一次 + 档位一次
 
     def test_check_skips_k1k2_while_writer_holds_lock(self) -> None:
-        """M3：写方持锁时，只读检查 1 秒拿不到共享锁就跳过 K1/K2 并说明，K3/K4 照常。"""
+        """M3：写方持锁时，Post 1 秒拿不到共享锁就跳过 K1/K2 并说明（K3/K4 照常）；check / pre-commit 退出码 3。"""
         self.assertEqual(run_keel(self.root, "init")[0], 0)
         self.write("docs/devdocs/state/tasks/T-1.json", "{}\n")
         self.write(TASKS, "新" * 501 + "\n")
@@ -142,11 +142,15 @@ class GatesTest(unittest.TestCase):
         self.addCleanup(p.wait)
         self.addCleanup(p.kill)
         self.assertEqual(p.stdout.readline().strip(), "held")
-        rc, _, err = run_keel(self.root, "check")
-        self.assertEqual(rc, 1)
-        self.assertIn("K3", err)
-        self.assertNotIn("K1 `", err)
-        self.assertIn(gates.SKIP_K12, err)
+        for args in (("check",), ("check", "--staged")):
+            rc, _, err = run_keel(self.root, *args)
+            self.assertEqual(rc, 3, args)
+            self.assertIn("拿不到 .keel/lock", err)
+        rc, out, _ = run_keel(self.root, "hook", "post", stdin='{"tool_name": "Bash", "tool_input": {}}')
+        reason = json.loads(out)["reason"]
+        self.assertIn("K3", reason)
+        self.assertNotIn("K1 `", reason)
+        self.assertIn(gates.SKIP_K12, reason)
         p.kill()
         p.wait()
         rc, _, err = run_keel(self.root, "check")
