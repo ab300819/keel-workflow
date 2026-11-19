@@ -19,7 +19,12 @@ v1 不含：--apply / 自动修复。baseline 见 --baseline-init / --since-base
 
 退出码（规格「退出码（CLI 集成）」）：0 无违规 / 1 仅 warning / 2 有 blocker / 3 lint 自身错误
 """
-import argparse, json, os, re, subprocess, sys, unicodedata
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
 
 WHITELIST = ["T-RF", "Journey", "ADR", "BUG", "CON", "E2E", "INS", "AC", "US", "IT", "UT", "F", "T"]
 ID_RE = re.compile(r"(?<![\w-])(" + "|".join(WHITELIST) + r")-(\d+)([a-z]?)(?![\w-])")
@@ -87,7 +92,7 @@ def load_layout(path=None):
     try:
         text = open(p, encoding="utf-8").read()
     except OSError as e:
-        raise RuntimeError(f"布局清单读不到：{p}：{e}")
+        raise RuntimeError(f"布局清单读不到：{p}：{e}") from e
     lines = text.split("\n")
     rows = []
     in_section = False
@@ -145,7 +150,7 @@ def collect_files(devdocs):
     否则活跃文档引用它们会全部误报 dead-link。archive/ 自身的违规由
     scan_project() 跳过不报。"""
     out = []
-    for root, dirs, files in os.walk(devdocs):
+    for root, _dirs, files in os.walk(devdocs):
         for f in sorted(files):
             if f.endswith(".md") and f not in (".realign-plan.md", ".health-report.md"):
                 out.append(os.path.join(root, f))
@@ -238,7 +243,7 @@ def scan_state(state_path, rel, derived_caps):
                            f"单行 {n} 字符（阈值 {LINE_CAP}）；{hint}", n, LINE_CAP, ln[:80] + "…"))
 
     # forbidden-content：从 "## 编号状态" 之后开始，fallback line 51
-    hdr = next((i for i, l in enumerate(lines) if l.startswith("## 编号状态")), None)
+    hdr = next((i for i, ln in enumerate(lines) if ln.startswith("## 编号状态")), None)
     hdr = hdr if hdr is not None else min(50, len(lines))
     by_line = {}
     for i in range(hdr, len(lines)):
@@ -401,7 +406,7 @@ def scan_skill_repo(skills_dir):
             fs.append(find("skill/size-cap", "blocker", f"{d.name}/SKILL.md", None,
                            f"{n} 行 > {SKILL_LINE_CAP}（AGENTS.md 硬约束）", n, SKILL_LINE_CAP,
                            fix="把细节下沉到 references/"))
-        name = next((l[5:].strip() for l in lines[:20] if l.startswith("name:")), None)
+        name = next((ln[5:].strip() for ln in lines[:20] if ln.startswith("name:")), None)
         if name != d.name:
             fs.append(find("skill/name-mismatch", "blocker", f"{d.name}/SKILL.md", None,
                            f"目录名 {d.name!r} != frontmatter name {name!r}；"
@@ -640,10 +645,14 @@ def scan_project(root, files=None, ref_only=None):
     if files is None:
         files = collect_files(devdocs)
 
-    rel = lambda p: os.path.relpath(p, root)
+    def rel(p):
+        return os.path.relpath(p, root)
+
     arch = os.path.join(devdocs, "archive") + os.sep
     # 不报违规的文件：归档（只贡献定义）+ 增量扫描范围外
-    quiet = lambda f: f.startswith(arch) or (ref_only is not None and f not in ref_only)
+    def quiet(f):
+        return f.startswith(arch) or (ref_only is not None and f not in ref_only)
+
     docs = {}
     for f in files:
         try:
@@ -742,11 +751,14 @@ def selftest():
 
     ⛔ 不是完整测试套件。它只保证"规格改了脚本没跟上"时会响。
     """
-    import io, tempfile, shutil
+    import io
+    import tempfile
+    import shutil
     t = tempfile.mkdtemp()
     try:
         # --- project scope 夹具 ---
-        dd = os.path.join(t, "docs", "devdocs"); os.makedirs(os.path.join(dd, "archive"))
+        dd = os.path.join(t, "docs", "devdocs")
+        os.makedirs(os.path.join(dd, "archive"))
         os.makedirs(os.path.join(t, ".claude", "rules"))
         open(os.path.join(dd, "01.md"), "w").write(
             "## F-001 x\n- AC-001 a\n- AC-002 b\n  - **AC-010** 缩进列表定义，⛔ 不得报无定义\n"
@@ -852,8 +864,10 @@ def selftest():
                   file=sys.stderr)
             return 1
         # --- skills scope 夹具 ---
-        sk = os.path.join(t, "sk"); os.makedirs(os.path.join(sk, "good"))
-        os.makedirs(os.path.join(sk, "bad")); os.makedirs(os.path.join(sk, "empty"))
+        sk = os.path.join(t, "sk")
+        os.makedirs(os.path.join(sk, "good"))
+        os.makedirs(os.path.join(sk, "bad"))
+        os.makedirs(os.path.join(sk, "empty"))
         open(os.path.join(sk, "good", "SKILL.md"), "w").write("---\nname: good\n---\n引用 [x](../bad/SKILL.md)\n台账写 ext_review_state 和 patch_id\n")
         os.makedirs(os.path.join(sk, "edge"))
         open(os.path.join(sk, "edge", "SKILL.md"), "w").write(
@@ -890,7 +904,7 @@ def selftest():
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             emit([find("x/y", "warning", "f.md", 1, 'msg', ctx='含 "引号" 与 \\ 反斜杠')])
-        ctx_line = next(l for l in buf.getvalue().split("\n") if l.startswith("  context: "))
+        ctx_line = next(ln for ln in buf.getvalue().split("\n") if ln.startswith("  context: "))
         try:
             json.loads(ctx_line[len("  context: "):])   # YAML 双引号标量 ≡ JSON 字符串
         except ValueError:
@@ -911,11 +925,15 @@ def selftest():
         # changed_set 的三条红线：静默全漏扫 + exit 0，是本脚本最难发现的失效
         # （不崩溃、CI 绿）。已在此栽过两次，故三个方向各钉一条。git 缺失时跳过。
         if shutil.which("git"):
-            g = os.path.join(t, "gitfix"); os.makedirs(os.path.join(g, "sub", "docs", "devdocs"))
+            g = os.path.join(t, "gitfix")
+            os.makedirs(os.path.join(g, "sub", "docs", "devdocs"))
             tracked = os.path.join(g, "sub", "docs", "devdocs", "01.md")
             open(tracked, "w").write("## F-001 x\n")
-            run = lambda *a: subprocess.run(["git", "-C", g, *a], capture_output=True, text=True)
-            run("init", "-q"); run("add", "-A")
+            def run(*a):
+                return subprocess.run(["git", "-C", g, *a], capture_output=True, text=True)
+
+            run("init", "-q")
+            run("add", "-A")
             run("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init")
             open(tracked, "a").write("引用 AC-007\n")                      # 已跟踪文件的改动
             untracked = os.path.join(g, "sub", "docs", "devdocs", "02.md")
@@ -929,7 +947,8 @@ def selftest():
             # 方向 1 的判例选「已 add 未 commit」而不是「非 git 目录」：后者会在
             # rev-parse 取下标时偶然抛 IndexError，断言看似通过、实则没验到红线。
             # 这里 rev-parse 正常而 `diff HEAD` 失败（无 HEAD），已暂存文件正是会被漏掉的那批。
-            ng = os.path.join(t, "nocommit"); os.makedirs(ng)
+            ng = os.path.join(t, "nocommit")
+            os.makedirs(ng)
             open(os.path.join(ng, "a.md"), "w").write("x\n")
             subprocess.run(["git", "-C", ng, "init", "-q"], capture_output=True)
             subprocess.run(["git", "-C", ng, "add", "-A"], capture_output=True)
