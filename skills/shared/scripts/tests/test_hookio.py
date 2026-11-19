@@ -137,6 +137,23 @@ class HookioTest(unittest.TestCase):
         self.assertEqual((rc, d["decision"]), (0, "block"))
         self.assertIn(STATE_T1, d["reason"])
 
+    def test_symlinked_log_does_not_disable_hooks(self) -> None:
+        """日志被换成符号链接时，Pre 拒绝与 Post 拦截照常（写日志只是尽力而为）。"""
+        self.migrated()
+        log = os.path.join(self.root, ".keel", "gate-log.jsonl")
+        if os.path.lexists(log):
+            os.remove(log)
+        os.symlink(os.path.join(self.root, "elsewhere.txt"), log)
+        pre = {"tool_name": "Bash", "tool_input": {"command": ".keel/bin/keel state accept"}}
+        _, out, err = run_keel(self.root, "hook", "pre", stdin=json.dumps(pre))
+        self.assertEqual(json.loads(out)["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("未能写入", err)
+        self.write(STATE_T1, '{"id": "T-1", "hand": true}\n')
+        post = {"tool_name": "Bash", "tool_input": {"command": "x"}}
+        _, out, _ = run_keel(self.root, "hook", "post", stdin=json.dumps(post))
+        self.assertEqual(json.loads(out)["decision"], "block")
+        self.assertFalse(os.path.exists(os.path.join(self.root, "elsewhere.txt")))
+
     def test_post_k3_warn_gives_context(self) -> None:
         self.migrated()
         with mock.patch("keellib.gates.read_tty", return_value="accept"):

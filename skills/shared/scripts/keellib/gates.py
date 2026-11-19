@@ -84,17 +84,18 @@ def levels(project: Project) -> dict[str, str]:
 
 
 def log_hit(project: Project, gate: str, lv: str, result: str, client: str, tool: str, path: str, detail: str) -> None:
-    project.check_links()
-    os.makedirs(project.keel_dir, exist_ok=True)
-    path_ = os.path.join(project.root, LOG_REL)
+    """尽力记录：日志写不了只告警，⛔ 不得抛出——否则调用方的拦截会随 hook 出错一起放行。"""
     rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "gate": gate, "level": lv, "result": result,
            "client": client, "tool": tool, "path": path, "detail": detail}
-    try:  # O_NOFOLLOW：日志若是符号链接则拒绝，避免追加到项目外
-        fd = os.open(path_, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o644)
-    except OSError as e:
-        raise KeelError(f"打不开 {LOG_REL}：{e}", 3) from None
-    with os.fdopen(fd, "a", encoding="utf-8") as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    try:
+        project.check_links()
+        os.makedirs(project.keel_dir, exist_ok=True)
+        # O_NOFOLLOW：日志若是符号链接则拒绝，避免追加到项目外
+        fd = os.open(os.path.join(project.root, LOG_REL), os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o644)
+        with os.fdopen(fd, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except (OSError, KeelError) as e:
+        print(f"keel：门禁命中未能写入 {LOG_REL}（{e}），拦截照常生效", file=sys.stderr)
 
 
 def apply_levels(project: Project, findings: list[Finding], client: str, tool: str) -> tuple[list[Finding], list[Finding]]:
