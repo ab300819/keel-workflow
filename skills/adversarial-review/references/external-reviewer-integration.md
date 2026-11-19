@@ -33,7 +33,7 @@
 
 ## 概述
 
-对抗审查使用外部 LLM 作为独立审查者。外部审查方有两个：**codex**（三级降级链：codex CLI → codex-mcp → Task 子 Agent）与 **agy**（见文末 § agy CLI）。两方怎么并用、怎么对齐见 [cross-validation.md](cross-validation.md)；同模型子 Agent 只在两方都不可用时兜底。embedded-headless 模式不变，仍只用 codex 的 T1/T2，⛔ 不调 agy。
+对抗审查使用外部 LLM 作为独立审查者。外部审查方有两个：**codex**（三级降级链：codex CLI → codex-mcp → Task 子 Agent）与 **agy**（见文末 § agy CLI）。两方怎么并用、怎么对齐见 [cross-validation.md](cross-validation.md)；skill multi-turn 模式下两方都优先在 hcom 窗口实例里对话（见 [hcom-instances.md](hcom-instances.md)），本文档的命令行通道是它的落回；同模型子 Agent 只在两方都不可用时兜底。embedded-headless 模式不变，仍只用 codex 的 T1/T2，⛔ 不调 agy。
 
 > **适用范围限定**：以下三级链仅适用于 adversarial-review skill 的 **multi-turn 模式**。`dev-workflow` S9 Phase 4 embedded-headless 模式**只消费 T1/T2 子集，不执行 T3 分支**——T3 Task 子 Agent 是同进程独立上下文，不满足 dev-workflow "外部独立审查" 承诺。本文档"降级探测流程"和"T3"相关段落仅在 skill multi-turn 模式下生效。
 
@@ -536,7 +536,7 @@ agy -p "<brief>" --mode plan --sandbox --model <id> --print-timeout 600s \
 - ⛔ `--print-timeout` 必须带单位（`600s` / `10m`），纯数字会被拒绝并打印用法（退出码 2）。
 - ⛔ 必须 `< /dev/null`：brief 走命令行参数，标准输入不关会一直等。
 - `--mode plan --sandbox` 下不写工作区（实测后 `git status` 干净）。
-- ⛔ **agy 在此模式下不能执行命令**（`git diff` / `git show` 都会被拒，见下方失败信号）。brief 与 diff 先写成临时文件，命令行只说「读取 <路径> 并按其中要求执行」，并用 `--add-dir <临时目录>` 放行该目录；仓库内的文件它可以直接读。
+- ⛔ **agy 在命令行方式下不能执行命令**（窗口实例里可以，见 [hcom-instances.md](hcom-instances.md)）（`git diff` / `git show` 都会被拒，见下方失败信号）。brief 与 diff 先写成临时文件，命令行只说「读取 <路径> 并按其中要求执行」，并用 `--add-dir <临时目录>` 放行该目录；仓库内的文件它可以直接读。
 - 结构化代码审查的 schema 与 T1 是同一个文件（`skills/adversarial-review/references/review-output.schema.json`），先解析成**绝对路径**再传；提示词用 § Adversarial Prompt 模板，与 codex 一致。
 - 联网能力未实测。需要联网的独立调研，agy 一侧先按「只能读本地文件」对待，并在结论里写明。
 
