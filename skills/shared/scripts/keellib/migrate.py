@@ -27,6 +27,7 @@ PROP_DROP = ("status", "commits", "ext_review_state")
 EMPTY = ("", "—", "-", "无", "n/a")
 REPORT = ".keel/migration-report.md"
 ARCHIVE = "docs/devdocs/audit/migration-v3.md"
+BL_SAVED = "docs/devdocs/audit/migration-v3-backlog.md"  # backlog/index.md 已存在时，手写 backlog.md 原文存这里
 ROLLBACK = "git checkout -- docs/devdocs && git clean -fd docs/devdocs && rm -rf docs/devdocs/state .keel/manifest.json"
 RP_REASON = {"fast": "deferred-fast", "guarded": "deferred-guarded"}
 MAIN = "04-dev-tasks.md"
@@ -103,6 +104,7 @@ class _Task:
 class Migration:
     def __init__(self, project: Project, maps: list[str]) -> None:
         self.p, self.today = project, date.today().isoformat()
+        self.in_git = store._git(project.root, "rev-parse", "--git-dir") is not None
         self.map: dict[str, str] = {}
         for m in maps:
             k, _, v = m.rpartition("=")
@@ -134,9 +136,10 @@ class Migration:
         self._scan_backlog()
         old = self._read(store.BACKLOG_MD)  # backlog.md 会整份重新生成：人写的原文另存
         human = bool(old) and "generated_by: keel" not in old and bool(self.entries or self.have_b)
-        self.keep_bl = human and not os.path.exists(os.path.join(project.devdocs, "backlog", "index.md"))
-        self.bl_note = ["- backlog.md 原文 → backlog/index.md" if self.keep_bl else
-                        "- backlog.md 原文未另存：backlog/index.md 已存在，原文见 git 历史"] if human else []
+        # ⛔ 原文一律另存：不在 git 里（或被 gitignore）时没有别的副本
+        self.bl_save = "" if not human else "docs/devdocs/backlog/index.md" \
+            if not os.path.exists(os.path.join(project.devdocs, "backlog", "index.md")) else BL_SAVED
+        self.bl_note = [f"- backlog.md 原文 → {self.bl_save[len('docs/devdocs/'):]}"] if human else []
 
     def _unk(self, where: str, why: str, text: str) -> None:
         self.unknown.append(f"{where} · {why} · {_flat(text)[:60]}")
@@ -263,7 +266,7 @@ class Migration:
             d = schema.new_task(tid, title, "dev-tasks", status=status)
             for k in ("source", "layer"):
                 if k in f:
-                    d[k] = self._fit(t, k, f[k][0], 10 ** 6, f[k][1])
+                    d[k] = self._fit(t, k, f[k][0], schema.TEXT_CAPS.get(k, 10 ** 6), f[k][1])
             if "review_profile" in f:
                 d["review_profile"] = _bare(f["review_profile"][0]).lower()
             if "ext_review_state" in f:
@@ -361,13 +364,17 @@ class Migration:
 
     # ---- 写入 ----
 
-    def _write(self, rel: str, text: str) -> None:
-        """改文档（非状态）：逐级拒绝符号链接，临时文件 + os.replace。"""
+    def _check_link(self, rel: str) -> str:
         p = self.p.root
         for part in rel.split("/"):
             p = os.path.join(p, part)
             if os.path.islink(p):
                 raise KeelError(f"拒绝写入 {rel}：它或上级目录是符号链接", 3)
+        return p
+
+    def _write(self, rel: str, text: str) -> None:
+        """改文档（非状态）：逐级拒绝符号链接，临时文件 + os.replace。"""
+        p = self._check_link(rel)
         os.makedirs(os.path.dirname(p), exist_ok=True)
         store._replace_file(p, text.encode("utf-8"))
 
@@ -379,21 +386,30 @@ class Migration:
             return ""
 
     def apply(self) -> None:
-        """调用方须已持有 project.lock()。"""
-        if self.p.is_migrated():
-            store.cleanup_tmp(self.p)
-            store.require_intact(self.p)
+        """调用方须已持有 project.lock()。先算出全部目标并检查符号链接，再开始写，避免写一半。"""
+        store.cleanup_tmp(self.p)
+        store.require_intact(self.p)
         for rel in (store.BACKLOG_MD, store.TASKS_MD):
             store.check_generated_links(self.p, rel)
+        state = {f"{tasks.TASKS_REL}/{tid}.json": dump(d) for tid, d in self.tasks.items()}
+        state.update({backlog._rel(anchor): dump(e) for anchor, e in self.entries.items()})
+        docs = self._docs()
+        for rel in [*state, *docs]:
+            self._check_link(rel)
         store.init_state(self.p)
-        for tid, d in self.tasks.items():
-            store.write_atomic(self.p, f"{tasks.TASKS_REL}/{tid}.json", dump(d))
-        for anchor, e in self.entries.items():
-            store.write_atomic(self.p, backlog._rel(anchor), dump(e))
+        for rel, data in state.items():
+            store.write_atomic(self.p, rel, data)
+        for rel, text in docs.items():
+            self._write(rel, text)
+        render.render_all(self.p)
+
+    def _docs(self) -> dict[str, str]:
+        """要改写的文档：相对路径 -> 新内容；只读不写。"""
+        docs: dict[str, str] = {}
         dd = "docs/devdocs/"
         for slug, sec in self.sections.items():
             if not os.path.exists(os.path.join(self.p.devdocs, "backlog", slug + ".md")):
-                self._write(f"{dd}backlog/{slug}.md", sec)
+                docs[f"{dd}backlog/{slug}.md"] = sec
         done = set(self.tasks) | self.have_t
         for tid in (x for x in self.raw if x in done):  # 已在 state 的任务：被删的汇总行里的备注也要搬
             rec = f"{dd}audit/{tid}/ledger-record.md"
@@ -404,7 +420,7 @@ class Migration:
                     cur += ("\n" if cur and not cur.endswith("\n") else "") + ("\n" if cur else "")
                     cur += f"## 迁移自 {rel}（{self.today}）\n\n" + "".join(f"- **{lb}**：{tx}\n" for lb, tx in add)
             if cur != old:
-                self._write(rec, cur)
+                docs[rec] = cur
         arch = old_arch = self._read(ARCHIVE)
         for a, b, rows in self.tables:  # 被删的汇总表整表原样存档
             block = "\n".join(self.texts[MAIN].split("\n")[a:b])
@@ -412,7 +428,7 @@ class Migration:
                 arch += ("" if not arch or arch.endswith("\n") else "\n") + ("\n" if arch else "")
                 arch += f"## 迁移自 {MAIN}:{a + 1}（{self.today}）\n\n{block}\n"
         if arch != old_arch:
-            self._write(ARCHIVE, arch)
+            docs[ARCHIVE] = arch
         for rel, text in self.texts.items():
             lines = text.split("\n")
             drop = {k for r, k, tid in self.prop_rows if r == rel and tid in done}
@@ -427,17 +443,20 @@ class Migration:
                     lines[-1:] = [lines[-1], BEGIN, END, ""] if lines[-1] else [BEGIN, END, ""]
             out = [x for k, line in enumerate(lines) for x in insert.get(k, []) + ([] if k in drop else [line])]
             if (edited := _bump("\n".join(out))) != text:
-                self._write(dd + rel, edited)
-        if self.keep_bl:
-            self._write(dd + "backlog/index.md", self._read(store.BACKLOG_MD))
+                docs[dd + rel] = edited
+        if self.bl_save:  # 原文另存（spec_version 同样升到 v3，免得被当成未迁移文档）
+            old_bl, saved = _bump(self._read(store.BACKLOG_MD)), self._read(self.bl_save)
+            if old_bl not in saved:
+                docs[self.bl_save] = saved + ("\n" if saved and not saved.endswith("\n") else "") + old_bl
         for base, dirs, files in os.walk(self.p.devdocs):  # 其余文档的 spec_version 一并升到 v3
             dirs[:] = [x for x in dirs if x != "state"]
             for f in files:
                 if f.endswith(".md") and not (base == self.p.devdocs and f in self.texts):
                     rel = os.path.relpath(os.path.join(base, f), self.p.root)
-                    if (edited := _bump(text := self._read(rel))) != text:
-                        self._write(rel, edited)
-        render.render_all(self.p)
+                    text = docs[rel] if rel in docs else self._read(rel)
+                    if (edited := _bump(text)) != text:
+                        docs[rel] = edited
+        return docs
 
     def report(self, mode: str) -> str:
         def sec(name: str, items: list[str]) -> list[str]:
@@ -451,7 +470,8 @@ class Migration:
                           *sec("状态冲突", [f"- {c}" for c in self.conflicts]),
                           *sec("review_pending 补字段", self.rp_filled),
                           *sec("搬出的长文本", moved + self.bl_note),
-                          "## 回滚", "", f"迁移前 docs/devdocs 已提交；撤销本次迁移：`{ROLLBACK}`"])
+                          "## 回滚", "", f"迁移前 docs/devdocs 已提交；撤销本次迁移：`{ROLLBACK}`" if self.in_git else
+                          "项目不在 git 仓库中，迁移没有回滚手段；被整份重写的 backlog.md 原文见上「搬出的长文本」"])
 
 
 def run(project: Project, apply: bool, maps: list[str], allow_partial: bool) -> int:

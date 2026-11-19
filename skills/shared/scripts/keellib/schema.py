@@ -10,7 +10,8 @@ PENDING_REASONS = ("deferred-fast", "deferred-guarded")
 EXT_REVIEW_STATES = ("EXT_REVIEWED", "EXT_UNRESOLVED", "EXT_BLOCKED")
 BACKLOG_STATUSES = ("parked", "reactivated", "closed", "superseded")
 SOURCE_PREFIXES = ("F", "US", "AC", "T", "INS", "BUG", "FR", "NFR", "M")
-TEXT_CAPS = {"title": 80, "skip_trace_reason": 200, "profile_downgrade_reason": 200, "note": 200}
+TEXT_CAPS = {"title": 80, "skip_trace_reason": 200, "profile_downgrade_reason": 200, "note": 200,
+             "milestone": 80, "layer": 80, "record": 200}
 
 TASK_ID = re.compile(r"T-\d+")
 COMMIT_REF = re.compile(r"[^@\s]+@[0-9a-f]{7,40}")
@@ -159,8 +160,8 @@ _DESC = {
         "derived_from：可空，须为已有任务编号",
         "review_profile：" + " / ".join(REVIEW_PROFILES),
         "depends_on：任务编号列表，须已存在且不含自身",
-        "milestone：可空，如 M-003",
-        "layer：可空",
+        "milestone：可空，≤80 字，如 M-003",
+        "layer：可空，≤80 字",
         "commits：{ref, note} 列表；ref 形如 <仓库>@<7-40位sha>，note ≤200 字",
         "batch：status=review_pending 时必填",
         "due：status=review_pending 时必填",
@@ -169,7 +170,7 @@ _DESC = {
         "skip_trace_reason：可空，≤200 字",
         "exploration_mode：布尔",
         "profile_downgrade_reason：可空，≤200 字",
-        "record：可空，审查记录目录，如 audit/T-248/",
+        "record：可空，≤200 字，审查记录目录，如 audit/T-248/",
     ],
     "backlog": [
         "schema：固定 keel.backlog.v1",

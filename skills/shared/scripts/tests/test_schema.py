@@ -31,6 +31,11 @@ class TaskTest(unittest.TestCase):
         self.assertEqual(errs(title="中" * 80), [])
         self.assertTrue(errs(title="中" * 81))
 
+    def test_rendered_fields_capped(self):  # M1：进生成区的字段有上限，工具不会自己写出 K3 违规行
+        for f, cap in (("milestone", 80), ("layer", 80), ("record", 200)):
+            self.assertEqual(errs(**{f: "中" * cap}), [], f)
+            self.assertTrue(errs(**{f: "中" * (cap + 1)}), f)
+
     def test_review_pending_needs_fields(self):
         full = dict(status="review_pending", batch="B1", due="2026-12-01", pending_reason="deferred-fast")
         self.assertEqual(errs(**full), [])

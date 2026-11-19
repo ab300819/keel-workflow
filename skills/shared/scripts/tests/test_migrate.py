@@ -237,6 +237,39 @@ class MigrateTest(unittest.TestCase):
         self.assertEqual(self.migrate("--apply", "--allow-partial", *MAP)[0], 0)
         self.assertEqual(self.read("docs/devdocs/audit/migration-v3.md").count(table), 1)
 
+    def test_outside_git_keeps_hand_backlog(self) -> None:
+        """I2：不在 git 里、backlog/index.md 已存在时，手写的 backlog.md 原文另存到 audit，报告不说「已提交」。"""
+        t = tempfile.TemporaryDirectory()
+        self.addCleanup(t.cleanup)
+        root = make_project(t.name, git_repo=False)
+        shutil.copytree(os.path.join(FIX, "aicode-shape", "docs"), os.path.join(root, "docs"), dirs_exist_ok=True)
+        bl = os.path.join(root, "docs/devdocs/backlog.md")
+        with open(bl, "a", encoding="utf-8") as f:
+            f.write("\n手写说明：只在这里出现\n")
+        with open(os.path.join(root, "docs/devdocs/backlog/index.md"), "w", encoding="utf-8") as f:
+            f.write("# 已有索引\n")
+        rc, out, err = run_keel(root, "migrate", "--apply", "--allow-partial", *MAP)
+        self.assertEqual(rc, 0, err)
+        with open(os.path.join(root, "docs/devdocs/audit/migration-v3-backlog.md"), encoding="utf-8") as f:
+            self.assertIn("手写说明：只在这里出现", f.read())
+        with open(os.path.join(root, REPORT), encoding="utf-8") as f:
+            rep = f.read()
+        self.assertIn("backlog.md 原文 → audit/migration-v3-backlog.md", rep)
+        self.assertNotIn("已提交", rep)
+        self.assertIn("没有回滚手段", rep)
+
+    def test_symlink_checked_before_any_write(self) -> None:
+        """M4：audit/ 是符号链接时，一个状态文件都不写。"""
+        self.load("aicode-shape")
+        elsewhere = tempfile.mkdtemp(dir=self._tmp.name)
+        os.symlink(elsewhere, os.path.join(self.root, "docs/devdocs/audit"))
+        self.commit()
+        rc, _, err = run_keel(self.root, "migrate", "--apply", "--allow-partial", *MAP)
+        self.assertEqual(rc, 3)
+        self.assertIn("符号链接", err)
+        self.assertFalse(os.path.exists(os.path.join(self.root, "docs/devdocs/state")))
+        self.assertEqual(os.listdir(elsewhere), [])
+
     def test_bad_map_status(self) -> None:
         self.load("aicode-shape")
         rc, _, err = run_keel(self.root, "migrate", "--map-status", "🔍 待审查=审查中")
