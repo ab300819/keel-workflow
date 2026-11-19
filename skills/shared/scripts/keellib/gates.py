@@ -219,11 +219,11 @@ def _violations(project: Project) -> list[str]:
 
 def accept(project: Project) -> None:
     project.require_writable()
-    with project.lock():  # 展示、确认、记录都在锁内；确认期间状态变了就作废
-        bad, snap = _violations(project), store._current_blobs(project)
-        items = "\n".join("  " + b for b in bad) or "  （当前无违规项，将重建 manifest）"
-        if read_tty(f"将把以下状态接受为当前基线：\n{items}\n确认请输入 accept：") != "accept":
-            raise KeelError("未输入 accept，状态未改动", 1)
+    bad, snap = _violations(project), store._current_blobs(project)
+    items = "\n".join("  " + b for b in bad) or "  （当前无违规项，将重建 manifest）"
+    if read_tty(f"将把以下状态接受为当前基线：\n{items}\n确认请输入 accept：") != "accept":  # 提示期间不持锁
+        raise KeelError("未输入 accept，状态未改动", 1)
+    with project.lock():  # 持锁后重算，确认期间状态变了就作废
         if (_violations(project), store._current_blobs(project)) != (bad, snap):
             raise KeelError("确认期间状态又变了，请重新执行", 1)
         project.save_manifest(store._current_blobs(project))

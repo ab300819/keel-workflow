@@ -1,9 +1,12 @@
 import json
 import os
 import pty
+import select
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -156,11 +159,27 @@ class GatesTest(unittest.TestCase):
             except BaseException:
                 os._exit(7)
             os._exit(0 if got == "accept" else 5)
-        self.assertIn("确认".encode(), os.read(fd, 100))  # 等 child 打出提示再输入，避免输入被 tty 初始化冲掉
-        os.write(fd, b"accept\n")
-        os.read(fd, 100)  # 排空回显，否则 child 退出会卡在未读输出上
-        self.assertEqual(os.waitpid(pid, 0)[1], 0)
+        deadline = time.monotonic() + 10
+        buf = b""
+        sent = False
+        status = None
+        while status is None and time.monotonic() < deadline:
+            if select.select([fd], [], [], 0.1)[0]:
+                try:
+                    buf += os.read(fd, 1024)  # 要持续排空，否则 child 退出会卡在未读输出上
+                except OSError:  # EIO：child 已退出（Linux）
+                    pass
+            if not sent and "确认".encode() in buf:  # 等提示出现再输入，避免输入被 tty 初始化冲掉
+                os.write(fd, b"accept\n")
+                sent = True
+            done, st = os.waitpid(pid, os.WNOHANG)
+            status = st if done else None
         os.close(fd)
+        if status is None:
+            os.kill(pid, signal.SIGKILL)
+            os.waitpid(pid, 0)
+            self.fail("read_tty 在 pty 上 10 秒内没有返回")
+        self.assertEqual(status, 0)
 
     def test_forged_gates_json_ignored(self) -> None:
         self.assertEqual(run_keel(self.root, "init")[0], 0)
