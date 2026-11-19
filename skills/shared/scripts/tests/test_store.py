@@ -38,7 +38,7 @@ class StoreTest(unittest.TestCase):
     def test_write_atomic_outside_state_refused(self) -> None:
         p = Project.find(self.init_project())
         with p.lock():
-            for rel in ("../escape.json", "docs/devdocs/04-dev-tasks.md"):
+            for rel in ("../escape.json", "docs/devdocs/02-design.md"):
                 with self.assertRaises(store.KeelError) as cm:
                     store.write_atomic(p, rel, b"x")
                 self.assertEqual(cm.exception.code, 3)

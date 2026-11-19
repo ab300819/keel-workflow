@@ -12,6 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from keellib import backlog, schema, store, tasks  # noqa: E402
+from keellib.common import write_session  # noqa: E402
 
 
 def cmd_init(project: store.Project) -> int:
@@ -26,6 +27,12 @@ def cmd_init(project: store.Project) -> int:
         if not project.is_migrated():
             store.write_atomic(project, store.STATE_REL + "/meta.json", b'{\n  "schema": "keel.state.v1"\n}\n')
     print("keel 状态已初始化：" + store.STATE_REL)
+    return 0
+
+
+def cmd_render(project: store.Project) -> int:
+    with write_session(project):
+        pass  # 会话结束时 render_all 重新生成
     return 0
 
 
@@ -82,6 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--self-test", action="store_true")
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("init", help="初始化 state/ 与 manifest")
+    sub.add_parser("render", help="重新生成台账区与 backlog.md")
     sp = sub.add_parser("schema", help="打印任务 / backlog 字段定义")
     sp.add_argument("kind", choices=["task", "backlog"])
     tp = sub.add_parser("task", help="任务增改归档查询").add_subparsers(dest="task_cmd", required=True)
@@ -136,6 +144,8 @@ def main(argv: list[str] | None = None) -> int:
         project = store.Project.find(args.root or os.getcwd())
         if args.cmd == "task":
             return cmd_task(project, args)
+        if args.cmd == "render":
+            return cmd_render(project)
         return cmd_backlog(project, args) if args.cmd == "backlog" else cmd_init(project)
     except store.KeelError as e:
         print(str(e), file=sys.stderr)

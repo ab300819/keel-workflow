@@ -15,6 +15,11 @@ from collections.abc import Iterator
 STATE_REL = "docs/devdocs/state"
 _V2_RE = re.compile(r"^spec_version:\s*[\"']?(tasks|backlog)\.v2\b", re.M)
 _FM_RE = re.compile(r"\A---\n(.*?)\n---", re.S)
+BACKLOG_MD = "docs/devdocs/backlog.md"
+TASKS_MD = "docs/devdocs/04-dev-tasks.md"
+BEGIN = "<!-- keel:begin ledger -->"
+END = "<!-- keel:end ledger -->"
+REGION_KEY = TASKS_MD + "#ledger"
 ACCEPT_HINT = "状态文件被非工具改动；用 keel 命令改回，或人工确认后执行 `! .keel/bin/keel state accept`"
 
 
@@ -138,18 +143,26 @@ def head_text(project: Project, relpath: str) -> str | None:
     return None if out is None else out.decode("utf-8", "replace")
 
 
-def write_atomic(project: Project, relpath: str, data: bytes) -> None:
-    """调用方须已持有 project.lock()。"""
+def region_text(file_text: str) -> str | None:
+    """两个生成区标记之间的文本；缺标记或顺序不对返回 None。"""
+    i, j = file_text.find(BEGIN), file_text.find(END)
+    return file_text[i + len(BEGIN):j] if 0 <= i < j else None
+
+
+def write_atomic(project: Project, relpath: str, data: bytes, *, record: bool = True) -> None:
+    """调用方须已持有 project.lock()。record=False 用于只有部分内容归 keel 的文件（04-dev-tasks.md）。"""
     project.check_links()
-    path = os.path.join(project.root, relpath)
+    path = os.path.realpath(os.path.join(project.root, relpath))
     allowed = (os.path.realpath(project.state_dir), os.path.realpath(project.keel_dir))
-    if not any(os.path.realpath(path).startswith(a + os.sep) for a in allowed):
-        raise KeelError(f"拒绝写入 {relpath}：目标不在 state/ 或 .keel/ 内", 3)
+    files = {os.path.realpath(os.path.join(project.root, r)) for r in (BACKLOG_MD, TASKS_MD)}
+    if path not in files and not any(path.startswith(a + os.sep) for a in allowed):
+        raise KeelError(f"拒绝写入 {relpath}：目标不在 state/、.keel/ 或两个生成文件内", 3)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     _replace_file(path, data)
-    m = project.manifest()
-    m[relpath] = blob_sha(data)
-    project.save_manifest(m)
+    if record:
+        m = project.manifest()
+        m[relpath] = blob_sha(data)
+        project.save_manifest(m)
 
 
 def record_region(project: Project, key: str, text: str) -> None:
@@ -168,6 +181,17 @@ def _current_blobs(project: Project) -> dict[str, str]:
             p = os.path.join(d, f)
             with open(p, "rb") as fh:
                 cur[os.path.relpath(p, project.root)] = blob_sha(fh.read())
+    if project.is_migrated():
+        for rel in (BACKLOG_MD, TASKS_MD):
+            p = os.path.join(project.root, rel)
+            if not os.path.isfile(p):
+                continue
+            with open(p, "rb") as fh:
+                data = fh.read()
+            if rel == BACKLOG_MD:
+                cur[rel] = blob_sha(data)
+            elif (r := region_text(data.decode("utf-8", "replace"))) is not None:
+                cur[REGION_KEY] = blob_sha(r.encode("utf-8"))
     return cur
 
 
@@ -176,8 +200,22 @@ def integrity_violations(project: Project) -> list[str]:
     cur = _current_blobs(project)
     man = project.manifest()
     head = head_blobs(project, STATE_REL)
-    keys = set(cur) | set(head) | {k for k in man if k.startswith(STATE_REL + "/")}
-    return sorted(k for k in keys if cur.get(k) is None or cur[k] not in (head.get(k), man.get(k)))
+    keys = {k for k in set(cur) | set(head) | set(man) if k.startswith(STATE_REL + "/")}
+    bad = [k for k in keys if cur.get(k) is None or cur[k] not in (head.get(k), man.get(k))]
+    if project.is_migrated():
+        c = cur.get(BACKLOG_MD)
+        if c is None or c != man.get(BACKLOG_MD):
+            hb = head_blobs(project, BACKLOG_MD).get(BACKLOG_MD)
+            if (BACKLOG_MD in man or (hb and head)) and (c is None or c not in (hb, man.get(BACKLOG_MD))):
+                bad.append(BACKLOG_MD)
+        c, mv = cur.get(REGION_KEY), man.get(REGION_KEY)
+        if c is None or c != mv:  # 只有区块与 manifest 对不上时才查 HEAD
+            ht = head_text(project, TASKS_MD)
+            hr = region_text(ht) if ht else None
+            legal = (mv, None if hr is None else blob_sha(hr.encode("utf-8")))
+            if (mv is not None or hr is not None) and (c is None or c not in legal):
+                bad.append(REGION_KEY)
+    return sorted(bad)
 
 
 def require_intact(project: Project) -> None:
