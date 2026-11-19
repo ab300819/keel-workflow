@@ -181,7 +181,7 @@ docs/devdocs/
 - [ ] **必须提供依赖关系图**
 - [ ] 优先级：P0（阻塞）、P1（重要）、P2（次要）
 - [ ] 任务编号由工具分配，形如 `T-1`（不补零；存量的补零编号如 `T-01` 仍有效）：每张新任务先执行 `.keel/bin/keel task add --title "<标题>" --source dev-tasks [--depends <编号,…>] [--profile <档>] [--milestone M-XXX] [--layer <层>]`，用它输出的编号写定义块。依赖与 review_profile 只存在状态里（生成区显示），定义块属性表不写。⛔ 不自行扫描最大编号
-- [ ] 首次生成：项目没有 `docs/devdocs/state/`、也没有 `tasks.v2` / `backlog.v2` 文档时（新项目），先按模板写出带生成区标记的 `04-dev-tasks.md`，再执行一次 `.keel/bin/keel init`，然后才 `task add`；有 v2 文档时 ⛔ 不 init，改走 `/pipeline realign`（`.keel/bin/keel migrate`）。工具未就绪或被拦见 [§ keel 工具](../shared/constraints.md#keel-工具)
+- [ ] 首次生成：项目没有 `docs/devdocs/state/`、也没有 `tasks.v2` / `backlog.v2` 文档时（新项目），先按模板写出带生成区标记的 `04-dev-tasks.md`，再执行一次 `.keel/bin/keel init`，然后才 `task add`；init 后同样询问是否安装 git pre-commit hook（命令见 [realign 迁移步骤 4](../pipeline/references/realign.md)）；有 v2 文档时 ⛔ 不 init，改走 `/pipeline realign`（`.keel/bin/keel migrate`）。工具未就绪或被拦见 [§ keel 工具](../shared/constraints.md#keel-工具)
 - [ ] 后批次任务详细程度不低于首批次（TAR 完整性、路径具体性、粒度一致性）
 
 ### 需求追溯约束

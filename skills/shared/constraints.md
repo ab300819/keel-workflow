@@ -565,8 +565,8 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 `[新增]` 任务台账与 backlog 的状态由插件自带的命令行工具读写，规则由它当场执行。本节是调用方式、退出码与人工步骤的唯一出处；各 skill 只写自己用到的命令，并链接到这里。
 
 - `keel/shim`：一律调用项目根下的垫片 `.keel/bin/keel`（会话启动时由 hook 写入）。字段与取值看 `.keel/bin/keel schema task|backlog`，用法看 `--help`。
-- `keel/shim-missing`：`.keel/bin/keel` 不存在 → 告诉用户 keel 工具未就绪（可能原因：会话启动 hook 未运行、Codex 未在 `/hooks` 信任插件、缺 python3），⛔ 不手写状态文件。
-- `keel/exit-codes`：`0` 成功；`1` 被门拦下或校验失败；`2` 用法错误；`3` 工具未就绪（未迁移、未初始化、完整性对不上、拿不到锁、内部错误）。非 0 时按提示处理：提示只说哪里违反、怎么改。未迁移（`tasks.v2` / `backlog.v2`）先跑 `/pipeline realign`；未初始化先执行 `.keel/bin/keel init`。⛔ 不绕开工具直接改文件。
+- `keel/shim-missing`：`.keel/bin/keel` 不存在，或它报「keel 工具未就绪：缺 …」（退出码 4）→ 告诉用户 keel 工具未就绪及缺什么（可能原因：会话启动 hook 未运行、Codex 未在 `/hooks` 信任插件、缺 python3、插件已升级或卸载），⛔ 不手写状态文件。
+- `keel/exit-codes`：`0` 成功；`1` 被门拦下或校验失败；`2` 用法错误；`3` 无法继续（未迁移、未初始化、完整性对不上、拿不到锁、内部错误）；`4` 垫片自检失败，见 `keel/shim-missing`。非 0 时按提示处理：提示只说哪里违反、怎么改。未迁移（`tasks.v2` / `backlog.v2`）先跑 `/pipeline realign`；未初始化先执行 `.keel/bin/keel init`。⛔ 不绕开工具直接改文件。
 - `keel/gates`：
   - K1：`docs/devdocs/state/` 只经工具写。
   - K2：`04-dev-tasks.md` 的生成区（`<!-- keel:begin ledger -->` 与 `<!-- keel:end ledger -->` 之间）和 `backlog.md` 整份由工具生成，⛔ 不手工编辑。

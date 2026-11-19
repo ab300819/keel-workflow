@@ -29,7 +29,7 @@
 ## Review Focus
 
 1. **Claude Code 的 `!` 命令可能拿不到 `/dev/tty`**：那样 `state accept` 人也用不了。Task 10 实测；拿不到就改为提示用户在另开的终端执行，并更新设计稿 §5.3 和错误信息。
-2. **git merge 后状态 JSON 里留着冲突标记**：命令应报「`state/tasks/T-12.json` 有合并冲突，手工解决后执行 `! .keel/bin/keel state accept`」，不能抛 Python 栈。Task 1 测。
+2. **git merge 后状态 JSON 里留着冲突标记**：命令应报「`state/tasks/T-12.json` 有合并冲突，先手工解决冲突，再由人另开终端执行 `.keel/bin/keel state accept`」，不能抛 Python 栈。Task 1 测。
 3. **新项目还没有任何提交，或目录不是 git 仓库**：完整性只看 manifest，K3/K4 把所有行当新增。Task 1、Task 6 测。
 4. **worktree 或子模块里 `.git` 是文件**：exclude 和 hooks 路径一律用 `git rev-parse --git-path`，不能拼 `$ROOT/.git`。Task 8 测。
 5. **非 keel 项目或取不到 python3**：hook 静默 exit 0，不能拦住和 keel 无关的项目。Task 8 测。
@@ -117,7 +117,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - `write_atomic(project, relpath, data: bytes)`：写同目录 `.<name>.keel-tmp` → `os.replace` → 更新 manifest 中该路径的 blob。
   - `record_region(project, key, text)`：登记生成区 blob 到 manifest。
   - `integrity_violations(project) -> list[str]`：返回不合法项的相对路径（含 `#ledger` 键）。合法 = 工作区 blob ∈ {HEAD blob, manifest blob}；工作区新增但两边都没有、或 manifest/HEAD 有而工作区被删，均不合法。
-  - `require_intact(project)`：有违规就抛 `KeelError(code=3)`，消息列出文件并说「状态文件被非工具改动；用 keel 命令改回，或人工确认后执行 `! .keel/bin/keel state accept`」。JSON 解析失败且含 `<<<<<<<` 时，消息改为合并冲突提示（Review Focus 2）。
+  - `require_intact(project)`：有违规就抛 `KeelError(code=3)`，消息列出文件并说「状态文件被非工具改动；用 keel 命令改回，或人工确认（人另开终端执行 `.keel/bin/keel state accept`）」。JSON 解析失败且含 `<<<<<<<` 时，消息改为合并冲突提示（Review Focus 2）。
   - `cleanup_tmp(project)`：删除 `state/` 下残留的 `.*.keel-tmp`。
   - `keel init`：建 `state/tasks/`、`state/backlog/`、`state/meta.json`，写 manifest。
 
@@ -288,15 +288,15 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - `level(project, gate) -> str`：读 `state/gates.json` 覆盖，否则默认。
   - `log_hit(project, gate, level, result, client, tool, path, detail)`：追加 `.keel/gate-log.jsonl`。
   - `apply_levels(project, findings, client, tool) -> (blocks: list[Finding], warns: list[Finding])`：按档位分流，每条都 `log_hit`（`off` 记 `skip`）。
-  - `format_findings(findings) -> str`：每条一行「Kx `<路径>`[:行]：<问题>；<怎么改>」。各门的「怎么改」：K1「用 `keel task|backlog` 命令改，或人工确认后 `! .keel/bin/keel state accept`」；K2「生成区只由 keel 写，改回后跑 `keel render`」；K3「超长内容移到 `audit/T-xxx/` 或 `backlog/<id>.md`，此处留链接」；K4「先归档或拆分（`/sync --archive`），本文件只能改小」。
-  - 命令：`keel check [--staged] [--paths p1 p2 …]`（`--staged` 时只检查 `git diff --cached --name-only` 列出的文件，读的是它们在**工作区**的内容。shortcut: 部分暂存时检查内容与提交内容可能不同，最后一道兜底可接受；真遇到漏放再改读 index。无 `--paths` 时检查所有与 HEAD 不同的载体文件），有 block 退出码 1；`keel gate set <K1..K4> <block|warn|off> --reason <r>`（写 `state/gates.json` 走 `write_atomic`，并记 `gate-set`）；`keel gate report [--since YYYY-MM-DD]`（按门汇总次数与涉及文件，附「每卡派生数」：按 `derived_from` 计数，列出前 10）；`keel state accept`（打开 `/dev/tty` 读入 `accept` 才执行：把当前所有状态文件与生成区 blob 写入 manifest，记 `accept`；打不开就退出码 3 并提示 `! .keel/bin/keel state accept`）。
+  - `format_findings(findings) -> str`：每条一行「Kx `<路径>`[:行]：<问题>；<怎么改>」。各门的「怎么改」：K1「用 `keel task|backlog` 命令改，或人工确认（人另开终端执行 `.keel/bin/keel state accept`）」；K2「生成内容只由 keel 写，跑 `.keel/bin/keel render` 从状态重新生成」；K3「超长内容移到 `audit/T-xxx/` 或 `backlog/<id>.md`，此处留链接」；K4「先归档或拆分（`/sync --archive`），本文件只能改小」。
+  - 命令：`keel check [--staged] [--paths p1 p2 …]`（`--staged` 时只检查 `git diff --cached --name-only` 列出的文件，读的是它们在**工作区**的内容。shortcut: 部分暂存时检查内容与提交内容可能不同，最后一道兜底可接受；真遇到漏放再改读 index。无 `--paths` 时检查所有与 HEAD 不同的载体文件），有 block 退出码 1；`keel gate set <K1..K4> <block|warn|off> --reason <r>`（写 `state/gates.json` 走 `write_atomic`，并记 `gate-set`）；`keel gate report [--since YYYY-MM-DD]`（按门汇总次数与涉及文件，附「每卡派生数」：按 `derived_from` 计数，列出前 10）；`keel state accept`（打开 `/dev/tty` 读入 `accept` 才执行：把当前所有状态文件与生成区 blob 写入 manifest，记 `accept`；打不开就退出码 3 并提示另开终端执行 `.keel/bin/keel state accept`）。
 
 - [ ] **Step 1: 写失败测试**
   - K3：HEAD 已有 600 字符行，改其他行 → 无命中；新增 501 字中文行 → 命中（按字符计）；新增 500 字 → 不命中；改动已有超长行使其仍超长 → 命中；非载体文件（`audit/T-1/x.md`）新增 900 字 → 不命中；无提交的仓库里 501 字行 → 命中。
   - K4：HEAD 120KiB、现在 119KiB → 不命中；现在 121KiB → 命中；HEAD 90KiB、现在 97KiB → 命中。
   - 档位：`gate set K3 warn --reason x` 后 K3 进 warns；日志新增 `gate-set` 与 `warn` 各一行；`gate set K5 off` 退出码 2。
   - `check --staged`：暂存一个手改的状态文件 → 退出码 1。
-  - `state accept` 在无 tty 的子进程里退出码 3，stderr 含 `! .keel/bin/keel state accept`。
+  - `state accept` 在无 tty 的子进程里退出码 3，stderr 含「另开一个终端」与 `.keel/bin/keel state accept`。
   - `gate report`：夹具日志 3 条 K3、1 条 K1 → 输出含 `K3 3`、`K1 1`。
 
 - [ ] **Step 2: 跑测试确认失败**：`python3 -m unittest discover -s skills/shared/scripts/tests -p 'test_gates.py' -v`
@@ -367,7 +367,7 @@ JSON 写盘一律 `json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
   - `keel hook paths`：stdin 读 payload，按 `edited_paths` 一行输出一个相对路径（供 `skill-flag-lint` 用）。
   - client 判定：环境变量 `KEEL_CLIENT`（OpenCode 插件设为 `opencode`）；否则 `tool_name` 为 `apply_patch` 或 `shell` 记 `codex`，其余记 `claude`。只用于日志。
   - `keel install-shim --plugin-root <dir>`：写 `<root>/.keel/bin/keel`（`#!/bin/bash\nexec python3 "<dir>/skills/shared/scripts/keel.py" "$@"\n`，chmod 755）；把 `.keel/` 加进 `git rev-parse --git-path info/exclude` 指向的文件（已有则不重复）。项目 `needs_migration()` 时 stdout 输出 SessionStart additionalContext：「keel 3.0：本项目台账尚未迁移，写台账和 backlog 的命令会拒绝执行；先跑 /pipeline realign」。
-  - `keel git-hook install`：目标目录 = `git rev-parse --git-path hooks`（尊重 `core.hooksPath`）。已有非 keel 的 `pre-commit` → 改名 `pre-commit.keel-chained`，新 hook 先跑 `.keel/bin/keel check --staged`（垫片不存在时打印一行警告并放行），再 `exec` 被串接的旧 hook；已是 keel 的 hook → 不动。打印做了什么。
+  - `keel git-hook install`：目标目录 = `git rev-parse --git-path hooks`（尊重 `core.hooksPath`）。已有非 keel 的 `pre-commit` → 改名 `pre-commit.keel-chained`，新 hook 先跑 `.keel/bin/keel check --staged`（退出码 0 放行；垫片不存在或自检失败（4，或 126/127）时打印一行警告并放行；其余非 0，含 1 被拦与 3 检查完成不了，一律拒绝），再 `exec` 被串接的旧 hook；已是 keel 的 hook → 不动。打印做了什么。
   - `hooks/keel-gate <pre|post>`：非 keel 项目（无 `docs/devdocs/`）或无 `python3` → `exit 0`；否则 `exec python3 "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/shared/scripts/keel.py" --root "${CLAUDE_PROJECT_DIR:-$PWD}" hook "$1"`。⛔ 不用 `timeout(1)`（见 `hooks/README.md`）。
   - `hooks/keel-shim`：同样的静默条件，然后 `keel.py --root … install-shim --plugin-root "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}"`。
   - `hooks.json`：SessionStart 增加 `keel-shim`；新增 PreToolUse `matcher: "Edit|Write|MultiEdit|NotebookEdit|apply_patch"` → `keel-gate pre`；PostToolUse 增加 `matcher: "Edit|Write|MultiEdit|NotebookEdit|apply_patch|Bash|shell"` → `keel-gate post`。
