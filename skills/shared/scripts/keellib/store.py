@@ -7,6 +7,7 @@ import json
 import os
 import re
 import subprocess
+import tempfile
 import time
 from contextlib import contextmanager
 from collections.abc import Iterator
@@ -72,10 +73,20 @@ class Project:
             raise KeelError("项目仍是 tasks.v2 / backlog.v2 文档，先执行 /pipeline realign 迁移后再写状态", 3)
         raise KeelError("项目未初始化，先执行 keel init", 3)
 
+    def check_links(self) -> None:
+        for p in (self.keel_dir, self.state_dir):
+            if os.path.islink(p):
+                raise KeelError(f"{os.path.relpath(p, self.root)} 是符号链接，拒绝操作", 3)
+
     @contextmanager
     def lock(self, timeout: float = 5.0) -> Iterator[None]:
+        self.check_links()
         os.makedirs(self.keel_dir, exist_ok=True)
-        with open(os.path.join(self.keel_dir, "lock"), "w") as fh:
+        try:  # O_NOFOLLOW 且不截断：lock 若是指向别处的符号链接则拒绝
+            fd = os.open(os.path.join(self.keel_dir, "lock"), os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0o644)
+        except OSError as e:
+            raise KeelError(f"打不开 .keel/lock：{e}", 3) from None
+        with os.fdopen(fd, "w") as fh:
             deadline = time.monotonic() + timeout
             while True:
                 try:
@@ -99,10 +110,17 @@ class Project:
 
     def save_manifest(self, m: dict[str, str]) -> None:
         os.makedirs(self.keel_dir, exist_ok=True)
-        tmp = self.manifest_path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            f.write(json.dumps(m, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
-        os.replace(tmp, self.manifest_path)
+        _replace_file(self.manifest_path, (json.dumps(m, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+
+
+def _replace_file(path: str, data: bytes) -> None:
+    """mkstemp 新建同目录临时文件（不跟随符号链接）再 os.replace；临时名与 cleanup_tmp 的匹配一致。"""
+    d, name = os.path.split(path)
+    fd, tmp = tempfile.mkstemp(dir=d, prefix="." + name + ".", suffix=".keel-tmp")
+    with os.fdopen(fd, "wb") as f:
+        f.write(data)
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, path)
 
 
 def head_blobs(project: Project, paths_prefix: str) -> dict[str, str]:
@@ -122,12 +140,10 @@ def head_text(project: Project, relpath: str) -> str | None:
 
 def write_atomic(project: Project, relpath: str, data: bytes) -> None:
     """调用方须已持有 project.lock()。"""
+    project.check_links()
     path = os.path.join(project.root, relpath)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = os.path.join(os.path.dirname(path), "." + os.path.basename(path) + ".keel-tmp")
-    with open(tmp, "wb") as f:
-        f.write(data)
-    os.replace(tmp, path)
+    _replace_file(path, data)
     m = project.manifest()
     m[relpath] = blob_sha(data)
     project.save_manifest(m)
@@ -153,6 +169,7 @@ def _current_blobs(project: Project) -> dict[str, str]:
 
 
 def integrity_violations(project: Project) -> list[str]:
+    project.check_links()
     cur = _current_blobs(project)
     man = project.manifest()
     head = head_blobs(project, STATE_REL)

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # 开发期门禁：ruff + mypy + 真实 Python 3.9 下自测。不随插件分发。
+# 清掉 git hook 注入的 GIT_*，否则自测的临时 git 夹具会误操作外层仓库
+for v in $(env | grep -o "^GIT_[A-Z_]*"); do unset "$v"; done
 cd "$(dirname "$0")/.." || exit 3
 S=skills/shared/scripts
 step() { echo "== $1"; }
