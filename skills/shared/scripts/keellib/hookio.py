@@ -82,7 +82,7 @@ def pre(project: Project, payload: dict[str, Any]) -> str:
 
 def post(project: Project, payload: dict[str, Any]) -> str:
     tool = str(payload.get("tool_name") or "")
-    findings, note = gates.collect(project, None)
+    findings, note = gates.collect(project, None, skip_busy=True)
     blocks, warns = gates.apply_levels(project, findings, client(payload), tool)
     msg = "\n".join(x for x in (gates.format_findings(blocks + warns), note) if x)
     if blocks:
