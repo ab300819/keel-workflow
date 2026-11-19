@@ -4,7 +4,7 @@
 
 ## 当前 spec_version
 
-**`backlog.v2`**（2026-09-08：`source_id` 白名单增加 `M-XXX`，承接里程碑段内冒出、尚无编号的新需求）
+**`backlog.v3`**（2026-11-19：条目状态移入 `docs/devdocs/state/backlog/`，由 keel 工具独占；`backlog.md` 整份由工具生成，长说明放 `backlog/<source_id>-<entry_no>.md`）
 
 ## Migration Matrix（spec_version 演进）
 
@@ -17,50 +17,17 @@
 > **零迁移动作**：这是一次纯放宽。存量 `backlog.md` 无需改动，只需 frontmatter 的 `spec_version` 随下次写入自然更新。
 > 之所以仍要 bump：`source_id` 白名单是硬校验规则，改它命中 `realign/bump-required-structure`；不 bump 则消费方无从判断某个 `M-XXX` 条目是合法还是脏数据。
 
+### v2 → v3
+
+| 分级 | 变更项 | 修复动作 | 判据 |
+|---|---|---|---|
+| restructuring | 条目状态从 `backlog.md` 的 yaml 块移入 `state/backlog/`；`backlog.md` 改为生成文件 | ⛔ 本 skill 不手工迁移，由 `/pipeline realign` 调度 `keel migrate`（见 [pipeline realign.md § 台账迁移](../../pipeline/references/realign.md#台账迁移)） | `backlog.md` 或 `backlog/*.md` 为 `backlog.v2`，且无 `docs/devdocs/state/meta.json` |
+
 ## Realign 子流程
 
-### 入口
-
 - 主入口：由 `/pipeline realign` 编排调度。
-- 底层直用：`/backlog --realign[=scope]`，scope ∈ {frontmatter / index / entries / status-fields}。
-
-### 流程
-
-```text
-1. 加载当前 spec_version 常量 + Migration Matrix
-     │
-     ▼
-2. 扫描 docs/devdocs/backlog.md
-     │
-     ▼
-3. 按 Matrix 定位差距
-     ├── additive：章节/字段/表头缺失
-     └── restructuring：条目块结构不兼容
-     │
-     ▼
-4. 差距清单展示（按 status 分组）
-     │
-     ▼
-5. 用户确认（restructuring 逐项）
-     │
-     ▼
-6. 补齐结构 + 追加 Change Log
-     │
-     ▼
-7. 幂等校验
-```
-
-### 输出
-
-- 补齐后的 `docs/devdocs/backlog.md`
-- `## Change Log` 中的 realign 记录
-- yaml-summary-v1 信封（details：`{from_spec, to_spec, additive_count, restructuring_count, scope, entries_affected}`）
-
-### 约束
-
-- 不新增 `B-XXX` 或任何 backlog 专属编号。
-- 不修改原 `F/US/AC/T/INS/BUG/FR/NFR` 文件。
-- 不把 `parked` 自动迁移为 `reactivated`、`closed` 或 `superseded`；realign 只补结构，不改业务状态。
-- 不重算 `source_id + entry_no` 语义；发现重复锚点时返回 `partial` 并请求用户确认。
-- 保留正文内容；只在结构字段缺失或格式不兼容时补齐。
-
+- `backlog.v3` 起 `backlog.md` 由工具生成，本 skill 没有可手工补齐的结构：
+  - 检测到 `backlog.v2` → 交给 `/pipeline realign` 的台账迁移（见上表），⛔ 不手工改 `backlog.md`。
+  - 已是 `backlog.v3` → no-op。`backlog.md` 与状态不一致时执行 `.keel/bin/keel render` 重新生成。
+- 详情文件 `backlog/<source_id>-<entry_no>.md` 只补缺失的 Context / Reactivation Criteria 小节，不改业务内容，不改条目状态。
+- 输出 yaml-summary-v1 信封（details：`{from_spec, to_spec, additive_count, restructuring_count, scope, entries_affected}`）。

@@ -13,7 +13,7 @@
 | 约束 | 阈值 | 违反时 |
 |------|------|--------|
 | 文件总大小 | ⚠️ > 10 KiB / ⛔ > 40 KiB | health-lint `state/total-size-cap` 告警 / 阻断 |
-| 单行字符数 | ⛔ > 500 字符 | health-lint `state/line-length-cap` 阻断 |
+| 单行字符数 | ⛔ > 500 字符 | health-lint `state/line-length-cap` 阻断；新增或改动的超长行由 keel K3 当场拦 |
 | 单条占位 prose | ≤ 200 字符 | 超出即应拆出明细 |
 
 ## Forbidden 内容（不得写入本文件）
@@ -22,7 +22,7 @@
 
 | 类别 | 示例 | 应去 |
 |------|------|------|
-| git commit hash | `0c263bf4d4`、`trade@abc1234` | commit message / PR / `04-dev-tasks-pNN.md` |
+| git commit hash | `0c263bf4d4`、`trade@abc1234` | commit message / PR / `keel task commit` |
 | LOC 计数 | `+184/-5`、`732 LOC`、`净 -85 LOC` | task 文件 / PR description |
 | 测试结果数 | `49/49 GREEN`、`94 cases`、`焦点 51/51 PASS` | task 文件 / CI 报告 |
 | codex 分数 | `R1 88 → R2 92`、`health=92 PASS` | task 文件 review 章节 |
@@ -44,8 +44,7 @@ for k in F US AC CON; do
     | sed "s/$k-//" | sort -n | tail -1
 done
 
-# T —— 源：04-dev-tasks*.md
-grep -owhE 'T-[0-9]+' docs/devdocs/04-dev-tasks*.md | sed 's/T-//' | sort -n | tail -1
+# T —— 不推导：新编号由 `.keel/bin/keel task add` 分配，现有任务看 `.keel/bin/keel task list`
 
 # ADR / INS / BUG —— 源：各自目录（一文件一编号）
 ls docs/devdocs/adr/ADR-*.md 2>/dev/null | sed 's/.*ADR-\([0-9]*\).*/\1/' | sort -n | tail -1
@@ -67,8 +66,8 @@ ls docs/devdocs/adr/ADR-*.md 2>/dev/null | sed 's/.*ADR-\([0-9]*\).*/\1/' | sort
 | BUG-NNN | `docs/devdocs/bugs/BUG-NNN.md` + `bugs/index.md` | 占位（≤200 字符）|
 | F / US / AC | `docs/devdocs/01-requirements.md` + `requirements/F-NNN.md` | 占位（≤200 字符）|
 | CON | `docs/devdocs/01-requirements.md` §6 约束表 | 占位（≤200 字符）|
-| Backlog 候选 | `docs/devdocs/backlog/NN-<slug>.md` | 占位（≤200 字符）|
-| T / T-RF | `docs/devdocs/04-dev-tasks.md` + `04-dev-tasks-pNN.md` | 占位（≤200 字符）|
+| Backlog 条目 | `.keel/bin/keel backlog list`（`backlog.md` 由工具生成）+ `backlog/<source_id>-<entry_no>.md` | 占位（≤200 字符）|
+| T / T-RF | 定义：`docs/devdocs/04-dev-tasks*.md`；状态：`04-dev-tasks.md` 生成区或 `.keel/bin/keel task get/list` | 占位（≤200 字符）|
 | UT / IT / E2E | `docs/devdocs/03-test-*.md` | 占位（≤200 字符）|
 
 **规则**：
@@ -76,7 +75,7 @@ ls docs/devdocs/adr/ADR-*.md 2>/dev/null | sed 's/.*ADR-\([0-9]*\).*/\1/' | sort
 1. 修改资源文件 = 真实落地；本文件占位 prose 是**事实快照**，不追踪 drift。
    ⛔ **推论：分配新编号必须扫资源文件，不得读本文件的「编号状态」表**（见该节）。
 2. 编号语义 / AC 内容 / 决策依据 / 全文以**资源文件**为准。
-3. 新增 ADR / INS / BUG / F / Backlog **直接在对应目录新建单文件 + 追加索引表行**，**不在本文件回填明细**。
+3. 新增 ADR / INS / BUG / F **直接在对应目录新建单文件 + 追加索引表行**；Backlog 经 `/backlog` 入池；**不在本文件回填明细**。
 4. 已完成 sprint 在本文件**仅保留状态行**，明细去 `04-dev-tasks-pNN.md` 查（避免 monolithic 倾倒）。
 
 ## 编号状态
