@@ -288,7 +288,7 @@ generated_at: 2026-04-23T10:30:00+08:00
 | 架构图 | `02-system-design.md` | 架构概览图 |
 | 核心接口 | `02-system-design.md` | 接口签名表 |
 | 当前进度 | `04-dev-tasks.md` | 执行检查清单 |
-| 待办任务 | `04-dev-tasks.md` | 未完成的 T-XX |
+| 待办任务 | `04-dev-tasks.md` 生成区（或 `.keel/bin/keel task list --status 待开发`） | 未完成的 T-XX；只读，⛔ 不手改 |
 
 ### 从代码库盘点提取
 

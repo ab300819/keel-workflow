@@ -88,7 +88,7 @@ expected_output: yaml-summary-v1
 
 ## 生产侧衔接
 
-入池只有一条路：用户或编排层显式调用 `backlog --park`（即 `keel backlog park`）。⛔ 其他 skill 不输出候选字段，也不自行拼命令写 backlog——保持单一入口。
+入池走 `.keel/bin/keel backlog park <source_id> --note … --by <skill>`，任何 skill 都可执行；门控由命令保证（见 [constraints.md § keel 工具](../shared/constraints.md#keel-工具)），被拦时按提示处理。
 
 适合入池的场景（由用户或编排层判断后调用）：
 

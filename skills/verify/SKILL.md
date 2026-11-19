@@ -279,7 +279,7 @@ metadata:
 
 **与 --docs 的区别**：`--docs` 检查文档层间对齐（漂移检测），`--readiness` 检查任务级开发就绪条件（具体性、一致性、可执行性）。
 
-**台账版本**：`04-dev-tasks.md` 为 `tasks.v3` 时，状态、依赖读生成区或 `.keel/bin/keel task list`；仍为 `tasks.v2` → 报 P1「台账未迁移」，路由 `/pipeline realign`（`keel migrate`），D3/D5 不继续。
+**台账版本**：`04-dev-tasks.md` 为 `tasks.v3` 时，状态、依赖读生成区或 `.keel/bin/keel task list`；仍为 `tasks.v2` → 报 P1「台账未迁移」，路由 `/pipeline realign`（`.keel/bin/keel migrate`），D3/D5 不继续。
 
 ### D1：AC ↔ 测试用例对齐
 

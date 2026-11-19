@@ -21,7 +21,7 @@
 | `docs/prd/requirements/*.md` | prd-brainstorm | `skills/prd-brainstorm/references/realign.md` |
 | `docs/devdocs/backlog.md` | backlog | `skills/backlog/references/realign.md` |
 
-**台账（`tasks` / `backlog`）**：`tasks.v3` / `backlog.v3` 为当前；仍为 `tasks.v2` / `backlog.v2` → drift，建议动作固定为 `/pipeline realign`（台账迁移 `keel migrate`），⛔ 不建议 `/dev-tasks --realign` 或手工改；迁移前所有写状态的 keel 命令都会拒绝执行。`backlog.md` 由工具生成，自带 `spec_version`。
+**台账（`tasks` / `backlog`）**：`tasks.v3` / `backlog.v3` 为当前；仍为 `tasks.v2` / `backlog.v2` → drift，建议动作固定为 `/pipeline realign`（台账迁移 `.keel/bin/keel migrate`），⛔ 不建议 `/dev-tasks --realign` 或手工改；迁移前所有写状态的 keel 命令都会拒绝执行。`backlog.md` 由工具生成，自带 `spec_version`。
 
 ⛔ **`00-baseline.md` 只做结构性 drift 检测**（缺失章节 / frontmatter 字段），
 realign **不得改写**其带 `用户确认` / `已有文档` / `推导待确认` 标注的正文——

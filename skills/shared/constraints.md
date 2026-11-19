@@ -485,7 +485,7 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 > **为什么进本文而 `skip/numbering-unique` 仍成立**：那条跳过的是**续编策略**（各对象的来源与 SSOT 不同，确实不能统一）；本条是**扫描方法的机械陷阱**，对每种编号类型完全一致，且语言与领域中立。两者不冲突。
 >
-> 消费方：`requirements`（编号续编，含 `M-XXX`）/ `bugfix` / `test-cases`（编号续编；`T` 编号由 `keel task add` 分配，不再扫描）+ `agent-memory` devdocs-state 模板（推导命令）+ `health-lint` `id-reference-check` / `state/max-id-stale`（上界推导）。
+> 消费方：`requirements`（编号续编，含 `M-XXX`）/ `bugfix` / `test-cases`（编号续编；`T` 编号由 `.keel/bin/keel task add` 分配，不再扫描）+ `agent-memory` devdocs-state 模板（推导命令）+ `health-lint` `id-reference-check` / `state/max-id-stale`（上界推导）。
 
 ## 差异点与跳过项
 

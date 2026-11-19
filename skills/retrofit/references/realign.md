@@ -19,6 +19,12 @@
 | additive | （示例）新增章节 | 追加章节占位，标注待人工填写 | §章节缺失 |
 | restructuring | （示例）来源标注枚举扩展 | AskUserQuestion 呈现 before/after | 标注值不在枚举内 |
 
+### 台账版本（tasks / backlog）
+
+| 分级 | 变更项 | 修复动作 | 判据 |
+|---|---|---|---|
+| restructuring | `tasks.v2` / `backlog.v2` → `tasks.v3` / `backlog.v3` | ⛔ 本 skill 不手工迁移，交 `/pipeline realign`（`.keel/bin/keel migrate`，见 [pipeline realign.md § 台账迁移](../../pipeline/references/realign.md#台账迁移)） | `04-dev-tasks.md` 为 `tasks.v2`，或 `backlog.md` 为 `backlog.v2` |
+
 ## Realign 子流程
 
 入口：`/pipeline realign --scope=spec` 编排调度。

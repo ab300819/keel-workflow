@@ -21,7 +21,7 @@
 
 | 分级 | 变更项 | 修复动作 | 判据 |
 |---|---|---|---|
-| restructuring | 条目状态从 `backlog.md` 的 yaml 块移入 `state/backlog/`；`backlog.md` 改为生成文件 | ⛔ 本 skill 不手工迁移，由 `/pipeline realign` 调度 `keel migrate`（见 [pipeline realign.md § 台账迁移](../../pipeline/references/realign.md#台账迁移)） | `backlog.md` 或 `backlog/*.md` 为 `backlog.v2`，且无 `docs/devdocs/state/meta.json` |
+| restructuring | 条目状态从 `backlog.md` 的 yaml 块移入 `state/backlog/`；`backlog.md` 改为生成文件 | ⛔ 本 skill 不手工迁移，由 `/pipeline realign` 调度 `.keel/bin/keel migrate`（见 [pipeline realign.md § 台账迁移](../../pipeline/references/realign.md#台账迁移)） | `backlog.md` 或 `backlog/*.md` 为 `backlog.v2`，且无 `docs/devdocs/state/meta.json` |
 
 ## Realign 子流程
 

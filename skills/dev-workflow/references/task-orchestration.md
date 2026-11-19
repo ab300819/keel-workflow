@@ -26,7 +26,7 @@
 ### 解析流程
 
 ```
-1. 读取 docs/devdocs/04-dev-tasks*.md（任务定义）与生成区或 `keel task list`（状态）
+1. 读取 docs/devdocs/04-dev-tasks*.md（任务定义）与生成区或 `.keel/bin/keel task list`（状态）
 2. 识别指定符类型
    ├── T-XX          → 直接使用
    ├── T-XX~T-YY     → 展开范围内所有任务 ID
@@ -91,7 +91,7 @@ M1 的任务依赖 M2 的任务时，M1 的闭包会把 M2 的任务提前捞走
 输入：目标任务 ID 列表
 输出：按依赖顺序排列的执行队列
 
-1. 从目标任务列表出发，递归收集所有 依赖 引用的任务（依赖与状态读生成区或 `keel task list --fields id,status,depends_on`）
+1. 从目标任务列表出发，递归收集所有 依赖 引用的任务（依赖与状态读生成区或 `.keel/bin/keel task list --fields id,status,depends_on`）
 2. 对每个依赖任务：
    ├── 状态=已完成 → 跳过，不加入执行队列
    ├── 状态=进行中 → 标记为警告
@@ -152,7 +152,7 @@ Step 0: 读 01-requirements.md §2.5 里程碑表的「验收状态」列
 
 ```
 Step 1: 文档状态检测
-        ├── 读该任务的状态（生成区或 `keel task get <id>`）
+        ├── 读该任务的状态（生成区或 `.keel/bin/keel task get <id>`）
         ├── 已完成 → Step 1.5（验证证据复核）
         └── 进行中 / 待开发 → Step 2
 
@@ -169,11 +169,11 @@ Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判
             └── 旧任务迁移（前版本完成，A/D1/D2/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
 
 Step 2: 提交检测（任务状态非"已完成"时的兜底）
-        ├── 读任务状态的 `commits`（`keel task get <id>`；代码仓的 commit 标题不带 T-XX，⛔ 不靠 grep 提交信息找任务）
-        ├── 已有 `commits`（Commit 2 已落）→ ⚠️ 不直接跳过，进入 Step 1.5 证据复核路径
+        ├── 读任务状态的 `commits`（`.keel/bin/keel task get <id>`；代码仓的 commit 标题不带 T-XX，⛔ 不靠 grep 提交信息找任务）
+        ├── 已有 `commits`（Commit 1 已登记）→ ⚠️ 不直接跳过，进入 Step 1.5 证据复核路径
         ├── 无 `commits`，但 `git log -- <任务卡列出的文件>` 有晚于任务卡创建的提交
         │     → ⚠️ 必须确认该提交属于本任务；确认后**先走 Step 1.5 证据复核**（提交归属 ≠ 已过门控），
-        │       复核通过才标 docs_only_pending 补文档同步（`keel task commit` 补登 + /sync + Commit 2），不通过按复核续做
+        │       复核通过才标 docs_only_pending 补文档同步（`.keel/bin/keel task commit` 补登 + /sync + Commit 2），不通过按复核续做
         │     （`shell` 拓扑另可用外壳仓 `git log --grep="T-XX"`，见 protocol.md §6.3）
         └── 无提交 → Step 3
 
@@ -294,8 +294,8 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 │  6.5 独立审查分支(按 review_profile):                       │
 │     ├── audit → Phase 1~3 + Phase 4 inline fail-fast,审过才提交 │
 │     └── fast/guarded → 跳过 inline 独立审查(延后)             │
-│  6.9 Commit 1(纯代码)+ keel task commit 登记提交      │
-│  7. keel task set 状态:audit→已完成;fast/guarded→review_pending + batch/due/pending_reason│
+│  6.9 Commit 1(纯代码)+ .keel/bin/keel task commit 登记提交      │
+│  7. .keel/bin/keel task set 状态:audit→已完成;fast/guarded→review_pending + batch/due/pending_reason│
 │  8. /sync                                │
 │  9. Commit 2: 文档提交（任务状态+追踪）         │
 │     └── git add [文档文件] && git commit        │
@@ -402,7 +402,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 
 | 情况 | 做法 |
 |---|---|
-| 挂得上已有 `F`/`AC` | 直接 park 到该编号（`keel backlog park <编号> --note "<一句话>" --by dev-workflow`）。⛔ 不起子代理——主线本来就有这个上下文，摸查是浪费 |
+| 挂得上已有 `F`/`AC` | 直接 park 到该编号（`.keel/bin/keel backlog park <编号> --note "<一句话>" --by dev-workflow`）。⛔ 不起子代理——主线本来就有这个上下文，摸查是浪费 |
 | 挂不上的新需求 | 起**一个**子代理去摸查，结果写入 backlog（`source_id` = 当前 `M-XXX`）|
 
 **子代理摸查的深度（第一档，只记上下文）**：
@@ -412,7 +412,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 
 **时机**：**说出即处理**，⛔ 不攒到段末统一做。攒起来会让「说出到段末」之间的上下文悬空，中断即丢——而不打断、不丢失正是这套机制的目的。子代理后台跑，主线继续执行任务。
 
-**落点**：先 `keel backlog park <M-XXX> --note "<一句话>" --by dev-workflow` 拿锚点，摸查结果写进该条的详情文件（做法见 [backlog SKILL.md](../../backlog/SKILL.md)）。`source_id` = `M-XXX` 的条目同源第二条**默认追加不再询问**（加 `--append`，见 backlog 门控例外）。
+**落点**：先 `.keel/bin/keel backlog park <M-XXX> --note "<一句话>" --by dev-workflow` 拿锚点，摸查结果写进该条的详情文件（做法见 [backlog SKILL.md](../../backlog/SKILL.md)）。`source_id` = `M-XXX` 的条目同源第二条**默认追加不再询问**（加 `--append`，见 backlog 门控例外）。
 
 段内（不只段末）用户随口提到新需求时，走同一条路径。
 
@@ -424,7 +424,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 每完成 N 个任务后（N=3，可调整）：
     │
     ├── 输出当前批次进度摘要（已完成/失败/剩余）
-    ├── 重新读生成区或 `keel task list` 获取最新状态（覆盖内存中的旧状态）
+    ├── 重新读生成区或 `.keel/bin/keel task list` 获取最新状态（覆盖内存中的旧状态）
     ├── 清理已完成任务的详细日志（仅保留 commit hash + 状态）
     └── 继续执行下一批次
 ```

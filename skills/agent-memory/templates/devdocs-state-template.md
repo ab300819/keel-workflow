@@ -4,7 +4,7 @@
 
 > ⚠️ **设计意图**：本文件是**编号状态快照**，不是 sprint 日志。明细一律去对应资源文件查；本文件只承担"单页 grep 速读"。
 >
-> ⛔ **本文件不是编号权威。** 分配新编号必须扫资源文件（见「编号最大值的推导」节）——把「当前最大」当分配依据会与本文件自称的「不追踪 drift」直接矛盾，且手工回填必然漂移导致撞号。
+> ⛔ **本文件不是编号权威。** 分配新编号必须扫资源文件（见「编号最大值的推导」节；T 编号由 `.keel/bin/keel task add` 分配）——把「当前最大」当分配依据会与本文件自称的「不追踪 drift」直接矛盾，且手工回填必然漂移导致撞号。
 >
 > 健康度审查由 `/pipeline realign --scope=health` 主动检测（详见 [pipeline/references/health-lint-implementation.md](../../pipeline/references/health-lint-implementation.md)）。
 
@@ -22,7 +22,7 @@
 
 | 类别 | 示例 | 应去 |
 |------|------|------|
-| git commit hash | `0c263bf4d4`、`trade@abc1234` | commit message / PR / `keel task commit` |
+| git commit hash | `0c263bf4d4`、`trade@abc1234` | commit message / PR / `.keel/bin/keel task commit` |
 | LOC 计数 | `+184/-5`、`732 LOC`、`净 -85 LOC` | task 文件 / PR description |
 | 测试结果数 | `49/49 GREEN`、`94 cases`、`焦点 51/51 PASS` | task 文件 / CI 报告 |
 | codex 分数 | `R1 88 → R2 92`、`health=92 PASS` | task 文件 review 章节 |
@@ -73,7 +73,7 @@ ls docs/devdocs/adr/ADR-*.md 2>/dev/null | sed 's/.*ADR-\([0-9]*\).*/\1/' | sort
 **规则**：
 
 1. 修改资源文件 = 真实落地；本文件占位 prose 是**事实快照**，不追踪 drift。
-   ⛔ **推论：分配新编号必须扫资源文件，不得读本文件的「编号状态」表**（见该节）。
+   ⛔ **推论：分配新编号必须扫资源文件（T 编号由 `.keel/bin/keel task add` 分配），不得读本文件的「编号状态」表**（见该节）。
 2. 编号语义 / AC 内容 / 决策依据 / 全文以**资源文件**为准。
 3. 新增 ADR / INS / BUG / F **直接在对应目录新建单文件 + 追加索引表行**；Backlog 经 `/backlog` 入池；**不在本文件回填明细**。
 4. 已完成 sprint 在本文件**仅保留状态行**，明细去 `04-dev-tasks-pNN.md` 查（避免 monolithic 倾倒）。

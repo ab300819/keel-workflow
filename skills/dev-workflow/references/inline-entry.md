@@ -16,7 +16,7 @@
 ## 编号分配
 
 - **AC**:扫描 `01-requirements.md` **全文件**(含 Inline stubs 区)最大 AC 号续编;文件不存在从 AC-001 起。01 是 AC 唯一编号源。
-- **T**:由工具分配:`.keel/bin/keel task add --title "<任务名称>" --source inline --profile guarded`(档位下限见下方),用输出的编号写任务条目;⛔ 不自行扫描最大编号。`04-dev-tasks.md` 不存在时先按 [dev-tasks § 基础约束「首次生成」](../../dev-tasks/SKILL.md#基础约束) 建骨架并 `keel init`。工具未就绪或被拦见 [constraints.md § keel 工具](../../shared/constraints.md#keel-工具)。
+- **T**:由工具分配:`.keel/bin/keel task add --title "<任务名称>" --source inline --profile guarded`(档位下限见下方),用输出的编号写任务条目;⛔ 不自行扫描最大编号。`04-dev-tasks.md` 不存在时先按 [dev-tasks § 基础约束「首次生成」](../../dev-tasks/SKILL.md#基础约束) 建骨架（骨架用下方 stub 模板）并 `.keel/bin/keel init`。工具未就绪或被拦见 [constraints.md § keel 工具](../../shared/constraints.md#keel-工具)。
 - **F/US**:不要求提供;关联需求列写 `—(inline)`,回填时补。
 
 ## stub 模板
