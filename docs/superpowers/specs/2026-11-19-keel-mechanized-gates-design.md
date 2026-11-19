@@ -76,7 +76,7 @@ keel 现有 756 处 ⛔ 规则，全部靠模型读了 spec 后自觉遵守；�
 
 1. **工具自身**：`keel` 命令写状态前校验字段、取值、条件必填；每次运行先核对状态文件的完整性，对不上就拒绝继续（只允许查看和 `keel state accept`）。这一层不依赖任何客户端能力。
 2. **客户端 hook**：PreToolUse 按路径拒绝直接编辑状态文件；PostToolUse 检查本次编辑后的文件（行长、体积）和完整性，违规时拦回。
-3. **git hook（可选安装）**：`pre-commit` 跑 `keel check --staged`。不分客户端、不分人和模型，是最后一道。
+3. **git hook（可选安装）**：`pre-commit` 跑 `keel check --staged`。不分客户端、不分人和模型，是最后一道自动检查（可被跳过，见 `hooks/README.md` 已知漏口）。
 4. **spec 指引**：说明为什么、怎么用命令、被拦后怎么办。不再承担「必须」。
 
 第 1 层和第 3 层兜住第 2 层的漏口（Codex 出错放行、插件 hook 未信任、shell 绕过）。
@@ -106,7 +106,7 @@ docs/devdocs/
     └── gates.json              # 项目对默认门档位的覆盖
 .keel/                          # 本地，git 忽略
 ├── bin/keel                    # 垫片
-├── manifest.json               # 工具最近一次写入的各状态文件与生成区 sha256
+├── manifest.json               # 工具最近一次写入的各状态文件与生成区的 git blob sha1（可直接与 HEAD 比较）
 └── gate-log.jsonl              # 命中记录
 ```
 
@@ -114,7 +114,8 @@ docs/devdocs/
 - 一条一个文件：多会话并行时减少冲突。编号由 `keel task add` / `keel backlog park` 分配（文件锁），解决 ai-code「编号靠人工避让撞号」。
 - `04-dev-tasks.md` 的生成区用 `<!-- keel:begin ledger -->` / `<!-- keel:end ledger -->` 包住，每卡一行：编号、标题、状态、档位、依赖、里程碑、记录链接。生成区外的内容照旧由人和模型编辑。
 - **合法内容的判据**：一个状态文件（或生成区）的内容，要么等于 git HEAD 中的版本，要么等于工具最近一次写入时登记在本地 `.keel/manifest.json` 的校验和；两者都不是，即判为非工具改动。
-  - 经 git 进来的改动（pull、merge、rebase、checkout）会同时更新 HEAD，自动合法，不需要 git hook，也不需要确认。
+  - 经 git 进来的改动（pull、merge、rebase、checkout）会同时更新 HEAD，自动合法，不需要 git hook，也不需要确认。合并、cherry-pick、rebase 停在冲突上时，`MERGE_HEAD` / `CHERRY_PICK_HEAD` / `REBASE_HEAD` 里的版本同样合法；manifest 登记过、HEAD 与工作区都没有的文件（切分支带走的）不算违规，下次写入时清出 manifest。
+  - 只有生成内容（K2）对不上时，`keel render` 从状态重新生成即可，不需要确认。
   - manifest 只在本地，不入库，所以不会产生合并冲突。
   - 任何不经工具的工作区改动（编辑器、shell、别的客户端）都会在下次 hook 或命令运行时被发现。不必逐个去堵 shell 的写法。
   - 剩下的合法例外只有手工解决合并冲突，需要 `keel state accept`。**只能人执行**（用户 2026-11-19 定）：命令要求在交互终端里输入确认，没有交互终端（模型的 shell 调用）时拒绝执行，并提示「这一步只能由人在交互终端执行：另开一个终端，在项目根目录运行 `.keel/bin/keel state accept`」。2026-11-19 实测：Claude Code 的 `!` 命令没有控制终端，故改为另开终端执行。每次认可都写入命中记录。
@@ -123,7 +124,7 @@ docs/devdocs/
 
 - 写命令都是字段级操作（改状态、加提交、挂起原因等），⛔ 不提供整条记录覆盖写。
 - 每次写入在项目级锁（`.keel/lock`）内完成「读取 → 校验 → 写临时文件 → `os.replace` 原子替换 → 更新 manifest」，两个会话同时写同一条不会互相覆盖；拿不到锁时等待数秒后报错，不静默跳过。
-- 校验失败时原文件不动；中途崩溃最多留下临时文件，下次运行时清理。
+- 校验失败时原文件不动；中途崩溃留下的临时文件下次运行时清理。替换状态文件与更新 manifest 之间崩溃时，manifest 落后于状态文件，之后会被判为 K1，须人执行 `keel state accept` 恢复（已知漏口）。
 
 **任务状态字段**（第 1 段；具体键名由实施者定）：编号、标题（≤80 字）、状态（待开发 / 进行中 / review_pending / 已完成 / 已归档）、review_profile、依赖、里程碑、层级、来源（`derived_from`：由哪张卡在执行中派生，可空）、commits（`<repo>@<sha>` + 一句描述）、batch / due / pending_reason、ext_review_state、skip_trace_reason（≤200 字）、exploration_mode、profile_downgrade_reason（≤200 字）、record（`audit/T-xxx/` 链接）。
 
