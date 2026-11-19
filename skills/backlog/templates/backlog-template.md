@@ -1,6 +1,6 @@
 # <source_id>#<entry_no> - <短标题>
 
-<!-- backlog 详情文件模板：存为 docs/devdocs/backlog/<source_id>-<entry_no>.md，可自由编辑。条目状态与一句话摘要由 keel 维护（`/backlog`），不写在这里。 -->
+<!-- backlog 详情文件模板：存为 docs/devdocs/backlog/<source_id>-<entry_no>.md（park 输出的锚点把 # 换成 -），可自由编辑。条目状态与一句话摘要由 keel 维护（`/backlog`），不写在这里。 -->
 
 ## Context
 

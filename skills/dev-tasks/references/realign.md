@@ -4,7 +4,7 @@
 
 ## 当前 spec_version
 
-**`tasks.v3`**（2026-11-19：任务状态与审查字段移入 `docs/devdocs/state/`，由 keel 工具独占；主文件「任务状态」节换成生成区，定义块属性表删除状态、commits、审查状态行）
+**`tasks.v3`**（2026-11-19：任务状态与审查字段移入 `docs/devdocs/state/`，由 keel 工具独占；主文件「任务状态」节换成生成区，定义块属性表删除状态、依赖、review_profile、commits、审查状态行）
 
 ## Migration Matrix（spec_version 演进）
 
@@ -24,7 +24,7 @@
 
 | 分级 | 变更项 | 修复动作 | 判据 |
 |---|---|---|---|
-| restructuring | 状态与审查字段从 markdown 移入 `state/`；状态表换成生成区；属性表删除状态 / commits / 审查状态行 | ⛔ 本 skill 不手工迁移，由 `/pipeline realign` 调度 `keel migrate`（见 [pipeline realign.md § 台账迁移](../../pipeline/references/realign.md#台账迁移)） | `04-dev-tasks.md` 的 `spec_version: tasks.v2`，且无 `docs/devdocs/state/meta.json` |
+| restructuring | 状态与审查字段从 markdown 移入 `state/`；状态表换成生成区；属性表删除状态 / 依赖 / review_profile / commits / 审查状态行（存量定义块里的这些行迁移后保留不删，以状态为准） | ⛔ 本 skill 不手工迁移，由 `/pipeline realign` 调度 `keel migrate`（见 [pipeline realign.md § 台账迁移](../../pipeline/references/realign.md#台账迁移)） | `04-dev-tasks.md` 的 `spec_version: tasks.v2`，且无 `docs/devdocs/state/meta.json` |
 
 ### v3 → v4（保留字段，未来启用）
 

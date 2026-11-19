@@ -43,7 +43,7 @@ writes_backlog: backlog.v3
 | `--supersede <锚点>` | `.keel/bin/keel backlog supersede <锚点> --by-id <编号或锚点>`（可选终态） |
 | `--list[=status]` | `.keel/bin/keel backlog list [--status <status>]`；单条用 `backlog get <锚点>` |
 
-- 需要长说明（Context / Reactivation Criteria）时，park 前先按 [templates/backlog-template.md](templates/backlog-template.md) 写 `docs/devdocs/backlog/<source_id>-<entry_no>.md`（`entry_no` = 该来源已有条目数 + 1，见 `backlog list`）；park 时该文件存在才会挂上详情链接。
+- 需要长说明（Context / Reactivation Criteria）时：先 park（输出锚点，如 `F-01#2`），再按 [templates/backlog-template.md](templates/backlog-template.md) 写 `docs/devdocs/backlog/<锚点 # 换成 ->.md`（如 `F-01-2.md`），然后执行 `.keel/bin/keel render`，`backlog.md` 即挂上详情链接。
 - `backlog.md` 在首条入池后由工具生成。
 
 ### 编排入口
