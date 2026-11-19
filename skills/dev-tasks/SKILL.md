@@ -92,7 +92,7 @@ metadata:
 
 ## 输出文件
 
-**主文件**：`docs/devdocs/04-dev-tasks.md`
+**主文件**：`docs/devdocs/04-dev-tasks.md`。其「任务状态」节是 keel 生成区，汇总全部分册的任务，分册不设生成区。本 skill 只写任务定义，状态字段不进定义块（见 [§ 任务台账协议](../shared/constraints.md)）。
 
 ### 文档拆分规则
 
@@ -170,7 +170,7 @@ docs/devdocs/
 ### 阶段边界约束（最高优先级）
 - [ ] **⛔ 禁止继续：文档阶段不得产出实现代码（源代码、脚本、配置变更）**（恢复方式：使用 /dev-workflow 执行编码）
 - [ ] 产出文档遵守 [`gate/marker-scope`](../shared/constraints.md)：正文不用门控标记与装饰性 emoji，禁令直接写成文字（如「不得…」）；本文件写给 agent 的指令原句不抄进产出文档
-- [ ] Bash 工具仅用于只读操作（如查看目录结构），不得执行代码修改
+- [ ] Bash 工具仅用于只读操作（如查看目录结构）与 `.keel/bin/keel` 命令，不得执行代码修改
 - [ ] **⛔ 禁止继续：生成/更新文档未在顶部写入 `generated_by / spec_version / generated_at` 三字段 YAML frontmatter**（恢复方式：按 [templates/task-template.md](templates/task-template.md) 顶部示例补齐；spec_version 常量见 [references/realign.md](references/realign.md)）
 
 ### 基础约束
@@ -180,7 +180,8 @@ docs/devdocs/
 - [ ] **文件路径必须具体，不能写"相关文件"**
 - [ ] **必须提供依赖关系图**
 - [ ] 优先级：P0（阻塞）、P1（重要）、P2（次要）
-- [ ] 任务编号格式：`T-XX`（顺序编号）；取当前最大值按 [`id/scan-word-boundary`](../shared/constraints.md)——⛔ 裸 `grep -o 'T-[0-9]+'` 会把 `UT-001` 里的 `T-001` 当成任务编号
+- [ ] 任务编号由工具分配，形如 `T-1`（不补零；存量的补零编号如 `T-01` 仍有效）：每张新任务先执行 `.keel/bin/keel task add --title "<标题>" --source dev-tasks [--depends <编号,…>] [--profile <档>] [--milestone M-XXX] [--layer <层>]`，用它输出的编号写定义块。依赖与 review_profile 只存在状态里（生成区显示），定义块属性表不写。⛔ 不自行扫描最大编号
+- [ ] 首次生成：项目没有 `docs/devdocs/state/`、也没有 `tasks.v2` / `backlog.v2` 文档时（新项目），先按模板写出带生成区标记的 `04-dev-tasks.md`，再执行一次 `.keel/bin/keel init`，然后才 `task add`；init 后同样询问是否安装 git pre-commit hook（命令见 [realign 迁移步骤 4](../pipeline/references/realign.md)）；有 v2 文档时 ⛔ 不 init，改走 `/pipeline realign`（`.keel/bin/keel migrate`）。工具未就绪或被拦见 [§ keel 工具](../shared/constraints.md#keel-工具)
 - [ ] 后批次任务详细程度不低于首批次（TAR 完整性、路径具体性、粒度一致性）
 
 ### 需求追溯约束
@@ -219,7 +220,7 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 - [ ] **测试断言必须引用 AC，禁止从实现代码反推测试**
 - [ ] **任务文档必须按层级分组输出**（基础设施→核心逻辑→接口层→UI 层）
 - [ ] **每个任务的属性表必须包含 `TDD 模式` 行**
-- [ ] **每个任务的属性表必须包含 `review_profile` 行**（`fast` | `guarded` | `audit`，按上述风险分类器提议）
+- [ ] **每个任务必须带 `review_profile`**（`fast` | `guarded` | `audit`，按上述风险分类器提议），经 `task add --profile` 写入状态
 
 ### 执行约束
 
@@ -239,10 +240,10 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 
 ### 增量操作
 
-- **新增任务**：追加到任务列表末尾，重新编号
+- **新增任务**：先 `.keel/bin/keel task add` 拿编号，再把定义块追加到任务列表末尾；已有编号不重排
 - **插入任务**：高优先级任务插入合适位置
-- **更新依赖**：调整受影响任务的依赖关系
-- **更新状态**：标记任务完成/进行中
+- **更新依赖**：`.keel/bin/keel task set <id> --depends <编号,…>`，同时更新依赖关系图
+- **状态**：本 skill 不写；由 `/dev-workflow`、`/sync` 经 keel 命令推进
 - **回填 design_ref**：当 design_context 新增/更新后，由编排器触发扫描已有 🟢 UI 任务，按 D-XX 匹配补标 design_ref 和组件库映射
 
 ### design_ref 回填规则
@@ -260,7 +261,7 @@ TAR 原则详述和具体性检查标准详见 [references/tar-rubric.md](refere
 用户确认任务文档后：
 1. 询问用户是否开始开发
 2. 如是，使用 TodoWrite 添加所有任务到追踪列表
-3. 建议从第一个任务开始，或使用批量模式：`/dev-workflow T-01~T-XX`
+3. 建议从第一个任务开始，或使用批量模式：`/dev-workflow T-1~T-XX`
 4. **执行任务时必须使用 `/dev-workflow`**
 5. 支持按功能点（`F-XXX`）或用户故事（`US-XXX`）批量执行
 
@@ -283,7 +284,7 @@ summary:
   headline: "任务拆分完成，10 个任务（4🔴 3🟡 2🟢 1⚪）"
   details:
     tasks_created: X
-    task_range: "T-01~T-10"
+    task_range: "T-1~T-10"
     layers:
       core: X      # 🔴
       api: X       # 🟡
@@ -293,7 +294,7 @@ blockers: []
 output_files:
   - docs/devdocs/04-dev-tasks.md
 new_ids:
-  tasks: [T-01~T-10]
+  tasks: [T-1~T-10]
 next_recommended:
   skill: verify
   args: "--readiness"

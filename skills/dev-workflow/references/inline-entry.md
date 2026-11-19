@@ -16,7 +16,7 @@
 ## 编号分配
 
 - **AC**:扫描 `01-requirements.md` **全文件**(含 Inline stubs 区)最大 AC 号续编;文件不存在从 AC-001 起。01 是 AC 唯一编号源。
-- **T**:按 `04-dev-tasks.md` 现行规则续编;文件不存在从 T-01 起。
+- **T**:由工具分配:`.keel/bin/keel task add --title "<任务名称>" --source inline --profile guarded`(档位下限见下方),用输出的编号写任务条目;⛔ 不自行扫描最大编号。`04-dev-tasks.md` 不存在时先按 [dev-tasks § 基础约束「首次生成」](../../dev-tasks/SKILL.md#基础约束) 建骨架（骨架用下方 stub 模板）并 `.keel/bin/keel init`。工具未就绪或被拦见 [constraints.md § keel 工具](../../shared/constraints.md#keel-工具)。
 - **F/US**:不要求提供;关联需求列写 `—(inline)`,回填时补。
 
 ## stub 模板
@@ -56,6 +56,11 @@ generated_at: <日期>
 ---
 # 开发任务
 
+## 任务状态
+
+<!-- keel:begin ledger -->
+<!-- keel:end ledger -->
+
 ## 任务列表
 
 ### <N>. <按实际层级分组,如"核心逻辑 🔴">
@@ -65,11 +70,8 @@ generated_at: <日期>
 | 属性 | 内容 |
 |------|------|
 | **描述** | <内联任务定义原文> |
-| **状态** | 待开发 |
-| **依赖** | 无 |
 | **优先级** | P1 |
 | **层级** | <按实际任务类别填 🔴/🟡/🟢/⚪(分类输入,如实填写)> |
-| **review_profile** | guarded(inline 强制下限,禁 fast;命中 audit 信号升 audit) |
 | **TDD 模式** | <随实际层级填写> |
 | **关联需求** | —(inline), AC-XX |
 | **涉及文件** | <入口 skill 探索代码后填写> |
@@ -81,7 +83,7 @@ generated_at: <日期>
 **Review 要点**:由 Test Agent 按 AC + 代码上下文生成
 ```
 
-> **层级 ≠ 风险旋钮**:层级是分类输入,UI 任务就填 🟢、基础设施就填 ⚪,如实分类;安全阀只有一个——`review_profile` 不得低于 guarded(inline 缺上游信息属现行"不确定场景"),audit 信号照常升档。guarded/audit 的 test-first 约束不变。
+> **层级 ≠ 风险旋钮**:层级是分类输入,UI 任务就填 🟢、基础设施就填 ⚪,如实分类;安全阀只有一个——`review_profile`(经 `task add --profile` 写入状态)不得低于 guarded(inline 缺上游信息属现行"不确定场景"),audit 信号照常升档(`task set <id> --profile audit`)。guarded/audit 的 test-first 约束不变。
 
 ## 回填协议(仅手动;预检-写入-恢复)
 

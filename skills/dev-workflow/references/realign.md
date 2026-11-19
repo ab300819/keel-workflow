@@ -48,8 +48,8 @@
 | 分级 | 变更项 | 修复动作 | 判据 |
 |---|---|---|---|
 | restructuring | commit 模板由「标题 + 完成内容 + 关联/测试 + 7 个 trailer」改为「标题 + Why + Tests」| 存量 commit ⛔ 不改写（历史不可变）；新 commit 走新模板 | — |
-| restructuring | 7 个流程 trailer 迁到 `04-dev-tasks.md` 任务条目 | 存量 `review_pending` 任务：从其 Commit 1 尾注读出 `Review-Batch-Id`/`Review-Due`/`Pending-Reason` 回填台账后再 drain | 任务标 `review_pending` 但台账无 `batch` |
-| restructuring | drain 定位 Commit 1 由「grep git log 找 trailer」改为「读台账 `commits`」| 同上，回填 `commits` 字段 | 台账无 `commits` 且任务已提交 |
+| restructuring | 7 个流程 trailer 迁到任务台账 | 存量 `review_pending` 任务：从其 Commit 1 尾注读出 `Review-Batch-Id`/`Review-Due`/`Pending-Reason`，经 `.keel/bin/keel task set <id> --batch … --due … --pending-reason …` 回填后再 drain | 任务标 `review_pending` 但台账无 `batch` |
+| restructuring | drain 定位 Commit 1 由「grep git log 找 trailer」改为「读台账 `commits`」| 同上，经 `.keel/bin/keel task commit <id> <repository>@<sha> --note "…"` 回填 | 台账无 `commits` 且任务已提交 |
 
 ### v2 → v3（反向依赖）
 

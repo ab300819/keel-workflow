@@ -44,6 +44,14 @@ opencode plugin add github:ab300819/keel-workflow
 
 > 本文其余部分一律用**裸名**书写（三端通用）。Claude Code / Codex 上想显式标归属时加 `keel:` 前缀。
 >
+### 运行时要求与升级（3.0.0 起）
+
+- 需要 `python3 ≥ 3.9` 与 `bash`；原生 Windows 不支持。已知漏口清单见 [hooks/README.md § 已知漏口](hooks/README.md#已知漏口)。
+- 任务台账与 backlog 的状态由 `.keel/bin/keel` 命令独占写入（SessionStart 自动生成垫片），不再手改状态文件。`keel gate report` 汇总门禁命中次数与涉及文件，用于校准档位并反馈给本仓。
+- **Codex**：每次升级插件后须在 `/hooks` 重新信任，否则插件 hook 不生效。
+- **存量项目升级**：先在干净工作树运行 `/pipeline realign`，它调度 `keel migrate --dry-run` 出报告，确认后 `--apply`；回滚办法见 `.keel/migration-report.md`。未迁移前写状态的命令一律拒绝，只读命令照常。
+- 人工专属命令（如 `state accept`）模型无法执行，由你另开一个终端，在项目根目录运行 `.keel/bin/keel state accept`（Claude Code 的 `!` 命令没有控制终端，不可用）。
+
 > ⚠️ `hooks/` 只在插件安装路径下生效；OpenCode 由插件包入口 `hooks/opencode-plugin.js` 接入（v2 插件 API，见 [hooks/README.md](hooks/README.md)）。
 
 ---

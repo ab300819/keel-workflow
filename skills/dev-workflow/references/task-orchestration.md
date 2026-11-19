@@ -26,7 +26,7 @@
 ### 解析流程
 
 ```
-1. 读取 docs/devdocs/04-dev-tasks*.md
+1. 读取 docs/devdocs/04-dev-tasks*.md（任务定义）与生成区或 `.keel/bin/keel task list`（状态）
 2. 识别指定符类型
    ├── T-XX          → 直接使用
    ├── T-XX~T-YY     → 展开范围内所有任务 ID
@@ -91,7 +91,7 @@ M1 的任务依赖 M2 的任务时，M1 的闭包会把 M2 的任务提前捞走
 输入：目标任务 ID 列表
 输出：按依赖顺序排列的执行队列
 
-1. 从目标任务列表出发，递归收集所有 依赖 字段引用的任务
+1. 从目标任务列表出发，递归收集所有 依赖 引用的任务（依赖与状态读生成区或 `.keel/bin/keel task list --fields id,status,depends_on`）
 2. 对每个依赖任务：
    ├── 状态=已完成 → 跳过，不加入执行队列
    ├── 状态=进行中 → 标记为警告
@@ -106,7 +106,7 @@ M1 的任务依赖 M2 的任务时，M1 的闭包会把 M2 的任务提前捞走
 | 情况 | 处理 |
 |------|------|
 | 循环依赖 | 报错，列出循环路径（如 T-03 → T-05 → T-03），终止 |
-| 依赖任务不存在 | 报错，列出缺失任务 ID，终止 |
+| 依赖任务不存在 | 报错，列出缺失任务 ID，终止（写入时 K5 已拒绝不存在的依赖，读到即说明状态被绕开改过） |
 | 依赖任务"进行中" | 交互模式：AskUserQuestion："任务 T-XX 状态为进行中，选择：先完成该依赖 / 跳过 / 终止"；`--headless` 模式：fail-fast，报告阻塞链 |
 | 依赖任务"已完成" | 跳过，不加入执行队列 |
 
@@ -127,10 +127,10 @@ M1 的任务依赖 M2 的任务时，M1 的闭包会把 M2 的任务提前捞走
 - 下游**仅允许低风险叶子任务(fast)**继续;
 - 下游一旦触及公共 API / schema / 迁移 / 权限 / 安全 / 跨模块契约 → **进入前强制先 `/verify --review-drain`**;
 - 硬阈值:`pending 数 ≤ 3 视为可接受;> 3(≥4)/ 依赖深度 > 1 / sprint 关闭前必须 = 0`;
-- 超数量 / 依赖深度 / 台账 `due` 超期 → **强制 drain**(不静默升 audit)。台账 `due` 超期判定:有 sprint→sprint close 时;无 sprint→`当前日期 > due` 或 `pending 数 > 3` 任一。
+- 超数量 / 依赖深度 / `due` 超期 → **强制 drain**(不静默升 audit)。台账 `due` 超期判定:有 sprint→sprint close 时;无 sprint→`当前日期 > due` 或 `pending 数 > 3` 任一。
 
 ### 执行期 review_profile 复核(只升不降)
-dev-workflow 执行某任务前,按实际改动廉价复核风险信号(反向依赖计数 ≥ 5 / 实际 diff > 150 行 / 触及 > 5 文件 / 命中 audit 信号),据此**可升档**(fast→guarded→audit);**降档须显式 `--review-profile` 并写台账 `profile_downgrade_reason`**(由 Step 1.5 复核与 batch 报告消费,不得无人复核)。风险信号清单 SSOT 见 /dev-tasks。
+dev-workflow 执行某任务前,按实际改动廉价复核风险信号(反向依赖计数 ≥ 5 / 实际 diff > 150 行 / 触及 > 5 文件 / 命中 audit 信号),据此**可升档**(fast→guarded→audit);**降档须显式 `--review-profile` 并经 keel 登记 `profile_downgrade_reason`**（命令见 [SKILL.md § 任务台账](../SKILL.md#任务台账流程状态的唯一载体)）(由 Step 1.5 复核与 batch 报告消费,不得无人复核)。风险信号清单 SSOT 见 /dev-tasks。
 
 ## 3. 断点续做状态机
 
@@ -152,7 +152,7 @@ Step 0: 读 01-requirements.md §2.5 里程碑表的「验收状态」列
 
 ```
 Step 1: 文档状态检测
-        ├── 读取 04-dev-tasks*.md 中该任务的 状态 字段
+        ├── 读该任务的状态（生成区或 `.keel/bin/keel task get <id>`）
         ├── 已完成 → Step 1.5（验证证据复核）
         └── 进行中 / 待开发 → Step 2
 
@@ -162,18 +162,18 @@ Step 1.5: 证据复核（存在完成痕迹的任务均进入此步：Step 1 判
         ├── [C] trace 矩阵作为索引按需维护——缺失不阻塞放行,记 trace_pending 供后续 /sync 增量补齐(不再是提交前阻塞门)
         ├── [D1] 对抗式验证 Phase 1~3 证据：**audit 任务**须有 Phase 1~3 综合报告；缺失 → `INT_UNRESOLVED`。fast/guarded 的延后内审由 [F] review_pending + drain 覆盖，不在 [D1] 判定。
         ├── [D2] Phase 4 外部对抗审查证据：**audit 任务**必须 `ext_review_state=EXT_REVIEWED` 且 L2 yaml（`audit/<T-XX>-external-review.yaml`）可读；L2 缺失或不可读 → `EXT_UNRESOLVED`（L1 台账字段由 L2 派生无需独立校验；L3 原始输出为可选调试 artifact，不参与门禁）；fast/guarded 不在 [D2] 判定（其延后外审经 [F] review_pending + drain 闭合）。
-        ├── [E] 后置测试证据（任一即可）：单任务为 `/test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/test-run --trace` 执行记录；若台账有 `skip_trace_reason` 且补跑未完成 → `postcheck_pending`
-        ├── [F] review_pending 检测:台账 `pending_reason: deferred-*` 且无对应 drain verdict → 任务仍是 `review_pending`,不得跳过
+        ├── [E] 后置测试证据（任一即可）：单任务为 `/test-run --affected` 执行记录（affected 无匹配时回退 `--trace`）；批量为批次级 `/test-run --trace` 执行记录；若任务状态有 `skip_trace_reason` 且补跑未完成 → `postcheck_pending`
+        ├── [F] review_pending 检测:任务状态 `pending_reason: deferred-*` 且无对应 drain verdict → 任务仍是 `review_pending`,不得跳过
         ├── A~F 全部可复核(含 [F] 无未清 review_pending)（[D1] `INT_REVIEWED` ∧ [D2] `EXT_REVIEWED` 或均未触发）→ 跳过该任务
         └── 任一不可复核 → 进入"复核续做"（续做信号表对应 pending/state 之一）
             └── 旧任务迁移（前版本完成，A/D1/D2/E 产物不存在）→ AskUserQuestion：复核续做 / 豁免（登记原因） / 终止
 
 Step 2: 提交检测（任务状态非"已完成"时的兜底）
-        ├── 读任务台账 `commits` 字段（代码仓的 commit 标题不带 T-XX，⛔ 不靠 grep 提交信息找任务）
-        ├── 台账已有 `commits`（Commit 2 已落）→ ⚠️ 不直接跳过，进入 Step 1.5 证据复核路径
-        ├── 台账无 `commits`，但 `git log -- <任务卡列出的文件>` 有晚于任务卡创建的提交
+        ├── 读任务状态的 `commits`（`.keel/bin/keel task get <id>`；代码仓的 commit 标题不带 T-XX，⛔ 不靠 grep 提交信息找任务）
+        ├── 已有 `commits`（Commit 1 已登记）→ ⚠️ 不直接跳过，进入 Step 1.5 证据复核路径
+        ├── 无 `commits`，但 `git log -- <任务卡列出的文件>` 有晚于任务卡创建的提交
         │     → ⚠️ 必须确认该提交属于本任务；确认后**先走 Step 1.5 证据复核**（提交归属 ≠ 已过门控），
-        │       复核通过才标 docs_only_pending 补文档同步（/sync + Commit 2 回填 `commits`），不通过按复核续做
+        │       复核通过才标 docs_only_pending 补文档同步（`.keel/bin/keel task commit` 补登 + /sync + Commit 2），不通过按复核续做
         │     （`shell` 拓扑另可用外壳仓 `git log --grep="T-XX"`，见 protocol.md §6.3）
         └── 无提交 → Step 3
 
@@ -294,8 +294,8 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 │  6.5 独立审查分支(按 review_profile):                       │
 │     ├── audit → Phase 1~3 + Phase 4 inline fail-fast,审过才提交 │
 │     └── fast/guarded → 跳过 inline 独立审查(延后)             │
-│  6.9 Commit 1(纯代码)+ 台账记 batch/due/pending_reason(fast/guarded)      │
-│  7. 更新 04-dev-tasks*.md 状态:audit→已完成;fast/guarded→review_pending│
+│  6.9 Commit 1(纯代码)+ .keel/bin/keel task commit 登记提交      │
+│  7. .keel/bin/keel task set 状态:audit→已完成;fast/guarded→review_pending + batch/due/pending_reason│
 │  8. /sync                                │
 │  9. Commit 2: 文档提交（任务状态+追踪）         │
 │     └── git add [文档文件] && git commit        │
@@ -331,7 +331,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 │  ├── 批量模式：/test-run --trace（全量+追溯） │
 │  ├── 单任务模式：/test-run --affected         │
 │  │    └── affected 无匹配 → 回退 /test-run --trace │
-│  └── --skip-trace="<原因>" → 跳过并登记台账      │
+│  └── --skip-trace="<原因>" → 跳过并经 keel 登记   │
 │  结果处理：                                      │
 │  ├── 全部通过 → 记录到执行报告                   │
 │  └── 有失败 →                                    │
@@ -402,7 +402,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 
 | 情况 | 做法 |
 |---|---|
-| 挂得上已有 `F`/`AC` | 直接 park 到该编号。⛔ 不起子代理——主线本来就有这个上下文，摸查是浪费 |
+| 挂得上已有 `F`/`AC` | 直接 park 到该编号（`.keel/bin/keel backlog park <编号> --note "<一句话>" --by dev-workflow`）。⛔ 不起子代理——主线本来就有这个上下文，摸查是浪费 |
 | 挂不上的新需求 | 起**一个**子代理去摸查，结果写入 backlog（`source_id` = 当前 `M-XXX`）|
 
 **子代理摸查的深度（第一档，只记上下文）**：
@@ -412,7 +412,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 
 **时机**：**说出即处理**，⛔ 不攒到段末统一做。攒起来会让「说出到段末」之间的上下文悬空，中断即丢——而不打断、不丢失正是这套机制的目的。子代理后台跑，主线继续执行任务。
 
-**落点**：backlog `## Entries` 每条本就是自由文本块，摸查结果写正文（模板的 Context 段）。`source_id` = `M-XXX` 的条目同源第二条**默认追加不再询问**（见 backlog 门控例外）。
+**落点**：先 `.keel/bin/keel backlog park <M-XXX> --note "<一句话>" --by dev-workflow` 拿锚点，摸查结果写进该条的详情文件（做法见 [backlog SKILL.md](../../backlog/SKILL.md)）。`source_id` = `M-XXX` 的条目同源第二条**默认追加不再询问**（加 `--append`，见 backlog 门控例外）。
 
 段内（不只段末）用户随口提到新需求时，走同一条路径。
 
@@ -424,7 +424,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 每完成 N 个任务后（N=3，可调整）：
     │
     ├── 输出当前批次进度摘要（已完成/失败/剩余）
-    ├── 重新加载 04-dev-tasks.md 获取最新状态（覆盖内存中的旧状态）
+    ├── 重新读生成区或 `.keel/bin/keel task list` 获取最新状态（覆盖内存中的旧状态）
     ├── 清理已完成任务的详细日志（仅保留 commit hash + 状态）
     └── 继续执行下一批次
 ```
@@ -458,7 +458,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 - **依赖扩展后 >1 任务时，自动升级为批量编排**（逐任务子 Agent + 拓扑排序）
 - 仅 1 任务时，同样使用双 Agent 模型（Test Agent → 红色验证 → Impl Agent），复用下方子 Agent 协议
 - 断点检测由编排器执行，根据续做信号表判定从哪个 Agent 的哪个步骤续做
-- **完成后必须调用 `/test-run --affected`** 做受影响测试校验（见上方"后置测试校验"块）；affected 无匹配时回退 `/test-run --trace`；显式关闭须 `--skip-trace="<原因>"` 并登记台账 `skip_trace_reason`
+- **完成后必须调用 `/test-run --affected`** 做受影响测试校验（见上方"后置测试校验"块）；affected 无匹配时回退 `/test-run --trace`；显式关闭须 `--skip-trace="<原因>"` 并经 keel 登记 `skip_trace_reason`
 
 ### 批量模式中断处理
 

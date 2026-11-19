@@ -53,12 +53,12 @@
 │                    ▼                                │
 │  3. 逐任务循环                                      │
 │     ┌──────────────────────────────────────┐       │
-│     │  a. 断点检测（编排器轻量执行）        │       │
+│     │  a. 断点检测 + 认领（status 进行中）  │       │
 │     │  b. Test Agent（Task）：骨架+测试    │       │
 │     │  c. 红色验证（编排器确认测试全失败） │       │
 │     │  d. Impl Agent（Task）：实现+重构    │       │
 │     │  e. 完成检查+对抗验证+Commit 1       │       │
-│     │  f. 更新任务状态 + /sync     │       │
+│     │  f. keel 写状态/commits + /sync      │       │
 │     │  g. Commit 2: 文档+追踪提交          │       │
 │     │  h. 写检查点文件                     │       │
 │     └──────────────────────────────────────┘       │
@@ -68,7 +68,7 @@
 │     ├── 批量模式：/test-run --trace（全量+追溯）  │
 │     ├── 单任务模式：/test-run --affected         │
 │     │    └── --affected 无匹配 → 回退 /test-run --trace │
-│     └── --skip-trace="<原因>" → 跳过并登记台账      │
+│     └── --skip-trace="<原因>" → 跳过并经 keel 登记   │
 │                    │                                │
 │                    ▼                                │
 │  5. 批量执行报告                                    │
@@ -144,7 +144,7 @@
 - 红验基线比较的完整判定见 [task-orchestration.md](task-orchestration.md)。
 - 信息屏障（Impl Agent 不可读 `03-test-*.md`、不可改测试文件）见 [SKILL.md](../SKILL.md) 约束节。
 
-> **跳过记录**：□ 或 ○ 步骤被跳过时，在该任务的台账条目记录 `跳过: 步骤X（原因）`（⛔ 不写进提交信息）。
+> **跳过记录**：□ 或 ○ 步骤被跳过时，把 `跳过: 步骤X（原因）` 写进 `audit/<T-XX>/`，经 keel 挂 `record` 链接（命令见 [SKILL.md § 任务台账](../SKILL.md#任务台账流程状态的唯一载体)；⛔ 不写进提交信息）。
 
 ## 任务完成流程
 
@@ -186,13 +186,10 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
      - 选项："提交" / "继续修改" / "跳过"
 9. **如提交**（原子提交）：
    - Commit 1: `git add [代码文件] && git commit`，信息按下方「提交信息格式」（⛔ 标题不带 keel 编号）
-   - **audit**：提交后更新 04-dev-tasks*.md 状态为 `已完成`
-   - **fast/guarded**：提交后更新 04-dev-tasks*.md 状态为 `review_pending`（独立审查延后），并在该任务的台账条目写入：
-     ```
-     batch: <batch-id>
-     due: <YYYY-MM-DD>
-     pending_reason: deferred-fast | deferred-guarded
-     ```
+   - 用 `.keel/bin/keel task commit …` 登记 Commit 1 的提交
+   - **audit**：状态改为 `已完成`
+   - **fast/guarded**：状态改为 `review_pending`（独立审查延后），同时用 `.keel/bin/keel task set … --batch … --due … --pending-reason …` 写入
+   - 以上命令见 [SKILL.md § 任务台账](../SKILL.md#任务台账流程状态的唯一载体)
    - 运行 /sync
    - Commit 2: `git add [文档文件] && git commit -m "docs: 更新任务状态并同步 trace"`（`shell` 拓扑的外壳仓 commit 按 [protocol.md §6.3](../../workspace-topology/references/protocol.md) 带 T-XX，其余不带）
 10. **更新 TodoWrite**：将任务标记为已完成（audit）或 review_pending（fast/guarded）
@@ -208,7 +205,7 @@ Why: <只写代码和 diff 表达不了的决策、约束、取舍>
 Tests: <实际执行过的精确命令>
 ```
 
-流程状态（`batch` / `due` / `pending_reason` / `ext_review_state` / `skip_trace_reason` / `exploration_mode` / `profile_downgrade_reason`）写 `04-dev-tasks.md` 的任务条目，⛔ 不写 commit 尾注。
+流程状态（`batch` / `due` / `pending_reason` / `ext_review_state` / `skip_trace_reason` / `exploration_mode` / `profile_downgrade_reason`）经 keel 命令写入任务状态（见 [SKILL.md § 任务台账](../SKILL.md#任务台账流程状态的唯一载体)），⛔ 不写 commit 尾注。
 
 **type 类型**：以 `/commit-convention` 为权威。
 

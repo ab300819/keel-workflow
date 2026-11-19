@@ -7,7 +7,7 @@ related:
   - skills/prd/references/governance/prd-revision-policy.md（PRD 修订边界）
   - skills/workspace-topology/（工作区拓扑：入口、协议正文、迁移手册）
 generated_at: 2026-05-18
-spec_version: shared-constraints.v14
+spec_version: shared-constraints.v15
 ---
 
 # 共享约束 SSOT
@@ -485,7 +485,7 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 > **为什么进本文而 `skip/numbering-unique` 仍成立**：那条跳过的是**续编策略**（各对象的来源与 SSOT 不同，确实不能统一）；本条是**扫描方法的机械陷阱**，对每种编号类型完全一致，且语言与领域中立。两者不冲突。
 >
-> 消费方：`requirements`（编号续编，含 `M-XXX`）/ `dev-tasks` / `bugfix` / `test-cases`（编号续编）+ `agent-memory` devdocs-state 模板（推导命令）+ `health-lint` `id-reference-check` / `state/max-id-stale`（上界推导）。
+> 消费方：`requirements`（编号续编，含 `M-XXX`）/ `bugfix` / `test-cases`（编号续编；`T` 编号由 `.keel/bin/keel task add` 分配，不再扫描）+ `agent-memory` devdocs-state 模板（推导命令）+ `health-lint` `id-reference-check` / `state/max-id-stale`（上界推导）。
 
 ## 差异点与跳过项
 
@@ -526,7 +526,7 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 ### review_pending(任务状态)
 - 含义:fast/guarded 任务代码已提交(Commit 1 已落盘),但延后的独立审查尚未做,**状态 ≠ 已完成**。
 - 与 `INT_UNRESOLVED`/`EXT_UNRESOLVED`/`postcheck_pending` 独立:后者是"审过但未通过 / 未放行阻塞态",`review_pending` 是"尚未审,已提交待集中审"。
-- 任务台账字段(`04-dev-tasks.md` 条目):`batch: <id>` / `due: <sprint:ID | YYYY-MM-DD>`(默认落盘日+3 工作会话) / `pending_reason: deferred-fast | deferred-guarded`。⛔ 不写 commit 尾注——主体是任务不是 commit。
+- 写入:`.keel/bin/keel task set <id> --status review_pending --batch <id> --due <sprint:ID | YYYY-MM-DD> --pending-reason deferred-fast|deferred-guarded`;`due` 默认落盘日+3 工作会话,条件必填由 K5 保证。⛔ 不写 commit 尾注——主体是任务不是 commit。
 - 清算入口:`/verify --review-drain`(批/sprint 边界集中跑延后审查);无 Blocker 才转 `已完成`,其余情形见 [drain 失败矩阵](../dev-workflow/references/verification-flow.md)。
 
 ### 独立审查状态机枚举（canonical 值域；跨 skill 协议）
@@ -545,11 +545,13 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 ⛔ **流程状态不写 commit 尾注。** commit 只承载「一个不知道 keel 存在的维护者能读懂并用上」的信息；批次 ID、降档理由、豁免登记对他是纯噪音，且这些字段的语义主体是**任务**不是 commit。
 
-| 字段 | 适用 | 语义 |
+状态与下列字段存于 `docs/devdocs/state/tasks/`，只经 `.keel/bin/keel task …` 写入（见 [§ keel 工具](#keel-工具)）。字段与取值见 `.keel/bin/keel schema task`，取值、条件必填与长度由 K5 保证，被拦时按提示处理。下表只写工具不判定的部分：何时写、什么意思。
+
+| 字段 | 何时写 | 语义 |
 |---------|------|------|
-| `commits` | Commit 1 落盘后由 Commit 2 写入 | `<repository>@<full-sha>` + 一句话描述，可多条，与追溯矩阵「变更来源」同形状；考古索引，⛔ 不作门控依据 |
-| `batch` / `due` / `pending_reason` | fast/guarded 延后必填 | 见上方 review_pending |
-| `ext_review_state` | audit Phase 4 必填 | 由 L2 yaml 派生 |
+| `commits` | Commit 1 落盘后由 Commit 2 写入：`task commit <id> <repository>@<full-sha> --note "<一句话>"`，可多条 | 与追溯矩阵「变更来源」同形状；考古索引，⛔ 不作门控依据 |
+| `batch` / `due` / `pending_reason` | fast/guarded 延后时，随 `--status review_pending` 一起写 | 见上方 review_pending |
+| `ext_review_state` | audit Phase 4 | 由 L2 yaml 派生 |
 | `skip_trace_reason` | 单任务 `--skip-trace` | 跳过后置 trace 校验的原因 |
 | `exploration_mode` | 探索模式 | `true` + 证据/豁免原因登记 |
 | `profile_downgrade_reason` | 带理由降档时 | 降档理由（升档不需要） |
@@ -557,3 +559,20 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 > `commits` 失效时的处理见 [dev-workflow SKILL.md §任务台账](../dev-workflow/SKILL.md)；消费方：`/verify --review-drain`（按 `batch`/`due` 清算）、断点续做 Step 1.5 证据复核。
 >
 > ⛔ **门控状态绑任务编号，考古索引绑 commit。** squash / rebase 改 hash 时 `commits` 失效（回到代码事实重建），门控不受影响。
+
+## keel 工具
+
+`[新增]` 任务台账与 backlog 的状态由插件自带的命令行工具读写，规则由它当场执行。本节是调用方式、退出码与人工步骤的唯一出处；各 skill 只写自己用到的命令，并链接到这里。
+
+- `keel/shim`：一律调用项目根下的垫片 `.keel/bin/keel`（会话启动时由 hook 写入）。字段与取值看 `.keel/bin/keel schema task|backlog`，用法看 `--help`。
+- `keel/shim-missing`：`.keel/bin/keel` 不存在，或它报「keel 工具未就绪：缺 …」（退出码 4）→ 告诉用户 keel 工具未就绪及缺什么（可能原因：会话启动 hook 未运行、Codex 未在 `/hooks` 信任插件、缺 python3、插件已升级或卸载），⛔ 不手写状态文件。
+- `keel/exit-codes`：`0` 成功；`1` 被门拦下或校验失败；`2` 用法错误；`3` 无法继续（未迁移、未初始化、完整性对不上、拿不到锁、内部错误）；`4` 垫片自检失败，见 `keel/shim-missing`。非 0 时按提示处理：提示只说哪里违反、怎么改。未迁移（`tasks.v2` / `backlog.v2`）先跑 `/pipeline realign`；未初始化先执行 `.keel/bin/keel init`。⛔ 不绕开工具直接改文件。
+- `keel/gates`：
+  - K1：`docs/devdocs/state/` 只经工具写。
+  - K2：`04-dev-tasks.md` 的生成区（`<!-- keel:begin ledger -->` 与 `<!-- keel:end ledger -->` 之间）和 `backlog.md` 整份由工具生成，⛔ 不手工编辑。
+  - K3 / K4：状态载体文件（`04-dev-tasks*.md`、`backlog.md`、`00-context.md`、`.claude/rules/devdocs-state.md`）里新增或改动的超长行、超体积后继续变大，都会被拦。长文本写到 `audit/T-xxx/` 或 `backlog/<id>.md`，状态里只存链接。
+  - K5：字段取值、条件必填、文本上限、依赖编号由工具校验，不可调。
+- `keel/read`：读状态用 `04-dev-tasks.md` 生成区，或 `.keel/bin/keel task get <id>` / `task list [--status …] [--fields …]` / `backlog get <锚点>` / `backlog list [--status …]`。`list` 末尾附覆盖情况，有无法识别的条目时如实报告，⛔ 不静默漏计。
+- `keel/human-only`：以下命令只能由用户执行，⛔ 模型不自行调用（hook 也会拒绝）。遇到时把命令原样交给用户，并说明：这一步只能由人在交互终端执行，另开一个终端，在项目根目录运行（Claude Code 的 `!` 命令没有控制终端，不可用）：
+  - 手工解决状态文件的合并冲突，或用户确认工具报出的非工具改动合法：`.keel/bin/keel state accept`
+  - 调低门档位：`.keel/bin/keel gate set <门> <warn|off> --reason "<原因>"`（K5 不可调）
