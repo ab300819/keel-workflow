@@ -64,7 +64,9 @@ def check_k4(project: Project, relpath: str, size: int) -> list[Finding]:
 
 
 def level(project: Project, gate: str) -> str:
-    try:
+    try:  # 手改过的 gates.json 不可信（可伪造 off 来静音自己的违规），退回默认档
+        if os.path.exists(os.path.join(project.root, GATES_REL)) and GATES_REL in store.integrity_violations(project):
+            return DEFAULT_LEVELS[gate]
         with open(os.path.join(project.root, GATES_REL), encoding="utf-8") as f:
             lv = json.load(f)[gate]["level"]
         if lv in ("block", "warn", "off"):
@@ -77,9 +79,14 @@ def level(project: Project, gate: str) -> str:
 def log_hit(project: Project, gate: str, lv: str, result: str, client: str, tool: str, path: str, detail: str) -> None:
     project.check_links()
     os.makedirs(project.keel_dir, exist_ok=True)
+    path_ = os.path.join(project.root, LOG_REL)
     rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "gate": gate, "level": lv, "result": result,
            "client": client, "tool": tool, "path": path, "detail": detail}
-    with open(os.path.join(project.root, LOG_REL), "a", encoding="utf-8") as f:
+    try:  # O_NOFOLLOW：日志若是符号链接则拒绝，避免追加到项目外
+        fd = os.open(path_, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o644)
+    except OSError as e:
+        raise KeelError(f"打不开 {LOG_REL}：{e}", 3) from None
+    with os.fdopen(fd, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
@@ -121,6 +128,7 @@ def _expand(project: Project, glob: str) -> list[str]:
 def run_check(project: Project, staged: bool, paths: list[str] | None, client: str = "cli", tool: str = "check") -> int:
     scope: set[str] | None = None
     if staged:
+        # shortcut: 读工作区而非 index；暂存手改后把工作区还原即可绕过，真遇到再改读 `git show :path` / `ls-files -s`
         out = store._git(project.root, "diff", "--cached", "--name-only", "-z") or b""
         scope = {p for p in out.decode("utf-8", "replace").split("\0") if p}
     elif paths:
@@ -147,6 +155,13 @@ def gate_set(project: Project, gate: str, lv: str, reason: str) -> None:
         raise KeelError(f"{gate} 不可调：只能是 K1–K4（K5 不可调）", 2)
     if lv not in ("block", "warn", "off"):
         raise KeelError(f"档位 {lv!r} 不对：只能是 block|warn|off", 2)
+    project.require_writable()
+    old = level(project, gate)
+    rank = {"off": 0, "warn": 1, "block": 2}
+    if rank[lv] < rank[old]:  # 放宽门禁须人确认，抬高或同档不用
+        cmd = f'.keel/bin/keel gate set {gate} {lv} --reason "{reason}"'
+        if read_tty(f"将把 {gate} 由 {old} 放宽为 {lv}，原因：{reason}\n确认请输入 accept：", cmd) != "accept":
+            raise KeelError("未输入 accept，档位未改动", 1)
     with write_session(project):
         try:
             with open(os.path.join(project.root, GATES_REL), encoding="utf-8") as f:
@@ -160,40 +175,56 @@ def gate_set(project: Project, gate: str, lv: str, reason: str) -> None:
 
 def report(project: Project, since: str | None) -> str:
     hits: dict[str, list[str]] = {}
+    recs: list[Any] = []
     try:
-        with open(os.path.join(project.root, LOG_REL), encoding="utf-8") as f:
-            recs = [json.loads(x) for x in f if x.strip()]
+        fd = os.open(os.path.join(project.root, LOG_REL), os.O_RDONLY | os.O_NOFOLLOW)
+        with os.fdopen(fd, encoding="utf-8", errors="replace") as f:
+            for x in f:
+                try:
+                    recs.append(json.loads(x))
+                except ValueError:
+                    pass  # 坏行跳过
     except FileNotFoundError:
-        recs = []
+        pass
+    except OSError as e:
+        raise KeelError(f"打不开 {LOG_REL}：{e}", 3) from None
     for r in recs:
-        if r["result"] in ("gate-set", "accept") or (since and r["ts"][:10] < since):
+        try:
+            if r["result"] in ("gate-set", "accept") or (since and r["ts"][:10] < since):
+                continue
+            hits.setdefault(r["gate"], []).append(r["path"])
+        except (KeyError, TypeError):
             continue
-        hits.setdefault(r["gate"], []).append(r["path"])
     lines = [f"{g} {len(ps)}  {' '.join(sorted(set(ps)))}" for g, ps in sorted(hits.items())]
     cnt = Counter(t["derived_from"] for t in tasks.load_all(project)[0].values() if t.get("derived_from"))
     return "\n".join(lines + ["每卡派生数"] + [f"{k} {n}" for k, n in cnt.most_common(10)])
 
 
-def read_tty(prompt: str) -> str:
+def read_tty(prompt: str, cmd: str = ".keel/bin/keel state accept") -> str:
     try:
         fd = os.open("/dev/tty", os.O_RDWR)
     except OSError:
-        raise KeelError("打不开 /dev/tty，只能由人在终端确认；请输入 `! .keel/bin/keel state accept`", 3) from None
-    with os.fdopen(fd, "r+") as t:
-        t.write(prompt)
-        t.flush()
+        raise KeelError(f"打不开 /dev/tty，只能由人在终端确认；请输入 `! {cmd}`", 3) from None
+    os.write(fd, prompt.encode())  # tty 不可 seek，不能用 "r+" 的 fdopen
+    with open(fd, encoding="utf-8", errors="replace") as t:
         return t.readline().strip()
+
+
+def _violations(project: Project) -> list[str]:
+    try:
+        return store.integrity_violations(project)
+    except KeelError as e:  # manifest 损坏时仍允许人工重建
+        return [str(e)]
 
 
 def accept(project: Project) -> None:
     project.require_writable()
-    try:
-        bad = store.integrity_violations(project)
-    except KeelError as e:  # manifest 损坏时仍允许人工重建
-        bad = [str(e)]
-    items = "\n".join("  " + b for b in bad) or "  （当前无违规项，将重建 manifest）"
-    if read_tty(f"将把以下状态接受为当前基线：\n{items}\n确认请输入 accept：") != "accept":
-        raise KeelError("未输入 accept，状态未改动", 1)
-    with project.lock():
+    with project.lock():  # 展示、确认、记录都在锁内；确认期间状态变了就作废
+        bad, snap = _violations(project), store._current_blobs(project)
+        items = "\n".join("  " + b for b in bad) or "  （当前无违规项，将重建 manifest）"
+        if read_tty(f"将把以下状态接受为当前基线：\n{items}\n确认请输入 accept：") != "accept":
+            raise KeelError("未输入 accept，状态未改动", 1)
+        if (_violations(project), store._current_blobs(project)) != (bad, snap):
+            raise KeelError("确认期间状态又变了，请重新执行", 1)
         project.save_manifest(store._current_blobs(project))
         log_hit(project, "state", "-", "accept", "cli", "state accept", store.STATE_REL, ";".join(bad))

@@ -1,5 +1,6 @@
 import json
 import os
+import pty
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,14 @@ class GatesTest(unittest.TestCase):
     def commit(self) -> None:
         git(self.root, "add", "-A")
         git(self.root, "commit", "-qm", "c")
+
+    def main_accept(self, *args: str, answer: str = "accept") -> int:
+        with mock.patch("keellib.gates.read_tty", return_value=answer):
+            return keel.main(["--root", self.root, *args])
+
+    def notty(self, *args: str) -> "subprocess.CompletedProcess[str]":
+        return subprocess.run([sys.executable, KEEL, "--root", self.root, *args], capture_output=True, text=True,
+                              env=CLEAN_ENV, start_new_session=True, stdin=subprocess.DEVNULL)
 
     def log(self) -> list:
         with open(os.path.join(self.root, ".keel", "gate-log.jsonl"), encoding="utf-8") as f:
@@ -73,7 +82,7 @@ class GatesTest(unittest.TestCase):
         self.assertEqual(run_keel(self.root, "init")[0], 0)
         self.assertEqual(run_keel(self.root, "gate", "set", "K5", "off", "--reason", "x")[0], 2)
         self.assertEqual(run_keel(self.root, "gate", "set", "K3", "bogus", "--reason", "x")[0], 2)
-        self.assertEqual(run_keel(self.root, "gate", "set", "K3", "warn", "--reason", "x")[0], 0)
+        self.assertEqual(self.main_accept("gate", "set", "K3", "warn", "--reason", "x"), 0)
         self.assertEqual(gates.level(self.p, "K3"), "warn")
         self.assertEqual(gates.level(self.p, "K1"), "block")
         self.write(TASKS, "新" * 501 + "\n")
@@ -137,6 +146,86 @@ class GatesTest(unittest.TestCase):
         self.assertIn("每卡派生数", out)
         rc, out, _ = run_keel(self.root, "gate", "report", "--since", "2999-01-01")
         self.assertNotIn("K3", out.split("每卡派生数")[0])
+
+    # fix round 1
+    def test_read_tty_on_real_pty(self) -> None:
+        pid, fd = pty.fork()
+        if pid == 0:
+            try:
+                got = gates.read_tty("确认：")
+            except BaseException:
+                os._exit(7)
+            os._exit(0 if got == "accept" else 5)
+        self.assertIn("确认".encode(), os.read(fd, 100))  # 等 child 打出提示再输入，避免输入被 tty 初始化冲掉
+        os.write(fd, b"accept\n")
+        os.read(fd, 100)  # 排空回显，否则 child 退出会卡在未读输出上
+        self.assertEqual(os.waitpid(pid, 0)[1], 0)
+        os.close(fd)
+
+    def test_forged_gates_json_ignored(self) -> None:
+        self.assertEqual(run_keel(self.root, "init")[0], 0)
+        self.assertEqual(self.main_accept("gate", "set", "K3", "warn", "--reason", "x"), 0)
+        self.write(gates.GATES_REL, json.dumps({"K1": {"level": "off"}}))
+        self.assertEqual(gates.level(self.p, "K1"), "block")
+        rc, _, err = run_keel(self.root, "check")
+        self.assertEqual(rc, 1)
+        self.assertIn("K1", err)
+
+    def test_symlinked_log_refused(self) -> None:
+        outside = os.path.join(self._t.name + "-out.txt")
+        self.addCleanup(lambda: os.path.exists(outside) and os.remove(outside))
+        with open(outside, "w") as f:
+            f.write("keep\n")
+        os.makedirs(os.path.join(self.root, ".keel"))
+        os.symlink(outside, os.path.join(self.root, gates.LOG_REL))
+        self.write(TASKS, "新" * 501 + "\n")
+        self.assertEqual(run_keel(self.root, "check")[0], 3)
+        with open(outside) as f:
+            self.assertEqual(f.read(), "keep\n")
+
+    def test_lowering_needs_human(self) -> None:
+        self.assertEqual(run_keel(self.root, "init")[0], 0)
+        p = self.notty("gate", "set", "K1", "off", "--reason", "x")
+        self.assertEqual(p.returncode, 3)
+        self.assertIn("! .keel/bin/keel gate set", p.stderr)
+        self.assertFalse(os.path.exists(os.path.join(self.root, gates.GATES_REL)))
+        self.assertEqual(self.main_accept("gate", "set", "K1", "off", "--reason", "x", answer="no"), 1)
+        self.assertEqual(self.main_accept("gate", "set", "K1", "off", "--reason", "x"), 0)
+        self.assertEqual(gates.level(self.p, "K1"), "off")
+        self.assertEqual(self.notty("gate", "set", "K1", "warn", "--reason", "x").returncode, 0)  # 抬高不需 tty
+        self.assertEqual(gates.level(self.p, "K1"), "warn")
+        self.assertEqual(self.notty("gate", "set", "K1", "warn", "--reason", "y").returncode, 0)  # 同档
+
+    def test_accept_state_changed_during_prompt(self) -> None:
+        self.assertEqual(run_keel(self.root, "init")[0], 0)
+        self.assertEqual(run_keel(self.root, "task", "add", "--title", "x", "--source", "dev-tasks")[0], 0)
+        rel = "docs/devdocs/state/tasks/T-1.json"
+        self.write(rel, '{"id": "T-1", "hand": 1}\n')
+
+        def sneaky(_prompt: str) -> str:
+            self.write(rel, '{"id": "T-1", "hand": 2}\n')
+            return "accept"
+        with mock.patch("keellib.gates.read_tty", side_effect=sneaky):
+            self.assertEqual(keel.main(["--root", self.root, "state", "accept"]), 1)
+        self.assertTrue(store.integrity_violations(self.p))
+
+    def test_root_subdir(self) -> None:
+        self.assertEqual(run_keel(self.root, "init")[0], 0)
+        self.assertEqual(run_keel(self.root, "task", "add", "--title", "x", "--source", "dev-tasks")[0], 0)
+        rel = "docs/devdocs/state/tasks/T-1.json"
+        self.write(rel, '{"id": "T-1", "hand": true}\n')
+        git(self.root, "add", rel)
+        rc, _, err = run_keel(os.path.join(self.root, "docs"), "check", "--staged")
+        self.assertEqual(rc, 1)
+        self.assertIn("K1", err)
+
+    def test_report_skips_malformed_lines(self) -> None:
+        gates.log_hit(self.p, "K3", "block", "block", "cli", "check", "a.md", "d")
+        with open(os.path.join(self.root, gates.LOG_REL), "a") as f:
+            f.write("garbage\n{\"x\": 1}\n")
+        rc, out, _ = run_keel(self.root, "gate", "report")
+        self.assertEqual(rc, 0)
+        self.assertRegex(out, r"K3\s+1")
 
 
 if __name__ == "__main__":
