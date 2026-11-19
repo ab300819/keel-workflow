@@ -75,6 +75,8 @@ def _text(d: dict[str, Any], f: str, errs: list[str], required: bool = False) ->
         return
     if not isinstance(v, str):
         errs.append(_err(f, "应为字符串", "改为字符串"))
+    elif any(c in v for c in ("\r", "\n", "<!--")):
+        errs.append(_err(f, "含换行或 `<!--`，会破坏生成的表格与标记", "改为单行纯文本，细节放 detail / audit 记录"))
     elif f in TEXT_CAPS and len(v) > TEXT_CAPS[f]:
         errs.append(_err(f, f"{len(v)} 字，超过上限 {TEXT_CAPS[f]}", "精简到上限内，细节放 detail / audit 记录"))
 
@@ -86,7 +88,7 @@ def validate_task(task: dict[str, Any], known_ids: set[str]) -> list[str]:
         _text(task, f, errs, required=True)
     if not (isinstance(task.get("id"), str) and TASK_ID.fullmatch(task["id"])):
         errs.append(_err("id", f"{task.get('id')!r} 格式不对", "改为 T-<数字>"))
-    for f in ("skip_trace_reason", "profile_downgrade_reason"):
+    for f in ("skip_trace_reason", "profile_downgrade_reason", "milestone", "layer", "record"):
         _text(task, f, errs)
     _enum(task, "status", TASK_STATUSES, errs)
     _enum(task, "review_profile", REVIEW_PROFILES, errs)

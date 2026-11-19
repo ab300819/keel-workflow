@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from typing import Any
 
 from . import schema, store
-from .render import render_all
+from .render import precheck, render_all
 
 
 def dump(obj: dict[str, Any]) -> bytes:
@@ -21,6 +21,7 @@ def write_session(project: store.Project) -> Iterator[None]:
     with project.lock():
         store.cleanup_tmp(project)
         store.require_intact(project)
+        precheck(project)
         yield
         render_all(project)
 
