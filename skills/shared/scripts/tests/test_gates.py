@@ -240,7 +240,9 @@ class GatesTest(unittest.TestCase):
         os.makedirs(os.path.join(self.root, ".keel"))
         os.symlink(outside, os.path.join(self.root, gates.LOG_REL))
         self.write(TASKS, "新" * 501 + "\n")
-        self.assertEqual(run_keel(self.root, "check")[0], 3)
+        rc, _, err = run_keel(self.root, "check")
+        self.assertEqual(rc, 1)  # 日志写不了也照常拦（日志只是尽力而为）
+        self.assertIn("未能写入", err)
         with open(outside) as f:
             self.assertEqual(f.read(), "keep\n")
 
