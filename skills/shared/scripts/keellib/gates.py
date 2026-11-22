@@ -26,7 +26,7 @@ FIX = {
     "K1": f"用 `keel task|backlog` 命令改，或人工确认。{store.HUMAN_ONLY} {store.ACCEPT_CMD}",
     "K2": store.RENDER_HINT,
     "K3": "超长内容移到 `audit/T-xxx/` 或 `backlog/<id>.md`，此处留链接",
-    "K4": "先归档或拆分（`/sync --archive`），本文件只能改小",
+    "K4": "先把已完成任务的定义移进归档（走 sync 的归档流程）或拆分文件，本文件只能改小",
 }
 Finding = namedtuple("Finding", "gate path line detail")
 
