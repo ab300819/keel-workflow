@@ -46,7 +46,7 @@ def cmd_task(project: store.Project, a: argparse.Namespace) -> int:
     elif k == "archive":
         tasks.archive(project, a.id)
     elif k == "get":
-        print(tasks.get(project, a.id))
+        print("\n".join(tasks.diff_ranges(project, a.id)) if a.diff_range else tasks.get(project, a.id))
     else:
         print("\n".join(tasks.list_lines(project, a.status, a.fields)))
     return 0
@@ -107,7 +107,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--note", required=True)
     p.add_argument("--kind", choices=["test"])
     tp.add_parser("archive").add_argument("id")
-    tp.add_parser("get").add_argument("id")
+    p = tp.add_parser("get")
+    p.add_argument("id")
+    p.add_argument("--diff-range", action="store_true")
     p = tp.add_parser("list")
     p.add_argument("--status")
     p.add_argument("--fields")

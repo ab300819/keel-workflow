@@ -114,6 +114,20 @@ def get(project: Project, tid: str) -> str:
     return dump(tasks[tid]).decode("utf-8").rstrip("\n")
 
 
+def diff_ranges(project: Project, tid: str) -> list[str]:
+    check_task_id(tid)
+    tasks, _ = load_all(project)
+    if tid not in tasks:
+        raise KeelError(f"任务 {tid} 不存在", 1)
+    span: dict[str, list[str]] = {}  # dict 保持仓库首次登记顺序
+    for c in tasks[tid]["commits"]:
+        repo, _, sha = c["ref"].rpartition("@")
+        span.setdefault(repo, [sha, sha])[1] = sha
+    if not span:
+        raise KeelError(f"任务 {tid} 没有登记提交", 1)
+    return [f"{r} {first}^..{last}" for r, (first, last) in span.items()]
+
+
 def list_lines(project: Project, status: str | None, fields: str | None) -> list[str]:
     tasks, bad = load_all(project)
     want = set(_csv(status)) if status else None

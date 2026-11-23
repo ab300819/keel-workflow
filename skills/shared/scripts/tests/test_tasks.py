@@ -96,6 +96,17 @@ class TaskTest(unittest.TestCase):
         c = json.loads(out)["commits"]
         self.assertNotIn("kind", c[1])
 
+    def test_diff_range_spans_test_and_code(self) -> None:
+        self.seed(1)
+        for ref, extra in (("app@aaaaaaa", ["--kind", "test"]), ("app@bbbbbbb", []), ("lib@ccccccc", [])):
+            self.assertEqual(run_keel(self.root, "task", "commit", "T-1", ref, "--note", "n", *extra)[0], 0)
+        rc, out, _ = run_keel(self.root, "task", "get", "T-1", "--diff-range")
+        self.assertEqual((rc, out.splitlines()), (0, ["app aaaaaaa^..bbbbbbb", "lib ccccccc^..ccccccc"]))
+
+    def test_diff_range_no_commits(self) -> None:
+        self.seed(1)
+        self.assertEqual(run_keel(self.root, "task", "get", "T-1", "--diff-range")[0], 1)
+
     def test_write_refused_when_tampered(self) -> None:
         self.seed(1)
         with open(self.path("T-1"), "a") as f:
