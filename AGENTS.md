@@ -44,7 +44,7 @@ keel 是以插件形式分发的通用开发 harness，为 AI 辅助开发提供
 ## 验证与交付
 
 - 无统一 build/test/lint 命令。文案修改检查 `git diff --check`；名称、路径或跨文件协议变更另核对受影响的 frontmatter、引用、生产方与消费方。
-- 改 `*.py` 后跑 `bash scripts/check-python.sh`（ruff + mypy + 3.9 自测），本地 pre-commit 会自动跑。
+- 改 `*.py` 后跑 `bash scripts/check-python.sh`（ruff + mypy + 自测，python3 ≥ 3.9），本地 pre-commit 会自动跑。
 - 脚本或 hooks 改动做对应语言的语法检查，并用代表性输入验证受影响行为；分发配置改动核对入口、资源路径与客户端加载方式。未能实测的部分明确说明。
 - SKILL.md ≤ 500 行。行为或路由变化用代表性任务检查触发、执行和停止边界；格式检查不能证明行为有效。
 - 相关检查通过即交付差异与验证结果；只有新变更、失败或未解决疑点才扩大或重复检查。
