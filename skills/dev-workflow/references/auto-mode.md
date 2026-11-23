@@ -33,7 +33,7 @@
 
 | 条件 | 检测方式 | 失败处理 |
 |------|----------|----------|
-| 工作区洁净或续做 | **每个代码根**的 `git status --porcelain` 均为空，**或**变更属于执行队列首个任务（续做豁免） | 不属于首任务的脏工作区 → fail-fast |
+| 工作区洁净或续做 | **每个代码根**的 `git status --porcelain` 均为空，**或**变更属于执行队列首个任务（续做豁免）；未提交的 `docs/devdocs/state/` 改动见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则) | 不属于首任务的脏工作区 → fail-fast |
 | 依赖状态 | 无"进行中"的前置依赖 | fail-fast，报告阻塞链 |
 | 任务文档存在 | `04-dev-tasks*.md` 可读 | fail-fast |
 | 编号完整 | 任务包含关联 F/AC/UT 编号 | fail-fast |
@@ -122,7 +122,7 @@
 5. **循环依赖终止** — 报错终止（不变）
 6. **用例删减检测** — 修复中若已有测试用例被移除，视为 Blocker
 7. **断言数量不减** — 修复后断言总数 ≥ 修复前
-8. **工作区洁净校验** — 每任务 Commit 2 后**每个代码根**的 `git status --porcelain` 均须为空，非空则 fail-fast
+8. **工作区洁净校验** — 每任务 Commit 1 后与批末 Commit 2 后检查**每个代码根**，范围见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则)，不洁净则 fail-fast
 9. **漂移防护** — 禁止自动猜测补齐缺失内容，统一 fail 并记录
 10. **Phase 4 外部对抗审查**（audit profile inline；fast/guarded 延后 drain）— 状态机见上方指针；`--headless` 下任何非 `EXT_REVIEWED` → fail-fast
 11. **里程碑未经人工验证不进下一段** — 段末停点是人工验证，headless 无法代替；⛔ 编排器不得以「自己判断没问题」放行，⛔ 不得因重试逻辑跨段
@@ -185,8 +185,8 @@ if not all_passed:
 
 | 时机 | 检测 | 失败处理 |
 |------|------|----------|
-| 批量启动前 | **每个代码根**的 `git status --porcelain` 均为空，或变更属于首任务（续做豁免） | 不属于首任务 → fail-fast |
-| 每任务 Commit 2 后 | **每个代码根**的 `git status --porcelain` 均为空 | fail-fast |
+| 批量启动前 | **每个代码根**的 `git status --porcelain` 均为空，或变更属于首任务（续做豁免）；未提交的 `docs/devdocs/state/` 改动见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则) | 不属于首任务 → fail-fast |
+| 每任务 Commit 1 后、批末 Commit 2 后 | **每个代码根**按 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则) 的洁净范围 | fail-fast |
 
 ## 检查点文件
 

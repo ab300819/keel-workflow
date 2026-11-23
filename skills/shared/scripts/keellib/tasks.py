@@ -7,7 +7,7 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from . import schema, store
+from . import donegate, schema, store
 from .common import check_task_id, dump, write_session
 from .store import KeelError, Project
 
@@ -90,11 +90,16 @@ def set_fields(project: Project, tid: str, opts: dict[str, str]) -> None:
                 t[k] = v == "true"
             else:
                 t[k] = v if v != "" else None
+        if "status" in opts and t["status"] in donegate.DONE_STATES:
+            errs = donegate.check(project, t)
+            if errs:
+                raise KeelError("完成门未通过，未写入：\n" + "\n".join(errs), 1)
     _mutate(project, tid, fn)
 
 
-def commit(project: Project, tid: str, ref: str, note: str) -> None:
-    _mutate(project, tid, lambda t: t["commits"].append({"ref": ref, "note": note}))
+def commit(project: Project, tid: str, ref: str, note: str, kind: str | None = None) -> None:
+    entry = {"ref": ref, "note": note, **({"kind": kind} if kind else {})}
+    _mutate(project, tid, lambda t: t["commits"].append(entry))
 
 
 def archive(project: Project, tid: str) -> None:
@@ -107,6 +112,20 @@ def get(project: Project, tid: str) -> str:
     if tid not in tasks:
         raise KeelError(f"任务 {tid} 不存在", 1)
     return dump(tasks[tid]).decode("utf-8").rstrip("\n")
+
+
+def diff_ranges(project: Project, tid: str) -> list[str]:
+    check_task_id(tid)
+    tasks, _ = load_all(project)
+    if tid not in tasks:
+        raise KeelError(f"任务 {tid} 不存在", 1)
+    span: dict[str, list[str]] = {}  # dict 保持仓库首次登记顺序
+    for c in tasks[tid]["commits"]:
+        repo, _, sha = c["ref"].rpartition("@")
+        span.setdefault(repo, [sha, sha])[1] = sha
+    if not span:
+        raise KeelError(f"任务 {tid} 没有登记提交", 1)
+    return [f"{r} {first}^..{last}" for r, (first, last) in span.items()]
 
 
 def list_lines(project: Project, status: str | None, fields: str | None) -> list[str]:

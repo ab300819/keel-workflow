@@ -18,7 +18,7 @@ keel 技能链的编码执行阶段，承接 `dev-tasks` 输出的任务清单�
 - 双 Agent 隔离：Test Agent 不看实现，Impl Agent 不看测试用例文档
 - 测试不可变：Impl Agent 严禁修改 Test Agent 产出的测试代码，疑似缺陷须用户确认
 - audit 档（高风险）inline 全套独立审查；测试冻结/信息屏障/质量地板对所有档恒定
-- 每任务原子提交：Commit 1（代码）+ Commit 2（文档状态 + trace 同步）
+- 原子提交：Commit 1（代码）逐任务；Commit 2（文档状态 + trace 同步）每批一次，见 task-orchestration
 - 安全不变量：测试未通过不提交、Blocker 未解决不提交、测试文件被修改不提交、绝不推送远程
 - 修复安全网：用例删减检测 + 断言数量不减检测 + 测试文件 diff 检测
 - SKILL.md 主文件 ≤ 500 行，详细规范拆分到子文档

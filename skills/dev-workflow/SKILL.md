@@ -104,7 +104,7 @@ spec_version_notes: |
 | S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0`；注释遵循 [`/code-quality` 注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式/来源记录式注释，含修复循环），日志遵循 [日志规范](../code-quality/SKILL.md#日志规范)（安全红线/级别纪律/禁 log-and-throw）|
 | S8 完成检查 | 质量地板 5 条 + AC 完备性表（fast 证据摘要 / audit 完整 AC 类型×证据矩阵）+ 声称 vs 实际 diff 交叉验证；缺证据或未关联大块 diff → ⛔ 禁止继续 |
 | S9 前置验证 | guarded/audit `/verify --impl`；fast 仅质量地板（不跑前置验证）；🟢 UI 任务有设计稿时另跑 `/verify --ui --impl` 对齐设计稿（不随 profile 变） |
-| S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：时机按 review_profile（见 constraints.md § review_profile 三档）；`--review` 可临时叠加 inline |
+| S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：时机按 review_profile（见 constraints.md § review_profile 四档）；`--review` 可临时叠加 inline |
 | S9 Phase 4 | 外部对抗审查 embedded-headless（独立审查）：时机同上；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态 `EXT_REVIEWED`/`EXT_UNRESOLVED`/`EXT_BLOCKED` |
 | S10 自描述 | `/code-self-describe --update`（`workspace_context.capabilities.code_metadata_write_policy` 为 `explicit_opt_in` 时**默认跳过**——自描述产物写在代码目录内，违反零污染红线。跳过须在 yaml 摘要里以 ℹ️ 记录 `skipped: code_metadata_write_policy=explicit_opt_in`。用户显式 `--force-code-docs` 才执行） |
 | S11 Commit 1 | 代码提交，遵循「提交信息格式」；Phase 4 结果与提交按 [§ 任务台账](#任务台账流程状态的唯一载体) 经 keel 命令登记 |
@@ -138,13 +138,14 @@ spec_version_notes: |
 
 所有任务遵循统一 11 步执行流程 + 5 条质量地板(恒定 inline);`review_profile` 只决定**独立审查(Phase 1~3 + Phase 4)的时机**:
 
-三档各自的质量地板、前置验证与独立审查时机见 [constraints.md § review_profile 三档](../shared/constraints.md)，⛔ 本文件不复述。本 skill 自己的两件事：
+四档各自的质量地板、前置验证与独立审查时机见 [constraints.md § review_profile 四档](../shared/constraints.md)，⛔ 本文件不复述。本 skill 自己的两件事：
 
 | review_profile | 触发 | Commit 1 后任务状态 |
 |------|------|------|
 | **fast**(默认) | 低风险(见风险分类器) | `review_pending` |
 | **guarded** | 中风险 | `review_pending` |
 | **audit** | 高风险 | `已完成`（审过才提交）|
+| **move** | 拆分/搬移且行为不变 | `已完成`（主会话里仍由 Impl Agent 子代理搬，只是不做独立审查；完成门查纯移动，见 constraints.md）|
 
 > 详细判据见 [verification-flow.md](references/verification-flow.md);风险分类器信号判据 → /dev-tasks(初始提议);执行期复核(只升不降)→ [task-orchestration.md](references/task-orchestration.md)。
 > 旧 🔴🟡🟢⚪ 层级标签**降级为风险分类器的输入信号之一**,不再独立决定流程强度。
@@ -168,6 +169,8 @@ spec_version_notes: |
 > 详见 [execution-flow.md](references/execution-flow.md) 统一任务执行流程 + 强制程度矩阵
 
 ## 编排规范（子 Agent 调度）
+
+被另一个会话派来做指定卡时按 [executor-mode.md](references/executor-mode.md)，不派子代理；以下是主会话的编排规范。
 
 **所有模式（含单任务）的开发执行和技能调用，必须通过 Task tool 启动子 Agent**：
 
@@ -270,8 +273,8 @@ spec_version_notes: |
 ### 对抗式验证约束
 
 - [ ] **Blocker 必须修复后才能提交**；每个 Phase 声明审查角色；结果分级（Blocker/Suggestion）
-- [ ] **独立审查时机按 review_profile**（见 constraints.md § review_profile 三档）；修复 Blocker 后重新运行验证
-- [ ] **drain 侧外审必须用 Commit 1 的提交 diff**，⛔ 不得用工作区 diff（否则收到空 diff，等于未审）；见 [verification-flow.md § diff 源](references/verification-flow.md)
+- [ ] **独立审查时机按 review_profile**（见 constraints.md § review_profile 四档）；修复 Blocker 后重新运行验证
+- [ ] **drain 侧外审必须用 `task get <id> --diff-range` 给出的提交范围**，⛔ 不得用工作区 diff（否则收到空 diff，等于未审）；见 [verification-flow.md § diff 源](references/verification-flow.md)
 
 ### 依赖解析约束
 
@@ -281,7 +284,7 @@ spec_version_notes: |
 ### 原子提交约束
 
 - [ ] **每个任务独立提交**，不跨任务合并
-- [ ] **代码提交和文档提交分离**（Commit 1: 代码，Commit 2: 文档状态 + trace 同步结果）
+- [ ] **代码提交和文档提交分离**（Commit 1: 代码，Commit 2: 文档状态 + trace 同步结果）；Commit 2 可按批一次，见 [task-orchestration.md § 原子提交规则](references/task-orchestration.md#原子提交规则)
 - [ ] 提交后更新状态：**audit → 已完成**；**fast/guarded → `review_pending`**（定义与出口见 [constraints.md § review_profile 与 review_pending](../shared/constraints.md)；命令见 [§ 任务台账](#任务台账流程状态的唯一载体)）
 - [ ] **`mode` 不是 `inline` 时展开为 N+1 仓提交**：Commit 1 拆成每个有变更的代码根一个 commit，Commit 2 是外壳仓一次 commit（文档 + 所有变更子模块的指针 bump；`linked` 下无指针，仅文档）。协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根取自握手 `workspace_context.code_roots`（`inline` 时为单项，`path` = 仓库根绝对路径，退化为今天的 Commit 1 + Commit 2）。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
 - [ ] **提交前必过 detached HEAD 门**：每个变更的子模块代码根 `git -C <path> symbolic-ref -q HEAD` 失败即 ⛔ 阻塞，处置见 [workspace-topology/references/migration.md § detached HEAD 处置](../workspace-topology/references/migration.md#detached-head-处置)
@@ -332,7 +335,7 @@ spec_version_notes: |
 
 ### 无人值守约束（协议参数 `unattended`）
 
-- [ ] **工作区必须洁净**（启动前 + 每任务 Commit 2 后校验）
+- [ ] **工作区必须洁净**（启动前 + 每任务 Commit 1 后 + 批末 Commit 2 后校验，范围见 [task-orchestration.md § 原子提交规则](references/task-orchestration.md#原子提交规则)）
 - [ ] **前置依赖不得处于"进行中"状态**（否则 fail-fast）
 - [ ] **fail-fast 后输出续做命令**
 - [ ] **修复过程中用例不得删减**
@@ -387,6 +390,7 @@ Tests: <实际执行过的精确命令>
 |---|---|
 | 开工（认领） | `task set <id> --status 进行中` |
 | Phase 4 出结果 | `task set <id> --ext-review-state <值>`（由 L2 yaml 派生，见 [verification-flow.md](references/verification-flow.md)） |
+| 测试提交落盘后 | `task commit <id> <repository>@<full-sha> --kind test --note "<一句话>"`；有测试提交时完成门要求注错记录（`--record`），见 [constraints.md § 完成门](../shared/constraints.md#完成门工具检查) |
 | Commit 1 落盘后（每个代码仓一条，随 Commit 2 提交） | `task commit <id> <repository>@<full-sha> --note "<一句话>"` |
 | 提交后：audit | `task set <id> --status 已完成` |
 | 提交后：fast/guarded | `task set <id> --status review_pending --batch … --due … --pending-reason …`（见 [constraints.md § review_pending](../shared/constraints.md)） |
@@ -402,7 +406,7 @@ Tests: <实际执行过的精确命令>
 | 情形 | drain 怎么做 |
 |---|---|
 | sha 可解析 | 取该 commit 的 diff 送外审 |
-| sha 不可解析 | ⚠️ 报 `drain.commit_not_found`，保持 `review_pending`；**Recovery**：人工按描述定位提交后用 `task commit` 补登，或显式改用当前代码状态重审（须在报告单列）|
+| sha 不可解析 | ⚠️ 报 `drain.commit_not_found`，保持 `review_pending`；**Recovery**：人工按描述定位提交后用 `task commit` 补登（失效条目的清理见 [constraints.md § 完成门](../shared/constraints.md#完成门工具检查)），或显式改用当前代码状态重审（须在报告单列）|
 
 ⛔ **不得因为定位不到就判 `EXT_REVIEWED`**——无审查即无证据。但也 ⛔ 不得让任务
 永久卡死：上表第二行的 Recovery 是明确出路，必须给出，不能只报错。

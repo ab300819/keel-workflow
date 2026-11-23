@@ -1,6 +1,6 @@
 # 任务执行流程详解
 
-各层级任务的详细执行流程。**所有模式（含单任务）均通过双 Agent 模型执行：Test Agent 写骨架+测试 → 编排器红色验证 → Impl Agent 写实现+重构 → 编排器完成检查+提交**。文档同步（/sync + Commit 2）由编排器调度。
+各层级任务的详细执行流程。**所有模式（含单任务）均通过双 Agent 模型执行：Test Agent 写骨架+测试 → 编排器红色验证 → Impl Agent 写实现+重构 → 编排器完成检查+提交**。文档同步（/sync + Commit 2）由编排器调度：Commit 1 逐任务，Commit 2 每批一次，见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则)。
 
 ## 目录
 
@@ -58,8 +58,8 @@
 │     │  c. 红色验证（编排器确认测试全失败） │       │
 │     │  d. Impl Agent（Task）：实现+重构    │       │
 │     │  e. 完成检查+对抗验证+Commit 1       │       │
-│     │  f. keel 写状态/commits + /sync      │       │
-│     │  g. Commit 2: 文档+追踪提交          │       │
+│     │  f. keel 写状态/commits              │       │
+│     │  g. （/sync + Commit 2 批末一次）    │       │
 │     │  h. 写检查点文件                     │       │
 │     └──────────────────────────────────────┘       │
 │                    │                                │
@@ -108,6 +108,8 @@
 
 ### 强制程度矩阵
 
+> `move` 档：S5 红验按下方失败回退表的例外行（测试应全绿），独立审查整体不做，其余步骤同 fast；完成门见 [constraints.md §完成门](../../shared/constraints.md)。
+
 | 步骤 | fast | guarded | audit |
 |------|:---:|:---:|:---:|
 | S1 读任务 / S1.5 Contract | ■ | ■ | ■ |
@@ -116,7 +118,7 @@
 | S6/S7 实现 + 重构 | ■ | ■ | ■ |
 | 质量地板 5 条 | ■ | ■ | ■ |
 | S8 完成检查(AC 完备表) | ■(证据摘要) | ■ | ■(完整矩阵) |
-| S9 前置验证 / Phase 1~3 内审 / Phase 4 外审 | 按 [constraints.md § review_profile 三档](../../shared/constraints.md) | 同 | 同 |
+| S9 前置验证 / Phase 1~3 内审 / Phase 4 外审 | 按 [constraints.md § review_profile 四档](../../shared/constraints.md) | 同 | 同 |
 | S10 自描述 / S11 Commit 1 | ■ | ■ | ■ |
 | UI Phase 2-UI 自查(仅 UI 任务) | 按 ui-quality-checklist.md(不随 profile 变) | 同 | 同 |
 
@@ -135,6 +137,7 @@
 |----|---------|---------|
 | S5 红验 | 新测试意外通过（测试无效） | Test Agent 修复测试 |
 | S5 红验 | 出现基线外的新失败（骨架破坏存量功能） | Test Agent 修复骨架 |
+| S5 红验（例外） | `move` 档，或表征测试（期望值取自基线） | 测试提交上应全绿，「意外通过」不适用；冻结、不可变、注错规则不变 |
 | S6 绿验 | `skipped/todo` 计数 > 0（质量地板 1） | Test Agent 补齐断言（豁免须在任务文档登记原因） |
 | S6 绿验 | 实现修复超过重试上限（默认 3 次） | 报告 `test_defects` 并停止，交用户确认 |
 | S8 完成检查 | AC 缺证据 / 违反分级矩阵 / 遗漏实现 / 大块 diff 无关联 | S6 补实现，或 S4 补测试 |
@@ -190,8 +193,7 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
    - **audit**：状态改为 `已完成`
    - **fast/guarded**：状态改为 `review_pending`（独立审查延后），同时用 `.keel/bin/keel task set … --batch … --due … --pending-reason …` 写入
    - 以上命令见 [SKILL.md § 任务台账](../SKILL.md#任务台账流程状态的唯一载体)
-   - 运行 /sync
-   - Commit 2: `git add [文档文件] && git commit -m "docs: 更新任务状态并同步 trace"`（`shell` 拓扑的外壳仓 commit 按 [protocol.md §6.3](../../workspace-topology/references/protocol.md) 带 T-XX，其余不带）
+   - 批末（不逐任务，见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则)）运行 /sync 并 Commit 2: `git add [文档文件] && git commit -m "docs: 更新任务状态并同步 trace"`（`shell` 拓扑的外壳仓 commit 按 [protocol.md §6.3](../../workspace-topology/references/protocol.md) 带 T-XX，其余不带）
 10. **更新 TodoWrite**：将任务标记为已完成（audit）或 review_pending（fast/guarded）
 
 ## 提交信息格式
