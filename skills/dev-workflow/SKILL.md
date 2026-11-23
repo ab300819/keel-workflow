@@ -170,6 +170,8 @@ spec_version_notes: |
 
 ## 编排规范（子 Agent 调度）
 
+被另一个会话派来做指定卡时按 [executor-mode.md](references/executor-mode.md)，不派子代理；以下是主会话的编排规范。
+
 **所有模式（含单任务）的开发执行和技能调用，必须通过 Task tool 启动子 Agent**：
 
 | 阶段 | 被调度内容 | 调度方式 |
@@ -282,7 +284,7 @@ spec_version_notes: |
 ### 原子提交约束
 
 - [ ] **每个任务独立提交**，不跨任务合并
-- [ ] **代码提交和文档提交分离**（Commit 1: 代码，Commit 2: 文档状态 + trace 同步结果）
+- [ ] **代码提交和文档提交分离**（Commit 1: 代码，Commit 2: 文档状态 + trace 同步结果）；Commit 2 可按批一次，见 [task-orchestration.md § 原子提交规则](references/task-orchestration.md#原子提交规则)
 - [ ] 提交后更新状态：**audit → 已完成**；**fast/guarded → `review_pending`**（定义与出口见 [constraints.md § review_profile 与 review_pending](../shared/constraints.md)；命令见 [§ 任务台账](#任务台账流程状态的唯一载体)）
 - [ ] **`mode` 不是 `inline` 时展开为 N+1 仓提交**：Commit 1 拆成每个有变更的代码根一个 commit，Commit 2 是外壳仓一次 commit（文档 + 所有变更子模块的指针 bump；`linked` 下无指针，仅文档）。协议见 [workspace-topology/references/protocol.md § N+1 仓提交协议](../workspace-topology/references/protocol.md)。代码根取自握手 `workspace_context.code_roots`（`inline` 时为单项，`path` = 仓库根绝对路径，退化为今天的 Commit 1 + Commit 2）。`mode` 为 `linked` 时代码根不归本仓所有，各仓各自提交、⛔ 不 bump 指针，见 [protocol.md §6.5](../workspace-topology/references/protocol.md#65-linked-下无-n1无指针)。
 - [ ] **提交前必过 detached HEAD 门**：每个变更的子模块代码根 `git -C <path> symbolic-ref -q HEAD` 失败即 ⛔ 阻塞，处置见 [workspace-topology/references/migration.md § detached HEAD 处置](../workspace-topology/references/migration.md#detached-head-处置)
@@ -333,7 +335,7 @@ spec_version_notes: |
 
 ### 无人值守约束（协议参数 `unattended`）
 
-- [ ] **工作区必须洁净**（启动前 + 每任务 Commit 2 后校验）
+- [ ] **工作区必须洁净**（启动前 + 每任务 Commit 1 后 + 批末 Commit 2 后校验，范围见 [task-orchestration.md § 原子提交规则](references/task-orchestration.md#原子提交规则)）
 - [ ] **前置依赖不得处于"进行中"状态**（否则 fail-fast）
 - [ ] **fail-fast 后输出续做命令**
 - [ ] **修复过程中用例不得删减**
@@ -388,6 +390,7 @@ Tests: <实际执行过的精确命令>
 |---|---|
 | 开工（认领） | `task set <id> --status 进行中` |
 | Phase 4 出结果 | `task set <id> --ext-review-state <值>`（由 L2 yaml 派生，见 [verification-flow.md](references/verification-flow.md)） |
+| 测试提交落盘后 | `task commit <id> <repository>@<full-sha> --kind test --note "<一句话>"` |
 | Commit 1 落盘后（每个代码仓一条，随 Commit 2 提交） | `task commit <id> <repository>@<full-sha> --note "<一句话>"` |
 | 提交后：audit | `task set <id> --status 已完成` |
 | 提交后：fast/guarded | `task set <id> --status review_pending --batch … --due … --pending-reason …`（见 [constraints.md § review_pending](../shared/constraints.md)） |
