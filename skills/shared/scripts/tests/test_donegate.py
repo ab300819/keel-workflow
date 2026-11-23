@@ -135,6 +135,26 @@ class DoneGateTest(unittest.TestCase):
         rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
         self.assertEqual(rc, 0, err)
 
+    def test_repo_outside_project_not_used(self) -> None:
+        self.add()
+        other = tempfile.TemporaryDirectory()
+        self.addCleanup(other.cleanup)
+        out = os.path.realpath(other.name)
+        helpers.git(out, "init", "-q")
+        rel = os.path.relpath(out, self.root)  # ../../tmpXXX 形式
+        t = self.make_commit({"test_a.py": "assert f() == 1\n"}, repo=rel)
+        self.reg(t, test=True, repo=rel)
+        self.record()
+        self.assert_rejected(PENDING, "解析不到")
+
+    def test_move_check_ignores_external_diff(self) -> None:
+        self.add("move")
+        self.make_commit({"a.py": "def f(x):\n    y = g(x)\n    if y > 1:\n        h(y)\n"})
+        c = self.make_commit({"a.py": None, "b.py": "def f(x):\n    y = g(x)\n    if y > 2:\n        h(y)\n"})
+        helpers.git(self.root, "config", "diff.external", "false")
+        self.reg(c)
+        self.assert_rejected(("--status", "已完成"), "改 --profile guarded")
+
     def test_move_with_logic_glue_rejected(self) -> None:
         self.add("move")
         self.make_commit({"a.py": "def f(x):\n    y = g(x)\n    if y > 1:\n        h(y)\n"})

@@ -19,7 +19,14 @@ def _git(d: str, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 def _repo_dir(project: Project, repo: str, sha: str) -> str | None:
-    for d in (project.root, os.path.join(project.root, repo)):
+    root = os.path.realpath(project.root)
+    cands = [project.root]
+    sub = os.path.realpath(os.path.join(root, repo))
+    # repo 来自任务文件：只认项目内的相对路径，免得在外部仓库跑 git（及其 diff 配置）
+    if not os.path.isabs(repo) and ".." not in repo.replace("\\", "/").split("/") \
+            and os.path.commonpath([root, sub]) == root:
+        cands.append(sub)
+    for d in cands:
         if os.path.isdir(d) and _git(d, "cat-file", "-e", f"{sha}^{{commit}}").returncode == 0:
             return d
     return None
@@ -50,10 +57,10 @@ def check(project: Project, task: dict[str, Any]) -> list[str]:
             if not any(t != c and _git(d, "merge-base", "--is-ancestor", t, c).returncode == 0 for t in tests):
                 errs.append(f"代码提交 {c} 之前没有测试提交（是否压缩合并了？）")
         for t in tests if codes else []:
-            files = _git(d, "diff-tree", "--no-commit-id", "--name-only", "-r", t).stdout.split()
+            files = _git(d, "diff-tree", "--no-ext-diff", "--no-textconv", "--no-commit-id", "--name-only", "-r", t).stdout.split()
             if not files:
                 continue
-            p = _git(d, "diff", "--name-only", t, codes[-1], "--", *files)
+            p = _git(d, "diff", "--no-ext-diff", "--no-textconv", "--name-only", t, codes[-1], "--", *files)
             if p.returncode != 0 or p.stdout.strip():
                 errs.append(f"测试提交 {t} 之后改了测试：{'、'.join(p.stdout.split()) or p.stderr.strip()}")
     if has_test:
