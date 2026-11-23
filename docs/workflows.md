@@ -143,8 +143,8 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 - **派单**：消息里写明「你是 T-xxx 的执行者」。执行者按 [executor-mode.md](../skills/dev-workflow/references/executor-mode.md) 自己写测试和实现，不写台账，做完发回一条交卡消息。
 - **合并**：执行者分支合进集成分支，⛔ 不压缩合并（squash 会把测试提交和代码提交合成一个，顺序证据丢失）。
-- **登记**：合并后再登记落地后的 sha（rebase 会改 sha）。测试提交用 `.keel/bin/keel task commit <id> <repo>@<sha> --kind test --note "…"`，代码提交用同一命令、不带 `--kind`。
-- **落记录**：交卡消息里的 Sprint Contract、注错记录、跳过记录写进 `audit/<id>/`，再 `task set <id> --record audit/<id>/`。改状态时 keel 按 [完成门](../skills/shared/constraints.md#完成门工具检查) 检查顺序、冻结与注错记录。
+- **登记**：合并后再登记落地后的 sha（rebase 会改 sha）。PM 会话把测试提交登记为测试提交、代码提交照常登记，你不需要敲命令。
+- **落记录**：PM 会话把交卡消息里的 Sprint Contract、注错记录、跳过记录存进该卡的审计目录并挂到卡上。改状态时 keel 按 [完成门](../skills/shared/constraints.md#完成门工具检查) 检查顺序、冻结与注错记录。
 - `/sync` 与文档提交按批一次，见 [task-orchestration.md § 原子提交规则](../skills/dev-workflow/references/task-orchestration.md#原子提交规则)。
 
 #### 产出

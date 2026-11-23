@@ -145,7 +145,7 @@ spec_version_notes: |
 | **fast**(默认) | 低风险(见风险分类器) | `review_pending` |
 | **guarded** | 中风险 | `review_pending` |
 | **audit** | 高风险 | `已完成`（审过才提交）|
-| **move** | 拆分/搬移且行为不变 | `已完成`（不做独立审查，完成门查纯移动，见 constraints.md）|
+| **move** | 拆分/搬移且行为不变 | `已完成`（主会话里仍由 Impl Agent 子代理搬，只是不做独立审查；完成门查纯移动，见 constraints.md）|
 
 > 详细判据见 [verification-flow.md](references/verification-flow.md);风险分类器信号判据 → /dev-tasks(初始提议);执行期复核(只升不降)→ [task-orchestration.md](references/task-orchestration.md)。
 > 旧 🔴🟡🟢⚪ 层级标签**降级为风险分类器的输入信号之一**,不再独立决定流程强度。
@@ -274,7 +274,7 @@ spec_version_notes: |
 
 - [ ] **Blocker 必须修复后才能提交**；每个 Phase 声明审查角色；结果分级（Blocker/Suggestion）
 - [ ] **独立审查时机按 review_profile**（见 constraints.md § review_profile 四档）；修复 Blocker 后重新运行验证
-- [ ] **drain 侧外审必须用 Commit 1 的提交 diff**，⛔ 不得用工作区 diff（否则收到空 diff，等于未审）；见 [verification-flow.md § diff 源](references/verification-flow.md)
+- [ ] **drain 侧外审必须用 `task get <id> --diff-range` 给出的提交范围**，⛔ 不得用工作区 diff（否则收到空 diff，等于未审）；见 [verification-flow.md § diff 源](references/verification-flow.md)
 
 ### 依赖解析约束
 
@@ -390,7 +390,7 @@ Tests: <实际执行过的精确命令>
 |---|---|
 | 开工（认领） | `task set <id> --status 进行中` |
 | Phase 4 出结果 | `task set <id> --ext-review-state <值>`（由 L2 yaml 派生，见 [verification-flow.md](references/verification-flow.md)） |
-| 测试提交落盘后 | `task commit <id> <repository>@<full-sha> --kind test --note "<一句话>"` |
+| 测试提交落盘后 | `task commit <id> <repository>@<full-sha> --kind test --note "<一句话>"`；有测试提交时完成门要求注错记录（`--record`），见 [constraints.md § 完成门](../shared/constraints.md#完成门工具检查) |
 | Commit 1 落盘后（每个代码仓一条，随 Commit 2 提交） | `task commit <id> <repository>@<full-sha> --note "<一句话>"` |
 | 提交后：audit | `task set <id> --status 已完成` |
 | 提交后：fast/guarded | `task set <id> --status review_pending --batch … --due … --pending-reason …`（见 [constraints.md § review_pending](../shared/constraints.md)） |
@@ -406,7 +406,7 @@ Tests: <实际执行过的精确命令>
 | 情形 | drain 怎么做 |
 |---|---|
 | sha 可解析 | 取该 commit 的 diff 送外审 |
-| sha 不可解析 | ⚠️ 报 `drain.commit_not_found`，保持 `review_pending`；**Recovery**：人工按描述定位提交后用 `task commit` 补登，或显式改用当前代码状态重审（须在报告单列）|
+| sha 不可解析 | ⚠️ 报 `drain.commit_not_found`，保持 `review_pending`；**Recovery**：人工按描述定位提交后用 `task commit` 补登（失效条目的清理见 [constraints.md § 完成门](../shared/constraints.md#完成门工具检查)），或显式改用当前代码状态重审（须在报告单列）|
 
 ⛔ **不得因为定位不到就判 `EXT_REVIEWED`**——无审查即无证据。但也 ⛔ 不得让任务
 永久卡死：上表第二行的 Recovery 是明确出路，必须给出，不能只报错。

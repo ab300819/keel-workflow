@@ -374,7 +374,7 @@ drain 侧定位规则（读任务台账，⛔ 不 grep git log）：
 
 `move` 档（纯移动、行为不变的拆分搬移）不做独立审查，Commit 1 后直接 `已完成`；完成门检查见 [constraints.md §完成门](../../shared/constraints.md)，此处只写判定规则。
 
-- 证据：`keel move-check <范围> [路径]` 打印搬动行数、胶水行数与胶水清单（逻辑类标注），退出码恒 0——它是证据，不是门禁。
+- 证据：`keel move-check <范围> [路径]` 打印搬动行数、胶水行数与胶水清单（带行号，逻辑类标注），退出码恒 0——它是证据，不是门禁。
 - 胶水允许：声明、签名、调用、import/using、括号、访问修饰符、构造参数透传。
 - 视为改逻辑：条件、运算、字面量、返回值改动。出现 → 不是纯移动，升 `guarded`。
 - 执行者交卡前先按上述规则自判，不合规自己升 `guarded`；合规的胶水清单随交卡发回，派单方按批过目一次，不逐卡审。
@@ -471,7 +471,7 @@ fallback_events: []                                                           # 
 ### `/verify --review-drain` 集中清审
 收集所有 `review_pending` 任务,按延后档位补跑 Phase 1~3 + Phase 4(复用 embedded-headless T1→T2 通道),逐任务出 verdict。
 
-**外审输入**:drain 侧**必须**用该任务 Commit 1 的提交 diff,不得用工作区 diff——见上方 [§diff 源](#diff-源按触发模式分离)。
+**外审输入**:drain 侧**必须**用 `task get <id> --diff-range` 给出的提交范围,不得用工作区 diff——见上方 [§diff 源](#diff-源按触发模式分离)。
 
 **drain 失败矩阵:**
 
