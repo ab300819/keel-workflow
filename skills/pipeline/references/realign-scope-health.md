@@ -221,7 +221,7 @@ manual_decisions:
 
 - 仅两种动作，均为 `git mv`：**改名**（清单中有明确旧名→新名映射时）、**归档移位**（把 `*-archive.md` 移进 `archive/`）。
   ⚠️ 清单当前不提供旧名→新名映射列 ⇒ 改名分支暂无输入来源，待清单扩列后生效。
-- ⛔ **改名必须同批更新所有指向它的引用**。实证：tm-reborn 的 `06-ui-hig-swiftui-checklist.md` 在 `04-dev-tasks.md:19` 被链接，只 `git mv` 即制造死链。
+- ⛔ **改名必须同批更新所有指向它的引用**。实证：某项目的一份清单文档被 `04-dev-tasks.md` 链接，只 `git mv` 即制造死链。
 - ⛔ **仅移动无法闭合的项单列**：补登记（`unregistered-split`）要编辑正文、集中→资源目录转换是内容迁移——两者均超出「只改名 + 归档移位」授权，列清单逐项问用户。
 - ⛔ `layout/unknown-path` **不自动动手**，一律走 `AskUserQuestion`。
 
@@ -243,7 +243,7 @@ manual_decisions:
 
 apply 全部 Phase 完成后**重新全量 dry-run**，比对 `total_score` 与各 rule 计数。
 
-⛔ 不接受「post-apply 估算总分」——实证：mic-en 的 `47252f3` 报告写的就是估算值，
+⛔ 不接受「post-apply 估算总分」——实证：某次 realign 报告写的就是估算值，
 而当次 apply 后 state 又涨回 58 KB，估算掩盖了未收敛的事实。
 
 ### Apply 失败处理

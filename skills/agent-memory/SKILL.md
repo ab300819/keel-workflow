@@ -142,7 +142,7 @@ python3 <keel>/skills/pipeline/scripts/health-lint.py --target <项目根> --bas
 
 结构见 [health-lint-implementation.md § Baseline 文件](../pipeline/references/health-lint-implementation.md)。bypass 原因不进该文件，记入本次 yaml 摘要的 `summary.details.bypass_reason`。
 
-设计意图：避免 mic-en 等存量项目（245k）立即被 ⛔ 卡死；首次 bypass 锚定 baseline，之后只阻断"新增膨胀"。
+设计意图：避免已膨胀的存量项目（实测有 245k 的）立即被 ⛔ 卡死；首次 bypass 锚定 baseline，之后只阻断"新增膨胀"。
 
 ### 发布状态写入(可选)
 

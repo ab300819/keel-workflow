@@ -57,7 +57,7 @@ class TaskTest(unittest.TestCase):
 
     def test_commit_ref(self):
         self.assertTrue(errs(commits=[{"ref": "bad", "note": ""}]))
-        self.assertEqual(errs(commits=[{"ref": "ai-code@" + "a" * 40, "note": "x"}]), [])
+        self.assertEqual(errs(commits=[{"ref": "app@" + "a" * 40, "note": "x"}]), [])
 
     def test_source_empty(self):
         self.assertTrue(errs(source=""))

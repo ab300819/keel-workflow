@@ -90,9 +90,9 @@ ADR / INS / BUG / Backlog 四类资源**两套形态都合法**，上表各登�
 四个生产方 skill（system-design / insights / bugfix / backlog）的正文**未声明**该形态。
 这是已知的规格缺口，由用户裁定判为合法形态，⛔ 本清单不代表生产方已支持它。
 
-**判据是规模，不是对错。** 实测：`mic-en`（360 md）有 `bugs/` 122 文件、`insights/` 33、
+**判据是规模，不是对错。** 实测：一个 360 md 的项目有 `bugs/` 122 文件、`insights/` 33、
 `adr/` 30，集中文件全缩成 1~2 KB 指针并自留说明「本文件已采用一文件一资源结构」；
-`tm-reborn`（22 md）的 `05-bugfix-log.md` 才 2.3 KB，完全够用。
+另一个 22 md 的项目，`05-bugfix-log.md` 才 2.3 KB，完全够用。
 
 集中文件超 `layout/size-cap` 阈值 → 报「建议转资源目录」。
 ⛔ **转换不自动执行**——它是内容迁移，需用户触发。
@@ -105,7 +105,7 @@ ADR / INS / BUG / Backlog 四类资源**两套形态都合法**，上表各登�
 | `sync --archive` 的 400/500/400/300 行 + 数量 + 状态 | `sync/references/archive.md` | **归档触发器**（行数或数量任一超过即触发检查；状态条件决定哪些条目可归档）|
 | `layout/size-cap` 的 96 KiB | `pipeline/scripts/health-lint.py` 的 `SIZE_CAP_BYTES`（:542） | **体积警报**（纯尺寸，无语义条件）|
 
-`/sync --archive` 已于 2026-09-23 首次真实执行验证（`tm-reborn`，净减 767 行），
+`/sync --archive` 已于 2026-09-23 首次真实执行验证（一个实战项目，净减 767 行），
 ⛔ 不再是未验证路径。首跑暴露的 8 条规格缺口（拆分布局、任务多对多挂 F、无完成日期等）
 已于 2026-11-17 补进 `sync/references/archive.md`，但补后的规格**尚未再次真跑**，
 且需求 / 设计 / 测试三类的归档路径从未用真实数据验证 ⇒ 仍 ⛔ 不是按钮式自动出口。
