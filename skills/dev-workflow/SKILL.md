@@ -145,6 +145,7 @@ spec_version_notes: |
 | **fast**(默认) | 低风险(见风险分类器) | `review_pending` |
 | **guarded** | 中风险 | `review_pending` |
 | **audit** | 高风险 | `已完成`（审过才提交）|
+| **move** | 拆分/搬移且行为不变 | `已完成`（不做独立审查，完成门查纯移动，见 constraints.md）|
 
 > 详细判据见 [verification-flow.md](references/verification-flow.md);风险分类器信号判据 → /dev-tasks(初始提议);执行期复核(只升不降)→ [task-orchestration.md](references/task-orchestration.md)。
 > 旧 🔴🟡🟢⚪ 层级标签**降级为风险分类器的输入信号之一**,不再独立决定流程强度。

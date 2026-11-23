@@ -108,6 +108,8 @@
 
 ### 强制程度矩阵
 
+> `move` 档：S5 红验按下方失败回退表的例外行（测试应全绿），独立审查整体不做，其余步骤同 fast；完成门见 [constraints.md §完成门](../../shared/constraints.md)。
+
 | 步骤 | fast | guarded | audit |
 |------|:---:|:---:|:---:|
 | S1 读任务 / S1.5 Contract | ■ | ■ | ■ |
