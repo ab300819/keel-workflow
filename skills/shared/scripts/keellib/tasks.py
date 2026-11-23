@@ -7,7 +7,7 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from . import schema, store
+from . import donegate, schema, store
 from .common import check_task_id, dump, write_session
 from .store import KeelError, Project
 
@@ -90,6 +90,10 @@ def set_fields(project: Project, tid: str, opts: dict[str, str]) -> None:
                 t[k] = v == "true"
             else:
                 t[k] = v if v != "" else None
+        if "status" in opts and t["status"] in donegate.DONE_STATES:
+            errs = donegate.check(project, t)
+            if errs:
+                raise KeelError("完成门未通过，未写入：\n" + "\n".join(errs), 1)
     _mutate(project, tid, fn)
 
 
