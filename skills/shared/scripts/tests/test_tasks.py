@@ -87,6 +87,15 @@ class TaskTest(unittest.TestCase):
         self.assertEqual((t["status"], t["commits"][0]["ref"]), ("已归档", "repo@abc1234"))
         self.assertEqual(run_keel(self.root, "task", "get", "T-9")[0], 1)
 
+    def test_commit_kind_cli(self) -> None:
+        self.seed(1)
+        self.assertEqual(run_keel(self.root, "task", "commit", "T-1", "app@abcdef1", "--note", "t", "--kind", "test")[0], 0)
+        self.assertEqual(run_keel(self.root, "task", "commit", "T-1", "app@abcdef2", "--note", "c")[0], 0)
+        out = run_keel(self.root, "task", "get", "T-1")[1]
+        self.assertIn('"kind": "test"', out)
+        c = json.loads(out)["commits"]
+        self.assertNotIn("kind", c[1])
+
     def test_write_refused_when_tampered(self) -> None:
         self.seed(1)
         with open(self.path("T-1"), "a") as f:

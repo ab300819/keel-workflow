@@ -5,7 +5,8 @@ import re
 from typing import Any
 
 TASK_STATUSES = ("待开发", "进行中", "review_pending", "已完成", "已归档")
-REVIEW_PROFILES = ("fast", "guarded", "audit")
+REVIEW_PROFILES = ("fast", "guarded", "audit", "move")
+COMMIT_KINDS = ("test",)
 PENDING_REASONS = ("deferred-fast", "deferred-guarded")
 EXT_REVIEW_STATES = ("EXT_REVIEWED", "EXT_UNRESOLVED", "EXT_BLOCKED")
 BACKLOG_STATUSES = ("parked", "reactivated", "closed", "superseded")
@@ -120,6 +121,9 @@ def validate_task(task: dict[str, Any], known_ids: set[str]) -> list[str]:
         note = c.get("note") if isinstance(c, dict) else None
         if isinstance(note, str) and len(note) > TEXT_CAPS["note"]:
             errs.append(_err("commits[].note", f"{len(note)} 字，超过上限 {TEXT_CAPS['note']}", "精简"))
+        kind = c.get("kind") if isinstance(c, dict) else None
+        if kind is not None and kind not in COMMIT_KINDS:
+            errs.append(_err("commits[].kind", f"{kind!r} 不是合法取值", "只能是 test 或省略"))
     if not isinstance(commits, list):
         errs.append(_err("commits", "应为列表", "改为 {ref, note} 列表"))
     if not isinstance(task.get("exploration_mode"), bool):
@@ -162,7 +166,7 @@ _DESC = {
         "depends_on：任务编号列表，须已存在且不含自身",
         "milestone：可空，≤80 字，如 M-003",
         "layer：可空，≤80 字",
-        "commits：{ref, note} 列表；ref 形如 <仓库>@<7-40位sha>，note ≤200 字",
+        "commits：{ref, note} 列表；ref 形如 <仓库>@<7-40位sha>，note ≤200 字；可选 kind=test 标测试提交",
         "batch：status=review_pending 时必填",
         "due：status=review_pending 时必填",
         "pending_reason：" + " / ".join(PENDING_REASONS) + "；status=review_pending 时必填",

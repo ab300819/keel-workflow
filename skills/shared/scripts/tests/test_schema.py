@@ -59,6 +59,15 @@ class TaskTest(unittest.TestCase):
         self.assertTrue(errs(commits=[{"ref": "bad", "note": ""}]))
         self.assertEqual(errs(commits=[{"ref": "ai-code@" + "a" * 40, "note": "x"}]), [])
 
+    def test_move_profile_valid(self):
+        self.assertEqual(schema.validate_task(schema.new_task("T-1", "t", "F-001", review_profile="move"), set()), [])
+
+    def test_commit_kind_test_valid(self):
+        self.assertEqual(errs(commits=[{"ref": "app@abcdef1", "note": "n", "kind": "test"}]), [])
+
+    def test_commit_kind_unknown_rejected(self):
+        self.assertIn("commits[].kind", errs(commits=[{"ref": "app@abcdef1", "note": "n", "kind": "code"}])[0])
+
     def test_source_empty(self):
         self.assertTrue(errs(source=""))
 

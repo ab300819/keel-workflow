@@ -93,8 +93,9 @@ def set_fields(project: Project, tid: str, opts: dict[str, str]) -> None:
     _mutate(project, tid, fn)
 
 
-def commit(project: Project, tid: str, ref: str, note: str) -> None:
-    _mutate(project, tid, lambda t: t["commits"].append({"ref": ref, "note": note}))
+def commit(project: Project, tid: str, ref: str, note: str, kind: str | None = None) -> None:
+    entry = {"ref": ref, "note": note, **({"kind": kind} if kind else {})}
+    _mutate(project, tid, lambda t: t["commits"].append(entry))
 
 
 def archive(project: Project, tid: str) -> None:
