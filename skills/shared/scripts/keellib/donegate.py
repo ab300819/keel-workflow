@@ -44,8 +44,8 @@ def check(project: Project, task: dict[str, Any]) -> list[str]:
     if errs:
         return errs
     for d, tests, codes in groups.values():
-        if not has_test:
-            break
+        if not tests:
+            continue  # 只有代码提交的仓（如配置仓）不查顺序与冻结
         for c in codes:
             if not any(t != c and _git(d, "merge-base", "--is-ancestor", t, c).returncode == 0 for t in tests):
                 errs.append(f"代码提交 {c} 之前没有测试提交（是否压缩合并了？）")

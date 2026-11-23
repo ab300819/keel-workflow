@@ -121,6 +121,20 @@ class DoneGateTest(unittest.TestCase):
         rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
         self.assertEqual(rc, 0, err)
 
+    def test_repo_without_test_commits_skipped(self) -> None:
+        self.add()
+        os.makedirs(os.path.join(self.root, "svc"))
+        helpers.git(os.path.join(self.root, "svc"), "init", "-q")
+        t = self.make_commit({"test_a.py": "assert f() == 1\n"}, repo="svc")
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"}, repo="svc")
+        cfg = self.make_commit({"cfg.yml": "a: 1\n"})
+        self.reg(t, test=True, repo="svc")
+        self.reg(c, repo="svc")
+        self.reg(cfg, repo="app")
+        self.record()
+        rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
+        self.assertEqual(rc, 0, err)
+
     def test_move_with_logic_glue_rejected(self) -> None:
         self.add("move")
         self.make_commit({"a.py": "def f(x):\n    y = g(x)\n    if y > 1:\n        h(y)\n"})
