@@ -33,7 +33,7 @@
 
 | 条件 | 检测方式 | 失败处理 |
 |------|----------|----------|
-| 工作区洁净或续做 | **每个代码根**的 `git status --porcelain` 均为空，**或**变更属于执行队列首个任务（续做豁免） | 不属于首任务的脏工作区 → fail-fast |
+| 工作区洁净或续做 | **每个代码根**的 `git status --porcelain` 均为空，**或**变更属于执行队列首个任务（续做豁免）；未提交的 `docs/devdocs/state/` 改动见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则) | 不属于首任务的脏工作区 → fail-fast |
 | 依赖状态 | 无"进行中"的前置依赖 | fail-fast，报告阻塞链 |
 | 任务文档存在 | `04-dev-tasks*.md` 可读 | fail-fast |
 | 编号完整 | 任务包含关联 F/AC/UT 编号 | fail-fast |
@@ -185,7 +185,7 @@ if not all_passed:
 
 | 时机 | 检测 | 失败处理 |
 |------|------|----------|
-| 批量启动前 | **每个代码根**的 `git status --porcelain` 均为空，或变更属于首任务（续做豁免） | 不属于首任务 → fail-fast |
+| 批量启动前 | **每个代码根**的 `git status --porcelain` 均为空，或变更属于首任务（续做豁免）；未提交的 `docs/devdocs/state/` 改动见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则) | 不属于首任务 → fail-fast |
 | 每任务 Commit 1 后、批末 Commit 2 后 | **每个代码根**按 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则) 的洁净范围 | fail-fast |
 
 ## 检查点文件

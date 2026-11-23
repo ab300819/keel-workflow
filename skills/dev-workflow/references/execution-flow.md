@@ -1,6 +1,6 @@
 # 任务执行流程详解
 
-各层级任务的详细执行流程。**所有模式（含单任务）均通过双 Agent 模型执行：Test Agent 写骨架+测试 → 编排器红色验证 → Impl Agent 写实现+重构 → 编排器完成检查+提交**。文档同步（/sync + Commit 2）由编排器调度。
+各层级任务的详细执行流程。**所有模式（含单任务）均通过双 Agent 模型执行：Test Agent 写骨架+测试 → 编排器红色验证 → Impl Agent 写实现+重构 → 编排器完成检查+提交**。文档同步（/sync + Commit 2）由编排器调度：Commit 1 逐任务，Commit 2 每批一次，见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则)。
 
 ## 目录
 
@@ -58,8 +58,8 @@
 │     │  c. 红色验证（编排器确认测试全失败） │       │
 │     │  d. Impl Agent（Task）：实现+重构    │       │
 │     │  e. 完成检查+对抗验证+Commit 1       │       │
-│     │  f. keel 写状态/commits + /sync      │       │
-│     │  g. Commit 2: 文档+追踪提交          │       │
+│     │  f. keel 写状态/commits              │       │
+│     │  g. （/sync + Commit 2 批末一次）    │       │
 │     │  h. 写检查点文件                     │       │
 │     └──────────────────────────────────────┘       │
 │                    │                                │
@@ -193,8 +193,7 @@ S9 阶段触发 Phase 4 时，状态字段（`ext_review_state`）、轮次控�
    - **audit**：状态改为 `已完成`
    - **fast/guarded**：状态改为 `review_pending`（独立审查延后），同时用 `.keel/bin/keel task set … --batch … --due … --pending-reason …` 写入
    - 以上命令见 [SKILL.md § 任务台账](../SKILL.md#任务台账流程状态的唯一载体)
-   - 运行 /sync
-   - Commit 2: `git add [文档文件] && git commit -m "docs: 更新任务状态并同步 trace"`（`shell` 拓扑的外壳仓 commit 按 [protocol.md §6.3](../../workspace-topology/references/protocol.md) 带 T-XX，其余不带）
+   - 批末（不逐任务，见 [task-orchestration.md § 原子提交规则](task-orchestration.md#原子提交规则)）运行 /sync 并 Commit 2: `git add [文档文件] && git commit -m "docs: 更新任务状态并同步 trace"`（`shell` 拓扑的外壳仓 commit 按 [protocol.md §6.3](../../workspace-topology/references/protocol.md) 带 T-XX，其余不带）
 10. **更新 TodoWrite**：将任务标记为已完成（audit）或 review_pending（fast/guarded）
 
 ## 提交信息格式

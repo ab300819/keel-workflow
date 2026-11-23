@@ -179,11 +179,12 @@ Step 2: 提交检测（任务状态非"已完成"时的兜底）
 
 Step 3: 工作区检测
         ├── git status --porcelain + git diff --name-only
+        ├── 本批待 Commit 2 的 `docs/devdocs/state/` 改动不算变更，见 [原子提交规则 · 洁净校验](#原子提交规则)
         ├── 无变更 → 全新任务，正常开始
         └── 有变更 → Step 4
 
 Step 4: 变更归属判定
-        ├── 对比任务 涉及文件 字段与 git status 文件列表
+        ├── 对比任务 涉及文件 字段与 git status 文件列表（`docs/devdocs/state/` 同 Step 3 处理）
         ├── 变更属于当前任务 → 续做模式（见下方信号表）
         └── 变更不属于当前任务 → Step 5
 
@@ -219,7 +220,7 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 | 验证 Blocker 未修（实现类） | 验证完成 | 修复 Blocker | Impl Agent |
 | 验证 Blocker 未修（测试类：测试文件被修改/测试缺陷） | 验证完成 | 修复测试 | 编排器→AskUserQuestion→Test Agent |
 | 代码提交完成 + 无文档提交（`docs_only_pending`） | 代码提交 | 文档同步 | 编排器 |
-| 有测试提交、无代码提交（执行者模式） | 测试提交 + 注错 | 写实现 | 执行者 |
+| 执行者模式的中断 | 见 [executor-mode.md § 断点续做](executor-mode.md#断点续做) | — | 执行者 |
 | 本批代码已提交、`state/` 有未提交改动、批末 Commit 2 未做 | 逐任务代码提交 | 批末同步（/sync + Commit 2） | 编排器 |
 | 任务状态=已完成但 AC 表不可复核（`verification_pending`） | 代码/文档均已提交 | S8 重跑 AC 完备性 | 编排器 |
 | 任务状态=已完成但 trace 未同步（`trace_pending`） | 代码/文档均已提交 | `/sync` 重跑 + trace 校验 | 编排器 |
@@ -323,7 +324,8 @@ for p in <workspace_context.code_roots[].path>; do git -C "$p" status --porcelai
 └──────────────────────────────────────────────────┘
           │
           ▼
-┌─ 批末（每段一次；不分段即整批一次）─────────────┐
+┌─ 批末（批 = 一个里程碑段；不分段即整次运行）────┐
+│  ≠ 上下文压缩的「每 3 个任务」进度摘要          │
 │  段末停点之后执行；headless 停下返回前同样执行    │
 │  1. /sync                                        │
 │  2. Commit 2: 文档提交（本批各任务状态+追踪）    │
@@ -430,10 +432,10 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 
 编排器无法清掉自己已读入的上下文，每回合都要重读全部历史；会话越长，每回合越贵、一致性越差（[参考](https://www.anthropic.com/engineering/harness-design-long-running-apps)："context anxiety"）。所以靠**换会话**控制，不靠"摘要后继续"：
 
-- 每完成一批（默认 3 个任务）输出进度摘要（已完成 / 失败 / 剩余、各任务 commit hash 与状态），写进检查点文件。
+- 每完成若干任务（默认 3 个，与「批末」Commit 2 无关）输出进度摘要（已完成 / 失败 / 剩余、各任务 commit hash 与状态），写进检查点文件。
 - 剩余任务还多时，提示用户在新会话里继续；新会话从台账（`.keel/bin/keel task list`）和检查点续做，不依赖本会话历史。
 - 大日志、大快照交给子 Agent 读，只回结论，⛔ 不读进编排器上下文。
-- `--headless` 下不能换会话：每批照常写检查点，客户端自动压缩后按检查点恢复。
+- `--headless` 下不能换会话：每次进度摘要照常写检查点，客户端自动压缩后按检查点恢复。
 
 ### 原子提交规则
 
@@ -441,7 +443,7 @@ M-001 已完成实现：<01 §2.5 的目标句原文>
 |------|------|
 | 每任务独立提交 | 不跨任务合并代码变更 |
 | 代码/文档分离 | Commit 1 = 代码，逐任务；Commit 2 = 文档状态更新 + trace 同步结果，批末一次（批量模式与执行者模式的派单方；单任务即一次）。`task commit` 与状态改动逐任务由工具写入 `state/`，等批末一起提交 |
-| 洁净校验 | 每任务 Commit 1 后 `docs/devdocs/` 以外洁净（外壳仓的子模块指针变更同属 Commit 2，不算）；批末 Commit 2 后全洁净 |
+| 洁净校验 | 每任务 Commit 1 后 `docs/devdocs/` 以外洁净（外壳仓 gitlink 条目按 [protocol.md § 7](../../workspace-topology/references/protocol.md#7-工作区洁净检查gitlink-排除) 排除）；批末 Commit 2 后全洁净。工具写入、未提交的 `docs/devdocs/state/` 改动属于本批待做的 Commit 2，⛔ 不算不相关变更（断点检测、启动前洁净校验同此） |
 | 提交前检查 | 必须通过完成检查后才能提交 |
 | `--single-commit` | 可选参数，将代码+文档合并为单次提交 |
 
