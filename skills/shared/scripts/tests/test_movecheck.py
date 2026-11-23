@@ -56,6 +56,7 @@ class FindGlueTest(unittest.TestCase):
             rc, out, _ = helpers.run_keel(root, "move-check", "HEAD~1..HEAD")
         self.assertEqual(rc, 0)
         self.assertIn("胶水", out)
+        self.assertNotIn("搬动 0 行", out)
         self.assertIn("return 1", out)
 
 
