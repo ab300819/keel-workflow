@@ -11,7 +11,7 @@ from typing import Any
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from keellib import backlog, gates, hookio, install, migrate, schema, store, tasks  # noqa: E402
+from keellib import backlog, gates, hookio, install, migrate, movecheck, schema, store, tasks  # noqa: E402
 from keellib.common import write_session  # noqa: E402
 
 
@@ -131,6 +131,9 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("check", help="K1–K4 门禁检查")
     p.add_argument("--staged", action="store_true")
     p.add_argument("--paths", nargs="+")
+    p = sub.add_parser("move-check", help="判定 diff 是逐字搬动还是夹带胶水")
+    p.add_argument("rev_range")
+    p.add_argument("paths", nargs="*")
     gp = sub.add_parser("gate", help="档位与命中报告").add_subparsers(dest="gate_cmd", required=True)
     p = gp.add_parser("set")
     p.add_argument("gate")
@@ -175,6 +178,12 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_task(project, args)
         if args.cmd == "check":
             return gates.run_check(project, args.staged, args.paths)
+        if args.cmd == "move-check":
+            moved, glue = movecheck.run(project.root, args.rev_range, args.paths)
+            print(f"搬动 {moved} 行，胶水 {len(glue)} 行，其中疑似改逻辑 {sum(x.logic for x in glue)} 行")
+            for x in glue:
+                print(f"{x.path} {x.sign} {x.text}{'  ← 改逻辑' if x.logic else ''}")
+            return 0
         if args.cmd == "gate":
             if args.gate_cmd == "set":
                 gates.gate_set(project, args.gate, args.level, args.reason)
