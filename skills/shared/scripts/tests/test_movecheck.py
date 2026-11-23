@@ -41,6 +41,23 @@ class FindGlueTest(unittest.TestCase):
         self.assertEqual(len(glue), 1)
         self.assertFalse(glue[0].logic)
 
+    def test_more_logic_forms(self) -> None:
+        for line in ("ok = a and b", "x = not y", "raise E()", "break", "yield x", "await f()",
+                     "x = None", "done = true", "ok = a < b", "ok = a > b", "ok = !a", "x = a ? b : c",
+                     "#define N 5", "#if X", "*p = 0"):
+            self.assertTrue(movecheck.is_logic(line), line)
+
+    def test_not_logic_forms(self) -> None:
+        for line in ("xs: List<int>", "f = x => y", "a?: number", "# comment", " * doc", "#", "/* c */",
+                     "#!/usr/bin/env python3", "*/"):
+            self.assertFalse(movecheck.is_logic(line), line)
+
+    def test_glue_line_numbers(self) -> None:
+        text = "\n".join(["diff --git a/a.py b/a.py", "--- a/a.py", "+++ b/a.py", "@@ -3,2 +10,3 @@",
+                          " ctx", "-old1", "+new1", "+new2"]) + "\n"
+        _, glue = movecheck.find_glue(text)
+        self.assertEqual([(g.sign, g.line, g.text) for g in glue], [("-", 4, "old1"), ("+", 11, "new1"), ("+", 12, "new2")])
+
     def test_cli_reports_and_exits_zero(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = helpers.make_project(tmp)
@@ -57,7 +74,7 @@ class FindGlueTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("胶水", out)
         self.assertNotIn("搬动 0 行", out)
-        self.assertIn("return 1", out)
+        self.assertIn("b.py:4 + return 1", out)
 
 
 if __name__ == "__main__":

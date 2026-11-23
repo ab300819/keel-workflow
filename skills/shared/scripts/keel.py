@@ -184,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
             moved, glue = movecheck.run(project.root, args.rev_range, args.paths)
             print(f"搬动 {moved} 行，胶水 {len(glue)} 行，其中疑似改逻辑 {sum(x.logic for x in glue)} 行")
             for x in glue:
-                print(f"{x.path} {x.sign} {x.text}{'  ← 改逻辑' if x.logic else ''}")
+                print(f"{x.path}:{x.line} {x.sign} {x.text}{'  ← 改逻辑' if x.logic else ''}")
             return 0
         if args.cmd == "gate":
             if args.gate_cmd == "set":

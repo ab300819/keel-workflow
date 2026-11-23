@@ -114,10 +114,10 @@ class DoneGateTest(unittest.TestCase):
         self.assert_rejected(PENDING, "之后改了测试")
 
     def test_freeze_with_space_in_name(self) -> None:
-        self._freeze_case("test x.py")  # 按空白切分会得到 x.py，避开 a.py
+        self._freeze_case("test_a x.py")  # 按空白切分会得到 x.py，避开 a.py
 
     def test_freeze_with_non_ascii_name(self) -> None:
-        self._freeze_case("测试_a.py")
+        self._freeze_case("测试_test.py")
 
     def test_later_test_commit_may_edit_earlier_test(self) -> None:
         self.add()
@@ -130,6 +130,89 @@ class DoneGateTest(unittest.TestCase):
         self.record()
         rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
         self.assertEqual(rc, 0, err)
+
+    def _run(self, plan: "list[tuple[str, bool]]") -> "tuple[int, str]":
+        self.record()
+        for sha, test in plan:
+            self.reg(sha, test=test)
+        rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
+        return rc, err
+
+    def test_skeleton_in_test_commit_not_frozen(self) -> None:
+        self.add()
+        t = self.make_commit({"test_a.py": "assert f() == 1\n", "a.py": "def f():\n    raise NotImplementedError\n"})
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"})
+        rc, err = self._run([(t, True), (c, False)])
+        self.assertEqual(rc, 0, err)
+
+    def test_test_file_beside_skeleton_still_frozen(self) -> None:
+        self.add()
+        t = self.make_commit({"test_a.py": "assert f() == 1\n", "a.py": "def f():\n    raise NotImplementedError\n"})
+        c = self.make_commit({"a.py": "def f():\n    return 1\n", "test_a.py": "assert f() == 2\n"})
+        rc, err = self._run([(t, True), (c, False)])
+        self.assertEqual(rc, 1)
+        self.assertIn("之后改了测试", err)
+
+    def test_test_commit_without_test_files_rejected(self) -> None:
+        self.add()
+        t = self.make_commit({"a.py": "def f():\n    raise NotImplementedError\n"})
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"})
+        rc, err = self._run([(t, True), (c, False)])
+        self.assertEqual(rc, 1)
+        self.assertIn(f"测试提交 {t} 里没有识别出测试文件（按路径规则）", err)
+
+    def test_test_path_patterns(self) -> None:
+        from keellib import donegate
+        for p in ("tests/a.py", "src/__tests__/a.js", "spec/a.rb", "a/test/b.go", "test_a.py", "a_test.go",
+                  "a.test.ts", "a.spec.ts", "FooTest.java", "FooTests.cs", "a_spec.rb"):
+            self.assertTrue(donegate.is_test_path(p), p)
+        for p in ("a.py", "src/testing.py", "latest.py", "contest/a.py"):
+            self.assertFalse(donegate.is_test_path(p), p)
+
+    def _weaken_plan(self) -> "list[tuple[str, bool]]":
+        self.add()
+        t1 = self.make_commit({"test_a.py": "assert f() == 1\n"})
+        c1 = self.make_commit({"a.py": "def f():\n    return 2\n"})
+        t2 = self.make_commit({"test_a.py": "assert f() == 2\n"})
+        c2 = self.make_commit({"b.py": "x = 1\n"})
+        return [(t1, True), (c1, False), (t2, True), (c2, False)]
+
+    def test_test_edited_after_code_commit_rejected(self) -> None:
+        rc, err = self._run(self._weaken_plan())
+        self.assertEqual(rc, 1)
+        self.assertIn("之后改了测试", err)
+
+    def test_test_edited_after_code_commit_rejected_out_of_order(self) -> None:
+        t1, c1, t2, c2 = self._weaken_plan()
+        rc, err = self._run([t2, c2, c1, t1])
+        self.assertEqual(rc, 1)
+        self.assertIn("之后改了测试", err)
+
+    def test_later_test_commit_edit_out_of_order_registration(self) -> None:
+        self.add()
+        t1 = self.make_commit({"test_a.py": "assert f() == 1\n"})
+        t2 = self.make_commit({"test_a.py": "assert f() == 1\nassert f() > 0\n"})
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"})
+        rc, err = self._run([(c, False), (t2, True), (t1, True)])
+        self.assertEqual(rc, 0, err)
+
+    def test_root_commit_test_still_frozen(self) -> None:
+        self.add()
+        os.makedirs(os.path.join(self.root, "svc"))
+        helpers.git(os.path.join(self.root, "svc"), "init", "-q")
+        t = self.make_commit({"test_a.py": "assert f() == 1\n"}, repo="svc")
+        c = self.make_commit({"a.py": "def f():\n    return 1\n", "test_a.py": "assert f() == 2\n"}, repo="svc")
+        self.record()
+        self.reg(t, test=True, repo="svc")
+        self.reg(c, repo="svc")
+        self.assert_rejected(PENDING, "之后改了测试")
+
+    def test_merge_base_failure_is_git_error(self) -> None:
+        from keellib import donegate
+        from keellib.store import KeelError
+        with self.assertRaises(KeelError) as cm:
+            donegate._is_ancestor(self.root, "HEAD:docs", "HEAD")  # 树对象，merge-base 退出码 128
+        self.assertIn("git merge-base", str(cm.exception))
 
     def test_record_outside_project_rejected(self) -> None:
         self.add()
@@ -156,6 +239,7 @@ class DoneGateTest(unittest.TestCase):
         self.reg("a" * 40, test=True)
         self.record()
         self.assert_rejected(PENDING, "解析不到")
+        self.assert_rejected(PENDING, "linked 代码根在项目外时，完成门暂不支持登记测试提交")
 
     def test_resolves_sha_in_subrepo_dir(self) -> None:
         self.add()
@@ -211,6 +295,13 @@ class DoneGateTest(unittest.TestCase):
         self.assert_rejected(("--status", "已完成"), "改 --profile guarded")
         rc, _, err = run_keel(self.root, "task", "set", "T-1", "--profile", "guarded", *PENDING)
         self.assertEqual(rc, 0, err)
+
+    def test_move_comparison_flip_rejected(self) -> None:
+        self.add("move")
+        self.make_commit({"a.py": "def f(a, b):\n    ok = a < b\n    use(ok)\n"})
+        c = self.make_commit({"a.py": None, "b.py": "def f(a, b):\n    ok = a > b\n    use(ok)\n"})
+        self.reg(c)
+        self.assert_rejected(("--status", "已完成"), "b.py:2 + ok = a > b")
 
     def test_move_pure_passes(self) -> None:
         self.add("move")
