@@ -356,7 +356,7 @@ Phase 4 有两条触发路径，**工作区 diff 只对其中一条有效**：
 | 触发模式 | 发生时点 | diff 源 |
 |---------|---------|--------|
 | **inline**（audit） | Commit 1 **之前** | 工作区 diff（`uncommitted: true`）——此时工作区改动即本任务改动 |
-| **drain**（fast/guarded，经 `/verify --review-drain`） | Commit 1 **之后** | **该任务 Commit 1 的提交 diff** |
+| **drain**（fast/guarded，经 `/verify --review-drain`） | Commit 1 **之后** | **`.keel/bin/keel task get <id> --diff-range` 给出的范围**（每仓 `<repo> <first>^..<last>`，含测试提交） |
 
 > ⛔ **drain 路径禁止使用工作区 diff**。Commit 1 已落盘时工作区为空，沿用 `uncommitted: true` 会让外审收到**空 diff**（即"审了但什么都没看到"）。
 >
@@ -364,11 +364,21 @@ Phase 4 有两条触发路径，**工作区 diff 只对其中一条有效**：
 
 drain 侧定位规则（读任务台账，⛔ 不 grep git log）：
 
-1. 从任务状态的 `commits`（`.keel/bin/keel task get <id>`）取该任务 Commit 1 的 `<repository>@<sha>`；sha 解析不到时按 [SKILL.md §任务台账](../SKILL.md) 的 Recovery 处理。
-2. 外审输入 = 该 Commit 1 的 diff。**Commit 2 是纯文档提交，不入外审输入。**
+1. 用 `.keel/bin/keel task get <id> --diff-range` 取该任务各仓的提交范围（读台账，⛔ 不 grep git log）；sha 解析不到时按 [SKILL.md §任务台账](../SKILL.md) 的 Recovery 处理。
+2. 外审输入 = 该范围的 diff。**Commit 2 是纯文档提交，不入外审输入。**
 3. T2 通道 drain 侧须传入显式 diff 内容或 commit 范围（契约见 [external-reviewer-integration.md](../../adversarial-review/references/external-reviewer-integration.md)）。
-4. **`mode` 不是 `inline` 时**：Commit 1 按代码根拆成 N 个 commit（见 [protocol.md N+1 仓提交协议](../../workspace-topology/references/protocol.md)）。drain 侧须**逐 code_root 定位并拼接**；外壳仓 Commit 2（文档 + 指针 bump）不参与。
+4. **`mode` 不是 `inline` 时**：Commit 1 按代码根拆成 N 个 commit（见 [protocol.md N+1 仓提交协议](../../workspace-topology/references/protocol.md)）。`--diff-range` 已按仓给出范围，drain 侧**逐 code_root 取 diff 并拼接**；外壳仓 Commit 2（文档 + 指针 bump）不参与。
 5. diff 为空（任务确无代码变更）→ 记 `drain.empty_diff`，跳过 Phase 4 但**不判 `EXT_REVIEWED`**——无审查即无证据。
+
+### move 档
+
+`move` 档（纯移动、行为不变的拆分搬移）不做独立审查，Commit 1 后直接 `已完成`；完成门检查见 [constraints.md §完成门](../../shared/constraints.md)，此处只写判定规则。
+
+- 证据：`keel move-check <范围> [路径]` 打印搬动行数、胶水行数与胶水清单（逻辑类标注），退出码恒 0——它是证据，不是门禁。
+- 胶水允许：声明、签名、调用、import/using、括号、访问修饰符、构造参数透传。
+- 视为改逻辑：条件、运算、字面量、返回值改动。出现 → 不是纯移动，升 `guarded`。
+- 执行者交卡前先按上述规则自判，不合规自己升 `guarded`；合规的胶水清单随交卡发回，派单方按批过目一次，不逐卡审。
+- 派单方事后否决：不回滚已完成或已归档的卡，另开修复卡，`--derived-from` 指向原卡。
 
 **默认轮次**：`max_rounds=3`（dev-workflow 嵌入收紧值）。`--external-rounds N` 覆盖上限 5（对齐 /adversarial-review 自身默认）。
 

@@ -104,7 +104,7 @@ spec_version_notes: |
 | S4-S7 红绿重构 | Test Agent 写断言；编排器红验；Impl Agent 实现、绿验、重构；绿验必须 `skipped/todo=0`；注释遵循 [`/code-quality` 注释规范](../code-quality/SKILL.md#注释规范)（禁止变更日志式/来源记录式注释，含修复循环），日志遵循 [日志规范](../code-quality/SKILL.md#日志规范)（安全红线/级别纪律/禁 log-and-throw）|
 | S8 完成检查 | 质量地板 5 条 + AC 完备性表（fast 证据摘要 / audit 完整 AC 类型×证据矩阵）+ 声称 vs 实际 diff 交叉验证；缺证据或未关联大块 diff → ⛔ 禁止继续 |
 | S9 前置验证 | guarded/audit `/verify --impl`；fast 仅质量地板（不跑前置验证）；🟢 UI 任务有设计稿时另跑 `/verify --ui --impl` 对齐设计稿（不随 profile 变） |
-| S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：时机按 review_profile（见 constraints.md § review_profile 三档）；`--review` 可临时叠加 inline |
+| S9 Phase 1~3 | 内置角色演绎对抗式验证（独立审查）：时机按 review_profile（见 constraints.md § review_profile 四档）；`--review` 可临时叠加 inline |
 | S9 Phase 4 | 外部对抗审查 embedded-headless（独立审查）：时机同上；T1 codex CLI → T2 codex-mcp，T1/T2 全失败 fail-fast；状态 `EXT_REVIEWED`/`EXT_UNRESOLVED`/`EXT_BLOCKED` |
 | S10 自描述 | `/code-self-describe --update`（`workspace_context.capabilities.code_metadata_write_policy` 为 `explicit_opt_in` 时**默认跳过**——自描述产物写在代码目录内，违反零污染红线。跳过须在 yaml 摘要里以 ℹ️ 记录 `skipped: code_metadata_write_policy=explicit_opt_in`。用户显式 `--force-code-docs` 才执行） |
 | S11 Commit 1 | 代码提交，遵循「提交信息格式」；Phase 4 结果与提交按 [§ 任务台账](#任务台账流程状态的唯一载体) 经 keel 命令登记 |
@@ -138,7 +138,7 @@ spec_version_notes: |
 
 所有任务遵循统一 11 步执行流程 + 5 条质量地板(恒定 inline);`review_profile` 只决定**独立审查(Phase 1~3 + Phase 4)的时机**:
 
-三档各自的质量地板、前置验证与独立审查时机见 [constraints.md § review_profile 三档](../shared/constraints.md)，⛔ 本文件不复述。本 skill 自己的两件事：
+四档各自的质量地板、前置验证与独立审查时机见 [constraints.md § review_profile 四档](../shared/constraints.md)，⛔ 本文件不复述。本 skill 自己的两件事：
 
 | review_profile | 触发 | Commit 1 后任务状态 |
 |------|------|------|
@@ -270,7 +270,7 @@ spec_version_notes: |
 ### 对抗式验证约束
 
 - [ ] **Blocker 必须修复后才能提交**；每个 Phase 声明审查角色；结果分级（Blocker/Suggestion）
-- [ ] **独立审查时机按 review_profile**（见 constraints.md § review_profile 三档）；修复 Blocker 后重新运行验证
+- [ ] **独立审查时机按 review_profile**（见 constraints.md § review_profile 四档）；修复 Blocker 后重新运行验证
 - [ ] **drain 侧外审必须用 Commit 1 的提交 diff**，⛔ 不得用工作区 diff（否则收到空 diff，等于未审）；见 [verification-flow.md § diff 源](references/verification-flow.md)
 
 ### 依赖解析约束

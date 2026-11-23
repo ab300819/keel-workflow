@@ -148,7 +148,7 @@ expected_output: yaml-summary-v1
 - `task/handshake-minimum`：`task`、`mode`、`inputs`、`allowed_paths`、`expected_output` 是推荐最小握手字段。
 - `task/normalized-intent-shape` `[新增]`：`normalized_intent` 承载编排层归一化后的档位与授权，字段固定为：
   - `ceremony`: `fast` | `standard` | `deep` —— 交互详略（少确认 / 默认 / 逐步确认）
-  - `review_profile`: `fast` | `guarded` | `audit` —— 独立审查时机
+  - `review_profile`: `fast` | `guarded` | `audit` | `move` —— 独立审查时机
   - `unattended`: `true` | `false` —— 用户是否明确授权无人值守（缺省 `false`）
   - `granted_scope`: 一句话记录用户授权了什么，供 `task/consent-at-action` 判定「是否超范围」
   - 持久化位置：随断点检查点一同保存（v1 为 `docs/devdocs/.batch-checkpoint.json`），续做时原样恢复，⛔ 不重新推断。
@@ -503,18 +503,21 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 ## review_profile 与 review_pending(dev-workflow 核心,跨 skill SSOT)
 
-### review_profile 三档
+### review_profile 四档
 | 档 | 双 Agent 红绿 | 质量地板 | 前置验证 `/verify --impl` | 独立审查(Phase 1~3 + Phase 4) |
 |----|:---:|:---:|:---:|------|
 | fast(默认) | ✓ | ✓ | — | 延后到批/sprint drain |
 | guarded | ✓ | ✓ | inline 阻塞 | Phase 4 延后;Phase 1~3 风险触发则 inline |
 | audit | ✓ | ✓ | inline 阻塞 | inline fail-fast(不延后) |
+| move | 测试先于代码（复用或本卡补表征测试） | ✓ | — | 不做；Commit 1 后直接已完成，由完成门检查纯移动 |
+
+move 判定不过 → 升 guarded。判定规则见 [verification-flow.md §move 档](../dev-workflow/references/verification-flow.md)。
 
 > review_profile 只改**独立审查的时机**,绝不降低质量地板。层级标签 🔴🟡🟢⚪ 降级为风险分类器的输入信号之一,不再是流程开关。
 
 ### 质量地板(5 条,所有档恒定 inline,不可协商)
 1. 绿验 `skipped/todo=0`
-2. 测试写成红验通过即冻结(实现不得改测试,疑似缺陷须 AskUserQuestion)
+2. 测试写成红验通过即冻结(实现不得改测试,疑似缺陷须 AskUserQuestion)；表征测试与 move 卡为绿验通过即冻结，见 execution-flow S5 例外
 3. 声称 vs 实际 diff 一致
 4. **每条被本任务满足的需求至少 1 条独立证据**(不能只靠实现代码自证;无则显式豁免)：
    - 行为型 `AC` → 独立行为证据(测试 / `--ui --live` 截图 / 显式豁免记录)
@@ -522,6 +525,22 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
    - 制品型 `CON`（`档 = 人工`）→ **人工核对留证**：谁、何时、观察到什么。⛔ 不接受「已检查」三字
    > 原文只写「行为型 AC」，`CON` 引入后会**落出证据要求之外**——制品型任务本来最容易只靠"我改了配置"自证。
 5. 受影响测试后置 `/test-run --affected`
+
+### 完成门（工具检查）
+
+`task set <id> --status 已完成|review_pending` 写入前，keel 对该卡登记的提交做下列检查（仅当卡登记了 `kind=test` 提交，或为 `move` 档且目标为 `已完成` 时触发）。任一不过 → 退出码 1、文件不变、提示原因。本节是完成门的唯一文字真源。
+
+| 检查 | 条件 | 判定 |
+|---|---|---|
+| 测试先于代码 | 登记了 `kind=test` 的提交 | 每个代码提交都以某个更早的测试提交为祖先（`git merge-base --is-ancestor`） |
+| 测试冻结 | 同上 | 测试提交里的测试文件，在最晚测试提交到该代码提交之间没有改动 |
+| 纯移动 | `review_profile=move` 且目标状态为 `已完成` | 在登记范围上跑 `keel move-check`；胶水含逻辑改动（控制流、比较或逻辑运算符、数字或字符串字面量）→ 拒绝「已完成」，提示改 `--profile guarded` |
+| 注错记录 | 登记了 `kind=test` 的提交 | `--record` 指向项目内存在的 `audit/<id>/`（只查有记录，查不了是否真做） |
+
+- 不压缩合并：测试提交与代码提交是同一个 sha 时「测试先于代码」不成立，被拒。
+- 没有测试提交的卡（复用已有表征测试集的 `move` 卡、非编码卡）跳过测试先于代码、冻结与注错记录检查。
+- sha 在项目根或 `<根>/<repo>` 本地解析不到 → 退出码 1，先把执行者分支合进来再登记。
+- ⛔ 不提供跳过开关；误拦的出路是升 `guarded`。
 
 ### review_pending(任务状态)
 - 含义:fast/guarded 任务代码已提交(Commit 1 已落盘),但延后的独立审查尚未做,**状态 ≠ 已完成**。
@@ -549,7 +568,7 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
 
 | 字段 | 何时写 | 语义 |
 |---------|------|------|
-| `commits` | Commit 1 落盘后由 Commit 2 写入：`task commit <id> <repository>@<full-sha> --note "<一句话>"`，可多条 | 与追溯矩阵「变更来源」同形状；考古索引，⛔ 不作门控依据 |
+| `commits` | Commit 1 落盘后由 Commit 2 写入：`task commit <id> <repository>@<full-sha> --note "<一句话>"`，可多条 | 与追溯矩阵「变更来源」同形状；测试提交加 `--kind test`；完成门据此检查顺序与冻结（见 §完成门） |
 | `batch` / `due` / `pending_reason` | fast/guarded 延后时，随 `--status review_pending` 一起写 | 见上方 review_pending |
 | `ext_review_state` | audit Phase 4 | 由 L2 yaml 派生 |
 | `skip_trace_reason` | 单任务 `--skip-trace` | 跳过后置 trace 校验的原因 |

@@ -116,7 +116,7 @@
 | S6/S7 实现 + 重构 | ■ | ■ | ■ |
 | 质量地板 5 条 | ■ | ■ | ■ |
 | S8 完成检查(AC 完备表) | ■(证据摘要) | ■ | ■(完整矩阵) |
-| S9 前置验证 / Phase 1~3 内审 / Phase 4 外审 | 按 [constraints.md § review_profile 三档](../../shared/constraints.md) | 同 | 同 |
+| S9 前置验证 / Phase 1~3 内审 / Phase 4 外审 | 按 [constraints.md § review_profile 四档](../../shared/constraints.md) | 同 | 同 |
 | S10 自描述 / S11 Commit 1 | ■ | ■ | ■ |
 | UI Phase 2-UI 自查(仅 UI 任务) | 按 ui-quality-checklist.md(不随 profile 变) | 同 | 同 |
 
@@ -135,6 +135,7 @@
 |----|---------|---------|
 | S5 红验 | 新测试意外通过（测试无效） | Test Agent 修复测试 |
 | S5 红验 | 出现基线外的新失败（骨架破坏存量功能） | Test Agent 修复骨架 |
+| S5 红验（例外） | `move` 档，或表征测试（期望值取自基线） | 测试提交上应全绿，「意外通过」不适用；冻结、不可变、注错规则不变 |
 | S6 绿验 | `skipped/todo` 计数 > 0（质量地板 1） | Test Agent 补齐断言（豁免须在任务文档登记原因） |
 | S6 绿验 | 实现修复超过重试上限（默认 3 次） | 报告 `test_defects` 并停止，交用户确认 |
 | S8 完成检查 | AC 缺证据 / 违反分级矩阵 / 遗漏实现 / 大块 diff 无关联 | S6 补实现，或 S4 补测试 |
