@@ -95,6 +95,54 @@ class DoneGateTest(unittest.TestCase):
         self.record()
         self.assert_rejected(PENDING, "之前没有测试提交")
 
+    def test_mixed_short_long_squash_rejected(self) -> None:
+        self.add()
+        s = self.make_commit({"test_a.py": "assert f() == 1\n", "a.py": "def f():\n    return 1\n"})
+        self.reg(s[:7], test=True)
+        self.reg(s)
+        self.record()
+        self.assert_rejected(PENDING, "之前没有测试提交")
+
+    def _freeze_case(self, name: str) -> None:
+        self.add()
+        helpers.git(self.root, "config", "core.quotepath", "true")  # 默认值；本机全局配置可能关了它
+        t = self.make_commit({name: "assert f() == 1\n"})
+        c = self.make_commit({"a.py": "def f():\n    return 1\n", name: "assert f() == 2\n"})
+        self.reg(t, test=True)
+        self.reg(c)
+        self.record()
+        self.assert_rejected(PENDING, "之后改了测试")
+
+    def test_freeze_with_space_in_name(self) -> None:
+        self._freeze_case("test x.py")  # 按空白切分会得到 x.py，避开 a.py
+
+    def test_freeze_with_non_ascii_name(self) -> None:
+        self._freeze_case("测试_a.py")
+
+    def test_later_test_commit_may_edit_earlier_test(self) -> None:
+        self.add()
+        t1 = self.make_commit({"test_a.py": "assert f() == 1\n"})
+        t2 = self.make_commit({"test_a.py": "assert f() == 1\nassert f() > 0\n"})
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"})
+        self.reg(t1, test=True)
+        self.reg(t2, test=True)
+        self.reg(c)
+        self.record()
+        rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
+        self.assertEqual(rc, 0, err)
+
+    def test_record_outside_project_rejected(self) -> None:
+        self.add()
+        t = self.make_commit({"test_a.py": "assert f() == 1\n"})
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"})
+        self.reg(t, test=True)
+        self.reg(c)
+        other = tempfile.TemporaryDirectory()
+        self.addCleanup(other.cleanup)
+        rel = os.path.relpath(os.path.realpath(other.name), self.root)  # ../../tmpXXX，真实存在
+        self.assertEqual(run_keel(self.root, "task", "set", "T-1", "--record", rel)[0], 0)
+        self.assert_rejected(PENDING, "注错记录")
+
     def test_missing_record_rejected(self) -> None:
         self.add()
         t = self.make_commit({"test_a.py": "assert f() == 1\n"})
