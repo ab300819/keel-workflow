@@ -572,6 +572,7 @@ grep -oh 'T-[0-9]\{2\}' <files> | sort | tail -1
   - K2：`04-dev-tasks.md` 的生成区（`<!-- keel:begin ledger -->` 与 `<!-- keel:end ledger -->` 之间）和 `backlog.md` 整份由工具生成，⛔ 不手工编辑。
   - K3 / K4：状态载体文件（`04-dev-tasks*.md`、`backlog.md`、`00-context.md`、`.claude/rules/devdocs-state.md`）里新增或改动的超长行、超体积后继续变大，都会被拦。长文本写到 `audit/T-xxx/` 或 `backlog/<id>.md`，状态里只存链接。
   - K5：字段取值、条件必填、文本上限、依赖编号由工具校验，不可调。
+- `keel/worktree`：在 git worktree（非主工作树）里，写台账的命令一律拒绝（退出码 3），提示里给出主工作树路径；读命令照常，读到的是该分支上的版本，可能比主工作树旧。多 agent 并行时把状态变更交给负责台账的会话；独自开发时到主工作树执行同一条命令。⛔ 不在 worktree 里绕开工具改状态文件。
 - `keel/read`：读状态用 `04-dev-tasks.md` 生成区，或 `.keel/bin/keel task get <id>` / `task list [--status …] [--fields …]` / `backlog get <锚点>` / `backlog list [--status …]`。`list` 末尾附覆盖情况，有无法识别的条目时如实报告，⛔ 不静默漏计。
 - `keel/human-only`：以下命令只能由用户执行，⛔ 模型不自行调用（hook 也会拒绝）。遇到时把命令原样交给用户，并说明：这一步只能由人在交互终端执行，另开一个终端，在项目根目录运行（Claude Code 的 `!` 命令没有控制终端，不可用）：
   - 手工解决状态文件的合并冲突，或用户确认工具报出的非工具改动合法：`.keel/bin/keel state accept`

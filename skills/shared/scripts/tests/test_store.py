@@ -251,6 +251,30 @@ class StoreTest(unittest.TestCase):
         store.cleanup_tmp(Project.find(root))
         self.assertFalse(os.path.exists(tmpf))
 
+    def test_worktree_refuses_ledger_writes(self) -> None:
+        """linked worktree 里写台账拒绝（退出码 3、文件不变），读照常；主工作树照常写。"""
+        root = self.init_project()
+        self.assertEqual(run_keel(root, "task", "add", "--title", "x", "--source", "dev-tasks")[0], 0)
+        git(root, "add", "-A")
+        git(root, "commit", "-qm", "T-1")
+        wt = os.path.join(self.tmp, "wt")
+        git(root, "worktree", "add", "-q", "-b", "wt", wt)
+        t1 = os.path.join(wt, "docs/devdocs/state/tasks/T-1.json")
+        with open(t1, "rb") as f:
+            before = f.read()
+        for args in (("task", "set", "T-1", "--status", "进行中"),
+                     ("task", "add", "--title", "y", "--source", "dev-tasks"), ("init",)):
+            code, _, err = run_keel(wt, *args)
+            self.assertEqual(code, 3, args)
+            self.assertIn("主工作树写：" + root, err)
+        with open(t1, "rb") as f:
+            self.assertEqual(f.read(), before)
+        self.assertFalse(os.path.exists(os.path.join(wt, "docs/devdocs/state/tasks/T-2.json")))
+        code, out, _ = run_keel(wt, "task", "get", "T-1")
+        self.assertEqual(code, 0)
+        self.assertIn("T-1", out)
+        self.assertEqual(run_keel(root, "task", "set", "T-1", "--status", "进行中")[0], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -96,9 +96,27 @@ class Project:
             if os.path.islink(p):
                 raise KeelError(f"{os.path.relpath(p, self.root)} 是符号链接，拒绝操作", 3)
 
+    def refuse_in_worktree(self) -> None:
+        """linked worktree 里各写各分支的台账，合并必冲突：台账只在主工作树写。"""
+        gd, cd = _git(self.root, "rev-parse", "--git-dir"), _git(self.root, "rev-parse", "--git-common-dir")
+        if gd is None or cd is None:
+            return
+        if os.path.realpath(os.path.join(self.root, gd.decode().strip())) == \
+                os.path.realpath(os.path.join(self.root, cd.decode().strip())):
+            return
+        first = (_git(self.root, "worktree", "list", "--porcelain") or b"").decode("utf-8", "replace").split("\n\n")[0]
+        lines = first.splitlines()
+        main = lines[0].partition(" ")[2] if lines else ""
+        if "bare" in lines:
+            raise KeelError(f"这里是 git worktree，主仓 {main} 是 bare 仓库、没有主工作树，台账无法写入", 3)
+        raise KeelError(f"这里是 git worktree，台账只在主工作树写：{main}。多 agent 并行时交给负责台账的会话；"
+                        "独自开发时到主工作树执行同一条命令", 3)
+
     @contextmanager
     def lock(self, timeout: float = 5.0, shared: bool = False) -> Iterator[None]:
         """写方用排他锁；只读检查（Post、pre-commit）用共享锁，避免看到写到一半的状态。"""
+        if not shared:
+            self.refuse_in_worktree()
         self.check_links()
         os.makedirs(self.keel_dir, exist_ok=True)
         try:  # O_NOFOLLOW 且不截断：lock 若是指向别处的符号链接则拒绝

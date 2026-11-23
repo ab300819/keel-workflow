@@ -85,11 +85,13 @@ workspace:
 | 跟踪了 mode 160000 但 `.gitmodules` 无对应条目（裸 gitlink） | ⛔ | ⛔ | ⛔ |
 | 解析后路径逃逸出已授权工作范围 | ⛔ | ⛔ | ⛔ |
 | `inline` 却出现 `code_roots` | ⚠️ 警告并忽略 | — | — |
+| 项目根有 `.worktree/` 但没被 git 忽略 | ⚠️ | ⚠️ | ⚠️ |
 
 「声明的代码根解析不到实体」在 health 只读扫描中对应 `submodule/pointer-drift` rule，见 [health-lint-implementation.md § submodule/pointer-drift](../../pipeline/references/health-lint-implementation.md#submodulepointer-drift)（该 rule 仅 `shell` 适用；`linked` 无 gitlink，无等价 rule）。
 
 - `workspace/fail-closed`：见上表，校验按 mode 分家。两处相对 v1 的实质变化：（1）「声明的代码根解析不到」从 ⛔ 降为 ⚠️ 另列——流程不碰的代码根没 init 不该挡死整条流程，且那是一条命令可恢复的状态，不是损坏；（2）`path` 含 `..` 或为绝对路径在 `linked` 下合法。`linked` 下不检查 path 互为前缀 —— spec 明确「多个引用指向同一目标可能是有意的，只认不评判」；该检查在 `shell` 下成立是因为嵌套子模块属依赖项、不该进 `code_roots`。
 - `workspace/bare-gitlink`：跟踪了 mode 160000 的条目但 `.gitmodules` 无对应 submodule 条目 → ⛔ 全 mode 阻塞。这是客观损坏：clone 下来是空目录且无法 `git submodule update` 恢复，git 自身只输出 hint 不拦截。
+- `workspace/worktree-dir`：项目根有 `.worktree/` 但 `git check-ignore -q .worktree/` 不成立 → ⚠️，提示把 `.worktree/` 加进项目根 `.gitignore`。不忽略的话 `git add -A` 会把里面的 worktree 记成 gitlink；真提交进去后由 `workspace/bare-gitlink` ⛔ 兜底，所以这里只警告。约定见 [../SKILL.md § worktree](../SKILL.md#worktree)。
 - `workspace/path-not-authorization`：`AGENTS.md` 是版本控制里的普通文件，可能来自不可信来源（clone 他人的仓、合并他人的分支），而 `path` 允许绝对路径、`..` 与符号链接。**解析出的路径不得自动扩大 agent 的可写范围**：逃逸出已授权工作范围 ⛔ 拒绝并报告；符号链接按**解析后的真实目标**判定，不按链接自身位置；绝对路径是本机绑定事实，报告时如实标注，⛔ 不得呈现为「可移植的仓库事实」。允许写下某个路径，不等于允许往那里写文件。
 
 ## 4. 归属判定

@@ -205,6 +205,14 @@ workspace:
 | 裸 gitlink（跟踪 mode 160000 但 `.gitmodules` 无条目） | ⛔ 全 mode——客观损坏，clone 下来是空目录且无法恢复 |
 | 解析后路径逃逸出已授权工作范围 | ⛔ 全 mode——路径声明不是写权限授权 |
 
+## worktree
+
+用 git worktree 并行开发时，约定放在 `<项目根>/.worktree/<应用>-<分支>`（分支名里的 `/` 换成 `-`；`inline` 的「应用」取仓库目录名），并把 `.worktree/` 写进项目根 `.gitignore`。由用户、PM 或用户自己的脚本建删，本 skill **只认不造**。
+
+- `inspect` 的报告里列出 `.worktree/` 下各目录及当前分支（ℹ️），⛔ 不进 `workspace-context.v2` 契约。
+- 没被忽略 → ⚠️，见 [protocol.md § workspace/worktree-dir](references/protocol.md)。
+- worktree 里写不了台账，见 [constraints.md § keel 工具 `keel/worktree`](../shared/constraints.md#keel-工具)。
+
 ## 仓根残留文件
 
 `shell` 下，仓库根不在 `docs/`、不属任何 `code_root` 的**已跟踪文件** → ℹ️ 列清单交用户判断。
