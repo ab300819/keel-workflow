@@ -232,7 +232,7 @@ F 的"实现完成"由 `/sync` 维护，**它不等于该里程碑已通过人�
 
 **归档条件**：任务状态为"已完成"（何时触发检查见「归档触发条件」）。状态读 `04-dev-tasks.md` 生成区或 `.keel/bin/keel task list --status 已完成`。
 
-**状态处理**：定义块照下文移到 `archive/04-dev-tasks-archive.md` 后，逐个执行 `.keel/bin/keel task archive <id>`：状态改为「已归档」，生成区自动不再列出该任务。⛔ 不手改生成区与 `state/`；工具未就绪或被拦见 [constraints.md § keel 工具](../../shared/constraints.md#keel-工具)。
+**状态处理**：定义块照下文移到 `archive/04-dev-tasks-archive.md` 后，逐个执行 `.keel/bin/keel task archive <id>`：状态改为「已归档」，生成区自动不再列出该任务。工具未就绪或被拦见 [constraints.md § keel 工具](../../shared/constraints.md#keel-工具)。
 
 **主文档保留**：
 - 所有"待开发"和"进行中"任务

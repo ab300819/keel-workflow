@@ -177,6 +177,6 @@ Agent:
 
 | 文档 | 更新内容 |
 |------|----------|
-| `04-dev-tasks.md` | 任务状态经 `.keel/bin/keel task set`（见 [sync/SKILL.md](../SKILL.md)），不手改生成区；执行检查清单 |
+| `04-dev-tasks.md` | 任务状态经 `.keel/bin/keel task set`（见 [sync/SKILL.md](../SKILL.md)）；执行检查清单 |
 | `03-test-cases.md` | 追溯矩阵状态、测试通过状态 |
 | `01-requirements.md` | 功能点实现状态（如有状态列） |

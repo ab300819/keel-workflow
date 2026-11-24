@@ -36,7 +36,7 @@
 
 | 吸收项 | 来源 | 目标文档 | 说明 |
 |--------|------|----------|------|
-| 任务状态 | 文件存在 + 测试通过 | 任务状态（`.keel/bin/keel task set <id> --status 已完成`，⛔ 不手改生成区） | 待开发/进行中 → 已完成；audit 任务缺 `ext_review_state` 时工具拒绝，转入报告；⛔ `review_pending` 的任务不翻——它只能经 `/verify --review-drain` 转已完成（见 [constraints.md § review_profile 与 review_pending](../../shared/constraints.md)）|
+| 任务状态 | 文件存在 + 测试通过 | 任务状态（`.keel/bin/keel task set <id> --status 已完成`） | 待开发/进行中 → 已完成；audit 任务缺 `ext_review_state` 时工具拒绝，转入报告；⛔ `review_pending` 的任务不翻——它只能经 `/verify --review-drain` 转已完成（见 [constraints.md § review_profile 与 review_pending](../../shared/constraints.md)）|
 | 测试结果 | 测试运行结果 | 04-dev-tasks.md | 更新"测试结果"字段 |
 | 追溯矩阵状态 | 测试文件存在 | 03-test-cases.md | ⏳ → ✅ |
 | 追溯矩阵「变更来源」 | 任务状态的 `commits`（`.keel/bin/keel task get <id>`） | 03-test-cases.md | trace 阶段报告为空的行，按该任务「关联需求」里的 AC，把台账里的 `<repository>@<sha>` + 描述照抄过来；⛔ 只从台账抄，不从代码或 git log 推断 |

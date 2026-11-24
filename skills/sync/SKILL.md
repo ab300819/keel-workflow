@@ -174,7 +174,7 @@ metadata:
 
 | 文档 | 更新内容 |
 |------|----------|
-| `04-dev-tasks.md` | 任务状态经 `.keel/bin/keel task set` 写入（生成区由工具刷新，⛔ 不手改；未就绪或被拦见 [constraints.md § keel 工具](../shared/constraints.md#keel-工具)）；执行检查清单 |
+| `04-dev-tasks.md` | 任务状态经 `.keel/bin/keel task set` 写入（未就绪或被拦见 [constraints.md § keel 工具](../shared/constraints.md#keel-工具)）；执行检查清单 |
 | `03-test-cases.md` | 追溯矩阵状态、测试通过状态 |
 | `01-requirements.md` | 功能点实现状态（如有状态列） |
 

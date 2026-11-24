@@ -112,9 +112,7 @@ allowed-tools: Read, Write, Glob, Grep, Edit, Bash, AskUserQuestion
    │
    ▼
 5. 生成/更新 .claude/rules/devdocs-state.md（判据只看 `docs/devdocs/` 是否存在；⛔ 不按「这次改得多不多」自行豁免——被 pipeline / retrofit 委托的 `--update` 拿不到范围信息，跳过等于漏发货）
-   ├── 写入前按 [devdocs-state-template.md](templates/devdocs-state-template.md) § Forbidden 校验
-   │   ├── 占位 prose ≤ 200 字符
-   │   ├── 禁止内嵌 commit hash / LOC / 测试结果 / codex 分数 / 文件路径 / submodule 引用 / 工时
+   ├── 写入前按 [devdocs-state-template.md](templates/devdocs-state-template.md) § 边界约束 / § Forbidden 校验
    │   └── 违反时改写为简洁占位 + 明细去对应资源文件
    ▼
 6. 健康度自检（步骤 5 写了状态文件时）
@@ -214,8 +212,7 @@ python3 <keel>/skills/pipeline/scripts/health-lint.py --target <项目根> --bas
 - [ ] **AGENTS.md 不包含特定 AI 工具的专属语法**
 - [ ] **CLAUDE.md 通过 @AGENTS.md 导入通用信息**（首次创建后不覆盖）
 - [ ] **编号状态仅写入 `.claude/rules/devdocs-state.md`**
-- [ ] **devdocs-state.md 占位 prose ≤ 200 字符 / 单行 ≤ 500 字符 / 文件 ≤ 40 KiB**（违反由 health-lint 检测）
-- [ ] **devdocs-state.md 禁止内嵌 commit hash / LOC / 测试结果 / codex 分数 / 文件路径 / 工时统计**（明细去资源文件）
+- [ ] **devdocs-state.md 的长度上限与禁写内容**见 [模板](templates/devdocs-state-template.md) § 边界约束 / § Forbidden（health-lint 检测；超长行与超体积另由 keel K3 / K4 当场拦）
 - [ ] **AGENTS.md 首部 frontmatter 整块原样保留**，不读不改不新增（含 `workspace:` 块的键序和缩进）
 
 ### 质量守则

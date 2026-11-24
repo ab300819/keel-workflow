@@ -383,7 +383,7 @@ Tests: <实际执行过的精确命令>
 
 字段、适用时机、语义与「绑任务不绑 commit」的理由见 [constraints.md § 任务台账协议](../shared/constraints.md)；`ext_review_state` 值域见同文件 § 独立审查状态机枚举。⛔ 本文件不复述，只写本 skill 自己的处理。
 
-**本 skill 的写入**（命令均为 `.keel/bin/keel …`，取值与条件必填由 K5 校验；工具未就绪或被拦见 [§ keel 工具](../shared/constraints.md#keel-工具)；⛔ 不手改生成区与 `state/`）：
+**本 skill 的写入**（命令均为 `.keel/bin/keel …`；工具未就绪或被拦见 [§ keel 工具](../shared/constraints.md#keel-工具)）：
 
 | 时机 | 命令 |
 |---|---|

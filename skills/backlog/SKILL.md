@@ -20,7 +20,7 @@ writes_backlog: backlog.v3
 
 `backlog` 是 keel 的**暂缓任务池**：记录已经有来源编号、暂时不进入当前开发闭环、但未来需要追溯的项。
 
-条目状态存于 `docs/devdocs/state/backlog/`，只经 `.keel/bin/keel backlog …` 写入；`docs/devdocs/backlog.md` 是工具生成的索引，⛔ 不手工编辑。每条的长说明写在可编辑的 `docs/devdocs/backlog/<source_id>-<entry_no>.md`。不创建新编号体系，不修改原编号文件。条目通过 `source_id + entry_no` 做局部锚点（如 `F-01#1`），允许同一来源产生多条暂缓项。
+条目状态存于 `docs/devdocs/state/backlog/`，只经 `.keel/bin/keel backlog …` 写入；`docs/devdocs/backlog.md` 是工具生成的索引。每条的长说明写在可编辑的 `docs/devdocs/backlog/<source_id>-<entry_no>.md`。不创建新编号体系，不修改原编号文件。条目通过 `source_id + entry_no` 做局部锚点（如 `F-01#1`），允许同一来源产生多条暂缓项。
 
 边界：
 
@@ -72,7 +72,7 @@ expected_output: yaml-summary-v1
 
 ## 条目字段
 
-字段与取值见 `.keel/bin/keel schema backlog`；`source_id` 前缀白名单（禁 `B-XXX` 等新编号体系）、按状态的条件必填、`note` 长度由 K5 保证，被拦时按提示处理。原 `F/US/AC/T/INS/BUG/FR/NFR` 文件不加状态字段。
+字段与取值见 `.keel/bin/keel schema backlog`，由工具校验，被拦时按提示处理。原 `F/US/AC/T/INS/BUG/FR/NFR` 文件不加状态字段。
 
 工具不判定的语义：
 
