@@ -239,7 +239,7 @@ class DoneGateTest(unittest.TestCase):
         self.reg("a" * 40, test=True)
         self.record()
         self.assert_rejected(PENDING, "解析不到")
-        self.assert_rejected(PENDING, "linked 代码根在项目外时，完成门暂不支持登记测试提交")
+        self.assert_rejected(PENDING, "先用 /workspace-topology 落声明")
 
     def test_resolves_sha_in_subrepo_dir(self) -> None:
         self.add()
@@ -321,6 +321,143 @@ class DoneGateTest(unittest.TestCase):
         self.assertEqual(run_keel(self.root, "task", "set", "T-1", "--status", "已完成")[0], 0)
         os.rmdir(os.path.join(self.root, "audit", "T-1"))
         self.assertEqual(run_keel(self.root, "task", "set", "T-1", "--title", "y")[0], 0)
+
+    # ---- 按声明找代码根 ----
+
+    def declare(self, body: str) -> None:
+        with open(os.path.join(self.root, "AGENTS.md"), "w", encoding="utf-8") as f:
+            f.write("---\nworkspace:\n" + body + "---\n# x\n")
+
+    def outside_repo(self) -> str:
+        t = tempfile.TemporaryDirectory()
+        self.addCleanup(t.cleanup)
+        out = os.path.realpath(t.name)
+        helpers.git(out, "init", "-q")
+        return out
+
+    def test_declaration_parser(self) -> None:
+        from keellib import donegate
+        from keellib.store import Project
+        pr = Project.find(self.root)
+        self.assertIsNone(donegate.declaration(pr))
+        self.declare("  mode: shell\n  code_roots: [web, 'api']   # 注释\n")
+        self.assertEqual(donegate.declaration(pr), ("shell", {"web": "", "api": ""}))
+        self.declare("  mode: linked\n  code_roots:\n    - name: api\n      path: ../pool/api  # c\n"
+                     "      upstream: ssh://x\n    - path: \"~/w b\"\n      name: web\n    - lib\ndevdocs:\n  mode: x\n")
+        self.assertEqual(donegate.declaration(pr), ("linked", {"api": "../pool/api", "web": "~/w b", "lib": ""}))
+
+    def test_linked_outside_code_root_resolved_by_declaration(self) -> None:
+        self.add()
+        out = self.outside_repo()
+        self.declare(f"  mode: linked\n  code_roots:\n    - name: api\n      path: {os.path.relpath(out, self.root)}\n")
+        t = self.make_commit({"test_a.py": "assert f() == 1\n"}, repo=out)
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"}, repo=out)
+        self.reg(t, test=True, repo="api")
+        self.reg(c, repo="api")
+        self.record()
+        rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
+        self.assertEqual(rc, 0, err)
+
+    def test_declared_path_missing_not_falling_back(self) -> None:
+        self.add()
+        os.makedirs(os.path.join(self.root, "api"))
+        helpers.git(os.path.join(self.root, "api"), "init", "-q")
+        t = self.make_commit({"test_a.py": "x\n"}, repo="api")  # 同名目录里确有这个 sha
+        self.declare("  mode: linked\n  code_roots:\n    - name: api\n      path: ../no-such-dir\n")
+        self.reg(t, test=True, repo="api")
+        self.record()
+        self.assert_rejected(PENDING, "reconcile")
+
+    def test_shell_submodule_name_differs_from_path(self) -> None:
+        self.add()
+        sub = os.path.join(self.root, "code", "svc")
+        os.makedirs(sub)
+        helpers.git(sub, "init", "-q")
+        with open(os.path.join(self.root, ".gitmodules"), "w", encoding="utf-8") as f:
+            f.write('[submodule "api"]\n\tpath = code/svc\n\turl = x\n')
+        self.declare("  mode: shell\n  code_roots: [api]\n")
+        t = self.make_commit({"test_a.py": "assert f() == 1\n"}, repo="code/svc")
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"}, repo="code/svc")
+        self.reg(t, test=True, repo="api")
+        self.reg(c, repo="api")
+        self.record()
+        rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
+        self.assertEqual(rc, 0, err)
+
+    # ---- 是否已合入 ----
+
+    def head(self) -> str:
+        return subprocess.run(["git", "-C", self.root, "rev-parse", "HEAD"], capture_output=True, text=True,
+                              env=helpers.CLEAN_ENV, check=True).stdout.strip()
+
+    def worktree_card(self) -> "tuple[str, str]":
+        """主工作树在 main；T-1 的测试与代码提交在 worktree 分支 wt 上，未合并。"""
+        self.add()
+        helpers.git(self.root, "branch", "-M", "main")
+        self.wt = os.path.join(os.path.realpath(self._t.name) + "-wt")
+        helpers.git(self.root, "worktree", "add", "-q", "-b", "wt", self.wt)
+        self.addCleanup(lambda: subprocess.run(["rm", "-rf", self.wt]))
+        t = self.make_commit({"test_a.py": "assert f() == 1\n"}, repo=self.wt)
+        c = self.make_commit({"a.py": "def f():\n    return 1\n"}, repo=self.wt)
+        self.reg(t, test=True)
+        self.reg(c)
+        self.record()
+        return t, c
+
+    def test_unmerged_worktree_branch_rejected_then_passes_after_merge(self) -> None:
+        self.worktree_card()
+        self.assert_rejected(PENDING, "代码还没合入")
+        helpers.git(self.root, "merge", "-q", "--no-ff", "-m", "m", "wt")
+        rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
+        self.assertEqual(rc, 0, err)
+
+    def test_merged_elsewhere_needs_integration(self) -> None:
+        self.worktree_card()
+        helpers.git(self.root, "branch", "rel")              # 集成目标分支 rel
+        helpers.git(self.wt, "checkout", "-q", "--detach")   # 让出 wt 分支无关；在 worktree 里把 wt 合进 rel
+        helpers.git(self.wt, "checkout", "-q", "rel")
+        helpers.git(self.wt, "merge", "-q", "--no-ff", "-m", "m", "wt")
+        merged = subprocess.run(["git", "-C", self.wt, "rev-parse", "HEAD"], capture_output=True, text=True,
+                                env=helpers.CLEAN_ENV, check=True).stdout.strip()
+        self.assert_rejected(PENDING, "代码还没合入")  # 主工作树停在 main，代码在 rel
+        rc, _, err = run_keel(self.root, "task", "commit", "T-1", f"app@{merged}", "--note", "n", "--kind", "integration")
+        self.assertEqual(rc, 2, err)                     # 缺 --branch
+        rc, _, err = run_keel(self.root, "task", "commit", "T-1", f"app@{merged}", "--note", "n", "--branch", "rel")
+        self.assertEqual(rc, 2, err)                     # --branch 不能单用
+        for br in ("nope", "main", "rel"):               # 再登记即替换
+            rc, _, err = run_keel(self.root, "task", "commit", "T-1", f"app@{merged}", "--note", "n",
+                                  "--kind", "integration", "--branch", br)
+            self.assertEqual(rc, 0, err)
+            if br == "nope":
+                self.assert_rejected(PENDING, "在本地不存在")
+            elif br == "main":
+                self.assert_rejected(PENDING, "不在 app 的 main 分支上")
+        self.assertEqual(self.raw().count(b'"integration"'), 1)
+        rc, out, err = run_keel(self.root, "task", "get", "T-1", "--diff-range")
+        self.assertEqual(rc, 0, err)
+        self.assertNotIn(merged, out)                    # 合入点不进审查范围
+        rc, _, err = run_keel(self.root, "task", "set", "T-1", *PENDING)
+        self.assertEqual(rc, 0, err)
+
+    def test_integration_must_contain_card_commits(self) -> None:
+        self.worktree_card()
+        rc, _, err = run_keel(self.root, "task", "commit", "T-1", f"app@{self.head()}", "--note", "n",
+                              "--kind", "integration", "--branch", "main")
+        self.assertEqual(rc, 0, err)
+        self.assert_rejected(PENDING, "代码还没合入")   # 合入点在 main 上，但不含 wt 的提交
+
+    def test_integration_checked_without_test_commits(self) -> None:
+        self.add()
+        helpers.git(self.root, "branch", "-M", "main")
+        base = self.head()
+        helpers.git(self.root, "checkout", "-q", "-b", "side")
+        c = self.make_commit({"cfg.yml": "a: 1\n"})
+        helpers.git(self.root, "checkout", "-q", "main")
+        self.reg(c)
+        rc, _, err = run_keel(self.root, "task", "commit", "T-1", f"app@{base}", "--note", "n",
+                              "--kind", "integration", "--branch", "main")
+        self.assertEqual(rc, 0, err)
+        self.assert_rejected(("--status", "已完成"), "代码还没合入")
 
 
 if __name__ == "__main__":

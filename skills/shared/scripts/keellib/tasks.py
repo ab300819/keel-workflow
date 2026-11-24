@@ -97,9 +97,19 @@ def set_fields(project: Project, tid: str, opts: dict[str, str]) -> None:
     _mutate(project, tid, fn)
 
 
-def commit(project: Project, tid: str, ref: str, note: str, kind: str | None = None) -> None:
-    entry = {"ref": ref, "note": note, **({"kind": kind} if kind else {})}
-    _mutate(project, tid, lambda t: t["commits"].append(entry))
+def commit(project: Project, tid: str, ref: str, note: str, kind: str | None = None, branch: str | None = None) -> None:
+    integ = kind == donegate.INTEGRATION
+    if integ != bool(branch):
+        raise KeelError("--branch 只和 --kind integration 一起用，且必填", 2)
+    entry = {"ref": ref, "note": note, **({"kind": kind} if kind else {}), **({"branch": branch} if branch else {})}
+    repo = ref.rpartition("@")[0]
+
+    def fn(t: dict[str, Any]) -> None:
+        if integ:  # 同一个仓只保留一条合入点，再登记即替换
+            t["commits"] = [c for c in t["commits"]
+                            if not (c.get("kind") == donegate.INTEGRATION and c["ref"].rpartition("@")[0] == repo)]
+        t["commits"].append(entry)
+    _mutate(project, tid, fn)
 
 
 def archive(project: Project, tid: str) -> None:
@@ -121,6 +131,8 @@ def diff_ranges(project: Project, tid: str) -> list[str]:
         raise KeelError(f"任务 {tid} 不存在", 1)
     span: dict[str, list[str]] = {}  # dict 保持仓库首次登记顺序
     for c in tasks[tid]["commits"]:
+        if c.get("kind") == donegate.INTEGRATION:
+            continue  # 合入点只是证据；算进范围会把同期合入的其他卡卷进审查
         repo, _, sha = c["ref"].rpartition("@")
         span.setdefault(repo, [sha, sha])[1] = sha
     if not span:

@@ -42,7 +42,7 @@ def cmd_task(project: store.Project, a: argparse.Namespace) -> int:
             raise store.KeelError("至少给一个要改的字段，如 --status", 2)
         tasks.set_fields(project, a.id, opts)
     elif k == "commit":
-        tasks.commit(project, a.id, a.ref, a.note, a.kind)
+        tasks.commit(project, a.id, a.ref, a.note, a.kind, a.branch)
     elif k == "archive":
         tasks.archive(project, a.id)
     elif k == "get":
@@ -105,7 +105,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("id")
     p.add_argument("ref")
     p.add_argument("--note", required=True)
-    p.add_argument("--kind", choices=["test"])
+    p.add_argument("--kind", choices=list(schema.COMMIT_KINDS))
+    p.add_argument("--branch", help="集成目标分支，只和 --kind integration 一起用")
     tp.add_parser("archive").add_argument("id")
     p = tp.add_parser("get")
     p.add_argument("id")

@@ -110,7 +110,7 @@ class Project:
         if "bare" in lines:
             raise KeelError(f"这里是 git worktree，主仓 {main} 是 bare 仓库、没有主工作树，台账无法写入", 3)
         raise KeelError(f"这里是 git worktree，台账只在主工作树写：{main}。多 agent 并行时交给负责台账的会话；"
-                        "独自开发时到主工作树执行同一条命令", 3)
+                        f"独自开发时到主工作树执行同一条命令。只是想看最新台账：{main}/.keel/bin/keel --root {main} task get <id>", 3)
 
     @contextmanager
     def lock(self, timeout: float = 5.0, shared: bool = False) -> Iterator[None]:

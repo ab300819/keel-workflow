@@ -68,6 +68,13 @@ class TaskTest(unittest.TestCase):
     def test_commit_kind_unknown_rejected(self):
         self.assertIn("commits[].kind", errs(commits=[{"ref": "app@abcdef1", "note": "n", "kind": "code"}])[0])
 
+    def test_commit_integration_branch(self):
+        ok = {"ref": "app@abcdef1", "note": "n", "kind": "integration", "branch": "main"}
+        self.assertEqual(errs(commits=[ok]), [])
+        for bad in ({**ok, "branch": ""}, {**ok, "branch": "a\nb"}, {k: v for k, v in ok.items() if k != "branch"}):
+            self.assertIn("commits[].branch", errs(commits=[bad])[0])
+        self.assertIn("commits[].branch", errs(commits=[{"ref": "app@abcdef1", "note": "n", "branch": "main"}])[0])
+
     def test_source_empty(self):
         self.assertTrue(errs(source=""))
 

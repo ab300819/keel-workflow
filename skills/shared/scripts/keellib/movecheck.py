@@ -82,7 +82,7 @@ def find_glue(diff_text: str) -> tuple[int, list[Glue]]:
 
 
 def run(project_root: str, rev_range: str, paths: list[str]) -> tuple[int, list[Glue]]:
-    cmd = ["git", "-C", project_root, "diff", "--no-ext-diff", "--no-textconv", "--no-color", "-U0", "--no-renames", "--end-of-options", rev_range]
+    cmd = ["git", "-C", project_root, "-c", "core.fsmonitor=false", "diff", "--no-ext-diff", "--no-textconv", "--no-color", "-U0", "--no-renames", "--end-of-options", rev_range]
     if paths:
         cmd += ["--", *paths]
     try:

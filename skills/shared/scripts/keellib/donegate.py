@@ -1,8 +1,9 @@
-"""完成门：任务进入已完成 / review_pending 前，按登记的提交检查测试顺序、测试冻结、注错记录与纯移动。"""
+"""完成门：任务进入已完成 / review_pending 前，按登记的提交检查测试顺序、测试冻结、注错记录、纯移动与是否已合入。"""
 from __future__ import annotations
 
 import fnmatch
 import os
+import re
 import subprocess
 from typing import Any
 
@@ -13,11 +14,13 @@ DONE_STATES = ("已完成", "review_pending")
 # 测试提交里只冻结测试文件（同提交的骨架不冻结）：任一目录段在 TEST_DIRS 里，或文件名匹配 TEST_PATH_PATTERNS
 TEST_DIRS = ("test", "tests", "__tests__", "spec", "specs")
 TEST_PATH_PATTERNS = ("test_*", "*_test.*", "*.test.*", "*.spec.*", "*Test.*", "*Tests.*", "*_spec.*")
+INTEGRATION = "integration"
+_FM_RE = re.compile(r"\A---\n(.*?)\n---", re.S)
 
 
 def _git(d: str, *args: str) -> subprocess.CompletedProcess[str]:
     try:
-        return subprocess.run(["git", "-C", d, *args], capture_output=True, text=True, encoding="utf-8",
+        return subprocess.run(["git", "-C", d, "-c", "core.fsmonitor=false", *args], capture_output=True, text=True, encoding="utf-8",
                               errors="replace")
     except OSError as e:
         raise KeelError(f"git 无法运行：{e}", 1) from e
@@ -32,14 +35,83 @@ def _inside(project: Project, rel: str) -> str | None:
     return full
 
 
-def _repo_dir(project: Project, repo: str, sha: str) -> tuple[str, str] | None:
-    """返回 (仓目录, 完整 sha)；短 sha 展开后才能比较是否同一提交。"""
-    for d in (project.root, _inside(project, repo)):
-        if d and os.path.isdir(d):
+def _clean(v: str) -> str:
+    v = re.sub(r"\s+#.*$", "", v).strip()
+    return v[1:-1] if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'" else v
+
+
+def declaration(project: Project) -> tuple[str, dict[str, str]] | None:
+    """AGENTS.md frontmatter 的 workspace 块 -> (mode, {代码根 name: path})；没有该块返回 None。
+    只认 mode 与 code_roots 的 name / path（字符串项、对象项、行内列表），不是通用 YAML 解析。"""
+    try:
+        with open(os.path.join(project.root, "AGENTS.md"), encoding="utf-8", errors="replace") as f:
+            m = _FM_RE.match(f.read(65536))
+    except OSError:
+        return None
+    lines = m.group(1).split("\n") if m else []
+    start = next((k for k, ln in enumerate(lines) if ln.rstrip() == "workspace:"), None)
+    if start is None:
+        return None
+    items: list[dict[str, str]] = []
+    mode, in_roots, key_indent = "", False, 0
+    for raw in lines[start + 1:]:
+        t = raw.strip()
+        if not t or t.startswith("#"):
+            continue
+        indent = len(raw) - len(raw.lstrip())
+        if indent == 0:
+            break
+        if in_roots and (t.startswith("-") or indent > key_indent):
+            if t.startswith("-"):
+                t = t[1:].strip()
+                items.append({})
+                if ":" not in t:  # 字符串项 foo 等价于 {name: foo}
+                    items[-1]["name"] = _clean(t)
+                    continue
+            k, _, v = t.partition(":")
+            if items and k.strip() in ("name", "path"):
+                items[-1][k.strip()] = _clean(v)
+            continue
+        in_roots = False
+        k, _, v = t.partition(":")
+        if k.strip() == "mode":
+            mode = _clean(v)
+        elif k.strip() == "code_roots":
+            v = _clean(v)
+            key_indent, in_roots = indent, not v
+            items += [{"name": _clean(n)} for n in v.strip("[]").split(",") if _clean(n)]
+    return mode, {i["name"]: i.get("path", "") for i in items if i.get("name")}
+
+
+def _repo_dirs(project: Project, repo: str, decl: tuple[str, dict[str, str]] | None) -> tuple[list[str], str]:
+    """(候选仓目录, 都解析不到时的提示)。有声明时只认声明，不猜同名目录（可能是另一个仓）。"""
+    if decl is None:
+        return ([d for d in (project.root, _inside(project, repo)) if d],
+                f"在项目根和 <根>/{repo} 下都解析不到：核对 sha；shell / linked 布局先用 /workspace-topology 落声明")
+    mode, roots = decl
+    if mode == "shell":
+        p = _git(project.root, "config", "-f", ".gitmodules", f"submodule.{repo}.path")
+        sub = p.stdout.strip() if p.returncode == 0 else ""
+        if sub:
+            d = _inside(project, sub)
+            return ([d] if d else []), f"在子模块 {repo}（{sub}）里解析不到：先 git submodule update，或核对 sha"
+    if mode == "linked" and roots.get(repo):
+        d = os.path.realpath(os.path.join(project.root, os.path.expanduser(roots[repo])))
+        if not os.path.isdir(d):
+            return [], f"声明的代码根 {repo} 路径 {roots[repo]} 不存在：用 /workspace-topology reconcile 修声明"
+        return [d], f"在代码根 {repo}（{d}）里解析不到：核对 sha，或先把提交取到这个仓"
+    return [project.root], "在项目根解析不到：核对 sha 与仓名（仓名须是声明里的代码根 name，或本仓自己）"
+
+
+def _repo_dir(project: Project, repo: str, sha: str, decl: tuple[str, dict[str, str]] | None) -> tuple[str, str] | str:
+    """返回 (仓目录, 完整 sha)，解析不到返回提示；短 sha 展开后才能比较是否同一提交。"""
+    dirs, hint = _repo_dirs(project, repo, decl)
+    for d in dirs:
+        if os.path.isdir(d):
             p = _git(d, "rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}")
             if p.returncode == 0:
                 return d, p.stdout.strip()
-    return None
+    return hint
 
 
 def is_test_path(path: str) -> bool:
@@ -70,19 +142,23 @@ def check(project: Project, task: dict[str, Any]) -> list[str]:
     commits = task.get("commits") or []
     has_test = any(c.get("kind") == "test" for c in commits)
     move_done = task.get("review_profile") == "move" and task.get("status") == "已完成"
-    if not has_test and not move_done:
+    if not has_test and not move_done and not any(c.get("kind") == INTEGRATION for c in commits):
         return []  # 老任务不碰 git
     errs: list[str] = []
+    decl = declaration(project)
     groups: dict[str, tuple[str, list[str], list[str]]] = {}  # repo -> (目录, 测试提交, 代码提交)
+    integ: dict[str, tuple[str, str]] = {}  # repo -> (合入点 sha, 目标分支)；只是合入证据，不算代码提交
     for c in commits:
         repo, sha = c["ref"].split("@", 1)
-        r = _repo_dir(project, repo, sha)
-        if r is None:
-            errs.append(f"{c['ref']} 在项目根和 <根>/{repo} 下都解析不到：先把执行者分支合进来再登记；"
-                        "shell 子模块名与路径不同、或 linked 代码根在项目外时，完成门暂不支持登记测试提交")
+        r = _repo_dir(project, repo, sha, decl)
+        if isinstance(r, str):
+            errs.append(f"{c['ref']} {r}")
             continue
         g = groups.setdefault(repo, (r[0], [], []))
-        (g[1] if c.get("kind") == "test" else g[2]).append(r[1])
+        if c.get("kind") == INTEGRATION:
+            integ[repo] = (r[1], str(c.get("branch") or ""))
+        else:
+            (g[1] if c.get("kind") == "test" else g[2]).append(r[1])
     if errs:
         return errs
     for d, tests, codes in groups.values():
@@ -114,6 +190,7 @@ def check(project: Project, task: dict[str, Any]) -> list[str]:
                      tlast, last, "--", *files)
             if p.returncode != 0 or _names(p):
                 errs.append(f"测试提交 {tlast} 之后改了测试：{'、'.join(_names(p)) or p.stderr.strip()}")
+    errs += _unmerged(groups, integ)
     if has_test:
         rec = task.get("record")
         full = _inside(project, rec) if rec else None
@@ -130,4 +207,26 @@ def check(project: Project, task: dict[str, Any]) -> list[str]:
             if logic:
                 errs.append("搬移夹带改逻辑的行（列出前 5 条）：改 --profile guarded 走 review_pending\n"
                             + "\n".join(logic[:5]))
+    return errs
+
+
+def _unmerged(groups: dict[str, tuple[str, list[str], list[str]]], integ: dict[str, tuple[str, str]]) -> list[str]:
+    """本卡的测试 / 代码提交须已合入：默认看仓当前 HEAD；该仓登记了合入点就看合入点，且合入点须在目标分支上。"""
+    errs: list[str] = []
+    for repo, (d, tests, codes) in groups.items():
+        target, where = "HEAD", f"{repo} 当前检出的分支"
+        if repo in integ:
+            target, branch = integ[repo]
+            where = f"合入点 {target[:12]}"
+            p = _git(d, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}^{{commit}}")
+            if p.returncode != 0:
+                errs.append(f"{repo} 的集成目标分支 {branch} 在本地不存在（按 refs/heads/ 解析）")
+                continue
+            if not _is_ancestor(d, target, p.stdout.strip()):
+                errs.append(f"合入点 {target[:12]} 不在 {repo} 的 {branch} 分支上：分支被改写过就重新登记 --kind integration")
+                continue
+        miss = [x[:12] for x in dict.fromkeys(tests + codes) if not _is_ancestor(d, x, target)]
+        if miss:
+            errs.append(f"代码还没合入：{'、'.join(miss)} 不在{where}上。先合并（不要 squash）；合到了别的分支就登记合入点："
+                        f"task commit <id> {repo}@<合入后的 sha> --kind integration --branch <目标分支> --note <一句话>")
     return errs
