@@ -384,7 +384,7 @@ Fixes #123
 
 ### 记录约束
 
-- [ ] **每个 Bug 必须记录到 05-bugfix-log.md**
+- [ ] **每个 Bug 必须记录到 05-bugfix-log.md**（在 git worktree 里修时的记录时机见 [constraints.md § 并行工作区](../shared/constraints.md#并行工作区git-worktree) `parallel/bugfix`）
 - [ ] **必须记录发现来源**
 - [ ] **必须记录根因分析**
 - [ ] **必须记录解决方案**

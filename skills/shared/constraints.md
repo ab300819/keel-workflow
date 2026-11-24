@@ -351,13 +351,26 @@ keel 的"记忆"分三层，**原则上不应混写进同一文件 / 章节**：
 - `layered-memory/review-lens`：因此三层分离**主要靠人工 review lens 承载，不是自动兜底**。审查时发现某文件同时承载两层以上内容（典型：state 文件里塞决策理由或数据明细），即提示拆到对应层。
 - `layered-memory/no-auto-detection`：**不做**"关键词扫描自动判定章节混杂"——即原 health 维度 e / Plan B 检测面。该方向已**废弃**（`[废弃]`，原标 [FUTURE]）：复杂度不匹配收益，skill 宜简。**不再保留为 FUTURE 触发项**。
 
+## 并行工作区（git worktree）
+
+`[新增]` 多 agent 并行、一个人同时推进几项任务、手上的活没收尾又要插一个修复时，用 git worktree 隔离。worktree 是来源仓的另一份检出，和拓扑（inline / shell / linked）是两个维度，不是第四种模式。本节是唯一出处。
+
+- `parallel/roles`：**台账会话**在主工作树，唯一写台账与 `docs/devdocs/`，负责派单、合并、登记、改状态；**工作会话**在 worktree 里只写代码和测试，交回 sha。有并行时主工作树停在集成分支上，不在上面开发。
+- `parallel/source`：inline 从项目仓开；shell 从子模块仓开（⛔ 不开外壳仓的）；linked 从声明的代码根开。一张卡涉及几个仓就开几个。
+- `parallel/place`：默认 `<项目根>/.worktree/<应用>-<分支>`（`/` 换 `-`；应用 = 代码根 name，inline 取项目目录名），`.worktree/` 须在 `.gitignore` 里；放仓外也可以。建删直接用 `git worktree add / remove`，⛔ 不加 `--force`、不 `rm -rf`；清单看 `git worktree list`，⛔ 不另记。
+- `parallel/context`：给工作会话的 `workspace_context` 里，`code_roots[].path` 换成它的 worktree 路径；brief 写明主项目根、各仓的 worktree 与分支、基点、集成目标分支、要避让的共享资源（端口、数据库等，worktree 不隔离这些）。
+- `parallel/merge`：合并工作分支用 merge 或快进，⛔ 不 squash（登记的 sha 会失效）；合并后在集成分支上跑本卡的测试，再改状态。
+- `parallel/bugfix`：inline 项目在 worktree 里修缺陷时，先在主工作树建卡，合回后补缺陷日志再关卡。
+- `parallel/shim`：代码 worktree 里没有垫片，用 `<主项目根>/.keel/bin/keel --root <worktree> move-check …`。
+- 以下由工具保证，规格不再展开：worktree 里写台账被拒并给出主工作树路径（[`keel/worktree`](#keel-工具)）；没合入的卡标不了完成（[§ 完成门](#完成门工具检查)「已合入」）；有未提交内容的 worktree，`git worktree remove` 自己会拒；`.worktree/` 未忽略由拓扑检查告警，误提交由裸 gitlink 检查拦下。
+
 ## 10. 工作区拓扑（inline / shell / linked）
 
 > 本节**仅声明跨 skill 共性与指针**。完整协议正文、入口与迁移手册归 [workspace-topology](../workspace-topology/SKILL.md) —— 该维度是**仓库级事实**，不是 keel 事实，故不住在本文。
 
 - `workspace/single-entry`：工作区拓扑的唯一入口是 `/workspace-topology`（`inspect` / `reconcile` / `migrate`）。
 - `workspace/default-inline`（id 沿用历史命名，语义已反转）：**`inline` 不是兜底默认，它需要正面证据。** 无声明时**问用户**定出 `mode` 与代码根（见 [workspace-topology/SKILL.md § 无声明时：问，不猜](../workspace-topology/SKILL.md#无声明时问不猜)），答案落声明后不再问。⛔ 不做自动判定——仓库形状是产品决策。已落声明的项目行为完全不变。
-- `workspace/context-over-declaration`：需要代码根路径或 docs 根的 skill 从握手的 `workspace_context` 读（见 §3 `task/workspace-context`），**⛔ 不得自行读取声明文件或解析 `.gitmodules`**。
+- `workspace/context-over-declaration`：需要代码根路径或 docs 根的 skill 从握手的 `workspace_context` 读（见 §3 `task/workspace-context`），**⛔ 不得自行读取声明文件或解析 `.gitmodules`**。例外只有 keel 工具：它在命令行里跑、拿不到握手，完成门自己读声明的 `mode` 与 `code_roots`。
 - `workspace/pointer`：协议正文（校验全表、零污染、N+1 仓提交、gitlink 排除）见 [workspace-topology/references/protocol.md](../workspace-topology/references/protocol.md)；迁移与故障处置见 [references/migration.md](../workspace-topology/references/migration.md)。
 
 ## 11. 作用域匹配（评审边界 ≥ 影响边界）`[新增]`
@@ -528,7 +541,7 @@ move 判定不过 → 升 guarded。判定规则见 [verification-flow.md §move
 
 ### 完成门（工具检查）
 
-`task set <id> --status 已完成|review_pending` 写入前，keel 对该卡登记的提交做下列检查（仅当卡登记了 `kind=test` 提交，或为 `move` 档且目标为 `已完成` 时触发）。任一不过 → 退出码 1、文件不变、提示原因。本节是完成门的唯一文字真源。
+`task set <id> --status 已完成|review_pending` 写入前，keel 对该卡登记的提交做下列检查（仅当卡登记了 `kind=test` 或 `kind=integration` 提交，或为 `move` 档且目标为 `已完成` 时触发）。任一不过 → 退出码 1、文件不变、提示原因。本节是完成门的唯一文字真源。
 
 | 检查 | 条件 | 判定 |
 |---|---|---|
@@ -536,15 +549,15 @@ move 判定不过 → 升 guarded。判定规则见 [verification-flow.md §move
 | 测试冻结 | 同上 | 对每个代码提交，它之前各测试提交里按路径规则识别的测试文件，从其中拓扑最晚的测试提交到本仓最后一个登记提交之间没有改动；后一个测试提交可改前一个的测试，前提是两者之间没有代码提交 |
 | 纯移动 | `review_profile=move` 且目标状态为 `已完成` | 按仓在 `<首个代码提交>^..<最后代码提交>` 上跑 `keel move-check`；未登记任何代码提交的 move 卡 → 拒绝「已完成」；胶水含逻辑改动（控制流、比较或逻辑运算符、数字或字符串字面量）→ 拒绝「已完成」，提示改 `--profile guarded` |
 | 注错记录 | 登记了 `kind=test` 的提交 | `--record` 指向项目内存在的 `audit/<id>/`（只查有记录，查不了是否真做） |
+| 已合入 | 完成门触发时 | 本卡在每个仓登记的测试 / 代码提交都是该仓当前 `HEAD` 的祖先。代码合到了别的分支时登记合入点（`task commit … --kind integration --branch <目标分支>`，同仓再登记即替换）：该仓改看合入点，且合入点须在本地 `refs/heads/<目标分支>` 上。合入点只是证据，不算代码提交、不进 `--diff-range` |
 
 - 测试文件的路径规则：任一目录段为 `test`、`tests`、`__tests__`、`spec`、`specs`，或文件名匹配 `test_*`、`*_test.*`、`*.test.*`、`*.spec.*`、`*Test.*`、`*Tests.*`、`*_spec.*`。测试提交里的其他文件（必要的骨架）不冻结；一个测试文件都识别不出的测试提交 → 被拒。
 - 不压缩合并：测试提交与代码提交是同一个 sha 时「测试先于代码」不成立，被拒。
 - 没有测试提交的卡（复用已有表征测试集的 `move` 卡、非编码卡）跳过测试先于代码、冻结与注错记录检查。
-- sha 在项目根或 `<根>/<repo>` 本地解析不到 → 退出码 1，先把执行者分支合进来再登记。
-- 登记的 sha 因 rebase / squash 失效时，完成门同样解析不到而拒绝，卡会停在原状态。出路：落地后再登记（见上条）；已经失效的，由人从任务状态文件删掉失效的 `commits` 条目，再按 [`keel/human-only`](#keel-工具) 的状态确认步骤认可这次非工具改动，然后重新登记落地后的 sha。
-- 仓目录与 `--record` 须在项目内（相对路径、不含 `..`）。
+- 仓名怎么找到目录：项目有 `workspace:` 声明时只认声明——inline 是项目根，shell 取 `.gitmodules` 里该子模块的 path，linked 取该代码根声明的 `path`（可在项目外，只跑只读 git 命令）；声明的路径失效 → 拒绝并提示 `/workspace-topology reconcile`，⛔ 不退到同名目录。没有声明时在项目根与 `<根>/<repo>` 找。解析不到 → 退出码 1。
+- 登记的 sha 因 rebase / squash 失效时，完成门同样解析不到而拒绝，卡会停在原状态。出路：落地后再登记；已经失效的，由人从任务状态文件删掉失效的 `commits` 条目，再按 [`keel/human-only`](#keel-工具) 的状态确认步骤认可这次非工具改动，然后重新登记落地后的 sha。
+- `--record` 须在项目内（相对路径、不含 `..`）；仓目录除声明的 linked 代码根外同此。
 - ⛔ 不提供跳过开关；误拦的出路是升 `guarded`。
-- 已知限制：shell 布局里子模块名与路径不同，或 linked 布局的代码根在项目外时，sha 无法按上述位置解析，完成门暂不支持为这类卡登记测试提交。
 - 已知限制：多张卡的提交在集成分支上交错时，`<首个>^..<最后>` 会把别的卡的提交也算进来：drain 的审查范围变大，纯移动检查偏向拒绝。
 
 ### review_pending(任务状态)
@@ -596,7 +609,7 @@ move 判定不过 → 升 guarded。判定规则见 [verification-flow.md §move
   - K2：`04-dev-tasks.md` 的生成区（`<!-- keel:begin ledger -->` 与 `<!-- keel:end ledger -->` 之间）和 `backlog.md` 整份由工具生成，⛔ 不手工编辑。
   - K3 / K4：状态载体文件（`04-dev-tasks*.md`、`backlog.md`、`00-context.md`、`.claude/rules/devdocs-state.md`）里新增或改动的超长行、超体积后继续变大，都会被拦。长文本写到 `audit/T-xxx/` 或 `backlog/<id>.md`，状态里只存链接。
   - K5：字段取值、条件必填、文本上限、依赖编号由工具校验，不可调。
-- `keel/worktree`：在 git worktree（非主工作树）里，写台账的命令一律拒绝（退出码 3），提示里给出主工作树路径；读命令照常，读到的是该分支上的版本，可能比主工作树旧。多 agent 并行时把状态变更交给负责台账的会话；独自开发时到主工作树执行同一条命令。⛔ 不在 worktree 里绕开工具改状态文件。
+- `keel/worktree`：在 git worktree（非主工作树；用法见 [§ 并行工作区](#并行工作区git-worktree)）里，写台账的命令一律拒绝（退出码 3），提示里给出主工作树路径；读命令照常，读到的是该分支上的版本，可能比主工作树旧。多 agent 并行时把状态变更交给负责台账的会话；独自开发时到主工作树执行同一条命令。⛔ 不在 worktree 里绕开工具改状态文件。
 - `keel/read`：读状态用 `04-dev-tasks.md` 生成区，或 `.keel/bin/keel task get <id>` / `task list [--status …] [--fields …]` / `backlog get <锚点>` / `backlog list [--status …]`。`list` 末尾附覆盖情况，有无法识别的条目时如实报告，⛔ 不静默漏计。
 - `keel/human-only`：以下命令只能由用户执行，⛔ 模型不自行调用（hook 也会拒绝）。遇到时把命令原样交给用户，并说明：这一步只能由人在交互终端执行，另开一个终端，在项目根目录运行（Claude Code 的 `!` 命令没有控制终端，不可用）：
   - 手工解决状态文件的合并冲突，或用户确认工具报出的非工具改动合法：`.keel/bin/keel state accept`

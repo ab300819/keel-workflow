@@ -387,6 +387,14 @@ M-001 已完成实现：用户能注册登录，并看到自己的清单
 
 需要新前缀时，先走 `shared/constraints.md` 的 `id/prefix-consumption-contract`：**声明作用域、消费方、检查归属**三件事。
 
+## 并行与临时插单（git worktree）
+
+三种情况用 worktree：多个 agent 并行做卡、一个人同时推进几项任务、手上的活没收尾又要插一个修复。直接对当前会话说「并行做这几张卡」「另开一个修一下这个」即可，会话按 [constraints.md § 并行工作区](../skills/shared/constraints.md#并行工作区git-worktree) 用 git 建 worktree。
+
+- 主工作树里的会话管台账（派单、合并、登记、改状态）；worktree 里的会话只写代码和测试。
+- worktree 里写不了台账，没合并的卡标不了完成：这两条由 keel 工具拦。
+- 只有一个任务、或手上的活很快能收尾时，不用开 worktree。
+
 ## 与 superpowers 共存
 
 > 设计与审查记录:[specs/2026-07-22-superpowers-coexistence-design.md](superpowers/specs/2026-07-22-superpowers-coexistence-design.md)(codex 3 轮)。原则:**单向兼容**(superpowers 插件零改动)+ **可选增强、单一路径归一化**(keel 阶段永远执行并产出权威结果)。
@@ -406,7 +414,7 @@ keel 项目的 AGENTS.md 含「工作流路由」节(由 `/agent-memory` 幂等�
 
 ### 能力吸收结论(2026-07-22 三方对齐)
 
-逐项映射后:9 项 superpowers 能力 keel 已有等价或更强;唯一内化项 = bugfix 根因纪律门;worktree 并行为架构级 FUTURE(触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
+逐项映射后:9 项 superpowers 能力 keel 已有等价或更强;唯一内化项 = bugfix 根因纪律门;worktree 并行当时列为架构级 FUTURE、已于 3.3.0 落地（见上方「并行与临时插单」）(原记录：触发 = 真实并行需求,需先设计工作区所有权/文档 SSOT 合并/review-drain 回收);"委托+fallback"机制经评审否决(语义漂移伤追溯,外部 skill 不承诺 yaml-summary 契约)。
 
 ## 与 claude-mem / ponytail 共存
 

@@ -1,6 +1,6 @@
 # 工作区 worktree 支持（设计稿）
 
-> 状态：已实施。方案由用户 2026-11-23 选定（「按你建议来」= S3 + P2），取代搁置的 [linked-worktree 设计稿](2026-11-19-linked-worktree-design.md)（该稿只在分支 `feat/linked-worktree` 上，未合入）。
+> 状态：已实施；整体定位已被 [2026-11-24 并行工作区设计稿](2026-11-24-worktree-parallel-design.md) 取代。方案由用户 2026-11-23 选定（「按你建议来」= S3 + P2），取代搁置的 [linked-worktree 设计稿](2026-11-19-linked-worktree-design.md)（该稿只在分支 `feat/linked-worktree` 上，未合入）。
 
 ## 1. 为什么做
 

@@ -9,9 +9,8 @@ metadata:
 spec_version: 3.4
 spec_version_notes: |
   1.1 = P0-A 文档收敛 + 累计审计删减 (Phase 1)
-        本 skill 不做任务并行（S9 并行化）——前置依赖 worktree 隔离协议
-        （工作区所有权 / 文档 SSOT 合并 / review-drain 回收）尚未成立；
-        需要并行时手动用 worktree 隔离。见 docs/workflows.md § 与 superpowers 共存
+        本 skill 自己不做任务并行（S9 并行化）；并行由派单方用 git worktree 组织，
+        见 shared/constraints.md § 并行工作区
   2.0 = 重新定位(代码SSOT/文档记忆)+ review_profile 三档替代层级 + 质量地板恒定 + 独立审查延后 drain + review_pending 状态(Plan A)
   3.0 = 修复延后外审空 diff(Phase 4 按 inline/drain 分离 diff 源)+ 删 skip 参数族
         (2 flag / INT_PENDING·EXT_PENDING 2 enum 值 / 2 trailer / 双 skip 禁令)+ 删最低发现数门槛
@@ -392,6 +391,7 @@ Tests: <实际执行过的精确命令>
 | Phase 4 出结果 | `task set <id> --ext-review-state <值>`（由 L2 yaml 派生，见 [verification-flow.md](references/verification-flow.md)） |
 | 测试提交落盘后 | `task commit <id> <repository>@<full-sha> --kind test --note "<一句话>"`；有测试提交时完成门要求注错记录（`--record`），见 [constraints.md § 完成门](../shared/constraints.md#完成门工具检查) |
 | Commit 1 落盘后（每个代码仓一条，随 Commit 2 提交） | `task commit <id> <repository>@<full-sha> --note "<一句话>"` |
+| 完成门报「代码还没合入」，而代码确已合到别的分支 | `task commit <id> <repository>@<合入后 sha> --kind integration --branch <目标分支> --note "<一句话>"`（平时不用登记） |
 | 提交后：audit | `task set <id> --status 已完成` |
 | 提交后：fast/guarded | `task set <id> --status review_pending --batch … --due … --pending-reason …`（见 [constraints.md § review_pending](../shared/constraints.md)） |
 | `--skip-trace` / 探索模式 / 带理由降档 | `--skip-trace-reason "<原因>"` / `--exploration-mode true` / `--profile <档> --profile-downgrade-reason "<理由>"` |

@@ -92,7 +92,7 @@ keel 3.x 已有的文件锁、原子写、每任务一个文件、合并和切�
 - `assignee` 等于 `verified_by` 时，`task set` 退出码 1，文件不变。
 - `--ready`：依赖全解开的列出；有一个依赖未解开、或依赖编号不存在的不列出，后者有提示。
 - `--assignee` 只列该负责人的卡。
-- 测试、ruff、mypy --strict、自测（python3 ≥ 3.9）全过；版本升到 3.3.0（3.1.0、3.2.0 已被 worktree 支持与精简执行路径占用）。
+- 测试、ruff、mypy --strict、自测（python3 ≥ 3.9）全过；版本升下一个 minor（3.1.0～3.3.0 已被 worktree 支持、精简执行路径、并行工作区占用）。`branch` 字段与 worktree 的关系见 [并行工作区设计稿](2026-11-24-worktree-parallel-design.md) §4.1。
 
 ## 6. 暂不做（已登记原因）
 

@@ -207,11 +207,10 @@ workspace:
 
 ## worktree
 
-用 git worktree 并行开发时，约定放在 `<项目根>/.worktree/<应用>-<分支>`（分支名里的 `/` 换成 `-`；`inline` 的「应用」取仓库目录名），并把 `.worktree/` 写进项目根 `.gitignore`。由用户、PM 或用户自己的脚本建删，本 skill **只认不造**。
+git worktree 和拓扑是两个维度：它是来源仓的另一份检出，不是第四种 mode（⚠️ 与 `linked` 拓扑只是名字相近）。用法见 [constraints.md § 并行工作区](../shared/constraints.md#并行工作区git-worktree)，本 skill 只认不造：
 
-- `inspect` 的报告里列出 `.worktree/` 下各目录及当前分支（ℹ️），⛔ 不进 `workspace-context.v2` 契约。
-- 没被忽略 → ⚠️，见 [protocol.md § workspace/worktree-dir](references/protocol.md)。
-- worktree 里写不了台账，见 [constraints.md § keel 工具 `keel/worktree`](../shared/constraints.md#keel-工具)。
+- `inspect` 的报告按各来源仓的 `git worktree list` 列出 worktree、所在分支、有无未提交内容（ℹ️）。⛔ 不进 `workspace-context.v2` 契约，⛔ 不判「可删」。
+- `.worktree/` 没被忽略 → ⚠️，见 [protocol.md § workspace/worktree-dir](references/protocol.md)。
 
 ## 仓根残留文件
 
