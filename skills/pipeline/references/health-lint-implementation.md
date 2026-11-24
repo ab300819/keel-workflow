@@ -1,29 +1,18 @@
 # Health Lint Implementation（health scope 可执行 lint rule 集）
 
-> 把 [realign-scope-health.md](realign-scope-health.md) 维度 b/c 的检测要求落地为 Agent 可执行的 lint rule。
+> 把 [realign-scope-health.md](realign-scope-health.md) 维度 a/b/c 的检测要求落地为 lint rule。
 >
-> 本文件 16 条 rule：11 条 **project scope**（解决 devdocs-state 膨胀 / 陈旧 + 死链 + 自造编号前缀 + 布局清单一致性），
+> 本文件 16 条 rule：11 条 **project scope**（devdocs-state 膨胀 / 陈旧、死链、自造编号前缀、布局清单一致性），
 > 5 条 **skill-library scope**（`flag/dangling-reference` + `skill/*`，⛔ 扫描对象不同，走 `--skills-dir`）。
-
-## 目录
-
-- 定位
-- Rule 集（[新增] 16 条）
-- Rule 详情
-- Baseline 与增量扫描
-- 退出码（CLI 集成）
-- 性能预期
-- Finding 输出 schema
-- CLI 触发
-- 历史项目兼容
-- 变更日志
+>
+> **14 条的判定以脚本 [`../scripts/health-lint.py`](../scripts/health-lint.py) 为准**，本文只写每条查什么、报了怎么办；阈值、正则、输出格式不在本文复述。余下 2 条脚本未实现，算法写在本文，由 Agent 执行。
 
 ## 定位
 
 | 治理对象 | 文件 |
 |---------|------|
-| health scope 入口与执行接口 | [realign-scope-health.md](realign-scope-health.md) |
-| **本文件**：[新增] rule 的检测算法、严重度、修复路径（清单见下方 Rule 集表）| health-lint-implementation.md |
+| health scope 入口、`/pipeline realign --scope=health` 的命令与执行阶段 | [realign-scope-health.md](realign-scope-health.md) |
+| **本文件**：rule 清单、怎么跑脚本、每条报了怎么办、2 条未实现 rule 的算法 | health-lint-implementation.md |
 | 既有偏差评分 | `../../sync/references/health-scoring.md` |
 
 ## Rule 集（[新增] 16 条）
@@ -33,10 +22,10 @@
 | `state/total-size-cap` | ⛔ / ⚠️ | c 过大 | v1+v2 | ❌（manual_decision）|
 | `state/line-length-cap` | ⛔ | c 过大 | v1+v2 | ❌（manual_decision）|
 | `state/forbidden-content` | ⚠️ | c/state-hygiene（c 维度子项）| v1+v2 | ❌（manual_decision）|
-| `health/dead-link` | ⛔ | b 索引/链接 | v1+v2 | ⚠️ 部分（删除引用可自动；补建定义需 manual）|
+| `health/dead-link` | ⛔ | b 索引/链接 | v1+v2 | ⚠️ 部分（删除引用可由 Agent 提议；补建定义需 manual）|
 | `design/adr-only-revision` | ⚠️ | a 结构正确性 | v1+v2 | ❌（语义判断必须 manual）|
 | `submodule/pointer-drift` | ⛔ / ⚠️ | a 结构正确性 | v1+v2（仅 shell）| ❌（manual_decision）|
-| `state/max-id-stale` | ⚠️ | c/state-hygiene（c 维度子项）| v1+v2 | ✅ 可自动（回填或删行，均需 manual_decision 选择）|
+| `state/max-id-stale` | ⚠️ | c/state-hygiene（c 维度子项）| v1+v2 | ❌（manual_decision：回填或删行）|
 | `id/unknown-prefix` | ⚠️（永不升级 ⛔）| b 索引/链接 | v1+v2 | ❌（只报不判，manual_decision）|
 | `flag/dangling-reference` | ⚠️ | b 索引/链接 | **skill 库**（非项目）| ❌（manual_decision）|
 | `skill/size-cap` | ⛔ | a 结构正确性 | **skill 库** | ❌（manual_decision）|
@@ -47,404 +36,135 @@
 | `skill/dead-link` | ⚠️ | b 索引/链接 | **skill 库** | ❌（manual_decision）|
 | `skill/retired-term` | ⚠️ | a 结构正确性 | **skill 库** | ❌（manual_decision）|
 
-> 16 条全部 [新增]；其中 `design/adr-only-revision` 与 `submodule/pointer-drift` 脚本输出 `not_implemented`，需 Agent 按算法补执行。⚠️ `flag/dangling-reference` 扫 skill 库不扫项目，走 `--skills-dir`，**不在** `--scope=health` 的 11 条之内。项目可直接调 `/pipeline realign --scope=health` 受益。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目报 `not_applicable`。
+> `design/adr-only-revision` 与 `submodule/pointer-drift` 脚本输出 `not_implemented`，需 Agent 按本文算法补执行。⚠️ skill 库的 5 条走 `--skills-dir`，**不在** `--scope=health` 的 11 条之内。`submodule/pointer-drift` 仅在 shell 拓扑下生效，`inline` / `linked` 项目不适用。`layout/*` 三条按 [devdocs-layout.md](../../shared/devdocs-layout.md) 的清单判定，发现里自带处置建议，本文不另设详情节。
 
----
+## 怎么跑
 
-### `skill/*` —— skill 库结构自检（3 条）
+**⛔ 先跑脚本，不要逐条人肉扫。** 脚本零依赖，参数以 `--help` 为准。
 
-⛔ 与 `flag/dangling-reference` 同走 `--skills-dir`，扫 skill 库不扫项目。
-落地 `repo-governance 1.2`「仓库无 validator」的首版高价值检查。
-
-| rule_id | 检测 | 严重度 | 依据 |
-|---|---|---|---|
-| `skill/size-cap` | `SKILL.md` > 500 行 | ⛔ | [AGENTS.md](../../../AGENTS.md) 硬约束 |
-| `skill/name-mismatch` | 目录名 ≠ frontmatter `name`，或目录缺 `SKILL.md` | ⛔ | 安装按 `name` 复制整个目录，跨 skill 相对引用依赖该约定 |
-| `skill/dead-link` | 仓内相对链接（`./` `../` 开头）目标不存在 | ⚠️ | — |
-| `skill/retired-term` | 出现已删除机制的说法（词表是脚本里的 `RETIRED_TERMS`；删机制时把它的专有词加进去）| ⚠️ | 防止删掉的入口被后续改动写回来 |
-
-**`skill/dead-link` ⛔ 跳过 `templates/`**：模板会复制进用户项目，其中相对路径按**产物落点**算，
-不是仓内路径。实测 `prd/templates` 的 `../../codebase-insight.md` 在仓内不存在，但模板落到
-`docs/prd/requirements/index.md` 后正好解析到 `docs/codebase-insight.md`，**完全正确**。
-⇒ 按仓内文件系统校验模板 = 必然误报，正是 `repo-governance 1.2` 警告过的那一类。
-
-豁免：`<!-- health-lint-disable-line skill/dead-link -->`。
-
----
-
-### `flag/dangling-reference`
-
-**目的**：检测 skill 之间互相引用的 `--flag` 在目标 skill 目录内是否存在。
-
-**⛔ 扫描对象与其余 11 条不同**：其余扫用户项目的 `docs/devdocs/` 与 `devdocs-state.md`；
-本条扫 **skill 库自身**，故走独立入口 `health-lint.py --skills-dir <skills/>`，
-⛔ 不并入 `--target` 的 project-scope 扫描。
-
-**为什么需要**：子指令**没有解析器**——skill 是 markdown，harness 把 flag 当 `args`
-原样传给模型，模型读 SKILL.md 的表对着认。⇒ flag 打错 / 改名 / 删除，**没有任何东西会报错**。
-
-实证（2026-09-16）：`--incremental` 在 `a8f109a`「用户面 flag 收敛 49→20」随生产方删除，
-**3 个消费方未同步**，其一写「必须委托给」；另有 3 处在 `verify-report` 模板里，
-会随模板复制进用户项目。共 6 处，全部静默通过。
-
-**算法**：
-
-```text
-1. names = skills/ 下全部目录名
-2. 遍历 skills/**/*.md（跳过 ``` 代码块内的行）
-3. 匹配 /([a-z][a-z0-9-]{2,})\s+(--[a-z][a-z-]*)
-4. target ∈ names 时，读 skills/<target>/**/*.md 全文
-5. flag 不在该全文中 → finding（severity = warning）
+```bash
+python3 <skill_dir>/scripts/health-lint.py --target <项目根> [--changed-only] [--fix=<rule_id>]
+python3 <skill_dir>/scripts/health-lint.py --skills-dir <skills/>
 ```
 
-**严重度为何是 ⚠️ 而非 ⛔**：死 flag **降级是柔性的**——子 Agent 收到不认识的参数，
-会按上下文自行解释，不像 `health/dead-link` 那样断掉用户产物里的追溯链。⛔ 但它仍是真漂移。
+| 入口 | 用途 |
+|---|---|
+| `--target <根>` | project scope 中脚本已实现的 9 条 |
+| `--skills-dir <skills/>` | skill 库的 5 条（`flag/dangling-reference` + 4 条 `skill/*`）；⛔ 与 `--target` 互斥 |
+| `--baseline-init` / `--since-baseline` | 存量项目噪声抑制，见 [§ Baseline 与增量扫描](#baseline-与增量扫描) |
+| `--changed-only` | 文件级：只报 `git diff HEAD` 变更文件（含未跟踪）里的 `health/dead-link` 与 `id/unknown-prefix`；⚠️ `state/*` 与 `layout/*` 始终全量 |
+| `--fix=<rule_id>` | 只跑指定 rule |
+| `--selftest` | 内置夹具自检；改脚本后必跑（`bash scripts/check-python.sh` 已包含）|
 
-**豁免**：行内加 `<!-- health-lint-disable-line flag/dangling-reference: <理由> -->`。
-用于反例（如「⛔ 不为 X 新建 `/skill --flag` 一类的入口」这种否定句）。
+- 脚本每次都在 stderr 打印 `not_implemented(v1): design/adr-only-revision, submodule/pointer-drift`，⛔ **不得当作 pass**，这两条按下文算法补执行。
+- 发现逐条输出到 stdout，字段固定为 `rule_id / severity / file / line / actual / threshold / message / context / fix_suggestion / auto_fixable`；规则专属的信息（子类型、命中的模式、拆分锚点）写在 `message` 与 `context` 里。
+- `.claude/rules/devdocs-state.md` 不存在时 `state/*` 不产生发现，stderr 汇总行标 `not_applicable`；`docs/devdocs/` 不存在时直接退出 0。
+- 不含 `--apply` / 自动修复；修复由 `/pipeline realign --scope=health --apply` 调度，见 [realign-scope-health.md](realign-scope-health.md)。
 
-**已知盲区**：判据是「flag 在目标目录内能否搜到」⇒ **skill 引用自己的 flag 必然自证通过**。
-实测的 6 处漂移全为跨 skill，v1 接受该盲区。
+### 退出码
+
+| 退出码 | 含义 |
+|--------|------|
+| 0 | 无违规（或全部在 baseline 内）|
+| 1 | 只有 ⚠️ |
+| 2 | 有 ⛔；⚠️ 命令行参数写错也是 2，看 stderr 区分 |
+| 3 | lint 自身错误，stderr 给出下列之一 |
+
+| stderr 错误码 | 触发 |
+|------------|------|
+| `health/baseline-missing` | `--since-baseline` 但 `.health-baseline.yml` 不存在 → 先 `--baseline-init` |
+| `health/baseline-corrupt` | baseline 不是脚本写的固定结构 → 重新 `--baseline-init`，⛔ 不手改 |
+| `health/git-unavailable` | `--changed-only` 时 git 不可用或不在仓内 → 去掉 `--changed-only` 全量扫 |
+| `layout/clause-unavailable` | 读不到 [devdocs-layout.md](../../shared/devdocs-layout.md) 的清单 → 核对插件安装是否完整 |
+
+Agent 执行的两条 rule 按各自的严重度并入结论：`submodule/pointer-drift` 的分叉是 ⛔，其余成因与 `design/adr-only-revision` 是 ⚠️。`--apply` 流程的 `health/report-stale`、`health/manual-pending` 见 [realign-scope-health.md](realign-scope-health.md)。
 
 ---
 
 ## Rule 详情
 
+### skill 库的 5 条
+
+扫 skill 库自身，不扫用户项目；本仓编辑 `skills/**/*.md` 后由 `hooks/skill-flag-lint` 自动跑。
+
+| rule_id | 查什么 | 报了怎么办 |
+|---|---|---|
+| `skill/size-cap` | `SKILL.md` 超过 [AGENTS.md](../../../AGENTS.md) 的行数上限 | 把细节下沉到 `references/` |
+| `skill/name-mismatch` | 目录名 ≠ frontmatter `name`，或目录缺 `SKILL.md` | 改成一致（安装按 `name` 复制整个目录，跨 skill 相对引用依赖它）|
+| `skill/dead-link` | 仓内相对链接（`./` `../` 开头）目标不存在；`templates/` 不查（模板里的路径按产物落点算）| 修正路径；确为示例时行内加 `<!-- health-lint-disable-line skill/dead-link -->` |
+| `skill/retired-term` | 出现已删除机制的说法（词表是脚本里的 `RETIRED_TERMS`）| 改掉说法。删机制时把它的专有词加进词表；确需保留的行加 `<!-- health-lint-disable-line skill/retired-term -->` |
+| `flag/dangling-reference` | 某 skill 文档里写了 `/<别的 skill> --flag`，而目标 skill 目录里搜不到这个 flag | 改成现存的 flag 或删掉引用；否定句式的反例行内加 `<!-- health-lint-disable-line flag/dangling-reference: <理由> -->` |
+
+`flag/dangling-reference` 为什么需要：子指令没有解析器，flag 打错、改名、删除都不会有任何东西报错。已知盲区：skill 引用自己的 flag 必然通过，只能查跨 skill 的引用。
+
 ### `state/total-size-cap`
 
-**目的**：检测 `devdocs-state.md` 整体膨胀，防止"占位 + sprint 锚点"退化为"sprint 完整日志倾倒地"。
+**查什么**：`.claude/rules/devdocs-state.md` 整体膨胀（超过提醒线 ⚠️，超过阻断线 ⛔；数值见 [状态文件模板 § 边界约束](../../agent-memory/templates/devdocs-state-template.md)）。防止「占位 + sprint 锚点」退化成日志倾倒地。
 
-**检测对象**：`<repo_root>/.claude/rules/devdocs-state.md`（若不存在 → skip，输出 `not_applicable`）。
-
-**阈值**：
-
-| 阈值 | 字节 | 严重度 |
-|------|------|--------|
-| WARN | > 10240 (10 KiB) | ⚠️ |
-| BLOCKER | > 40960 (40 KiB) | ⛔ |
-
-**算法**（Agent 执行步骤）：
-
-```text
-1. 检查文件存在性
-   path = <repo_root>/.claude/rules/devdocs-state.md
-   如不存在：输出 finding { status: not_applicable }，return
-
-2. 计算字节大小
-   size_bytes = Bash: wc -c "$path" | awk '{print $1}'
-
-3. 分级判定
-   if size_bytes > 40960:
-     severity = blocker
-     verdict_msg = "devdocs-state.md 已 ${size_bytes} bytes（阈值 40 KiB），违反占位 + sprint 锚点设计"
-   elif size_bytes > 10240:
-     severity = warning
-     verdict_msg = "devdocs-state.md 已 ${size_bytes} bytes（阈值 10 KiB），建议归档"
-   else:
-     return pass
-
-4. 输出 finding（见下方"Finding 输出 schema"）
-```
-
-**修复路径**：
-
-- **不可自动修复**。归档目标决策必须 AskUserQuestion（每条超长行的明细应归到 04-dev-tasks-pNN.md / ADR-NNN.md / archive 哪个文件）。
-- 修复执行由 `--scope=health --apply` Phase 2 调度（详见 [realign-scope-health.md § Phase 2](realign-scope-health.md#phase-2维度-c-自动归档state-size--size-cap)）。
-
-**误报与边界**：
-
-- `archive/` 目录下的 devdocs-state.md 副本不扫（属历史归档）。
-- 跨 worktree 多份 devdocs-state.md 时只扫主 worktree。
-
----
+**报了怎么办**：不可自动修复。每条明细归到哪个文件（任务分册 / ADR / archive）由用户决定，执行走 `--scope=health --apply` 的 [Phase 2](realign-scope-health.md#phase-2维度-c-自动归档state-size--size-cap)。
 
 ### `state/line-length-cap`
 
-**目的**：检测单行超长（多个 sprint 报告塞进一行用 `；` 拼接的反模式）。
+**查什么**：状态文件里的超长行（多个 sprint 报告用 `；` 拼进一行的反模式）。frontmatter 不查。发现里带建议的拆分锚点；表格行标 `table-row: yes`。
 
-**检测对象**：`<repo_root>/.claude/rules/devdocs-state.md` 每一行。
-
-**阈值**：单行字符数 > 500（计 unicode codepoint，非 byte）。
-
-**算法**：
-
-```text
-1. 读取文件，按 \n 切分行
-2. 对每一行 i：
-     line_len = len(line_i)  # 字符数
-     if line_len > 500:
-       record finding {
-         line: i,
-         length: line_len,
-         preview: line_i[:80] + "…",
-         hint: 检测到的拆分锚点（按优先级匹配第一个）：
-           - "；" 中文分号
-           - "**T-RF-" / "**T-" task 标记
-           - "; " ASCII 分号 + 空格
-           - 其他：标记 "无明显拆分点，需 manual"
-       }
-3. severity = blocker（无 WARN 等级，超长即阻断）
-4. 输出所有 findings
-```
-
-**修复路径**：
-
-- **不可自动修复**。拆分边界（按 `；` 还是按 task ID）必须用户确认；同行内混杂多个 task 时，每个 task 的明细去向也需独立决策。
-- `--scope=health --apply` Phase 2 执行：将每条 task 明细按确认目标搬到对应资源文件，原行替换为简洁占位（≤ 200 字符）。
-
-**误报与边界**：
-
-- 表格行（以 `|` 开头）若内容确为单行数据（不含嵌套 task 明细）→ 仍判违规，但 hint 标记 `table-row: yes`，用户可选择忽略（输出 `<!-- health-lint-disable-line state/line-length-cap -->` 注释）。
-- frontmatter yaml 单行不扫（yaml 不应超 500 字符；如超则属另一类问题）。
-
----
+**报了怎么办**：不可自动修复。拆分边界与每段明细的去向由用户确认，执行同上 Phase 2。确为单行数据的表格行可在行内加 `<!-- health-lint-disable-line state/line-length-cap -->`。
 
 ### `state/forbidden-content`
 
-**目的**：检测占位 prose 内嵌入了应该属于资源文件的实现明细（commit hash / LOC / codex 分数 / 文件路径）。
+**查什么**：状态文件「## 编号状态」之后的占位 prose 里嵌了实现明细：commit hash、LOC 或 diff 增减计数、codex 分数、源码文件路径、`<仓名>@<hash>` 引用。该标题之前的内容不查（没有该标题时从第 51 行查起）。
 
-**检测对象**：`<repo_root>/.claude/rules/devdocs-state.md` 全文。
+**报了怎么办**：不可自动修复。逐条决定去向（搬到任务文件 / ADR，或直接删），原行换成：
 
-**禁止模式**（canonical regex，PCRE / grep -P 兼容）：
-
-#### `commit-hash`
-
-```regex
-(?:^|[@\s(\[])[0-9a-f]{7,40}(?=[\s.,;:)\]'"`]|$)
+```
+- <编号> — <一句话状态>（→ <资源文件路径>）
 ```
 
-命中：`trade@0c263bf4d4` / `commit 51593927ee` / ``` `abc1234` ```
-不命中：`AC-1234567`（前置是 `-` 而非 `@`/空白）/ `2026-05-22`（hex 但有非 hex 上下文 `-`）
-
-#### `loc-count`
-
-```regex
-(?:[+-]?\d+(?:\.\d+)?\s*(?:LOC|loc|lines?|行)\b|净\s*[+-]\d+\s*LOC)
-```
-
-命中：`732 LOC` / `净 -85 LOC` / `+184 lines`
-不命中：`AC-148` / `第 3 行`（"行" 前无数字且无 + /-）
-
-#### `codex-score`
-
-```regex
-(?:\bR\d+\s*(?:health\s*=)?\s*\d{2,3}(?:\s*PASS)?\b|\bR\d+\s+\d{2,3}\s*[→\->]+\s*R\d+\s+\d{2,3}\b|双\s*\d{2,3}\s*分)
-```
-
-命中：`R1 88 → R2 92` / `R2 health=92 PASS` / `双 96 分`
-不命中：`R1`（仅版本号无分数）
-
-#### `diff-net`
-
-```regex
-(?<![\w\-])[+\-]\d+\s*/\s*[+\-]\d+(?![\w])
-```
-
-命中：`+184/-5` / `+2501/-39` / `2 files +184/-5`
-不命中：`2026/05/22`（日期）/ `1/2`（无 +/- 前缀）
-
-#### `file-path`
-
-```regex
-\b[\w./\-]*\.(?:java|ts|tsx|js|jsx|py|go|kt|swift|md)(?::L?\d+)?\b
-```
-
-命中：`OssFundTraceProviderImpl.java:L54` / `src/foo.ts` / `04-dev-tasks-p19.md`
-不命中：`https://example.com`（无 `.<ext>` 段）
-
-#### `submodule-ref`
-
-```regex
-\b(?:trade|envo|app|mstatic|trade-oss)@[0-9a-f]{7,40}\b
-```
-
-命中：`trade@0c263bf4d4` / `envo@0a22d80eb0`
-不命中：`trade@` 单独（无 hash 跟随）
-
-> ⚠️ 上述 regex 经验证：对一个实战项目的 `devdocs-state.md` line 50 的 `trade@0c263bf4d4` / `+184/-5` / `R1 88 → R2 92` 均能命中。
-
-**算法**：
-
-```text
-1. 定位扫描起始行：找到第一个 "## 编号状态" heading 行号 header_end_line（前序"## 单一事实源约定" + 边界声明段落豁免）
-   fallback：若文件无 "## 编号状态"，从 line 51 开始扫描
-
-2. 对每个 pattern_id 在 header_end_line 之后做 PCRE 全匹配：
-   matches = Bash: awk "NR > $header_end_line" "$path" | grep -nP --line-number "<regex>"
-
-3. 对每个 match 记录 finding：
-   {
-     line: <line_num + header_end_line>,
-     pattern_id: <id>,
-     matched_text: "<最多 80 字符截断>",
-     surrounding_context: "<该行前后 ±30 字符>"
-   }
-
-4. severity = warning（不阻断，但建议清理）
-5. 汇总 findings，按 line 升序输出；同行多 pattern 合并为一条 finding（patterns 字段为数组）
-```
-
-**修复路径**：
-
-- **不可自动修复**。每条禁止内容的去向（搬到哪个 task 文件 / ADR / 直接删除）需要 manual_decision。
-- 修复模板：占位行替换为
-  ```
-  - <编号> — <一句话状态>（→ <资源文件路径>）
-  ```
-
-**误报与边界**：
-
-- 文件头部"单一事实源约定"段落允许出现 file-path 示例（前 50 行豁免）。
-- 如某行的 `commit-hash` 实际是 AC 编号末 7 位（`AC-1234567` 不太可能但语义可能误判），加上下文关键词约束（必须邻近 "commit" / "shipped" / "@" 字符）才命中。
-- 用户可在违规行末加 `<!-- health-lint-disable-line state/forbidden-content -->` 单行豁免（必须给豁免理由：在 disable 注释后续行加 `<!-- reason: ... -->`）。
-
----
+误报（例如形似 hash 的普通字符串）在行内加 `<!-- health-lint-disable-line state/forbidden-content -->`。
 
 ### `health/dead-link`
 
-**目的**：检测 keel 产物里引用的编号（F/US/AC/T/T-RF/ADR/INS/BUG/UT/IT/E2E/Journey）是否有对应定义；引用了不存在的编号 = 死链。
+**查什么**：`docs/devdocs/**/*.md` 里引用的编号（F / US / AC / CON / T / T-RF / ADR / INS / BUG / UT / IT / E2E / Journey，含 `AC-148~152` 这类范围）找不到定义。发现分两类：`out-of-range`（超出该类型已定义的最大编号，多半是未来引用或笔误）、`missing-definition`（在范围内却没有定义，多半是笔误、未创建或已删除）。
 
-**检测对象**：`docs/devdocs/**/*.md`（排除 `.realign-plan.md`、`.health-report.md`）。`archive/` 下的文件只贡献编号定义（已归档的编号仍算已定义），自身的引用不查、不报。
+- 代码块内的编号不算引用。
+- `archive/` 下的文件只贡献定义（已归档的编号仍算已定义），自身的引用不查。
+- 编号上界从资源文件推导，⛔ 不读 `devdocs-state.md` 的「当前最大」（它允许滞后，当上界会把合法新编号误报）。
+- 同一文件多次引用同一个死链编号合并成一条。
 
-**算法**（两遍扫描）：
-
-```text
-Phase A：构建编号定义索引（definition index）
-  1. 遍历定义源文件（**注意：devdocs-state.md 既不是定义源，也不是编号上界源**）：
-       - docs/devdocs/**/*.md（排除 .realign-plan.md、.health-report.md；archive/ 只进定义索引）
-       - ⛔ **不从 devdocs-state.md 取"当前最大"作为上界**——该文件自称"事实快照，不追踪
-         drift"，把它的手填值当上界会在它滞后时把合法新编号误报为 out-of-range
-         （实测：state 表停在 AC-062 而资源文件已到 AC-064）。上界改由资源文件推导。
-  2. 在每个定义源文件中识别"定义位置"模式：
-       - heading：^(#{1,4})\s+(F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b
-       - 表格行（首列）：^\|\s*(F|US|AC|CON|...)-\d+[a-z]?\s*\|
-       - 列表项 + 状态：^[-*]\s+\*?\*?(F|US|CON|...)-\d+[a-z]?\b
-  3. 收集为 index：{ id: <编号>, defined_in: [<file>:<line>, ...] }
-  4. 从 **Phase A 已建的 definition index** 推导 max_caps（⛔ 不读 state.md）：
-       max_caps[<type>] = max(定义索引中该 type 的全部数值部分)
-       仅用于 phase B 的 "out-of-range" 区分
-  5. 另读 state.md "## 编号状态"表的"当前最大"列为 state_caps，**只用于 state/max-id-stale
-     比对**（见该 rule），⛔ 不参与 phase B 判定
-
-Phase B：扫描引用 + 范围编号展开
-  1. 遍历同一批文件
-  2. 提取所有引用 occurrence：
-       a. 单点 regex：`\b(F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-\d+[a-z]?\b`
-       b. 范围 regex（先 match 展开为单点列表）：
-          `\b(F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey)-(\d+)~(?:\1-)?(\d+)\b`
-          示例：AC-148~152 → [AC-148, AC-149, AC-150, AC-151, AC-152]
-                AC-006~AC-008 → [AC-006, AC-007, AC-008]
-                AC-148~AC-152（带前缀重复）→ 同上展开
-       c. 代码块 ``` ``` 内的 occurrence 跳过（不视为有效引用）
-       d. archive/ 内的引用不查
-  3. 排除"定义位置"自身（Phase A 中已记为 definition 的 occurrence 不计为引用）
-  4. 对剩余引用查 index：
-       - 命中 → 跳过
-       - 未命中 → 查 max_caps：
-           a. 若 ref_id 数值部分 > max_caps[<type>] → finding sub_type = "out-of-range"
-              hint: "超出资源文件中该类型的最大已定义编号，可能是未来引用或拼写错误"
-           b. 若 ref_id ≤ max_caps[<type>] 但定义索引未命中 → finding sub_type = "missing-definition"
-              hint: "编号在声明范围内但找不到定义；可能拼写错误 / 未创建 / 已删除"
-           c. finding {
-                ref_id: <编号>,
-                file: <file>,
-                line: <line>,
-                context: <±60 字符>,
-                sub_type: out-of-range | missing-definition,
-                hint: <按上述>
-              }
-  5. severity = blocker（low-priority 标记的不阻断主流程）
-```
-
-**修复路径**（auto_fixable 部分）：
-
-- **可自动**：引用上下文明显是"删除目标"（如出现在 `~~text~~` 删除线内 / "已取消" / "cancelled by"）→ 提议删除引用，需用户最终确认。
-- **manual_decision**：补建定义 / 替换为正确编号 / 标 `[FUTURE]`（暂未实现）。
-
-**误报与边界**：
-
-- 代码块内的编号引用（``` ``` 包围）不扫，避免命中示例代码。
-- 引用目标定义在 `archive/` 内 → 算已定义，不报；`archive/` 文件自身的引用不查。
-- 同一文件内多次引用同一死链编号 → 合并为一条 finding，`occurrences: [<line>, <line>, ...]`。
-
----
+**报了怎么办**：补建定义、换成正确编号，或标 `[FUTURE]`，三者由用户选。引用出现在删除线、「已取消」这类上下文里时，Agent 可提议删除该引用，仍须用户确认。
 
 ### `id/unknown-prefix`
 
-**目的**：报出 `health/dead-link` 白名单外的编号前缀候选，供人工判断它的消费边界。⚠️ **非阻断提示，⛔ 不判违规、⛔ 不给归并建议**——前缀语义看名字猜不出来，工具无权替人分类。对应 `../../shared/constraints.md` 的 `id/prefix-consumption-contract`。
+**查什么**：`health/dead-link` 白名单之外的编号前缀候选，按前缀聚合报告（每个前缀一条，附出现次数与样本位置）。⚠️ **只报不判**：白名单外的编号没有任何检查管，打错或引用已删除的号不会被发现，本条只负责让这些前缀在报告里可见，⛔ 不主张它们不该存在，⛔ 不给归并建议。对应 [constraints.md](../../shared/constraints.md) 的 `id/prefix-consumption-contract`。
 
-**它治理什么**：白名单外的编号 `health/dead-link` 不查、`state/max-id-stale` 不推上界 ⇒ 打错一个号、引用一个已删除的号，**没有任何门会发现**。本 rule 只负责让这些前缀在报告里可见，⛔ 不主张它们不该存在。
+- 已登记但故意不入白名单的前缀（`M`、`FR`、`NFR`）不报；URL 与文件路径内的不算；行内代码里的照样算。
+- 形态相同的非编号（`UTF-8`、审查发现编号、外部单号）必然命中，⛔ 不硬编码黑名单，由 baseline 消化。
+- 本条的出现次数与 `health/dead-link` 的引用数是两套口径，⛔ 不得相加或互相校验。
+- 严重度恒为 ⚠️：它报的是「这里工具看不见」，不是「这里错了」。
 
-**背景**：一个实战项目（2026-09-10 按本节算法的文本原型抽样）有 **29 类**白名单外前缀候选、**3017 次** occurrence（口径：51 个 devdocs 文件，去代码块与 URL / 文件路径，**保留**行内代码；⛔ 非完整 Markdown 解析，是量级而非精确值）。其中 `D-`(853，决策) 与既有 `ADR-`(282) 并存且边界从未写下，是本 rule 想让人看见的那类；同一批里也有 `R-`(211，重定向安全判定规则) / `B-`(217，改动白名单放宽登记) 这类**合理的项目局部标识**，以及 `UTF`(11) 这类纯形态噪声。⇒ 三者工具分不开，**只报不判**。
+**报了怎么办**：按 `id/prefix-consumption-contract` 给该前缀补一份消费契约（作用域 / 消费方 / 检查归属）。三种合法结局：登记进白名单、明确「人工核对、不进机器检查」、确认无消费方后删除。
 
-**检测对象**：与 `health/dead-link` 同一批文件（`docs/devdocs/**/*.md`，排除 `.realign-plan.md`、`.health-report.md`；`archive/` 不查）。
+存量项目首扫会一次性报出全部历史前缀，先 `--baseline-init`。⛔ **baseline 不是语义审批**：它只是本机的噪声抑制，换机器会重新报一遍，前缀进了 baseline 之后它新增的编号也不再提示。想让团队持续接受某个局部前缀，落点是产物里受版本控制的消费契约。⛔ 不用状态文件的「## 编号状态」表当白名单。
 
-**算法**（与 dead-link 共用一次文件遍历，⛔ 但词法独立，见下方"与 dead-link 的词法差异"）：
+### `state/max-id-stale`
 
-```text
-1. 候选 regex（⛔ 不能用 \b 开头——`T-RF-001` 会被 \bRF-001\b 抓出幻影前缀 RF）：
-     (?<![\w-])([A-Z][A-Za-z0-9]{0,5})-\d{1,4}[a-z]?(?![\w-])
-   跳过：代码块 ``` ``` 内；archive/ 内
+**查什么**：状态文件「## 编号状态」表的「当前最大」与资源文件推导值不一致。子类型：`stale`（表滞后，最常见）、`phantom`（表里的编号在资源文件中找不到定义）、`missing-row`（资源文件有该类型而表里没有这一行）。模板占位行（`F-XXX`）不比对。
 
-2. 逐条过滤（命中任一即跳过）：
-     a. prefix ∈ dead-link 白名单
-        （F|US|AC|CON|T|T-RF|ADR|INS|BUG|UT|IT|E2E|Journey）—— dead-link 已管
-     b. prefix ∈ 已登记但故意不入白名单的标识：
-          M         —— 里程碑（constraints.md 已登记）
-          FR / NFR  —— PRD 层官方编号，keel 侧合法引用（阶段映射
-                       NFR-XX → CON-XXX）。⛔ 必须硬跳过，每个项目都会命中
-     c. prefix ∈ baseline 已抑制的前缀（见「Baseline 与增量扫描」）
-     d. occurrence 落在 URL 或文件路径内
-        ⛔ 不跳过行内代码 span —— 实测项目大量用反引号包裹真实编号
-          （`04-dev-tasks-api.md:34` 的 `MR-038`），跳过会漏掉主要用法
+**为什么只是 ⚠️**：该表不是编号权威，分配新编号直接扫资源文件。它滞后只会让速读读到旧数字，是缓存过期，不是数据损坏。
 
-3. 按 prefix 聚合，⛔ 不逐条报：
-     finding {
-       rule_id: id/unknown-prefix,
-       severity: warning,
-       file:   <样本首个文件>,      # 对齐统一 schema
-       line:   <样本首个行号>,
-       actual: <该前缀的 occurrence 数>,
-       message: "未知前缀 <P>：<N> 次 occurrence，不在 dead-link 白名单内",
-       context: "<最多 5 个 file:line 样本>",
-       fix_suggestion: "manual_decision",
-       auto_fixable: false
-     }
+**报了怎么办**（二选一，⛔ 不默认自动改写）：
 
-4. check 计数单位 = **出现过的 prefix 数**（⛔ 不按 occurrence 计），
-   避免单个前缀的引用量把 b 维度分母冲垮
-```
+| 选项 | 动作 |
+|---|---|
+| 回填 | 把「当前最大」改为推导值 |
+| 删行 | 删掉该类型的行。项目从不看这张表时，删掉比维护它更诚实 |
 
-**与 dead-link 的词法差异（⛔ 两者计数不可互相引用）**：
-
-| 项 | `health/dead-link` | 本 rule |
-|---|---|---|
-| 数字段 | `\d+[a-z]?`（无上界）| `\d{1,4}[a-z]?`（限位数，避免吞掉 `SIDM-71103` 这类外部单号）|
-| 范围展开 | `AC-148~152` 展开成 5 个 | ⛔ 不展开——按 prefix 报警不需要成员粒度 |
-| 边界 | `\b` | `(?<![\w-])` / `(?![\w-])`——必须排除 `T-RF-001` 的幻影 |
-
-⇒ **本 rule 的 occurrence 数与 dead-link 的引用组数是两套口径**，⛔ 不得相加或互相校验。
-
-**人工处置**（`manual_decision`，⛔ 无自动改写，⛔ 工具不给建议）：按 `id/prefix-consumption-contract` 补一份消费契约（作用域 / 消费方 / 检查归属）。三种合法结局：登记进白名单、明确"人工核对、不进机器检查"、或确认无消费方后删除。⛔ 报告不预设哪一种。
-
-**豁免走 baseline，⛔ 不走 devdocs-state 表**：`.health-baseline.yml` 的 `baseline_findings['id/unknown-prefix'].prefixes` 记**本机已看过的**前缀。
-
-⛔ **baseline 不是语义审批**：该文件推荐 gitignore（见「Baseline 文件」），换机器 / 换人会重新报一遍；且一个前缀进 baseline 后，它未来新增的 `D-999` 也不再提示，本 rule ⛔ 不治理已有命名空间的后续增长。它只做**本机历史噪声抑制**。⇒ 想让一个局部前缀被团队持续接受，落点是产物内的消费契约声明（受版本控制），⛔ 不是 baseline。
-
-⛔ **不用 state 表「## 编号状态」的行做白名单**——该表自称「事实快照，不追踪 drift，允许滞后」（模板 84~87 行），把它当豁免权威会重蹈 `state/max-id-stale` 的坑。
-
-**误报与边界**：
-
-- 形态相同的非编号必然命中：`UTF-8`、`P1-01` 这类审查发现编号、外部单号。⛔ 不硬编码黑名单——落进 baseline 消化。
-- 存量项目首扫会一次性报出全部历史前缀 ⇒ 必须先 `--baseline-init`。这是本 rule 唯一可用的落地方式。
-- 严重度统一 ⚠️ 且**永不升级为 ⛔**：它报的是"这里工具看不见"，不是"这里错了"。已有引用仍指向真实内容。
-- 按 prefix 去重，同一前缀在 N 个文件出现只报一条。
+`phantom` 先查是否有编号被误删（可能与 `health/dead-link` 同源）。
 
 ---
 
 ### `design/adr-only-revision`
 
-**目的**：检测系统设计文档（`02-system-design*.md`）的增量修订中，**ADR 章节有新增/修改但正文相关章节无同期更新**的反模式，对应 system-design/SKILL.md:336 的硬约束 `⛔ 禁止继续（增量设计）：仅追加 ADR 而正文相关章节未更新`。
+**目的**：检测系统设计文档（`02-system-design*.md`）的增量修订中，**ADR 章节有新增/修改但正文相关章节无同期更新**的反模式，对应 system-design/SKILL.md 自检清单的硬约束 `⛔ 禁止继续（增量设计）：仅追加 ADR 而正文相关章节未更新`。
 
 **背景**：用户实战反馈"每次修订只加增量修订记录、不改正文，正文偏差越来越大"。原硬约束依赖人工/Agent 自检，本 rule 把它落地为可自动扫描的检测。
 
@@ -492,12 +212,12 @@ Phase B：扫描引用 + 范围编号展开
 5. 对剩余真违规候选：
    - 提取 ADR 编号
    - 提取 ADR 中声明的"影响范围"字段（如 `影响范围：§4 模块设计、§5 核心接口`）
-   - 输出 finding（见下方 schema）
+   - 输出 finding（见下方 Finding 示例）
 ```
 
 **严重度**：⚠️ warning（不阻断 health 评分 < 60 直接挂掉，但要求用户回看）。
 
-> 不设为 ⛔ 的理由：纯文本启发式有一定假阳性可能性（如 ADR 描述本身复述了模块结构图 → 误判为"未改正文"）。warning 让用户复核而非强阻塞，比 ⛔ 更稳妥。已经在 system-design/SKILL.md:336 有 ⛔ 人工自检兜底。
+> 不设为 ⛔ 的理由：纯文本启发式有一定假阳性可能性（如 ADR 描述本身复述了模块结构图 → 误判为"未改正文"）。warning 让用户复核而非强阻塞，比 ⛔ 更稳妥。已经在 system-design/SKILL.md 自检清单有 ⛔ 人工自检兜底。
 
 **修复路径**：
 
@@ -538,50 +258,6 @@ Phase B：扫描引用 + 范围编号展开
 
 ---
 
-### `state/max-id-stale`
-
-**目的**：检测 `devdocs-state.md` 「## 编号状态」表的「当前最大」列与资源文件推导值不一致。
-
-**为什么只是 ⚠️ 而不阻断**：该表**不再是编号权威**（`id-reference-check` 的上界已改从资源文件推导，分配新编号也直接扫资源文件）。它滞后不会导致错误的编号分配，只是让「单页速读」读到旧数字。所以这条 rule 报的是**缓存过期**，不是数据损坏。
-
-> 改前该表被 `id-reference-check` 当作编号上界使用，而文件自称「事实快照，不追踪 drift」——**声明不可信却被当权威**。实测症状：state 表停在 `AC-062`，资源文件已到 `AC-064`，再新增就撞号。本 rule 与那次改动同批落地。
-
-**检测对象**：`<repo_root>/.claude/rules/devdocs-state.md` 的「## 编号状态」表（不存在 → skip，输出 `not_applicable`）。
-
-**算法**：
-
-```text
-1. 解析 state.md「## 编号状态」表，得 state_caps：{ F: 28, AC: 62, CON: 3, T: 23, ... }
-   （占位符行如 `F-XXX` 跳过——那是未实例化的模板）
-2. 复用 id-reference-check Phase A 的 definition index，按 type 取数值最大值
-   得 derived_caps：{ F: 28, AC: 64, CON: 3, T: 23, ... }
-3. 逐 type 比对：
-     - state_caps[t] == derived_caps[t]        → 通过
-     - state_caps[t] <  derived_caps[t]        → finding sub_type = "stale"（表滞后，最常见）
-     - state_caps[t] >  derived_caps[t]        → finding sub_type = "phantom"
-           hint: "表里的编号在资源文件中找不到定义——可能是编号被删除后未同步，
-                  或该编号从未真正创建"
-     - t 在 state 表有行但 derived 无该 type   → 同 "phantom"
-     - t 在 derived 有但 state 表无行          → finding sub_type = "missing-row"（⚠️ 低优先）
-4. 严重度统一 ⚠️
-```
-
-**修复动作**（`manual_decision` 二选一，⛔ 不默认自动改写）：
-
-| 选项 | 动作 |
-|---|---|
-| 回填 | 把「当前最大」列改为 `derived_caps` 值 |
-| 删行 | 删掉该类型的行——**若该项目从不看这张表，删掉比维护它更诚实** |
-
-> `phantom` 子类型额外提示先查是否有编号被误删（那可能是 `health/dead-link` 的同源问题）。
-
-**边界**：
-- `archive/` 下的副本不扫。
-- 跨 worktree 多份 state.md 时只扫主 worktree（与 `state/total-size-cap` 一致）。
-- 模板占位（`F-XXX` / `AC-XXX` 这类字面）不参与比对，避免对未实例化模板误报。
-
----
-
 ### `submodule/pointer-drift`
 
 **目的**：检测外壳仓记录的子模块指针与子模块实际状态不一致，防止「代码已提交但追溯链断裂」静默累积。
@@ -613,169 +289,24 @@ Phase B：扫描引用 + 范围编号展开
 
 ## Baseline 与增量扫描
 
-### Baseline 文件
-
-存量项目首次扫描违规量大，全量 ⛔ 阻断不可用。引入轻量 baseline 机制：
-
-位置：`<repo_root>/.claude/rules/.health-baseline.yml`（推荐 gitignore）
-
-```yaml
-schema: health-baseline.v1
-generated_at: <iso-ts>
-source_git_commit: <sha>
-baseline_findings:
-  state/total-size-cap:
-    devdocs_state_size_bytes: 250574
-  state/forbidden-content:
-    count: 1247
-    files: [".claude/rules/devdocs-state.md"]
-  health/dead-link:
-    count: 0
-    refs: []
-  id/unknown-prefix:
-    prefixes: [D, MR, GAP, BLK]   # 本机已看过、暂不再提示的前缀；⛔ 非语义审批
-notes: |
-  首次扫描快照；新增违规以此为基线计算 delta。
-```
-
-### 可执行实现（v1）
-
-**⛔ 先跑脚本，不要逐条人肉扫。** [`../scripts/health-lint.py`](../scripts/health-lint.py) —— 零依赖 stdlib。
-
-⚠️ **改本文算法后跑一次 `--selftest`**（内置夹具，覆盖 13 条）。本仓无 CI，它是唯一会响的东西。
-
-| 入口 | 用途 |
-|---|---|
-| `--target <根>` | project scope 的 11 条 |
-| `--skills-dir <skills/>` | skill 库的 4 条（`flag/*` + `skill/*`）|
-| `--baseline-init` / `--since-baseline` | 存量项目噪声抑制 |
-| `--changed-only` | 仅扫 `git diff HEAD` 变更文件（⚠️ `layout/*` 三条不受此收窄，布局是全树属性，始终全量扫描）|
-| `--fix=<rule_id>` | 只跑指定 rule |
-| `--selftest` | 内置夹具自检 |
-
-```bash
-python3 <skill_dir>/scripts/health-lint.py --target <项目根> [--changed-only] [--fix=<rule_id>]
-```
-
-| | rule |
-|---|---|
-| ✅ 脚本已覆盖 | `state/total-size-cap` · `state/line-length-cap` · `state/forbidden-content` · `health/dead-link` · `state/max-id-stale` · `id/unknown-prefix` |
-| ⚠️ 仍需 Agent 按本文算法执行 | `design/adr-only-revision`（git diff 行范围 × heading map）· `submodule/pointer-drift`（仅 shell 拓扑）|
-
-脚本对后两条输出 `not_implemented` 到 stderr，⛔ **不得当作 pass**。
-脚本 stdout 即本文「Finding 输出 schema」格式，退出码见下方「退出码（CLI 集成）」。
-
-**baseline 已实现**（存量项目落地的唯一可用方式）：
+存量项目首次扫描违规量大，全量 ⛔ 不可用，因此用 baseline 记下当前状态，之后只报新增。
 
 ```bash
 python3 health-lint.py --target <项目根> --baseline-init      # 写快照，⛔ 不报告违规
 python3 health-lint.py --target <项目根> --since-baseline     # 只报 baseline 之后的新增
 ```
 
-⚠️ **delta 只对本文「Delta 计算规则」定义过的 rule 生效**（`total-size-cap` / `forbidden-content` /
-`dead-link` / `id/unknown-prefix`）。`state/line-length-cap` 与 `state/max-id-stale` 本文未定义 delta，
-⇒ **一律不过滤**，每次全报。
-
-⚠️ baseline 读取器 ⛔ **不是通用 YAML 解析器** —— 只认本脚本自己写的固定结构。
-手改后格式不符会报 `health/baseline-corrupt`（有意为之：baseline 是机器快照，不是给人编辑的配置）。
-
-v1 仍不含 `--apply` / 自动修复。
-
-## CLI 触发
-
-| 命令 | 行为 |
-|------|------|
-| `/pipeline realign --scope=health --baseline-init` | 创建 baseline（不报告违规，记录当前状态）|
-| `/pipeline realign --scope=health --changed-only` | 仅扫 `git diff HEAD` 新增/变更行（增量模式）|
-| `/pipeline realign --scope=health --since-baseline` | 与 baseline 比对，只报告新增违规 |
+- 位置：`<项目根>/.claude/rules/.health-baseline.yml`（推荐 gitignore）。
+- ⛔ **只由脚本写，不手写、不手改。** 读取器只认脚本自己写的固定结构，格式不符报 `health/baseline-corrupt`。它是机器快照，不是给人编辑的配置。
+- ⛔ 日常扫描不刷新 baseline：每次重写等于把新出现的违规记成存量。要重置由用户显式跑 `--baseline-init`。
 
 ### Delta 计算规则
 
-- `state/total-size-cap`：报告 `delta = current_size - baseline_size`；delta < 2 KiB 视为可忽略小增长。⛔ **但 delta 过滤不得吞掉严重度升级** —— baseline 期为 warning、当前已跨过 40 KiB 成 blocker 时，即便 delta < 2 KiB 也必须报告（与 [realign.md](realign.md)「有 baseline」行的三触发条件一致）
-- `state/forbidden-content`：按 (file, line) 元组 hash；baseline 中存在的视为存量，新增的报告为 violation
-- `health/dead-link`：baseline 中已知死链不重复报；新增死链一律 ⛔
-- `design/adr-only-revision`：baseline 不适用（按 commit 时间窗判定，本身就是增量语义）
-- `id/unknown-prefix`：按 prefix 去重；baseline `prefixes` 列表内的不提示，新出现的前缀 ⚠️。⛔ 该列表只是本机噪声抑制，不代表这些前缀已被接受，也不追踪它们后续新增的编号
-- `submodule/pointer-drift`：按 (code_root name, 漂移类型) 元组去重；baseline 中已知漂移不重复报，新增漂移一律按第 4 步算法定性的严重度（warning 或 blocker）报告。仅 shell 拓扑生效
+`--since-baseline` 只对下列 rule 过滤，其余（`state/line-length-cap`、`state/max-id-stale`、`layout/*`）每次全报。
 
-## 退出码（CLI 集成）
-
-| 退出码 | 含义 |
-|--------|------|
-| 0 | 无违规（或全部在 baseline 内）|
-| 1 | 仅 warning 违规（state/forbidden-content / design/adr-only-revision / submodule/pointer-drift）|
-| 2 | 有 blocker 违规（state/total-size-cap / state/line-length-cap / health/dead-link 新增 / submodule/pointer-drift）|
-| 3 | lint 自身错误（git 不可用 / baseline 文件损坏 / report stale）|
-
-> `submodule/pointer-drift` 按成因分级，同一条 rule 可能落在退出码 1 或 2：漏 bump / 未 update / 未初始化 → ⚠️ warning（退出码 1）；分叉 → ⛔ blocker（退出码 2）。仅 `shell` 拓扑生效，`inline` / `linked` 项目报 `not_applicable`，不计入任一退出码。
-
-错误码（细分诊断，写入 finding.error_code）：
-
-| error_code | 触发 |
-|------------|------|
-| `health/report-stale` | report_hash 校验失败或 source_git_commit 与 HEAD 不一致 |
-| `health/baseline-missing` | `--since-baseline` 但 `.health-baseline.yml` 不存在 |
-| `health/baseline-corrupt` | baseline schema 不匹配或 YAML 解析失败 |
-| `health/manual-pending` | `--apply` 时存在 `status: pending` 的 manual_decision |
-| `health/git-unavailable` | git 命令失败或 repo 不在 git 控制下（影响 dead-link / adr-only-revision / submodule/pointer-drift，仅 shell 拓扑时后者适用）|
-| `health/scan-timeout` | 扫描超过性能阈值（见下表）|
-
-## 性能预期
-
-| Repo 规模（docs/devdocs/**/*.md 数）| 全量扫 | --changed-only | 备注 |
-|----|----|----|----|
-| < 50 文件 | < 1 s | < 200 ms | |
-| 50-200 文件 | < 3 s | < 500 ms | |
-| 200-500 文件 | < 10 s | < 1 s | dead-link Phase B 是 O(N×M)，N 文件数 M 平均引用密度 |
-| > 500 文件 | 推荐 `--changed-only` | < 2 s | 全量扫触发 `health/scan-timeout`（默认 30 s）|
-
-性能瓶颈：
-
-- `health/dead-link` 两遍扫描：O(N×M)，500 文件 + 平均 20 引用/文件 ≈ 10k 查询
-- `design/adr-only-revision`：依赖 `git log` + `git show` + `git diff`，30 天窗口 commit 数为主导
-- `state/forbidden-content`：单文件 PCRE，几乎与文件大小线性
-
-降级策略：
-
-- `--changed-only` 默认仅扫 `git diff HEAD~1..HEAD` 变更行 + 受影响文件
-- `health/dead-link` 在 > 500 文件时建议加 `--skip-rule health/dead-link`，按需单独触发
-
-## Finding 输出 schema
-
-所有 16 条 rule 的 finding 统一格式，与 `.health-report.md` § dimensions 字段对齐：
-
-```yaml
-- rule_id: state/total-size-cap | state/line-length-cap | state/forbidden-content | health/dead-link | design/adr-only-revision | submodule/pointer-drift | state/max-id-stale | id/unknown-prefix | layout/unknown-path | layout/unregistered-split | layout/size-cap | flag/dangling-reference | skill/size-cap | skill/name-mismatch | skill/dead-link | skill/retired-term
-  severity: blocker | warning
-  file: <relative-path>
-  line: <int 或 null>
-  actual: <实际值，如 size_bytes / line_length>
-  threshold: <阈值，如有>
-  message: "<人类可读描述>"
-  context: "<可选，违规内容片段>"
-  fix_suggestion: "<修复建议或 'manual_decision'>"
-  auto_fixable: true | false | partial
-```
-
-## CLI 触发
-
-| 命令 | 执行的 rule |
-|------|------------|
-| `/pipeline realign --scope=health --dry-run` | project scope 的 11 条（⛔ 不含 `flag/dangling-reference`）|
-| `/pipeline realign --scope=health --fix=state/total-size-cap` | 仅该 rule |
-| `/pipeline realign --scope=health --apply` | 修复 auto_fixable + 已 AskUserQuestion 的 manual_decision |
-
-不提供单独的 `--health-lint` 入口，统一通过 health scope 调用。
-
-## 历史项目兼容
-
-- project scope 的 11 条中 9 条脚本已实现，可直接通过 `/pipeline realign --scope=health --dry-run` 调用；`design/adr-only-revision` 与 `submodule/pointer-drift` 报 `not_implemented`，需 Agent 按算法补执行。
-
-## 变更日志
-
-| 日期 | 变更 |
-|------|------|
-| 2026-05-22 | 初始版本（health scope 4 条 [新增] rule 落地：state/* + dead-link）|
-| 2026-05-25 | 新增 `design/adr-only-revision`（维度 a 结构正确性），落地 system-design 增量修订正文偏差检测 |
-| 2026-08-05 | 新增 `submodule/pointer-drift`（维度 a 结构正确性，仅 shell 拓扑生效），落地 devdocs 工作区模式外壳仓子模块指针漂移检测 |
-| 2026-09-10 | 新增 `id/unknown-prefix`（维度 b 索引/链接，⚠️ 非阻断提示），落地 `shared/constraints.md` `id/prefix-consumption-contract` 的可见性支撑。与 dead-link 共用文件遍历但**词法独立**（负向边界排除 `T-RF-001` 幻影、限位数、不展开范围），两者计数口径 ⛔ 不可互引 |
+- `state/total-size-cap`：比 baseline 增长不足 2 KiB 的不报。⛔ **但不吞掉严重度升级**：baseline 时是 ⚠️、现在已跨过阻断线，即便增长不足 2 KiB 也报（与 [realign.md](realign.md)「有 baseline」行的三触发条件一致）。
+- `state/forbidden-content`：按（文件, 行号）比对，baseline 里有的算存量。
+- `health/dead-link`：baseline 里已知的死链不重复报，新增的一律 ⛔。
+- `id/unknown-prefix`：baseline 里的前缀不提示，新出现的前缀 ⚠️。
+- `design/adr-only-revision`（Agent 执行）：baseline 不适用，它按 commit 时间窗判定，本身就是增量语义。
+- `submodule/pointer-drift`（Agent 执行）：按（代码根 name, 漂移类型）去重，已知漂移不重复报，新增的按成因定严重度。

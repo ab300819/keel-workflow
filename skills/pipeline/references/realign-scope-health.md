@@ -50,7 +50,7 @@
 
 > **原维度 d「SSOT 遵从」与维度 e「三层分离自动检测」均已废弃**（不再保留为 FUTURE）：维度 d 依赖已删除的 layout.v2 ssot-lint，无检测对象；三层分离（决策/执行/数据）作为原则已由编号文件结构 + `state/*`、`design/adr-only-revision` 症状规则承载，无需独立的关键词扫描维度；审查时作**人工尺子**使用。权威见 [shared/constraints.md §9 分层记忆原则](../../shared/constraints.md#9-分层记忆原则决策--执行--数据三层分离)。
 >
-> [新增] rule 的算法与输出 schema 见 [health-lint-implementation.md](health-lint-implementation.md)（rule 清单与维度归属以该文件 Rule 集表为权威）。
+> [新增] rule 各查什么、报了怎么办、脚本怎么跑见 [health-lint-implementation.md](health-lint-implementation.md)（rule 清单与维度归属以该文件 Rule 集表为权威；判定以脚本为准）。
 
 ## CLI 兼容
 
@@ -89,7 +89,7 @@ docs/devdocs/.health-report.md
 |------|------|
 | `docs/devdocs/**/*.md` | 主扫描对象（A 类主链路 + B 类旁路）；`archive/` 只贡献编号定义，自身违规不报 |
 | `.claude/rules/devdocs-state.md` | 维度 c 中 `state-size` / `state-forbidden-content` 专属扫描 |
-| `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔keel 编号引用）⚠️ **未实现**：`health-lint.py` 的 `collect_files()` 只收 `docs/devdocs/`；需由 Agent 按算法补扫 |
+| `docs/prd/**/*.md`（若存在） | 维度 b 死链扫描（PRD↔keel 编号引用）⚠️ **未实现**：`health-lint.py` 的 `collect_files()` 只收 `docs/devdocs/`；需要时由 Agent 人工核对 PRD 里引用的 keel 编号是否有定义 |
 | `docs/devdocs/**`（**全部文件**，含 `.yaml` / `.txt`，⛔ 跳过 `archive/`）| `layout/*` 三条规则专属扫描（`collect_all()`，⛔ 与喂编号索引的 `collect_files()` 分开）|
 
 ### 执行步骤
