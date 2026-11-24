@@ -6,7 +6,7 @@ keel 技能链的编码执行阶段，承接 `dev-tasks` 输出的任务清单�
 
 ## 逻辑
 
-以 `04-dev-tasks*.md` 为输入，按 review_profile（fast/guarded/audit，由风险分类器据风险信号判定；层级标记为输入之一）决定独立审查时机与强度；质量地板 5 条恒定 inline；双 Agent 红绿对所有档保留。fast/guarded 独立审查延后到 /verify --review-drain，audit inline。
+以 `04-dev-tasks*.md` 为输入，按 review_profile（fast/guarded/audit/move，由风险分类器据风险信号判定；层级标记为输入之一）决定独立审查时机与强度；质量地板 5 条恒定 inline；双 Agent 红绿对所有档保留。fast/guarded 独立审查延后到 /verify --review-drain，audit inline。
 每任务采用双 Agent 模型：Test Agent（写骨架+测试）→ 编排器红色验证 → Impl Agent（写实现+重构），物理隔离测试代码与实现代码的上下文。
 批量模式采用编排器-执行器架构（Task tool 子 Agent），实现每任务独立上下文隔离。
 断点续做状态机（6 步检测流水线）支持中断后精确续跑，含 Agent 类型判定。

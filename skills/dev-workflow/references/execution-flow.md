@@ -80,7 +80,7 @@
 
 ## 统一任务执行流程
 
-所有任务遵循相同步骤，`review_profile`（fast / guarded / audit）决定各步骤的强制程度；层级标签 🔴🟡🟢⚪ 仅作风险分类器输入，用于决定 review_profile，不直接决定矩阵强制程度：
+所有任务遵循相同步骤，`review_profile`（fast / guarded / audit / move）决定各步骤的强制程度；层级标签 🔴🟡🟢⚪ 仅作风险分类器输入，用于决定 review_profile，不直接决定矩阵强制程度：
 
 | 符号 | 含义 |
 |------|------|
