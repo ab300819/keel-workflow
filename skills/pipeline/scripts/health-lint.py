@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""health-lint —— health-lint-implementation.md 的可执行实现（v1，14/16 条）。
+"""health-lint —— health scope lint rule 的可执行实现（v1，14/16 条）。
 
-零依赖，仅 stdlib。规格见同级 ../references/health-lint-implementation.md。
-⚠️ 条数改了这里、argparse description、规格 Rule 集表三处必须同改
+零依赖，仅 stdlib。判定以本脚本为准；rule 清单、用法与处置见同级 ../references/health-lint-implementation.md，
+该文档不复述算法。⚠️ 条数改了这里、argparse description、该文档 Rule 集表三处必须同改
 （已漂移过一次，见 audits/2026-06-12-skill-ssot-audit.md A4）。
 
 project scope（--target）：state/total-size-cap · state/line-length-cap
@@ -17,7 +17,7 @@ v1 未实现（如实报 not_implemented，⛔ 不要当成 pass）：
 
 v1 不含：--apply / 自动修复。baseline 见 --baseline-init / --since-baseline。
 
-退出码（规格「退出码（CLI 集成）」）：0 无违规 / 1 仅 warning / 2 有 blocker / 3 lint 自身错误
+退出码：0 无违规 / 1 仅 warning / 2 有 blocker / 3 lint 自身错误
 """
 import argparse
 import json
@@ -386,7 +386,7 @@ RETIRED_RE = [(re.compile(p), why) for p, why in RETIRED_TERMS]
 
 
 def scan_skill_repo(skills_dir):
-    """skill 库自检 3 条 —— AGENTS.md 已声明但此前零人执行的约束。
+    """skill 库自检 4 条 —— AGENTS.md 已声明但此前零人执行的约束。
 
     skill/size-cap      SKILL.md ≤ 500 行（AGENTS.md 硬约束）
     skill/name-mismatch 目录名 ≡ frontmatter name（安装按 name 复制整个目录）
@@ -989,7 +989,7 @@ def selftest():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="health-lint v1 (13/15 rules)")
+    ap = argparse.ArgumentParser(description="health-lint v1 (14/16 rules)")
     ap.add_argument("--target", default=".", help="项目根（含 docs/devdocs/）")
     ap.add_argument("--changed-only", action="store_true", help="仅扫 git diff HEAD 变更的文件")
     ap.add_argument("--fix", metavar="RULE_ID", help="仅运行指定 rule")

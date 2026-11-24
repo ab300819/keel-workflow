@@ -103,7 +103,7 @@ ADR / INS / BUG / Backlog 四类资源**两套形态都合法**，上表各登�
 |---|---|---|
 | 各 skill 的 300 行拆分规则 | requirements / system-design / test-cases / dev-tasks | 生成时的**拆分建议** |
 | `sync --archive` 的 400/500/400/300 行 + 数量 + 状态 | `sync/references/archive.md` | **归档触发器**（行数或数量任一超过即触发检查；状态条件决定哪些条目可归档）|
-| `layout/size-cap` 的 96 KiB | `pipeline/scripts/health-lint.py` 的 `SIZE_CAP_BYTES`（:542） | **体积警报**（纯尺寸，无语义条件）|
+| `layout/size-cap` 的 96 KiB | `shared/scripts/keellib/gates.py` 的 `SIZE_CAP`（与 keel K4 共用） | **体积警报**（纯尺寸，无语义条件）|
 
 `/sync --archive` 已于 2026-09-23 首次真实执行验证（一个实战项目，净减 767 行），
 ⛔ 不再是未验证路径。首跑暴露的 8 条规格缺口（拆分布局、任务多对多挂 F、无完成日期等）

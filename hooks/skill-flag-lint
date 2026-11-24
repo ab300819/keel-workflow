@@ -36,7 +36,7 @@ OUT=$(python3 "$LINT" --skills-dir "$ROOT/skills" 2>/dev/null) || true
 [ -n "$OUT" ] || exit 0
 
 touch "$STAMP"
-# --skills-dir 跑四条规则（flag/dangling-reference + skill/*），每条带上自己的 rule_id
+# --skills-dir 跑五条规则（flag/dangling-reference + 4 条 skill/*），每条带上自己的 rule_id
 MSG=$(printf '%s\n' "$OUT" | awk '/^- rule_id: /{r=$3} /^  message: /{sub(/^  message: /,""); print r ": " $0}' | sed 's/"//g' | head -5 | tr '\n' ' ' | tr -d '\\')
 [ -n "$MSG" ] || exit 0
 printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"⚠️ skill-lint: %s（flag/dangling-reference 的反例可加 health-lint-disable-line 注释）"}}\n' "$MSG"
