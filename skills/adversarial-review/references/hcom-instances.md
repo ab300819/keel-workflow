@@ -61,8 +61,10 @@ S2.5 探测分两层，**任一层可用该方就算可用**：
 - **等**：分段等（每段约 60 秒），每段结束看一次 `hcom list <名字>`：
 
   ```bash
-  hcom events --wait 60 --type message --from <名字> --sql "id><发送前的事件号>"
+  hcom events --wait 60 --type message --from <基础名> --sql "id><发送前的事件号>"
   ```
+
+  `--from` 只认基础名，即完整名字的最后一段（`…-codex-zamu` 的 `zamu`）；传完整名字会一直超时（2026-11-24 实测）。
 
   | 状态 | 处置 |
   |---|---|
