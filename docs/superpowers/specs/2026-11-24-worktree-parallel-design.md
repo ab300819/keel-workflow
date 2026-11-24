@@ -46,7 +46,7 @@ shell 不开外壳仓的 worktree（每份都要重新初始化子模块，指�
 - **一个人多任务**：主会话兼任台账会话；另开的会话各占 worktree。只有一个任务时不开 worktree，现状不变。
 - **临时修问题**：手上活脏着又要插一个修复 → 另开一个 worktree 修（基点按 §4.1），不动原现场（不 stash、不切分支）。不脏或很快能收尾的，不必开 worktree。
 
-**主工作树停在集成分支上，不在上面开发**（有并行时）。台账写在哪个分支就落在哪个分支，主工作树在集成分支上，台账才不会困在某个功能分支里。这是约定，keel 不强制，也不检查。
+**主工作树停在集成分支上，不在上面开发**（有并行时）。台账写在哪个分支就落在哪个分支，主工作树在集成分支上，台账才不会困在某个功能分支里。这是约定，keel 不直接检查；违反时会在标完成时被 §4.4 的兜底检查拦下。
 
 「只有台账会话写」是流程责任。工具能拦住「在 git worktree 里写台账」，但分辨不出某个会话是不是 PM。
 
@@ -70,7 +70,7 @@ shell 不开外壳仓的 worktree（每份都要重新初始化子模块，指�
 - 台账与 `docs/devdocs/` 只在主工作树写。git worktree 里写台账的命令一律拒绝（保留现有实现），提示里给出主工作树路径，并说明查最新台账可用 `<主工作树>/.keel/bin/keel --root <主工作树> task get …`。⛔ 不把写操作自动转到主工作树。
 - 项目 worktree 里的台账可读，但只是分支快照。工作会话需要的卡片信息、设计版本由派单 brief 给出。
 - 执行者交卡后，台账会话检查其分支相对基点的改动：碰了 `docs/devdocs/` 或 `state/` → 退回。
-- inline 项目在 worktree 里修缺陷：先提交修复代码，合回主工作树后，再由台账会话补记缺陷日志（避免缺陷编号撞车与日志末尾冲突）。shell / linked 下文档仓就是主工作树，原地记。
+- inline 项目在 worktree 里修缺陷：开工前先由台账会话在主工作树给这次修复建一张卡；worktree 里只提交修复代码；合回主工作树后补记缺陷日志，再关卡（避免缺陷编号撞车与日志末尾冲突；忘了补时卡会一直挂在台账里）。shell / linked 下文档仓就是主工作树，原地记。
 
 ### 4.3 工作会话拿到的上下文
 
@@ -91,17 +91,14 @@ inline 的仓名接受哨兵 `.` 与项目目录名两种写法。
 
 worktree 与来源仓共用对象库，找到来源仓就能解析其任意 worktree 上的提交，与 worktree 放在哪无关。项目外的已声明路径只跑只读 git 命令：所有命令加 `-c core.fsmonitor=false`；`--no-ext-diff`、`--no-textconv` 只加给接受它们的 diff 类命令（`merge-base` 加了会报错，已实测）。keel 工具只解析 `workspace:` 块里的 `mode` 与 `code_roots` 的 `name` / `path`，不引入 YAML 库。这是 `constraints.md` 的 `workspace/context-over-declaration`（消费方不得自读声明）的明确例外：例外只给 keel 工具，因为它在命令行里跑，拿不到握手上下文；skill 仍从 `workspace_context` 读。
 
-**确认已合入**（只用在派单 / worktree 场景；用户 2026-11-24 裁定）：
+**确认已合入**（用户 2026-11-24 裁定：兜底检查 + 例外登记）：
 
-- **范围**：卡上登记了 `kind=integration` 条目才检查，与现有完成门的触发条件（有测试提交，或 move 卡转已完成）相互独立——没有测试提交的卡只要登记了 integration 也查合入。单会话流程（不开 worktree、直接在当前分支提交）不登记、不受影响——那里登记当前分支的 HEAD 只是自己证明自己。派单规则要求台账会话合并工作分支后、改状态前登记；忘了登记工具不拦，这是已知的口子。
-- **登记**：`task commit <id> <仓名>@<合入后的完整 sha> --kind integration --branch <集成目标分支> --note "…"`。`branch` 只允许出现在 integration 条目上且必填，按文本字段校验（长度上限、禁换行与 `<!--`）。同一个仓只保留一条：再登记即替换旧的。
-- **检查**（目标状态为「已完成 / review_pending」时）：
-  - 卡上只要有一条 integration，本卡每个登记了测试 / 代码提交的仓都必须有一条（防止只合了一部分仓）。
-  - 该仓登记的每个测试 / 代码提交都是 integration sha 的祖先。
-  - integration sha 是本地 `refs/heads/<branch>` 的祖先或就是它的头；按 `refs/heads/` 严格解析，分支不存在 → 拒绝并说明。
-  - 冻结检查的终点不变（仍到本卡最后一个登记的测试 / 代码提交）。⛔ 不延到 integration sha：集成分支上别的卡改过同一个测试文件时会被算到本卡头上（复核指出）。合并是否改坏了测试，靠合并后的验证保证，见 §5。
-- **integration 条目只是合入证据**：不计入代码提交，不参与「测试先于代码」、纯移动范围，也不进 `task get --diff-range`（否则 drain 的审查范围会卷进同期合入的其他卡）。
-- **二次检查**：`review_pending → 已完成` 时完成门会再跑一遍。这期间目标分支被改写（rebase / reset）导致 integration sha 不再是它的祖先 → 拒绝；出路是重新登记 integration（替换旧条目），测试 / 代码 sha 也失效时按完成门现有的 sha 失效出路处理。
+- **兜底检查（不用登记）**：完成门触发时（有测试提交、move 卡转已完成，或卡上有 integration 条目），对每个仓检查本卡登记的每个测试 / 代码提交都是该仓当前 `HEAD` 的祖先。已实测三种情况：单会话直接在当前分支提交 → 通过，不多任何步骤；worktree 分支还没合并 → 拒绝，提示「代码还没合入」；合并后 → 通过。
+- **例外登记**：代码合到了别的分支（主工作树或来源仓没停在集成分支上）时，兜底检查会拒绝，这时登记合入点：`task commit <id> <仓名>@<合入后的完整 sha> --kind integration --branch <集成目标分支> --note "…"`。某个仓登记了 integration，该仓就改按它检查：本卡在该仓的每个测试 / 代码提交都是 integration sha 的祖先；integration sha 是本地 `refs/heads/<branch>` 的祖先或就是它的头（按 `refs/heads/` 严格解析，分支不存在 → 拒绝并说明）。没登记的仓仍走兜底检查。
+- `branch` 只允许出现在 integration 条目上且必填，按文本字段校验（长度上限、禁换行与 `<!--`）。同一个仓只保留一条：再登记即替换旧的。
+- **integration 条目只是合入证据**：不计入代码提交，不参与「测试先于代码」、冻结、纯移动范围，也不进 `task get --diff-range`（否则 drain 的审查范围会卷进同期合入的其他卡）。
+- 冻结检查的终点不变（仍到本卡最后一个登记的测试 / 代码提交）。⛔ 不延到合入点：集成分支上别的卡改过同一个测试文件时会被算到本卡头上（复核指出）。合并是否改坏了测试，靠合并后的验证保证，见 §5。
+- **二次检查**：`review_pending → 已完成` 时完成门会再跑一遍。这期间分支被改写（rebase / reset）导致提交不再是祖先 → 拒绝；出路是重新登记 integration（替换旧条目），测试 / 代码 sha 也失效时按完成门现有的 sha 失效出路处理。
 - 合并工作分支用 merge 或快进，⛔ 不 squash。必须 cherry-pick 时，交卡 sha 作废，按落地后的 sha 重新登记测试 / 代码提交。
 - 「是否已推送到远端」不归完成门管。
 - 多仓不是原子的：一个仓合入冲突时整卡不完成，已合入的仓保留记录，逐仓续做。
@@ -127,13 +124,13 @@ worktree 与来源仓共用对象库，找到来源仓就能解析其任意 work
 | 文件 | 改什么 |
 |---|---|
 | `skills/shared/constraints.md` | `workspace/context-over-declaration` 写明 keel 工具例外。新增「并行工作区」一节作唯一真源：两种 worktree、两个角色、主工作树停在集成分支、§4.1 建删流程、§4.2 台账规则、§4.3 上下文与 brief 字段。`keel/worktree` 并入此节。§完成门：仓名解析顺序、integration 检查、删去对应的「已知限制」 |
-| `keellib/donegate.py`、`schema.py`、`tasks.py`、`keel.py` + 测试 | 仓名解析；`kind=integration` 与 `--branch`（同仓替换）；合入检查（触发条件独立于现有早退）；integration 单独分组；`diff_ranges` 排除 integration |
+| `keellib/donegate.py`、`schema.py`、`tasks.py`、`keel.py` + 测试 | 仓名解析；`kind=integration` 与 `--branch`（同仓替换）；兜底合入检查与 integration 检查（有 integration 条目时不走现有早退）；integration 单独分组；`diff_ranges` 排除 integration |
 | `keellib/store.py` | 拒绝提示补 `--root` 读法 |
 | `skills/workspace-topology/SKILL.md`、`references/protocol.md` | 正交关系与用词；§ worktree 缩成指针；`inspect` 报告列 worktree 状态 |
-| `skills/dev-workflow/SKILL.md` | 开头「不做任务并行……手动用 worktree」改为链接；登记表加 integration 行（注明仅派单 / worktree 场景） |
+| `skills/dev-workflow/SKILL.md` | 开头「不做任务并行……手动用 worktree」改为链接；登记表加 integration 行（注明仅在合到别的分支时用） |
 | `skills/dev-workflow/references/executor-mode.md` | 工作目录 = brief 给的 worktree；`move-check` 调法；交卡不碰 docs |
 | `skills/dev-workflow/references/task-orchestration.md` | 派单 brief 字段指向 constraints |
-| `skills/bugfix/SKILL.md` | inline worktree 里修完合回再补缺陷日志（一行 + 链接） |
+| `skills/bugfix/SKILL.md` | inline worktree 里修缺陷：先建卡、合回后补日志再关卡（一行 + 链接） |
 | `docs/workflows.md` | 三个场景的自然语言用法 |
 | `docs/superpowers/specs/2026-11-20-keel-parallel-agents-design.md` | `branch` 字段与 §4.1 命名、§4.4 集成目标对齐（该稿待审，只加引用） |
 
@@ -150,7 +147,7 @@ worktree 与来源仓共用对象库，找到来源仓就能解析其任意 work
 | 台账单写、保留拒写、不自动转写 | 同 | 同 | 同 | 一致 |
 | 完成门按声明找代码根、不 squash | 同 | 同（传映射） | 同（读声明） | 一致；取 agy 的读声明 |
 | 谁建删 worktree | keel 命令 | agent 用 git | agent 用 git | **用户裁定：agent 按统一流程用 git** |
-| 完成门查合入 | — | 完整版 | — | **用户裁定：登记 integration 并检查，但只用在派单 / worktree 场景**（复审指出单会话下是自证） |
+| 完成门查合入 | — | 完整版 | — | **用户裁定：兜底检查（提交须在来源仓当前 HEAD 上，不用登记）+ 合到别的分支时登记 integration**。复审指出「所有卡都登记」在单会话下是自证；兜底检查是定稿后补的，未经两方复审 |
 | 工作会话的代码根路径换成 worktree | — | 提出 | — | 采纳（已核实 dev-workflow:289） |
 | brief 列共享资源 | — | 提出 | — | 采纳 |
 | 主工作树停在集成分支 | 提出 | 风险里提到 | — | 采纳为约定 |
@@ -161,8 +158,8 @@ worktree 与来源仓共用对象库，找到来源仓就能解析其任意 work
 
 ## 9. 风险与不确定
 
-- 「主工作树停在集成分支」靠人守，工具不查。
-- 合入检查靠台账会话记得登记 integration；忘了登记时工具不拦。
+- 「主工作树停在集成分支」工具不直接查（哪个是集成分支没有声明），只在标完成时经兜底检查间接暴露。
+- 兜底检查看的是来源仓当前 `HEAD`：主工作树或来源仓停在别的分支时会拒绝，需要登记 integration 才能过。这同时让「主工作树没停在集成分支」当场现形。
 - 完成门读项目外的声明路径：`AGENTS.md` 可能来自不可信的仓。只读命令加三个保护开关之后，是否还需要额外的信任约束，未定。
 - 声明漂移（新增代码仓没更新声明）时，完成门报解析不到，出路是 `/workspace-topology reconcile`。
 - inline worktree 里修完缺陷、合回后要补缺陷日志，合完就忘的可能不小；真实使用中观察。
@@ -171,5 +168,5 @@ worktree 与来源仓共用对象库，找到来源仓就能解析其任意 work
 ## 10. 验收
 
 - 三种拓扑各一个临时仓：外部代码根、shell 子模块名 ≠ 路径、两个仓含相同 sha 前缀、分支未合入、单会话插入修复、删除脏 worktree 被拒、执行者改了 docs 被退回。
-- 完成门（卡上有 integration 条目时）：某个仓缺 integration → 拒；登记提交不是 integration sha 的祖先 → 拒；integration sha 不在目标分支上 → 拒；全满足 → 过；没有测试提交但登记了 integration 的卡同样检查合入；没登记 integration 的卡行为与现在完全一样；另一张卡在集成分支上改过同一测试文件时不误拦；`--diff-range` 不含 integration；已声明路径失效时报错而不是退到同名目录。
+- 完成门兜底检查：单会话直接提交 → 过；worktree 分支未合并 → 拒；合并后 → 过；来源仓停在别的分支 → 拒，登记 integration 后过。integration：登记提交不是 integration sha 的祖先 → 拒；integration sha 不在目标分支上 → 拒；没有测试提交但登记了 integration 的卡同样检查；不触发完成门的卡行为与现在完全一样；另一张卡在集成分支上改过同一测试文件时不误拦；`--diff-range` 不含 integration；已声明路径失效时报错而不是退到同名目录。
 - `bash scripts/check-python.sh` 全过；按落地顺序升 minor 版本（与多 agent 并行设计稿谁先落地谁用 3.3.0）。
